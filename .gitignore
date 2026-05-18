@@ -1,0 +1,35 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# SQLx
+.sqlx-staging/
+
+# Frontend
+fe/node_modules/
+fe/dist/
+fe/openapi.json
+fe/src/api/schema.d.ts
+fe/coverage/
+fe/playwright-report/
+fe/test-results/
+fe/.playwright-cache/
+
+# Coverage
+coverage/
+
+# Env
+.env
+.env.local
+*.env.local
+
+# IDE
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AI assistants
+.claude/
