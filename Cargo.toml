@@ -1,0 +1,85 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/domain",
+  "crates/cache",
+  "crates/email",
+  "crates/persistence",
+  "crates/openapi",
+  "crates/migrator",
+  "crates/reminder-worker",
+  "crates/api",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.83"
+license = "BUSL-1.1"
+authors = ["my-family contributors"]
+repository = "https://github.com/BentBr/my-family"
+description = "A family tree to organise families and share insights of heredity"
+
+[workspace.dependencies]
+actix-web = "4"
+actix-cors = "0.7"
+anyhow = "1"
+askama = "0.12"
+async-trait = "0.1"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-tz = "0.10"
+clap = { version = "4", features = ["derive", "env"] }
+deadpool-redis = "0.18"
+dotenvy = "0.15"
+ed25519-dalek = { version = "2", features = ["pem", "rand_core"] }
+envy = "0.4"
+figment = { version = "0.10", features = ["env", "toml"] }
+futures-util = "0.3"
+jsonwebtoken = "9"
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "tokio1", "tokio1-rustls-tls", "builder"] }
+once_cell = "1"
+rand = "0.8"
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "macros", "migrate", "ipnetwork"] }
+thiserror = "2"
+url = "2"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-actix-web = "0.7"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+utoipa = { version = "5", features = ["actix_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "8", features = ["actix-web"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+indexing_slicing = "deny"
+float_arithmetic = "warn"
+shadow_unrelated = "warn"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
