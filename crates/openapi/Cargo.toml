@@ -1,0 +1,19 @@
+[package]
+name = "my-family-openapi"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "openapi-dump"
+path = "src/bin/openapi_dump.rs"
+
+[dependencies]
+my-family-api = { path = "../api" }
+serde_json.workspace = true
+utoipa.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true
