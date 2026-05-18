@@ -1,46 +1,46 @@
 name: my-family
 
 services:
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_USER: my_family
-      POSTGRES_PASSWORD: my_family
-      POSTGRES_DB: my_family
-    # Host port 3458 → container 5432. The only host port binding in this stack.
-    ports:
-      - "3458:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U my_family"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    postgres:
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_USER: my_family
+            POSTGRES_PASSWORD: my_family
+            POSTGRES_DB: my_family
+        # Host port 3458 → container 5432. The only host port binding in this stack.
+        ports:
+            - "3458:5432"
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U my_family" ]
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
-  redis:
-    image: redis:7-alpine
-    # No host binding. Services reach it via `redis:6379` on the compose network.
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    redis:
+        image: redis:7-alpine
+        # No host binding. Services reach it via `redis:6379` on the compose network.
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: [ "CMD", "redis-cli", "ping" ]
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
-  mailpit:
-    image: axllent/mailpit:latest
-    environment:
-      # Dinghy reverse-proxy routing for the web UI (SMTP stays internal).
-      VIRTUAL_HOST: mail.my-family.docker
-      VIRTUAL_PORT: "8025"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8025/api/v1/info"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    mailpit:
+        image: axllent/mailpit:latest
+        environment:
+            # Dinghy reverse-proxy routing for the web UI (SMTP stays internal).
+            VIRTUAL_HOST: mail.my-family.docker
+            VIRTUAL_PORT: "8025"
+        healthcheck:
+            test: [ "CMD", "wget", "-qO-", "http://localhost:8025/api/v1/info" ]
+            interval: 5s
+            timeout: 3s
+            retries: 10
 
 volumes:
-  postgres-data:
-  redis-data:
+    postgres-data:
+    redis-data:
