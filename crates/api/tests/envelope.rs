@@ -35,9 +35,5 @@ fn slugs_are_unique() {
 fn all_array_length_matches_variant_count() {
     // Update this constant whenever an `ErrorCode` variant is added or removed.
     // The compiler doesn't enforce this; this test does.
-    assert_eq!(
-        ErrorCode::ALL.len(),
-        20,
-        "ErrorCode::ALL must list every variant exactly once",
-    );
+    assert_eq!(ErrorCode::ALL.len(), 20, "ErrorCode::ALL must list every variant exactly once");
 }
