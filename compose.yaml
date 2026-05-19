@@ -17,6 +17,10 @@ services:
             interval: 5s
             timeout: 3s
             retries: 10
+        networks:
+            my-family:
+                aliases:
+                    - postgres.my-family.docker
 
     redis:
         image: redis:7-alpine
@@ -28,6 +32,10 @@ services:
             interval: 5s
             timeout: 3s
             retries: 10
+        networks:
+            my-family:
+                aliases:
+                    - redis.my-family.docker
 
     mailpit:
         image: axllent/mailpit:latest
@@ -40,7 +48,14 @@ services:
             interval: 5s
             timeout: 3s
             retries: 10
+        networks:
+            my-family:
+                aliases:
+                    - mail.my-family.docker
 
 volumes:
     postgres-data:
     redis-data:
+
+networks:
+    my-family:
