@@ -2,17 +2,15 @@
 //! it landed via the Mailpit HTTP API.
 //!
 //! Reads two env vars (both must be set, else the test skips):
-//!   EMAIL_DSN   — SMTP DSN, e.g. `smtp://mailpit:1025` (inside compose network)
-//!                  or `smtp://localhost:1025` (with a host port binding).
-//!   MAILPIT_API — HTTP base URL, e.g. `http://mailpit:8025` or
-//!                  `http://mail.my-family.docker` (via dinghy on host) or
-//!                  `http://localhost:8025`.
+//!   `EMAIL_DSN`   — SMTP DSN, e.g. `smtp://mailpit:1025` (inside compose network)
+//!                    or `smtp://localhost:1025` (with a host port binding).
+//!   `MAILPIT_API` — HTTP base URL, e.g. `http://mailpit:8025` or
+//!                    `http://mail.my-family.docker` (via dinghy on host) or
+//!                    `http://localhost:8025`.
 //!
-//! Run inside the compose network with:
-//!   docker run --rm --network my-family_my-family \
-//!     -v "$(pwd):/workspace" -w /workspace \
-//!     -e EMAIL_DSN=smtp://mailpit:1025 -e MAILPIT_API=http://mailpit:8025 \
-//!     rustlang/rust:nightly cargo test -p my-family-email --test mailpit
+//! Run inside the compose network with `./scripts/cargo-in-network.sh test -p
+//! my-family-email --test mailpit`, which injects both env vars pointing at the
+//! compose `mailpit` service.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr, clippy::indexing_slicing)]
 
