@@ -41,6 +41,7 @@ uuid.workspace = true
 
 [dev-dependencies]
 actix-web = { workspace = true, features = ["macros"] }
+figment = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true
