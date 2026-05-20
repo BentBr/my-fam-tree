@@ -26,8 +26,12 @@ response_body!(pub HealthResponseBody, Health);
 // `actix_web::HttpRequest` holds an `Rc`, so the returned future is `!Send`;
 // this is the canonical actix-web handler signature.
 #[allow(clippy::future_not_send)]
+// The `#[get("/health")]` proc-macro replaces this function with a `struct health`
+// that implements `HttpServiceFactory`, which trips `unreachable_pub` on the fn.
+// The `pub` is needed so the `openapi` crate can name it in `paths(...)`.
+#[allow(unreachable_pub)]
 #[get("/health")]
-pub(crate) async fn health(req: actix_web::HttpRequest) -> Result<ApiResponse<Health>, ApiError> {
+pub async fn health(req: actix_web::HttpRequest) -> Result<ApiResponse<Health>, ApiError> {
     let rid = req.extensions().get::<RequestIdValue>().map(|v| v.0.clone());
     let mut resp = ApiResponse::ok(Health { status: "ok", version: env!("CARGO_PKG_VERSION") });
     if let Some(rid) = rid {
