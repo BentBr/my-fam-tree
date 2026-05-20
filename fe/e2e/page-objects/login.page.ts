@@ -9,7 +9,10 @@ export class LoginPage {
 
     constructor(private readonly page: Page) {
         this.card = page.getByTestId('login-card')
-        this.email = page.getByTestId('sign-in-email')
+        // Vuetify renders <v-text-field data-testid="..."> as a wrapper <div>;
+        // the data-testid lands on the outer container, not the inner <input>.
+        // Drill into the input so .fill() targets the right element.
+        this.email = page.getByTestId('sign-in-email').locator('input')
         this.submit = page.getByTestId('sign-in-submit')
         this.sent = page.getByTestId('sign-in-sent')
         this.error = page.getByTestId('login-error')
