@@ -15,7 +15,7 @@ pub mod validation;
 use actix_cors::Cors;
 use actix_web::body::MessageBody;
 use actix_web::http::header::HeaderName;
-use actix_web::{App, middleware as actix_mw};
+use actix_web::{App, middleware as actix_mw, web};
 pub use config::{AppEnv, Config, ConfigError, LogFormat};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
 pub use response::{ApiResponse, Pagination, ResponseMeta};
@@ -31,7 +31,7 @@ pub use tracing_setup::init_tracing;
 /// ServiceFactory` constrained only by `MessageBody` so callers don't need to
 /// spell out the concrete nested type.
 pub fn build_app(
-    cfg: &Config,
+    state: AppState,
 ) -> App<
     impl actix_web::dev::ServiceFactory<
         actix_web::dev::ServiceRequest,
@@ -41,6 +41,7 @@ pub fn build_app(
         InitError = (),
     > + use<>,
 > {
+    let cfg = state.cfg.clone();
     let allowed: Vec<&str> = cfg.cors_allowed_origins.split(',').map(str::trim).collect();
     // With `supports_credentials()`, the `CORS` spec forbids wildcards.
     // Enumerate the methods and headers we actually use.
@@ -65,6 +66,7 @@ pub fn build_app(
     //   request -> CORS -> RequestId -> TracingLogger -> AccessLog -> PanicCatcher -> handler
     // we register them in reverse here.
     App::new()
+        .app_data(web::Data::new(state))
         .wrap(middleware::PanicCatcher)
         .wrap(actix_mw::Logger::new(
             r#"%a "%r" %s %b %T "%{Referer}i" "%{User-Agent}i" rid=%{x-request-id}o"#,
