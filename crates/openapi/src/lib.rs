@@ -5,14 +5,11 @@
 //! macro in `crates/api/src/response.rs`. We import every wrapper and list it
 //! in `components(schemas(...))`.
 
+use my_family_api::error::{ApiErrorBody, ErrorCode, FieldViolation};
+use my_family_api::response::{NullResponseBody, Pagination, ResponseMeta};
+use my_family_api::routes::health::{self, HealthResponseBody};
 use utoipa::OpenApi;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
-
-use my_family_api::{
-    error::{ApiErrorBody, ErrorCode, FieldViolation},
-    response::{NullResponseBody, Pagination, ResponseMeta},
-    routes::health::{self, HealthResponseBody},
-};
 
 /// Aggregated `OpenAPI` document for the entire HTTP surface.
 #[derive(Debug, OpenApi)]

@@ -1,6 +1,7 @@
+use std::time::Duration;
+
 use my_family_cache::RedisPool;
 use my_family_persistence::Database;
-use std::time::Duration;
 use tracing_subscriber::prelude::*;
 
 #[derive(Debug, serde::Deserialize)]

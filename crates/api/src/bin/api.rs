@@ -28,10 +28,7 @@ async fn main() -> anyhow::Result<()> {
     let bind = format!("{}:{}", cfg.api_host, cfg.api_port);
     let cfg_for_factory = cfg.clone();
 
-    HttpServer::new(move || build_app(&cfg_for_factory))
-        .bind(&bind)?
-        .run()
-        .await?;
+    HttpServer::new(move || build_app(&cfg_for_factory)).bind(&bind)?.run().await?;
 
     if matches!(cfg.app_env, AppEnv::Production) {
         tracing::info!("api shutdown clean");
