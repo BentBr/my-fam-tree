@@ -14,7 +14,7 @@ my-family-domain = { path = "../domain" }
 my-family-cache = { path = "../cache" }
 my-family-email = { path = "../email" }
 my-family-persistence = { path = "../persistence" }
-actix-web.workspace = true
+actix-web = { workspace = true, features = ["macros"] }
 actix-cors.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
@@ -40,7 +40,6 @@ utoipa-swagger-ui.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
-actix-web = { workspace = true, features = ["macros"] }
 figment = { workspace = true, features = ["test"] }
 
 [lints]
