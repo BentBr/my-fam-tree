@@ -4,6 +4,9 @@ target/
 .vscode/
 fe/node_modules/
 fe/dist/
+fe/.pnpm-store/
+fe/playwright-report/
+fe/test-results/
 .claude/
 *.md
 .env

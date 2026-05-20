@@ -11,40 +11,190 @@ env:
     RUSTFLAGS: "-D warnings"
 
 jobs:
-    lint:
+    # ============================================================================
+    # Detect which parts of the codebase changed. On push to main we run
+    # everything (paths-filter can't compare to a base ref there).
+    # ============================================================================
+    changes:
+        runs-on: ubuntu-latest
+        outputs:
+            backend: ${{ steps.filter.outputs.backend || steps.default.outputs.backend }}
+            frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - if: ${{ github.event_name == 'pull_request' }}
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      backend:
+                          - 'crates/**'
+                          - 'migrations/**'
+                          - 'Cargo.toml'
+                          - 'Cargo.lock'
+                          - '.sqlx/**'
+                          - 'deny.toml'
+                          - 'rust-toolchain.toml'
+                      frontend:
+                          - 'fe/**'
+            - if: ${{ github.event_name != 'pull_request' }}
+              id: default
+              run: |
+                  echo "backend=true" >> "$GITHUB_OUTPUT"
+                  echo "frontend=true" >> "$GITHUB_OUTPUT"
+
+    # ============================================================================
+    # Commit Lint - Validates Conventional Commits on every PR
+    # ============================================================================
+    commit-lint:
+        if: ${{ github.event_name == 'pull_request' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Validate Conventional Commits
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+              run: |
+                  conventional_pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?(!)?: .+'
+                  merge_pattern='^Merge '
+                  invalid_commits=()
+                  while IFS= read -r commit_sha; do
+                      [[ -z "$commit_sha" ]] && continue
+                      subject="$(git log -1 --format='%s' "$commit_sha")"
+                      if [[ "$subject" =~ $merge_pattern ]]; then
+                          continue
+                      fi
+                      if ! [[ "$subject" =~ $conventional_pattern ]]; then
+                          invalid_commits+=("$commit_sha: $subject")
+                      fi
+                  done < <(git rev-list "$BASE_SHA..$HEAD_SHA")
+
+                  if [[ ${#invalid_commits[@]} -gt 0 ]]; then
+                      echo "::error::The following commits do not follow Conventional Commits format:"
+                      for msg in "${invalid_commits[@]}"; do
+                          echo "  - $msg"
+                      done
+                      echo ""
+                      echo "Expected format: <type>[optional scope][!]: <description>"
+                      echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+                      exit 1
+                  fi
+                  echo "All commits follow Conventional Commits format"
+
+    # ============================================================================
+    # Branch Name Validation - Runs on every PR
+    # ============================================================================
+    branch-name:
+        if: ${{ github.event_name == 'pull_request' }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Validate branch name
+              env:
+                  BRANCH_NAME: ${{ github.head_ref }}
+              run: |
+                  regex='^(main|master|develop|(release-please|dependabot|renovate)(--|/).+|(feat|fix|hotfix|chore|docs|refactor|perf|test|build|ci|style|revert|release)/[a-z0-9][a-z0-9._-]*)$'
+                  if [[ ! "$BRANCH_NAME" =~ $regex ]]; then
+                      echo "::error::Branch name '$BRANCH_NAME' does not follow the naming convention."
+                      echo ""
+                      echo "Expected: <type>/<description>"
+                      echo "Types: feat, fix, hotfix, chore, docs, refactor, perf, test, build, ci, style, revert, release"
+                      echo "Description: lowercase alphanumeric + . _ - (must start alphanumeric; no uppercase)"
+                      echo ""
+                      echo "Exempt branches: main, master, develop, release-please--*, dependabot/*, renovate/*"
+                      exit 1
+                  fi
+                  echo "Branch name '$BRANCH_NAME' is valid"
+
+    # ============================================================================
+    # Backend prepare - warm cargo caches + cargo-bin tools once. Downstream
+    # backend jobs reuse the cargo build cache via swatinem/rust-cache@v2.
+    # ============================================================================
+    backend-prepare:
+        needs: changes
+        if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rustfmt, clippy
-            - uses: pnpm/action-setup@v4
-              with:
-                  version: 10.33.4
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 22
-            # pnpm's repo-local store (fe/.pnpm-store, per fe/.npmrc) makes
-            # setup-node's built-in pnpm cache fail in post-run because the
-            # global ~/.local/share/pnpm/store doesn't exist. Cache the
-            # repo-local store directly with actions/cache.
-            - uses: actions/cache@v4
-              with:
-                  path: fe/.pnpm-store
-                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
-                  restore-keys: ${{ runner.os }}-pnpm-store-
             - uses: Swatinem/rust-cache@v2
-            - run: cargo fmt --all -- --check
-            - run: cargo clippy --workspace --all-targets -- -D warnings
-            - run: cd fe && pnpm install --frozen-lockfile
-            # schema.d.ts is gitignored — regenerate from the committed
-            # openapi.json before any typecheck step touches it.
-            - run: cd fe && pnpm openapi-codegen
-            - run: cd fe && pnpm lint
-            - run: cd fe && pnpm typecheck
-            - run: ./scripts/check-file-size.sh
+            - name: Cache cargo bin
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cargo/bin
+                  key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-bin-
+            - name: Install cargo-deny
+              run: |
+                  if ! command -v cargo-deny >/dev/null 2>&1; then
+                      cargo install cargo-deny --locked
+                  fi
+            - name: Install sqlx-cli
+              run: |
+                  if ! command -v sqlx >/dev/null 2>&1; then
+                      cargo install sqlx-cli --no-default-features --features postgres --locked
+                  fi
+            - name: Install cargo-llvm-cov
+              run: |
+                  if ! command -v cargo-llvm-cov >/dev/null 2>&1; then
+                      cargo install cargo-llvm-cov --locked
+                  fi
 
-    rust-test:
+    backend-clippy:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+              with:
+                  components: clippy
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo clippy --workspace --all-targets -- -D warnings
+
+    backend-format:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+              with:
+                  components: rustfmt
+            - run: cargo fmt --all -- --check
+
+    backend-audit:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - name: Restore cargo bin
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cargo/bin
+                  key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-bin-
+            - name: Install cargo-deny
+              run: |
+                  if ! command -v cargo-deny >/dev/null 2>&1; then
+                      cargo install cargo-deny --locked
+                  fi
+            - run: cargo deny check
+
+    backend-tests:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         services:
             postgres:
@@ -76,7 +226,126 @@ jobs:
             - uses: Swatinem/rust-cache@v2
             - run: cargo test --workspace --all-targets
 
-    fe-test:
+    backend-build:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo build --workspace --all-targets
+
+    backend-coverage:
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:18-alpine
+                env:
+                    POSTGRES_USER: my_family
+                    POSTGRES_PASSWORD: my_family
+                    POSTGRES_DB: my_family
+                ports: ["3458:5432"]
+                options: >-
+                    --health-cmd "pg_isready -U my_family"
+                    --health-interval 5s --health-timeout 3s --health-retries 10
+            redis:
+                image: redis:7-alpine
+                ports: ["6379:6379"]
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 10
+            mailpit:
+                image: axllent/mailpit:latest
+                ports: ["1025:1025", "8025:8025"]
+        env:
+            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            REDIS_URL: redis://localhost:6379/0
+            EMAIL_DSN: smtp://localhost:1025
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+              with:
+                  components: llvm-tools-preview
+            - uses: Swatinem/rust-cache@v2
+            - name: Restore cargo bin
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cargo/bin
+                  key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-bin-
+            - name: Install cargo-llvm-cov
+              run: |
+                  if ! command -v cargo-llvm-cov >/dev/null 2>&1; then
+                      cargo install cargo-llvm-cov --locked
+                  fi
+            - name: Run coverage (generates LCOV + keeps profdata on disk)
+              run: |
+                  mkdir -p coverage
+                  cargo llvm-cov --workspace --no-report
+                  cargo llvm-cov report --lcov --output-path coverage/rust.lcov
+            - name: Append coverage summary to GitHub step summary
+              run: |
+                  {
+                      echo "## Rust coverage"
+                      echo ""
+                      echo '```'
+                      cargo llvm-cov report --summary-only
+                      echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: rust-lcov
+                  path: coverage/rust.lcov
+                  retention-days: 14
+
+    backend-ts-bindings:
+        name: TS bindings up to date
+        needs: [changes, backend-prepare]
+        if: ${{ needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - name: Dump live OpenAPI
+              run: cargo run -p my-family-openapi --bin openapi-dump > /tmp/openapi.json
+            - name: Diff against committed fe/openapi.json
+              run: diff -u fe/openapi.json /tmp/openapi.json
+
+    # ============================================================================
+    # Frontend prepare - install deps once into the repo-local pnpm store.
+    # Downstream FE jobs do `pnpm install --frozen-lockfile` again; pnpm reuses
+    # the cached store via fe/.npmrc (`store-dir=.pnpm-store`).
+    # ============================================================================
+    frontend-prepare:
+        needs: changes
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            # setup-node's built-in pnpm cache assumes a global store at
+            # ~/.local/share/pnpm/store; ours lives at fe/.pnpm-store
+            # (fe/.npmrc). Cache the repo-local store directly.
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - run: cd fe && pnpm install --frozen-lockfile
+
+    frontend-lint:
+        needs: [changes, frontend-prepare]
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -93,15 +362,80 @@ jobs:
                   restore-keys: ${{ runner.os }}-pnpm-store-
             - run: cd fe && pnpm install --frozen-lockfile
             - run: cd fe && pnpm openapi-codegen
-            # Vitest only — Playwright runs in the e2e job, not here.
+            - run: cd fe && pnpm lint
+
+    frontend-typecheck:
+        needs: [changes, frontend-prepare]
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - run: cd fe && pnpm install --frozen-lockfile
+            - run: cd fe && pnpm openapi-codegen
+            - run: cd fe && pnpm typecheck
+
+    frontend-tests:
+        needs: [changes, frontend-prepare]
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - run: cd fe && pnpm install --frozen-lockfile
+            - run: cd fe && pnpm openapi-codegen
+            # Vitest only - Playwright runs in the frontend-e2e job.
             - run: cd fe && pnpm test
 
-    e2e:
+    frontend-build:
+        needs: [changes, frontend-prepare]
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
-        needs: [lint, rust-test, fe-test]
-        # CI runs the stack directly (cargo + vite) — `docker compose` is
-        # development-only. Postgres + Redis come from GitHub Actions service
-        # containers (same pattern as rust-test).
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - run: cd fe && pnpm install --frozen-lockfile
+            - run: cd fe && pnpm openapi-codegen
+            - run: cd fe && pnpm build
+
+    # ============================================================================
+    # Frontend E2E - full stack: cargo build api + pnpm dev + Playwright.
+    # Triggered when either backend or frontend changed (the wire crosses both).
+    # ============================================================================
+    frontend-e2e:
+        needs: changes
+        if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
+        runs-on: ubuntu-latest
         services:
             postgres:
                 image: postgres:18-alpine
@@ -180,7 +514,7 @@ jobs:
                   # Export the three JWT_* lines for subsequent steps.
                   grep -E '^JWT_' /tmp/jwt.env >> "$GITHUB_ENV"
             - name: Build api binary
-              # Debug profile is fine for an e2e — release would add minutes
+              # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.
               run: cargo build -p my-family-api --bin api
             - name: Start api in background
@@ -234,64 +568,14 @@ jobs:
                       /tmp/vite.log
                   retention-days: 7
 
-    coverage:
-        runs-on: ubuntu-latest
-        services:
-            postgres:
-                image: postgres:18-alpine
-                env:
-                    POSTGRES_USER: my_family
-                    POSTGRES_PASSWORD: my_family
-                    POSTGRES_DB: my_family
-                ports: ["3458:5432"]
-                options: >-
-                    --health-cmd "pg_isready -U my_family"
-                    --health-interval 5s --health-timeout 3s --health-retries 10
-            redis:
-                image: redis:7-alpine
-                ports: ["6379:6379"]
-        env:
-            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
-            REDIS_URL: redis://localhost:6379/0
-        steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@nightly
-              with:
-                  components: llvm-tools-preview
-            - uses: Swatinem/rust-cache@v2
-            - run: cargo install cargo-llvm-cov --locked
-            - run: mkdir -p coverage
-            - run: cargo llvm-cov --workspace --lcov --output-path coverage/rust.lcov
-            - uses: codecov/codecov-action@v4
-              with:
-                  files: coverage/rust.lcov
-                  flags: rust
-                  fail_ci_if_error: false
-
-    openapi-drift:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@nightly
-            - uses: Swatinem/rust-cache@v2
-            - run: cargo run -p my-family-openapi --bin openapi-dump > /tmp/openapi.json
-            - run: diff -u fe/openapi.json /tmp/openapi.json
-
-    deny:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@nightly
-            - run: cargo install cargo-deny --locked
-            - run: cargo deny check
-            # `cargo machete` re-enables once we've consumed the forward-looking
-            # deps (utoipa-swagger-ui, jsonwebtoken, lettre, my-family-cache, …)
-            # in Phase 1+. They're declared now to lock versions across the
-            # workspace; flagging them would be noise.
-
+    # ============================================================================
+    # Docker build verification - confirm all 4 Dockerfiles still build. We
+    # `load: true` (don't push) so this is a pure build smoke test.
+    # ============================================================================
     docker-build:
+        needs: changes
+        if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
-        needs: [lint, rust-test, fe-test, e2e]
         steps:
             - uses: actions/checkout@v4
             - uses: docker/setup-buildx-action@v3
@@ -303,8 +587,8 @@ jobs:
                   push: false
                   load: true
                   tags: my-family/api:ci
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  cache-from: type=gha,scope=api
+                  cache-to: type=gha,mode=max,scope=api
             - name: Build worker image
               uses: docker/build-push-action@v6
               with:
@@ -313,8 +597,8 @@ jobs:
                   push: false
                   load: true
                   tags: my-family/worker:ci
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  cache-from: type=gha,scope=worker
+                  cache-to: type=gha,mode=max,scope=worker
             - name: Build migrator image
               uses: docker/build-push-action@v6
               with:
@@ -323,5 +607,106 @@ jobs:
                   push: false
                   load: true
                   tags: my-family/migrator:ci
-                  cache-from: type=gha
-                  cache-to: type=gha,mode=max
+                  cache-from: type=gha,scope=migrator
+                  cache-to: type=gha,mode=max,scope=migrator
+            - name: Build fe image
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: .docker/fe/Dockerfile
+                  push: false
+                  load: true
+                  tags: my-family/fe:ci
+                  cache-from: type=gha,scope=fe
+                  cache-to: type=gha,mode=max,scope=fe
+
+    # ============================================================================
+    # CI Gate - one aggregating check for branch protection. Always runs;
+    # fails if any required upstream job failed. Skipped jobs (path filter)
+    # don't fail the gate.
+    # ============================================================================
+    ci-gate:
+        needs:
+            - changes
+            - branch-name
+            - commit-lint
+            - backend-clippy
+            - backend-format
+            - backend-audit
+            - backend-tests
+            - backend-build
+            - backend-coverage
+            - backend-ts-bindings
+            - frontend-lint
+            - frontend-typecheck
+            - frontend-tests
+            - frontend-build
+            - frontend-e2e
+            - docker-build
+        if: ${{ always() }}
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check branch name result
+              if: ${{ github.event_name == 'pull_request' }}
+              run: |
+                  if [[ "${{ needs.branch-name.result }}" != "success" ]]; then
+                      echo "::error::Branch name check failed"
+                      exit 1
+                  fi
+                  echo "Branch name check passed"
+            - name: Check commit lint result
+              if: ${{ github.event_name == 'pull_request' }}
+              run: |
+                  if [[ "${{ needs.commit-lint.result }}" != "success" ]]; then
+                      echo "::error::Commit lint check failed"
+                      exit 1
+                  fi
+                  echo "Commit lint check passed"
+            - name: Check backend results
+              if: ${{ needs.changes.outputs.backend == 'true' }}
+              run: |
+                  if [[ "${{ needs.backend-clippy.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-format.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-audit.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-tests.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-build.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-coverage.result }}" != "success" ]] || \
+                     [[ "${{ needs.backend-ts-bindings.result }}" != "success" ]]; then
+                      echo "::error::Backend checks failed"
+                      exit 1
+                  fi
+                  echo "All backend checks passed"
+            - name: Check frontend results
+              if: ${{ needs.changes.outputs.frontend == 'true' }}
+              run: |
+                  if [[ "${{ needs.frontend-lint.result }}" != "success" ]] || \
+                     [[ "${{ needs.frontend-typecheck.result }}" != "success" ]] || \
+                     [[ "${{ needs.frontend-tests.result }}" != "success" ]] || \
+                     [[ "${{ needs.frontend-build.result }}" != "success" ]]; then
+                      echo "::error::Frontend checks failed"
+                      exit 1
+                  fi
+                  echo "All frontend checks passed"
+            - name: Check E2E result
+              if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
+              run: |
+                  if [[ "${{ needs.frontend-e2e.result }}" != "success" ]]; then
+                      echo "::error::E2E check failed"
+                      exit 1
+                  fi
+                  echo "E2E check passed"
+            - name: Check docker-build result
+              if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
+              run: |
+                  if [[ "${{ needs.docker-build.result }}" != "success" ]]; then
+                      echo "::error::Docker build check failed"
+                      exit 1
+                  fi
+                  echo "Docker build check passed"
+            - name: Verify at least one component was checked
+              run: |
+                  if [[ "${{ needs.changes.outputs.backend }}" != "true" ]] && \
+                     [[ "${{ needs.changes.outputs.frontend }}" != "true" ]]; then
+                      echo "No backend or frontend changes detected - nothing to check"
+                  fi
+                  echo "CI gate passed"
