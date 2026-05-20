@@ -6,6 +6,7 @@ pub mod error;
 pub mod middleware;
 pub mod response;
 pub mod routes;
+pub mod state;
 pub mod tracing_setup;
 
 use actix_cors::Cors;
@@ -15,6 +16,7 @@ use actix_web::{App, middleware as actix_mw};
 pub use config::{AppEnv, Config, ConfigError, LogFormat};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
 pub use response::{ApiResponse, Pagination, ResponseMeta};
+pub use state::AppState;
 pub use tracing_setup::init_tracing;
 
 /// Build the `Actix` `App` with the full middleware stack and route registration.
