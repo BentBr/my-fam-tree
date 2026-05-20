@@ -30,6 +30,9 @@ jobs:
             - run: cargo fmt --all -- --check
             - run: cargo clippy --workspace --all-targets -- -D warnings
             - run: cd fe && pnpm install --frozen-lockfile
+            # schema.d.ts is gitignored — regenerate from the committed
+            # openapi.json before any typecheck step touches it.
+            - run: cd fe && pnpm openapi-codegen
             - run: cd fe && pnpm lint
             - run: cd fe && pnpm typecheck
             - run: ./scripts/check-file-size.sh
@@ -43,7 +46,7 @@ jobs:
                     POSTGRES_USER: my_family
                     POSTGRES_PASSWORD: my_family
                     POSTGRES_DB: my_family
-                ports: ["5432:5432"]
+                ports: ["3458:5432"]
                 options: >-
                     --health-cmd "pg_isready -U my_family"
                     --health-interval 5s --health-timeout 3s --health-retries 10
@@ -79,6 +82,7 @@ jobs:
                   cache: pnpm
                   cache-dependency-path: fe/pnpm-lock.yaml
             - run: cd fe && pnpm install --frozen-lockfile
+            - run: cd fe && pnpm openapi-codegen
             - run: cd fe && pnpm exec playwright install --with-deps chromium
             - run: cd fe && pnpm test
 
@@ -131,7 +135,7 @@ jobs:
                     POSTGRES_USER: my_family
                     POSTGRES_PASSWORD: my_family
                     POSTGRES_DB: my_family
-                ports: ["5432:5432"]
+                ports: ["3458:5432"]
                 options: >-
                     --health-cmd "pg_isready -U my_family"
                     --health-interval 5s --health-timeout 3s --health-retries 10
