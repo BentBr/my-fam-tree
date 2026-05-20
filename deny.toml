@@ -14,7 +14,7 @@ ignore = [
 ]
 
 [licenses]
-# BUSL-1.1 is our own workspace license; the rest are third-party deps.
+# BUSL-1.1 is our own workspace licence; the rest are third-party deps.
 allow = [
     "MIT",
     "Apache-2.0",
