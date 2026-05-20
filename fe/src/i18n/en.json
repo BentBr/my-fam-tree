@@ -1,6 +1,13 @@
 {
     "app": { "title": "my-family", "tagline": "Family tree, contacts, reminders." },
-    "nav": { "health": "Health" },
+    "nav": {
+        "tree": "Tree",
+        "reminders": "Reminders",
+        "health": "Health"
+    },
+    "auth": {
+        "signOut": "Sign out"
+    },
     "health": {
         "title": "Service health",
         "loading": "Checking…",

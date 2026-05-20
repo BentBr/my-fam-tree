@@ -1,6 +1,13 @@
 {
     "app": { "title": "my-family", "tagline": "Stammbaum, Kontakte, Erinnerungen." },
-    "nav": { "health": "Status" },
+    "nav": {
+        "tree": "Stammbaum",
+        "reminders": "Erinnerungen",
+        "health": "Status"
+    },
+    "auth": {
+        "signOut": "Abmelden"
+    },
     "health": {
         "title": "Service-Status",
         "loading": "Prüfe…",

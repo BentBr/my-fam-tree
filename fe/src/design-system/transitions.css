@@ -1,0 +1,18 @@
+/* Global fade for <router-view> via <Transition name="fade" mode="out-in" appear>. */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.4s ease-in-out;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+.fade-enter-to,
+.fade-leave-from {
+    opacity: 1;
+}
+
+/* Position context so absolutely-positioned children inside views don't leak during fade. */
+.fade-router-view {
+    position: relative;
+}
