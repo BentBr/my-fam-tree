@@ -172,7 +172,13 @@ services:
         # confirm-purge prompt when it detects a node_modules layout from a
         # different major (no TTY available in compose `command:`).
         # CI uses `pnpm install --frozen-lockfile` (Phase 0e) once the lockfile exists.
-        command: sh -c "corepack enable && corepack prepare pnpm@10.33.4 --activate && pnpm install && pnpm dev --host 0.0.0.0"
+        command: sh -c "corepack enable && corepack prepare pnpm@10.33.4 --activate && pnpm install && pnpm dev"
+        # `expose:` makes port 5173 visible to dinghy on the docker network
+        # without binding it on the host (the node:22-alpine image has no
+        # EXPOSE directive of its own). Dinghy reads this to route
+        # http://*.my-family.docker → container:5173.
+        expose:
+            - "5173"
         environment:
             CI: "true"
             VITE_API_BASE_URL: http://api.my-family.docker
@@ -184,8 +190,12 @@ services:
         volumes:
             - ./fe:/app
         depends_on:
+            # `service_started` (not `service_healthy`): the Vite dev server can
+            # come up before the API is fully ready — its proxy resolves
+            # `/api/*` at request time. Waiting on api's health adds 10–20s to
+            # each `docker compose up` for no benefit.
             api:
-                condition: service_healthy
+                condition: service_started
         networks:
             my-family:
                 aliases:

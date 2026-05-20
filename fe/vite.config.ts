@@ -11,6 +11,12 @@ export default defineConfig({
     },
     server: {
         port: 5173,
+        host: '0.0.0.0',
+        strictPort: true,
+        // Vite blocks requests whose Host header doesn't match the dev server.
+        // Dinghy proxies `*.my-family.docker` to this container, so we have to
+        // allow those hostnames explicitly. `localhost` covers host-side runs.
+        allowedHosts: ['my-family.docker', 'app.my-family.docker', 'localhost'],
         proxy: {
             // Inside the `fe` compose container the API is reachable via the FQDN
             // alias `api.my-family.docker`. On a host-side `pnpm dev` it defaults

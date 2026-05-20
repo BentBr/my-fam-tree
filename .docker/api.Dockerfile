@@ -9,7 +9,8 @@ ENV SQLX_OFFLINE=true
 RUN cargo build --release --bin api
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# `wget` is required by the compose healthcheck (`wget -qO- /api/v1/health`).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/target/release/api /usr/local/bin/api
 EXPOSE 8080
