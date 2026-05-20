@@ -99,34 +99,125 @@ jobs:
     e2e:
         runs-on: ubuntu-latest
         needs: [lint, rust-test, fe-test]
+        # CI runs the stack directly (cargo + vite) — `docker compose` is
+        # development-only. Postgres + Redis come from GitHub Actions service
+        # containers (same pattern as rust-test).
+        services:
+            postgres:
+                image: postgres:18-alpine
+                env:
+                    POSTGRES_USER: my_family
+                    POSTGRES_PASSWORD: my_family
+                    POSTGRES_DB: my_family
+                ports: ["3458:5432"]
+                options: >-
+                    --health-cmd "pg_isready -U my_family"
+                    --health-interval 5s --health-timeout 3s --health-retries 10
+            redis:
+                image: redis:7-alpine
+                ports: ["6379:6379"]
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 5s --health-timeout 3s --health-retries 10
+            mailpit:
+                image: axllent/mailpit:latest
+                ports: ["1025:1025", "8025:8025"]
         env:
             RUN_ID: ${{ github.run_id }}
+            APP_ENV: development
+            LOG_FORMAT: pretty
+            RUST_LOG: info,my_family=debug
+            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            DATABASE_MAX_CONNECTIONS: "20"
+            DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
+            DATABASE_STATEMENT_TIMEOUT_MS: "30000"
+            REDIS_URL: redis://localhost:6379/0
+            REDIS_MAX_CONNECTIONS: "10"
+            REDIS_KEY_PREFIX: "my-family:"
+            EMAIL_DSN: smtp://localhost:1025
+            EMAIL_FROM_NAME: my-family
+            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_TIMEOUT_SECONDS: "10"
+            API_HOST: 127.0.0.1
+            API_PORT: "8080"
+            API_PUBLIC_URL: http://localhost:8080
+            WEB_PUBLIC_URL: http://localhost:5173
+            CORS_ALLOWED_ORIGINS: http://localhost:5173
+            API_ENABLE_DOCS: "true"
+            API_METRICS_BIND: 127.0.0.1:9090
+            COOKIE_DOMAIN: ""
+            COOKIE_SECURE: "false"
+            COOKIE_SAMESITE_ACCESS: Lax
+            COOKIE_SAMESITE_REFRESH: Strict
+            JWT_ISSUER: my-family
+            JWT_AUDIENCE: my-family-app
+            JWT_ACCESS_TTL_SECONDS: "900"
+            JWT_REFRESH_TTL_SECONDS: "2592000"
+            JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
+            MAGIC_LINK_TTL_SECONDS: "900"
+            INVITE_TTL_SECONDS: "1209600"
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
+            VITE_API_BASE_URL: http://localhost:8080
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
-            - name: Seed .env with required vars + fresh JWT keys
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - name: Generate Ed25519 JWT keypair
               run: |
-                  cp .env.example .env
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> .env
-            - name: Bring up the stack with the e2e profile
-              run: docker compose up -d --wait
-            - name: Wait for FE container
+                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> /tmp/jwt.env
+                  # Export the three JWT_* lines for subsequent steps.
+                  grep -E '^JWT_' /tmp/jwt.env >> "$GITHUB_ENV"
+            - name: Build api binary
+              # Debug profile is fine for an e2e — release would add minutes
+              # for no behavior difference.
+              run: cargo build -p my-family-api --bin api
+            - name: Start api in background
               run: |
+                  ./target/debug/api > /tmp/api.log 2>&1 &
+                  echo "API_PID=$!" >> "$GITHUB_ENV"
                   for i in $(seq 1 30); do
-                      docker compose exec -T fe wget -qO- http://localhost:5173/ >/dev/null && break || sleep 2
+                      curl -fsS http://localhost:8080/api/v1/health >/dev/null && break
+                      echo "waiting for api..."
+                      sleep 2
+                  done
+            - name: Install FE deps + regenerate openapi types
+              working-directory: fe
+              run: |
+                  pnpm install --frozen-lockfile
+                  pnpm openapi-codegen
+            - name: Install Playwright Chromium
+              working-directory: fe
+              run: pnpm exec playwright install --with-deps chromium
+            - name: Start Vite dev server in background
+              working-directory: fe
+              run: |
+                  pnpm dev > /tmp/vite.log 2>&1 &
+                  echo "VITE_PID=$!" >> "$GITHUB_ENV"
+                  for i in $(seq 1 30); do
+                      curl -fsS http://localhost:5173/ >/dev/null && break
+                      echo "waiting for vite..."
+                      sleep 2
                   done
             - name: Run Playwright E2E
-              run: docker compose run --rm -T playwright pnpm test:e2e
-            - if: always()
-              name: Capture docker logs
-              run: docker compose logs > docker-logs.txt
-            - if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: docker-logs
-                  path: docker-logs.txt
-                  retention-days: 7
+              working-directory: fe
+              env:
+                  E2E_BASE_URL: http://localhost:5173
+                  E2E_API_BASE_URL: http://localhost:8080
+                  E2E_DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+                  MAILPIT_URL: http://localhost:8025
+              run: pnpm test:e2e
             - if: always()
               uses: actions/upload-artifact@v4
               with:
@@ -134,7 +225,14 @@ jobs:
                   path: fe/playwright-report/
                   retention-days: 7
             - if: always()
-              run: docker compose down -v
+              name: Upload api + vite logs
+              uses: actions/upload-artifact@v4
+              with:
+                  name: e2e-logs
+                  path: |
+                      /tmp/api.log
+                      /tmp/vite.log
+                  retention-days: 7
 
     coverage:
         runs-on: ubuntu-latest
