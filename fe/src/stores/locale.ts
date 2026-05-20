@@ -1,9 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import type { I18n } from 'vue-i18n'
+import type { WritableComputedRef } from 'vue'
 
 const STORAGE_KEY = 'my-family:locale'
 export type SupportedLocale = 'en' | 'de'
+
+// Structural shape covering both the I18n root and the Composer it exposes via
+// `.global` in non-legacy mode. Typing what we actually touch (a writable
+// `locale` ref) avoids invariance pitfalls with vue-i18n 11's deeply-generic
+// `I18n` / `Composer` interfaces and keeps us off `any` / `@ts-expect-error`.
+interface I18nLike {
+    global: {
+        locale: WritableComputedRef<string> | { value: string }
+    }
+}
 
 function detectInitialLocale(): SupportedLocale {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -16,10 +26,10 @@ function detectInitialLocale(): SupportedLocale {
 export const useLocaleStore = defineStore('locale', () => {
     const locale = ref<SupportedLocale>(detectInitialLocale())
 
-    function bindToI18n(i18n: I18n<unknown, unknown, unknown, string, false>): void {
-        i18n.global.locale = locale.value
+    function bindToI18n(i18n: I18nLike): void {
+        i18n.global.locale.value = locale.value
         watch(locale, (v) => {
-            i18n.global.locale = v
+            i18n.global.locale.value = v
             localStorage.setItem(STORAGE_KEY, v)
         })
     }
