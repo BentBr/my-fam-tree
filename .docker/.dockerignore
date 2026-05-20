@@ -1,0 +1,11 @@
+target/
+.git/
+.idea/
+.vscode/
+fe/node_modules/
+fe/dist/
+.claude/
+*.md
+.env
+.env.local
+.github/
