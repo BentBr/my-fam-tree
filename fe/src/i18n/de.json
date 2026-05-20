@@ -1,0 +1,13 @@
+{
+    "app": { "title": "my-family", "tagline": "Stammbaum, Kontakte, Erinnerungen." },
+    "nav": { "health": "Status" },
+    "health": {
+        "title": "Service-Status",
+        "loading": "Prüfe…",
+        "ok": "API ist erreichbar.",
+        "version": "Version {version}",
+        "requestId": "Request-ID: {id}",
+        "error": "API konnte nicht erreicht werden."
+    },
+    "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" }
+}

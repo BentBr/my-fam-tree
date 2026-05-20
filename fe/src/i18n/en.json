@@ -1,0 +1,13 @@
+{
+    "app": { "title": "my-family", "tagline": "Family tree, contacts, reminders." },
+    "nav": { "health": "Health" },
+    "health": {
+        "title": "Service health",
+        "loading": "Checking…",
+        "ok": "API is healthy.",
+        "version": "Version {version}",
+        "requestId": "Request id: {id}",
+        "error": "Could not reach the API."
+    },
+    "language": { "label": "Language", "en": "English", "de": "German" }
+}
