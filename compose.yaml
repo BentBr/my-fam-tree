@@ -179,7 +179,6 @@ services:
             PATH: /pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         volumes:
             - ./fe:/app
-            - fe-node-modules:/app/node_modules
         depends_on:
             api:
                 condition: service_healthy
@@ -192,7 +191,6 @@ services:
 volumes:
     postgres-data:
     redis-data:
-    fe-node-modules:
 
 networks:
     my-family:

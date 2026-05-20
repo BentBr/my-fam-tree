@@ -8,6 +8,7 @@ Cargo.lock.bak
 
 # Frontend
 fe/node_modules/
+fe/.pnpm-store/
 fe/dist/
 fe/openapi.json
 fe/src/api/schema.d.ts

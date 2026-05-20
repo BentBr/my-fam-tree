@@ -20,7 +20,7 @@ command = "cargo sqlx prepare --workspace"
 
 [commands.openapi]
 description = "Dump OpenAPI spec to fe/openapi.json and regenerate TS types"
-command = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && cd fe && pnpm openapi-codegen"
+command = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && ./scripts/fe-in-container.sh openapi-codegen"
 
 [commands.openapi-check]
 description = "Fail if OpenAPI spec drifted from the committed one"
@@ -29,24 +29,24 @@ command = "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi
 [commands.lint]
 description = "Run all linters (rust + fe + file-size)"
 aliases = ["l"]
-command = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cd fe && pnpm lint && pnpm typecheck && cd .. && ./scripts/check-file-size.sh"
+command = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && ./scripts/fe-in-container.sh lint && ./scripts/fe-in-container.sh typecheck && ./scripts/check-file-size.sh"
 
 [commands.test]
 description = "Run all unit tests (cargo + playwright component)"
 aliases = ["t"]
-command = "cargo test --workspace && cd fe && pnpm test"
+command = "cargo test --workspace && ./scripts/fe-in-container.sh test"
 
 [commands.test-e2e]
 description = "Run Playwright end-to-end tests against running stack"
-command = "cd fe && pnpm test:e2e"
+command = "./scripts/fe-in-container.sh test:e2e"
 
 [commands.coverage]
 description = "Coverage report (rust via cargo-llvm-cov, fe via playwright/v8)"
-command = "cargo llvm-cov --workspace --lcov --output-path coverage/rust.lcov && cd fe && pnpm coverage"
+command = "cargo llvm-cov --workspace --lcov --output-path coverage/rust.lcov && ./scripts/fe-in-container.sh coverage"
 
 [commands.fe]
 description = "Start the Vite dev server"
-command = "cd fe && pnpm dev"
+command = "docker compose up fe"
 
 [commands.worker]
 description = "Run the reminder worker locally"
