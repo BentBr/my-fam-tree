@@ -9,6 +9,10 @@ publish = false
 name = "api"
 path = "src/bin/api.rs"
 
+[[bin]]
+name = "gen-jwt-keys"
+path = "src/bin/gen_jwt_keys.rs"
+
 [dependencies]
 my-family-domain = { path = "../domain" }
 my-family-cache = { path = "../cache" }
