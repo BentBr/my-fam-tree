@@ -51,9 +51,6 @@ pub trait FamilyMembershipRepo: Send + Sync {
         user_id: UserId,
         role: Role,
     ) -> Result<(), MembershipRepoError>;
-    async fn remove(
-        &self,
-        family_id: FamilyId,
-        user_id: UserId,
-    ) -> Result<(), MembershipRepoError>;
+    async fn remove(&self, family_id: FamilyId, user_id: UserId)
+    -> Result<(), MembershipRepoError>;
 }
