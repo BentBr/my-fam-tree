@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+
+# Skip wholesale via env, or per-check via .env.local toggles.
+if [ "${GIT_HOOK_SKIP:-0}" = "1" ]; then
+    echo "[pre-push] GIT_HOOK_SKIP=1, skipping all checks"
+    exit 0
+fi
+
+# Load optional .env.local for fine-grained toggles
+if [ -f .env.local ]; then
+    set -a
+    # shellcheck disable=SC1091
+    . ./.env.local
+    set +a
+fi
+
+run() {
+    local name="$1"; shift
+    local skip_var="$1"; shift
+    if [ "${!skip_var:-0}" = "1" ]; then
+        echo "[pre-push] $name skipped via $skip_var"
+        return 0
+    fi
+    echo "[pre-push] $name"
+    "$@"
+}
+
+run "rust fmt"        SKIP_FMT     cargo fmt --all -- --check
+run "clippy"          SKIP_CLIPPY  cargo clippy --workspace --all-targets -- -D warnings
+run "rust tests"      SKIP_RTEST   cargo test --workspace --all-targets
+run "fe lint"         SKIP_FELINT  ./scripts/fe-in-container.sh lint
+run "fe typecheck"    SKIP_FETSC   ./scripts/fe-in-container.sh typecheck
+run "fe component"    SKIP_FETEST  ./scripts/fe-in-container.sh test
+run "openapi drift"   SKIP_OPENAPI bash -c "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
+run "file-size"       SKIP_SIZE    ./scripts/check-file-size.sh
