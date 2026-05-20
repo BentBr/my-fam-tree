@@ -23,7 +23,6 @@ export const brand = {
  */
 export function unsafeCast<T>(value: unknown, reason: string): T {
     if (import.meta.env.DEV) {
-        // eslint-disable-next-line no-console
         console.warn(`[unsafeCast] ${reason}`)
     }
     return value as T

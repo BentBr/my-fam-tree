@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import * as icons from 'lucide-vue-next'
+import * as icons from '@lucide/vue'
 import { computed, type Component } from 'vue'
 
 const props = withDefaults(
