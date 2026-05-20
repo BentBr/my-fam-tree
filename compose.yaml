@@ -204,7 +204,6 @@ services:
     playwright:
         # Pin must match @playwright/test resolved in fe/pnpm-lock.yaml (1.60.0).
         image: mcr.microsoft.com/playwright:v1.60.0-noble
-        profiles: [e2e]
         working_dir: /app
         # Mount the FE source so the same tests + page objects + fixtures are
         # used in CI as in local dev. The playwright deps live in a separate
