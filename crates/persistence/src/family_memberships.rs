@@ -1,11 +1,13 @@
 //! Postgres-backed [`FamilyMembershipRepo`] implementation.
 
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use my_family_domain::{
     FamilyId, FamilyMembershipRepo, Membership, MembershipRepoError, MembershipWithFamilyName,
     Role, UserId,
 };
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Clone, Debug)]
 pub struct PgFamilyMembershipRepo {
@@ -31,6 +33,47 @@ fn role_from_db(s: &str) -> Role {
         "owner" => Role::Owner,
         "admin" => Role::Admin,
         _ => Role::User,
+    }
+}
+
+/// Mirror of the columns selected by `family_memberships` queries that return [`Membership`].
+/// Centralized so the row → `Membership` conversion lives in exactly one place.
+#[derive(sqlx::FromRow)]
+struct MembershipRow {
+    family_id: Uuid,
+    user_id: Uuid,
+    #[sqlx(rename = "role!")]
+    role: String,
+    joined_at: DateTime<Utc>,
+}
+
+impl From<MembershipRow> for Membership {
+    fn from(r: MembershipRow) -> Self {
+        Self {
+            family_id: FamilyId::from_uuid(r.family_id),
+            user_id: UserId::from_uuid(r.user_id),
+            role: role_from_db(&r.role),
+            joined_at: r.joined_at,
+        }
+    }
+}
+
+/// Mirror of the JOIN row returned by `list_for_user`.
+#[derive(sqlx::FromRow)]
+struct MembershipWithFamilyNameRow {
+    family_id: Uuid,
+    family_name: String,
+    #[sqlx(rename = "role!")]
+    role: String,
+}
+
+impl From<MembershipWithFamilyNameRow> for MembershipWithFamilyName {
+    fn from(r: MembershipWithFamilyNameRow) -> Self {
+        Self {
+            family_id: FamilyId::from_uuid(r.family_id),
+            family_name: r.family_name,
+            role: role_from_db(&r.role),
+        }
     }
 }
 
@@ -65,7 +108,8 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         &self,
         user_id: UserId,
     ) -> Result<Vec<MembershipWithFamilyName>, MembershipRepoError> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query_as!(
+            MembershipWithFamilyNameRow,
             r#"SELECT fm.family_id, f.name AS family_name, fm.role::text AS "role!"
                  FROM family_memberships fm
                  JOIN families f ON f.id = fm.family_id
@@ -76,14 +120,7 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| MembershipRepoError::Db(e.to_string()))?;
-        Ok(rows
-            .into_iter()
-            .map(|r| MembershipWithFamilyName {
-                family_id: FamilyId::from_uuid(r.family_id),
-                family_name: r.family_name,
-                role: role_from_db(&r.role),
-            })
-            .collect())
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 
     async fn find(
@@ -91,7 +128,8 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         family_id: FamilyId,
         user_id: UserId,
     ) -> Result<Option<Membership>, MembershipRepoError> {
-        let row = sqlx::query!(
+        let row = sqlx::query_as!(
+            MembershipRow,
             r#"SELECT family_id, user_id, role::text AS "role!", joined_at
                  FROM family_memberships WHERE family_id = $1 AND user_id = $2"#,
             family_id.into_uuid(),
@@ -100,12 +138,7 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| MembershipRepoError::Db(e.to_string()))?;
-        Ok(row.map(|r| Membership {
-            family_id: FamilyId::from_uuid(r.family_id),
-            user_id: UserId::from_uuid(r.user_id),
-            role: role_from_db(&r.role),
-            joined_at: r.joined_at,
-        }))
+        Ok(row.map(Into::into))
     }
 
     async fn set_role(

@@ -19,6 +19,35 @@ impl PgRefreshTokenRepo {
     }
 }
 
+/// Mirror of the columns selected by `refresh_tokens` queries that return [`RefreshTokenRecord`].
+/// Centralized so the row → `RefreshTokenRecord` conversion lives in exactly one place.
+#[derive(sqlx::FromRow)]
+struct RefreshTokenRow {
+    id: Uuid,
+    user_id: Uuid,
+    created_at: DateTime<Utc>,
+    last_used_at: DateTime<Utc>,
+    expires_at: DateTime<Utc>,
+    absolute_expires_at: DateTime<Utc>,
+    revoked_at: Option<DateTime<Utc>>,
+    device_label: Option<String>,
+}
+
+impl From<RefreshTokenRow> for RefreshTokenRecord {
+    fn from(r: RefreshTokenRow) -> Self {
+        Self {
+            id: r.id,
+            user_id: UserId::from_uuid(r.user_id),
+            created_at: r.created_at,
+            last_used_at: r.last_used_at,
+            expires_at: r.expires_at,
+            absolute_expires_at: r.absolute_expires_at,
+            revoked_at: r.revoked_at,
+            device_label: r.device_label,
+        }
+    }
+}
+
 #[async_trait]
 impl RefreshTokenRepo for PgRefreshTokenRepo {
     async fn create(
@@ -55,7 +84,8 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         &self,
         token_hash: &[u8],
     ) -> Result<Option<RefreshTokenRecord>, RefreshRepoError> {
-        let row = sqlx::query!(
+        let row = sqlx::query_as!(
+            RefreshTokenRow,
             r#"SELECT id, user_id, created_at, last_used_at, expires_at, absolute_expires_at,
                       revoked_at, device_label
                  FROM refresh_tokens WHERE token_hash = $1 AND revoked_at IS NULL"#,
@@ -64,16 +94,7 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| RefreshRepoError::Db(e.to_string()))?;
-        Ok(row.map(|r| RefreshTokenRecord {
-            id: r.id,
-            user_id: UserId::from_uuid(r.user_id),
-            created_at: r.created_at,
-            last_used_at: r.last_used_at,
-            expires_at: r.expires_at,
-            absolute_expires_at: r.absolute_expires_at,
-            revoked_at: r.revoked_at,
-            device_label: r.device_label,
-        }))
+        Ok(row.map(Into::into))
     }
 
     async fn rotate(
@@ -146,7 +167,8 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         &self,
         user_id: UserId,
     ) -> Result<Vec<RefreshTokenRecord>, RefreshRepoError> {
-        let rows = sqlx::query!(
+        let rows = sqlx::query_as!(
+            RefreshTokenRow,
             r#"SELECT id, user_id, created_at, last_used_at, expires_at, absolute_expires_at,
                       revoked_at, device_label
                  FROM refresh_tokens WHERE user_id = $1 AND revoked_at IS NULL
@@ -156,18 +178,6 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         .fetch_all(&self.pool)
         .await
         .map_err(|e| RefreshRepoError::Db(e.to_string()))?;
-        Ok(rows
-            .into_iter()
-            .map(|r| RefreshTokenRecord {
-                id: r.id,
-                user_id: UserId::from_uuid(r.user_id),
-                created_at: r.created_at,
-                last_used_at: r.last_used_at,
-                expires_at: r.expires_at,
-                absolute_expires_at: r.absolute_expires_at,
-                revoked_at: r.revoked_at,
-                device_label: r.device_label,
-            })
-            .collect())
+        Ok(rows.into_iter().map(Into::into).collect())
     }
 }

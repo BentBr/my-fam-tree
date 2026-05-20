@@ -27,6 +27,33 @@ fn purpose_from_db(s: &str) -> MagicLinkPurpose {
     }
 }
 
+/// Mirror of the columns selected by `magic_link_tokens` queries that return [`MagicLinkRecord`].
+/// Centralized so the row → `MagicLinkRecord` conversion lives in exactly one place.
+#[derive(sqlx::FromRow)]
+struct MagicLinkRow {
+    id: Uuid,
+    user_id: Option<Uuid>,
+    #[sqlx(rename = "email!")]
+    email: String,
+    #[sqlx(rename = "purpose!")]
+    purpose: String,
+    expires_at: DateTime<Utc>,
+    consumed_at: Option<DateTime<Utc>>,
+}
+
+impl From<MagicLinkRow> for MagicLinkRecord {
+    fn from(r: MagicLinkRow) -> Self {
+        Self {
+            id: r.id,
+            user_id: r.user_id.map(UserId::from_uuid),
+            email: r.email,
+            purpose: purpose_from_db(&r.purpose),
+            expires_at: r.expires_at,
+            consumed_at: r.consumed_at,
+        }
+    }
+}
+
 #[async_trait]
 impl MagicLinkRepo for PgMagicLinkRepo {
     async fn create(
@@ -55,7 +82,8 @@ impl MagicLinkRepo for PgMagicLinkRepo {
     }
 
     async fn consume(&self, token_hash: &[u8]) -> Result<MagicLinkRecord, MagicLinkRepoError> {
-        let row = sqlx::query!(
+        let row = sqlx::query_as!(
+            MagicLinkRow,
             r#"UPDATE magic_link_tokens SET consumed_at = now()
                 WHERE token_hash = $1 AND consumed_at IS NULL
                 RETURNING id, user_id, email::text AS "email!", purpose::text AS "purpose!",
@@ -70,13 +98,6 @@ impl MagicLinkRepo for PgMagicLinkRepo {
         if row.expires_at < Utc::now() {
             return Err(MagicLinkRepoError::Expired);
         }
-        Ok(MagicLinkRecord {
-            id: row.id,
-            user_id: row.user_id.map(UserId::from_uuid),
-            email: row.email,
-            purpose: purpose_from_db(&row.purpose),
-            expires_at: row.expires_at,
-            consumed_at: row.consumed_at,
-        })
+        Ok(row.into())
     }
 }
