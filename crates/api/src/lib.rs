@@ -71,5 +71,6 @@ pub fn build_app(
         .wrap(tracing_actix_web::TracingLogger::default())
         .wrap(middleware::RequestId)
         .wrap(cors)
-        .service(routes::health::scope())
+        .service(routes::public_scope())
+        .service(routes::auth_scope())
 }
