@@ -201,9 +201,39 @@ services:
                 aliases:
                     - my-family.docker
 
+    playwright:
+        # Pin must match @playwright/test resolved in fe/pnpm-lock.yaml (1.60.0).
+        image: mcr.microsoft.com/playwright:v1.60.0-noble
+        profiles: [e2e]
+        working_dir: /app
+        # Mount the FE source so the same tests + page objects + fixtures are
+        # used in CI as in local dev. The playwright deps live in a separate
+        # named volume to keep them out of the host-bound fe/node_modules
+        # (which is populated for the user's IDE by the `fe` service).
+        volumes:
+            - ./fe:/app
+            - fe-playwright-node-modules:/app/node_modules
+        command: sh -c "corepack enable && corepack prepare pnpm@10.33.4 --activate && pnpm install && pnpm exec playwright install chromium && tail -f /dev/null"
+        # Resolves *.my-family.docker via the network aliases of other services.
+        environment:
+            CI: "true"
+            E2E_BASE_URL: http://my-family.docker:5173
+            E2E_API_BASE_URL: http://api.my-family.docker:8080
+            MAILPIT_URL: http://mail.my-family.docker:8025
+        depends_on:
+            fe:
+                condition: service_started
+            api:
+                condition: service_started
+        networks:
+            my-family:
+                aliases:
+                    - playwright.my-family.docker
+
 volumes:
     postgres-data:
     redis-data:
+    fe-playwright-node-modules:
 
 networks:
     my-family:
