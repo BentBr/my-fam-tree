@@ -30,11 +30,44 @@ pub struct ApiErrorBody {
     pub fields: Option<Vec<FieldViolation>>,
 }
 
+/// A single field validation failure on the wire.
+///
+/// - `path`: JSON Pointer or query/header path to the offending field (e.g.
+///   `/email`, `/body/family_name`, `/headers/x-family-id`).
+/// - `code`: stable i18n key (e.g. `validation.email_invalid`,
+///   `validation.string_too_long`). FE looks this up in en/de catalogs.
+/// - `message`: English fallback so non-FE clients still get a readable
+///   error.
+/// - `params`: named placeholders FE substitutes into the localized
+///   message. Always serialized (even when empty) so FE clients don't have
+///   to guard `params?.max`. Use e.g. `{"max": 100, "actual": 105}`.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct FieldViolation {
     pub path: String,
     pub code: String,
     pub message: String,
+    #[serde(default)]
+    pub params: std::collections::BTreeMap<String, serde_json::Value>,
+}
+
+impl FieldViolation {
+    /// Convenience: create a violation with no `params`. Use this when the
+    /// localized message doesn't need any runtime substitution.
+    pub fn new(path: impl Into<String>, code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            path: path.into(),
+            code: code.into(),
+            message: message.into(),
+            params: std::collections::BTreeMap::new(),
+        }
+    }
+
+    /// Builder-style: attach a single named parameter.
+    #[must_use]
+    pub fn with_param(mut self, key: impl Into<String>, value: impl Into<serde_json::Value>) -> Self {
+        self.params.insert(key.into(), value.into());
+        self
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, ToSchema, PartialEq, Eq, Hash)]
@@ -330,11 +363,9 @@ mod tests {
 
     #[actix_web::test]
     async fn validation_includes_fields() {
-        let err = ApiError::Validation(vec![FieldViolation {
-            path: "/email".into(),
-            code: "validation.email_invalid".into(),
-            message: "must be an email".into(),
-        }]);
+        let err = ApiError::Validation(vec![
+            FieldViolation::new("/email", "validation.email_invalid", "must be an email"),
+        ]);
         let resp = err.error_response();
         assert_eq!(resp.status(), 422);
         let body = to_bytes(resp.into_body()).await.unwrap();

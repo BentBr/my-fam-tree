@@ -135,11 +135,11 @@ fn is_valid_domain_label(label: &str) -> bool {
 }
 
 fn email_validation_error() -> ApiError {
-    ApiError::Validation(vec![FieldViolation {
-        path: "/email".into(),
-        code: "validation.email_invalid".into(),
-        message: "must be an email".into(),
-    }])
+    ApiError::Validation(vec![FieldViolation::new(
+        "/email",
+        "validation.email_invalid",
+        "must be an email",
+    )])
 }
 
 fn seconds_i64(value: u64) -> i64 {

@@ -176,11 +176,8 @@ pub fn user_claims_with_family(req: &HttpRequest) -> Result<(UserClaims, ActiveF
 }
 
 fn family_header_required(msg: &str) -> FieldViolation {
-    FieldViolation {
-        path: "/headers/x-family-id".into(),
-        code: "validation.header_required".into(),
-        message: msg.into(),
-    }
+    FieldViolation::new("/headers/x-family-id", "validation.header_required", msg)
+        .with_param("header", "X-Family-Id")
 }
 
 /// Assert the active family's role meets `needed`.

@@ -29,5 +29,13 @@
         "requestId": "Request-ID: {id}",
         "error": "API konnte nicht erreicht werden."
     },
-    "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" }
+    "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
+    "validation": {
+        "email_invalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
+        "header_required": "Der {header}-Header ist erforderlich.",
+        "string_too_long": "Darf höchstens {max} Zeichen lang sein ({actual} eingegeben).",
+        "string_too_short": "Muss mindestens {min} Zeichen lang sein ({actual} eingegeben).",
+        "value_required": "Dieses Feld ist erforderlich.",
+        "uuid_invalid": "Muss eine gültige UUID sein."
+    }
 }
