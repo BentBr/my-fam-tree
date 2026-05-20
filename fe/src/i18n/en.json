@@ -33,6 +33,8 @@
     "validation": {
         "email_invalid": "Please enter a valid email address.",
         "header_required": "The {header} header is required.",
+        "invite_email_mismatch": "This invite was sent to a different email address.",
+        "role_invalid": "Invalid role for this action.",
         "string_too_long": "Must be at most {max} characters (got {actual}).",
         "string_too_short": "Must be at least {min} characters (got {actual}).",
         "value_required": "This field is required.",

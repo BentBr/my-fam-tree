@@ -33,6 +33,8 @@
     "validation": {
         "email_invalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
         "header_required": "Der {header}-Header ist erforderlich.",
+        "invite_email_mismatch": "Diese Einladung wurde an eine andere E-Mail-Adresse gesendet.",
+        "role_invalid": "Ungültige Rolle für diese Aktion.",
         "string_too_long": "Darf höchstens {max} Zeichen lang sein ({actual} eingegeben).",
         "string_too_short": "Muss mindestens {min} Zeichen lang sein ({actual} eingegeben).",
         "value_required": "Dieses Feld ist erforderlich.",

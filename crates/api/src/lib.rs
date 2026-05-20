@@ -10,6 +10,7 @@ pub mod routes;
 pub mod services;
 pub mod state;
 pub mod tracing_setup;
+pub mod validation;
 
 use actix_cors::Cors;
 use actix_web::body::MessageBody;

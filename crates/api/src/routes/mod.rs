@@ -7,10 +7,12 @@
 //!   `/auth/consume`, `/auth/refresh`).
 //! - [`auth_scope`] — wrapped in [`AuthMiddleware::required`] so handlers can
 //!   trust that `crate::auth::user_claims` returns a verified session
-//!   (`/auth/logout`, `/auth/me`).
+//!   (`/auth/logout`, `/auth/me`, `/families/*`, `/invites/accept`).
 
 pub mod auth;
+pub mod families;
 pub mod health;
+pub mod invites;
 
 use actix_web::web;
 
@@ -35,5 +37,14 @@ pub fn auth_scope() -> actix_web::Scope<
         InitError = (),
     > + use<>,
 > {
-    web::scope("/api/v1").wrap(AuthMiddleware::required()).service(auth::logout).service(auth::me)
+    web::scope("/api/v1")
+        .wrap(AuthMiddleware::required())
+        .service(auth::logout)
+        .service(auth::me)
+        .service(families::list_mine)
+        .service(families::create)
+        .service(families::rename)
+        .service(families::delete_family)
+        .service(families::invite)
+        .service(invites::accept)
 }
