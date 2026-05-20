@@ -3,7 +3,7 @@
 FROM rustlang/rust:nightly-slim AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libssl-dev ca-certificates && rm -rf /var/lib/apt/lists/*
+    pkg-config libssl-dev ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY . .
 ENV SQLX_OFFLINE=true
 RUN cargo build --release --bin api
