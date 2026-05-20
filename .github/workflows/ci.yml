@@ -29,7 +29,20 @@ jobs:
               id: filter
               with:
                   filters: |
+                      # Any change to CI/infra files flips BOTH groups so the
+                      # full pipeline runs (workflow/docker/compose/scripts
+                      # changes must exercise everything — otherwise a broken
+                      # CI yaml could merge with all jobs skipped).
+                      infra: &infra
+                          - '.github/workflows/**'
+                          - '.docker/**'
+                          - '.dockerignore'
+                          - 'compose.yaml'
+                          - 'scripts/**'
+                          - 'release-please-config.json'
+                          - '.release-please-manifest.json'
                       backend:
+                          - *infra
                           - 'crates/**'
                           - 'migrations/**'
                           - 'Cargo.toml'
@@ -38,6 +51,7 @@ jobs:
                           - 'deny.toml'
                           - 'rust-toolchain.toml'
                       frontend:
+                          - *infra
                           - 'fe/**'
             - if: ${{ github.event_name != 'pull_request' }}
               id: default
@@ -646,67 +660,77 @@ jobs:
         if: ${{ always() }}
         runs-on: ubuntu-latest
         steps:
-            - name: Check branch name result
-              if: ${{ github.event_name == 'pull_request' }}
+            # Strict: every upstream job that was *required to run* must report
+            # `success`. `skipped` is treated as failure when the change filter
+            # says the group is in scope. If we're triggered by a docs-only PR
+            # that doesn't match any filter, all jobs skip and the gate also
+            # passes — but that scenario is only reachable when no infra,
+            # backend, or frontend paths matched (see the path-filter above —
+            # infra changes flip BOTH groups).
+            - name: Enforce all upstream jobs
+              env:
+                  BRANCH_NAME_RESULT: ${{ needs.branch-name.result }}
+                  COMMIT_LINT_RESULT: ${{ needs.commit-lint.result }}
+                  BACKEND_NEEDED: ${{ needs.changes.outputs.backend }}
+                  FRONTEND_NEEDED: ${{ needs.changes.outputs.frontend }}
+                  BACKEND_CLIPPY: ${{ needs.backend-clippy.result }}
+                  BACKEND_FORMAT: ${{ needs.backend-format.result }}
+                  BACKEND_AUDIT: ${{ needs.backend-audit.result }}
+                  BACKEND_TESTS: ${{ needs.backend-tests.result }}
+                  BACKEND_BUILD: ${{ needs.backend-build.result }}
+                  BACKEND_COVERAGE: ${{ needs.backend-coverage.result }}
+                  BACKEND_TS_BINDINGS: ${{ needs.backend-ts-bindings.result }}
+                  FRONTEND_LINT: ${{ needs.frontend-lint.result }}
+                  FRONTEND_TYPECHECK: ${{ needs.frontend-typecheck.result }}
+                  FRONTEND_TESTS: ${{ needs.frontend-tests.result }}
+                  FRONTEND_BUILD: ${{ needs.frontend-build.result }}
+                  FRONTEND_E2E: ${{ needs.frontend-e2e.result }}
+                  DOCKER_BUILD: ${{ needs.docker-build.result }}
+                  EVENT_NAME: ${{ github.event_name }}
               run: |
-                  if [[ "${{ needs.branch-name.result }}" != "success" ]]; then
-                      echo "::error::Branch name check failed"
-                      exit 1
+                  set -e
+                  fail=0
+                  require_success() {
+                      local name="$1"; local result="$2"
+                      if [[ "$result" != "success" ]]; then
+                          echo "::error::Required job '$name' did not succeed (result=$result)"
+                          fail=1
+                      else
+                          echo "✓ $name"
+                      fi
+                  }
+                  # PR-only gates
+                  if [[ "$EVENT_NAME" == "pull_request" ]]; then
+                      require_success branch-name "$BRANCH_NAME_RESULT"
+                      require_success commit-lint "$COMMIT_LINT_RESULT"
                   fi
-                  echo "Branch name check passed"
-            - name: Check commit lint result
-              if: ${{ github.event_name == 'pull_request' }}
-              run: |
-                  if [[ "${{ needs.commit-lint.result }}" != "success" ]]; then
-                      echo "::error::Commit lint check failed"
-                      exit 1
+                  # Backend group (also covers docker-build + e2e since infra
+                  # flips both groups together)
+                  if [[ "$BACKEND_NEEDED" == "true" ]]; then
+                      require_success backend-clippy       "$BACKEND_CLIPPY"
+                      require_success backend-format       "$BACKEND_FORMAT"
+                      require_success backend-audit        "$BACKEND_AUDIT"
+                      require_success backend-tests        "$BACKEND_TESTS"
+                      require_success backend-build        "$BACKEND_BUILD"
+                      require_success backend-coverage     "$BACKEND_COVERAGE"
+                      require_success backend-ts-bindings  "$BACKEND_TS_BINDINGS"
                   fi
-                  echo "Commit lint check passed"
-            - name: Check backend results
-              if: ${{ needs.changes.outputs.backend == 'true' }}
-              run: |
-                  if [[ "${{ needs.backend-clippy.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-format.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-audit.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-tests.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-build.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-coverage.result }}" != "success" ]] || \
-                     [[ "${{ needs.backend-ts-bindings.result }}" != "success" ]]; then
-                      echo "::error::Backend checks failed"
-                      exit 1
+                  # Frontend group
+                  if [[ "$FRONTEND_NEEDED" == "true" ]]; then
+                      require_success frontend-lint        "$FRONTEND_LINT"
+                      require_success frontend-typecheck   "$FRONTEND_TYPECHECK"
+                      require_success frontend-tests       "$FRONTEND_TESTS"
+                      require_success frontend-build       "$FRONTEND_BUILD"
                   fi
-                  echo "All backend checks passed"
-            - name: Check frontend results
-              if: ${{ needs.changes.outputs.frontend == 'true' }}
-              run: |
-                  if [[ "${{ needs.frontend-lint.result }}" != "success" ]] || \
-                     [[ "${{ needs.frontend-typecheck.result }}" != "success" ]] || \
-                     [[ "${{ needs.frontend-tests.result }}" != "success" ]] || \
-                     [[ "${{ needs.frontend-build.result }}" != "success" ]]; then
-                      echo "::error::Frontend checks failed"
-                      exit 1
+                  # E2E + docker-build run when either group is in scope
+                  if [[ "$BACKEND_NEEDED" == "true" || "$FRONTEND_NEEDED" == "true" ]]; then
+                      require_success frontend-e2e         "$FRONTEND_E2E"
+                      require_success docker-build         "$DOCKER_BUILD"
+                  else
+                      echo "No backend or frontend changes — nothing required to check."
                   fi
-                  echo "All frontend checks passed"
-            - name: Check E2E result
-              if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
-              run: |
-                  if [[ "${{ needs.frontend-e2e.result }}" != "success" ]]; then
-                      echo "::error::E2E check failed"
+                  if [[ $fail -eq 1 ]]; then
+                      echo "::error::CI gate failed"
                       exit 1
-                  fi
-                  echo "E2E check passed"
-            - name: Check docker-build result
-              if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
-              run: |
-                  if [[ "${{ needs.docker-build.result }}" != "success" ]]; then
-                      echo "::error::Docker build check failed"
-                      exit 1
-                  fi
-                  echo "Docker build check passed"
-            - name: Verify at least one component was checked
-              run: |
-                  if [[ "${{ needs.changes.outputs.backend }}" != "true" ]] && \
-                     [[ "${{ needs.changes.outputs.frontend }}" != "true" ]]; then
-                      echo "No backend or frontend changes detected - nothing to check"
                   fi
                   echo "CI gate passed"
