@@ -82,59 +82,12 @@ jobs:
             - run: cd fe && pnpm exec playwright install --with-deps chromium
             - run: cd fe && pnpm test
 
-    e2e:
-        runs-on: ubuntu-latest
-        env:
-            RUN_ID: ${{ github.run_id }}
-        steps:
-            - uses: actions/checkout@v4
-            - uses: dtolnay/rust-toolchain@nightly
-            - uses: Swatinem/rust-cache@v2
-            - uses: pnpm/action-setup@v4
-              with:
-                  version: 10.33.4
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 22
-                  cache: pnpm
-                  cache-dependency-path: fe/pnpm-lock.yaml
-            - name: Seed .env for compose (JWT keys + required vars)
-              run: |
-                  cp .env.example .env
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> .env
-                  # CI has no dinghy; use localhost URLs (compose.ci.yaml re-adds host ports).
-                  {
-                      echo "API_PUBLIC_URL=http://localhost:8080"
-                      echo "WEB_PUBLIC_URL=http://localhost:5173"
-                      echo "CORS_ALLOWED_ORIGINS=http://localhost:5173"
-                      echo "COOKIE_DOMAIN="
-                      echo "REMINDER_WORKER_FEATURES=test-fixtures"
-                  } >> .env
-            - run: docker compose -f compose.yaml -f compose.ci.yaml up -d --wait
-            - run: cd fe && pnpm install --frozen-lockfile
-            - run: cd fe && pnpm exec playwright install --with-deps chromium
-            - name: Wait for FE
-              run: |
-                  for i in $(seq 1 30); do
-                      curl -fsS http://localhost:5173/ >/dev/null && break || sleep 2
-                  done
-            - run: cd fe && pnpm test:e2e
-              env:
-                  E2E_BASE_URL: http://localhost:5173
-            - if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: playwright-report
-                  path: fe/playwright-report/
-                  retention-days: 7
-            - if: always()
-              run: docker compose logs > docker-logs.txt && docker compose down
-            - if: always()
-              uses: actions/upload-artifact@v4
-              with:
-                  name: docker-logs
-                  path: docker-logs.txt
-                  retention-days: 7
+    # E2E job is deferred. The base `compose.yaml` routes via dinghy
+    # (`*.my-family.docker`) which isn't available on the CI runner, and we
+    # don't want a CI-only override compose file. Phase 1 will add a
+    # `playwright` service to `compose.yaml` (gated by a profile) that runs
+    # inside the compose network and resolves the dinghy hostnames via the
+    # docker network aliases — same compose file everywhere.
 
     coverage:
         runs-on: ubuntu-latest
