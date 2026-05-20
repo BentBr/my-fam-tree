@@ -167,10 +167,14 @@ services:
     fe:
         image: node:22-alpine
         working_dir: /app
-        # First boot has no pnpm-lock.yaml yet — let pnpm install generate it.
+        # Activate the pnpm version pinned in fe/package.json's `packageManager`
+        # field via corepack. `CI=true` prevents pnpm@10's interactive
+        # confirm-purge prompt when it detects a node_modules layout from a
+        # different major (no TTY available in compose `command:`).
         # CI uses `pnpm install --frozen-lockfile` (Phase 0e) once the lockfile exists.
-        command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm install && pnpm dev --host 0.0.0.0"
+        command: sh -c "corepack enable && corepack prepare pnpm@10.33.4 --activate && pnpm install && pnpm dev --host 0.0.0.0"
         environment:
+            CI: "true"
             VITE_API_BASE_URL: http://api.my-family.docker
             VITE_API_PROXY_TARGET: http://api.my-family.docker:8080
             VIRTUAL_HOST: my-family.docker,app.my-family.docker
