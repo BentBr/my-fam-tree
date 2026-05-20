@@ -303,34 +303,24 @@ jobs:
                   if ! command -v cargo-llvm-cov >/dev/null 2>&1; then
                       cargo install cargo-llvm-cov --locked
                   fi
-            - name: Run coverage (generates profdata + LCOV + JSON summary)
-              env:
-                  # Exclude code that's effectively integration glue / runtime
-                  # wiring and can't be meaningfully unit-tested:
-                  #   - binary entry points (src/bin/*, src/main.rs)
-                  #   - tracing subscriber init
-                  #   - cache/email/openapi wiring (pool/smtp/derive-only lib.rs)
-                  IGNORE: '(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$)'
+            # Exclusion regex + threshold live in scripts/coverage.sh — single
+            # source of truth for both CI and local `rdt coverage`.
+            - name: Run coverage (profdata + LCOV + JSON)
               run: |
-                  mkdir -p coverage
-                  cargo llvm-cov --workspace --no-report --ignore-filename-regex "$IGNORE"
-                  cargo llvm-cov report --lcov --output-path coverage/rust.lcov --ignore-filename-regex "$IGNORE"
-                  cargo llvm-cov report --json --output-path coverage/rust.json --ignore-filename-regex "$IGNORE"
+                  ./scripts/coverage.sh profile
+                  ./scripts/coverage.sh lcov
+                  ./scripts/coverage.sh json
             - name: Append coverage summary to GitHub step summary
-              env:
-                  IGNORE: '(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$)'
               run: |
                   {
                       echo "## Rust coverage"
                       echo ""
                       echo '```'
-                      cargo llvm-cov report --summary-only --ignore-filename-regex "$IGNORE"
+                      ./scripts/coverage.sh summary
                       echo '```'
                   } >> "$GITHUB_STEP_SUMMARY"
-            - name: Enforce 80% line-coverage threshold
-              env:
-                  IGNORE: '(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$)'
-              run: cargo llvm-cov report --fail-under-lines 80 --ignore-filename-regex "$IGNORE"
+            - name: Enforce coverage threshold
+              run: ./scripts/coverage.sh check
             - uses: actions/upload-artifact@v4
               with:
                   name: rust-coverage

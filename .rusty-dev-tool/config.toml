@@ -41,8 +41,8 @@ description = "Run Playwright end-to-end tests against running stack"
 command = "./scripts/fe-in-container.sh test:e2e"
 
 [commands.coverage]
-description = "Coverage report (rust via cargo-llvm-cov, fe via playwright/v8)"
-command = "cargo llvm-cov --workspace --lcov --output-path coverage/rust.lcov && ./scripts/fe-in-container.sh coverage"
+description = "Coverage report (rust via scripts/coverage.sh, fe via playwright/v8)"
+command = "./scripts/coverage.sh all && ./scripts/fe-in-container.sh coverage"
 
 [commands.fe]
 description = "Start the Vite dev server"
