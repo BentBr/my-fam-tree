@@ -63,5 +63,11 @@ jobs:
                   push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
+                  # OCI args consumed by each Dockerfile's runtime stage
+                  # (see ARG OCI_SOURCE / OCI_REVISION / OCI_CREATED + LABEL).
+                  build-args: |
+                      OCI_SOURCE=https://github.com/${{ github.repository }}
+                      OCI_REVISION=${{ github.sha }}
+                      OCI_CREATED=${{ github.event.release.published_at || github.event.repository.updated_at }}
                   cache-from: type=gha,scope=${{ matrix.image }}
                   cache-to: type=gha,mode=max,scope=${{ matrix.image }}
