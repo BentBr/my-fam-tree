@@ -4,6 +4,7 @@ pub mod config;
 pub mod error;
 pub mod middleware;
 pub mod response;
+pub mod routes;
 pub mod tracing_setup;
 
 pub use config::{AppEnv, Config, ConfigError, LogFormat};
