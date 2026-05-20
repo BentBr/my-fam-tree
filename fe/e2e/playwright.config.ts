@@ -18,6 +18,8 @@ const webServer: PlaywrightTestConfig['webServer'] = isCI
 
 export default defineConfig({
     testDir: '.',
+    globalSetup: './global-setup.ts',
+    globalTeardown: './global-teardown.ts',
     // E2E tests share a single Mailpit inbox + Postgres + Redis. Running them in
     // parallel causes races on inbox state and family/user fixtures. Component
     // tests stay parallel because they're pure browser-render.
