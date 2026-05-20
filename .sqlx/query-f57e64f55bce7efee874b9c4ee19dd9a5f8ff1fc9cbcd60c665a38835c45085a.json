@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO refresh_tokens\n               (user_id, token_hash, device_label, user_agent, ip, expires_at, absolute_expires_at)\n               VALUES ($1, $2, $3, $4, $5, $6, $7)\n               RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Text",
+        "Text",
+        "Inet",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f57e64f55bce7efee874b9c4ee19dd9a5f8ff1fc9cbcd60c665a38835c45085a"
+}

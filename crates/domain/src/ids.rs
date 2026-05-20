@@ -11,7 +11,6 @@ macro_rules! id_newtype {
         pub struct $name(Uuid);
 
         impl $name {
-            #[cfg(test)]
             pub const fn from_uuid(u: Uuid) -> Self {
                 Self(u)
             }

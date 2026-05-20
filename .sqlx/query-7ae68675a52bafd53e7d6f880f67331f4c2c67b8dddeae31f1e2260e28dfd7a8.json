@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT fm.family_id, f.name AS family_name, fm.role::text AS \"role!\"\n                 FROM family_memberships fm\n                 JOIN families f ON f.id = fm.family_id\n                WHERE fm.user_id = $1\n                ORDER BY f.name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "role!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "7ae68675a52bafd53e7d6f880f67331f4c2c67b8dddeae31f1e2260e28dfd7a8"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO family_memberships (family_id, user_id, role)\n               VALUES ($1, $2, ($3::text)::family_role)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d79f0e532df2a8885aebe76817c613640276f828ae476661fb59f120029a8389"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE family_memberships SET role = ($3::text)::family_role\n                WHERE family_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d9b23bfec3e4e5362aae76623563b9cec6c5a919ca048a5330c4d804e6653e82"
+}

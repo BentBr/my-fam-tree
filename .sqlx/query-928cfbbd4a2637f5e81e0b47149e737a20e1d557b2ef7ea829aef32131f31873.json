@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET locale = ($2::text)::user_locale WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "928cfbbd4a2637f5e81e0b47149e737a20e1d557b2ef7ea829aef32131f31873"
+}
