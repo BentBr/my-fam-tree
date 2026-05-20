@@ -7,6 +7,7 @@ pub mod error;
 pub mod middleware;
 pub mod response;
 pub mod routes;
+pub mod services;
 pub mod state;
 pub mod tracing_setup;
 
