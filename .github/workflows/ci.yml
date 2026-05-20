@@ -82,12 +82,45 @@ jobs:
             - run: cd fe && pnpm exec playwright install --with-deps chromium
             - run: cd fe && pnpm test
 
-    # E2E job is deferred. The base `compose.yaml` routes via dinghy
-    # (`*.my-family.docker`) which isn't available on the CI runner, and we
-    # don't want a CI-only override compose file. Phase 1 will add a
-    # `playwright` service to `compose.yaml` (gated by a profile) that runs
-    # inside the compose network and resolves the dinghy hostnames via the
-    # docker network aliases — same compose file everywhere.
+    e2e:
+        runs-on: ubuntu-latest
+        needs: [lint, rust-test, fe-test]
+        env:
+            RUN_ID: ${{ github.run_id }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - name: Seed .env with required vars + fresh JWT keys
+              run: |
+                  cp .env.example .env
+                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> .env
+            - name: Bring up the stack with the e2e profile
+              run: docker compose --profile e2e up -d --wait
+            - name: Wait for FE container
+              run: |
+                  for i in $(seq 1 30); do
+                      docker compose exec -T fe wget -qO- http://localhost:5173/ >/dev/null && break || sleep 2
+                  done
+            - name: Run Playwright E2E
+              run: docker compose run --rm -T playwright pnpm test:e2e
+            - if: always()
+              name: Capture docker logs
+              run: docker compose --profile e2e logs > docker-logs.txt
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: docker-logs
+                  path: docker-logs.txt
+                  retention-days: 7
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: fe/playwright-report/
+                  retention-days: 7
+            - if: always()
+              run: docker compose --profile e2e down -v
 
     coverage:
         runs-on: ubuntu-latest
@@ -142,7 +175,7 @@ jobs:
 
     docker-build:
         runs-on: ubuntu-latest
-        needs: [lint, rust-test, fe-test]
+        needs: [lint, rust-test, fe-test, e2e]
         steps:
             - uses: actions/checkout@v4
             - uses: docker/setup-buildx-action@v3
