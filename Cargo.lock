@@ -1942,9 +1942,12 @@ name = "my-family-reminder-worker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "dotenvy",
+ "envy",
  "my-family-cache",
  "my-family-email",
  "my-family-persistence",
+ "serde",
  "tokio",
  "tracing",
  "tracing-subscriber",
