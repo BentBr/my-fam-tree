@@ -1,13 +1,16 @@
 //! Route registration.
 //!
-//! Two scopes mount under `/api/v1`:
+//! A single `/api/v1` scope hosts the entire HTTP surface. Public endpoints
+//! (`/health`, the unauthenticated half of the auth flow) mount directly at
+//! the top level; auth-required endpoints (`/auth/logout`, `/auth/me`,
+//! `/families/*`, `/invites/accept`) live inside a nested empty-path scope
+//! that wraps [`AuthMiddleware::required`].
 //!
-//! - [`public_scope`] — endpoints reachable without a session: `/health` and
-//!   the unauthenticated half of the auth flow (`/auth/magic-link`,
-//!   `/auth/consume`, `/auth/refresh`).
-//! - [`auth_scope`] — wrapped in [`AuthMiddleware::required`] so handlers can
-//!   trust that `crate::auth::user_claims` returns a verified session
-//!   (`/auth/logout`, `/auth/me`, `/families/*`, `/invites/accept`).
+//! Mounting two separate `web::scope("/api/v1")` services at the `App` level
+//! shadows the second one: actix's resource tree picks the first matching
+//! prefix and returns `404` for paths it doesn't define rather than falling
+//! through. The nested-empty-scope pattern avoids that footgun while keeping
+//! the auth middleware scoped to exactly the routes that need it.
 
 pub mod auth;
 pub mod families;
@@ -19,16 +22,7 @@ use actix_web::web;
 use crate::auth::AuthMiddleware;
 
 #[must_use]
-pub fn public_scope() -> actix_web::Scope {
-    web::scope("/api/v1")
-        .service(health::health)
-        .service(auth::magic_link)
-        .service(auth::consume)
-        .service(auth::refresh)
-}
-
-#[must_use]
-pub fn auth_scope() -> actix_web::Scope<
+pub fn api_scope() -> actix_web::Scope<
     impl actix_web::dev::ServiceFactory<
         actix_web::dev::ServiceRequest,
         Config = (),
@@ -38,13 +32,20 @@ pub fn auth_scope() -> actix_web::Scope<
     > + use<>,
 > {
     web::scope("/api/v1")
-        .wrap(AuthMiddleware::required())
-        .service(auth::logout)
-        .service(auth::me)
-        .service(families::list_mine)
-        .service(families::create)
-        .service(families::rename)
-        .service(families::delete_family)
-        .service(families::invite)
-        .service(invites::accept)
+        .service(health::health)
+        .service(auth::magic_link)
+        .service(auth::consume)
+        .service(auth::refresh)
+        .service(
+            web::scope("")
+                .wrap(AuthMiddleware::required())
+                .service(auth::logout)
+                .service(auth::me)
+                .service(families::list_mine)
+                .service(families::create)
+                .service(families::rename)
+                .service(families::delete_family)
+                .service(families::invite)
+                .service(invites::accept),
+        )
 }

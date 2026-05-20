@@ -46,6 +46,9 @@ uuid.workspace = true
 
 [dev-dependencies]
 figment = { workspace = true, features = ["test"] }
+sqlx = { workspace = true }
+testcontainers = "0.27"
+testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
 
 [lints]
 workspace = true
