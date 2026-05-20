@@ -24,6 +24,6 @@
         "types": ["node", "vite/client"],
         "paths": { "@/*": ["./src/*"] }
     },
-    "include": ["src/**/*", "src/**/*.vue", "tests/**/*"],
+    "include": ["src/**/*", "src/**/*.vue", "tests/**/*", "e2e/**/*"],
     "references": [{ "path": "./tsconfig.node.json" }]
 }
