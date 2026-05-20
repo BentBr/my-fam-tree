@@ -42,11 +42,15 @@ See the README's *Strictness* section. In short:
 
 ## Tests
 
-- Cargo unit tests live next to the code in `#[cfg(test)] mod tests`.
-- Cargo integration tests live in `crates/*/tests/`.
-- FE component tests live under `fe/tests/` (Vitest).
-- E2E tests live in `fe/e2e/tests/` (Playwright against the live stack).
-- Coverage thresholds are enforced in CI; see README.
+CI gates every PR on **both** kinds of tests — green or no merge.
+
+- **Cargo unit tests**: `#[cfg(test)] mod tests` next to the code.
+- **Cargo integration tests**: `crates/*/tests/`. Use real Postgres/Redis from the compose stack via `scripts/cargo-in-network.sh`.
+- **FE unit tests** (Vitest): `fe/tests/**/*.test.ts`. Run via `rdt test` (which routes through the container wrapper).
+- **FE E2E tests** (Playwright): `fe/e2e/tests/**/*.test.ts`. Run via `rdt test-e2e` against the live stack (in CI, against `docker compose --profile e2e up`).
+- Coverage thresholds enforced in CI; see README.
+
+Use `.test.ts` only (never `.spec.ts`).
 
 ## Opening a PR
 
