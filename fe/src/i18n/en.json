@@ -6,6 +6,19 @@
         "health": "Health"
     },
     "auth": {
+        "signIn": {
+            "title": "Sign in",
+            "tagline": "Enter your email and we'll send you a sign-in link.",
+            "emailLabel": "Email address",
+            "send": "Send sign-in link",
+            "sentTitle": "Check your inbox",
+            "sent": "If that email is known, a sign-in link is on its way."
+        },
+        "consume": {
+            "pending": "Signing you in…",
+            "error": "Sign-in failed. The link may have expired.",
+            "tryAgain": "Try again"
+        },
         "signOut": "Sign out"
     },
     "health": {

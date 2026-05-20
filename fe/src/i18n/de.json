@@ -6,6 +6,19 @@
         "health": "Status"
     },
     "auth": {
+        "signIn": {
+            "title": "Anmelden",
+            "tagline": "Gib deine E-Mail ein, wir senden dir einen Anmeldelink.",
+            "emailLabel": "E-Mail-Adresse",
+            "send": "Anmeldelink senden",
+            "sentTitle": "Postfach prüfen",
+            "sent": "Falls die Adresse bekannt ist, ist ein Anmeldelink unterwegs."
+        },
+        "consume": {
+            "pending": "Anmeldung läuft…",
+            "error": "Anmeldung fehlgeschlagen. Der Link ist möglicherweise abgelaufen.",
+            "tryAgain": "Erneut versuchen"
+        },
         "signOut": "Abmelden"
     },
     "health": {
