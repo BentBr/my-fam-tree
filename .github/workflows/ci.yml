@@ -96,7 +96,7 @@ jobs:
                   cp .env.example .env
                   cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> .env
             - name: Bring up the stack with the e2e profile
-              run: docker compose --profile e2e up -d --wait
+              run: docker compose up -d --wait
             - name: Wait for FE container
               run: |
                   for i in $(seq 1 30); do
@@ -106,7 +106,7 @@ jobs:
               run: docker compose run --rm -T playwright pnpm test:e2e
             - if: always()
               name: Capture docker logs
-              run: docker compose --profile e2e logs > docker-logs.txt
+              run: docker compose logs > docker-logs.txt
             - if: always()
               uses: actions/upload-artifact@v4
               with:
@@ -120,7 +120,7 @@ jobs:
                   path: fe/playwright-report/
                   retention-days: 7
             - if: always()
-              run: docker compose --profile e2e down -v
+              run: docker compose down -v
 
     coverage:
         runs-on: ubuntu-latest
