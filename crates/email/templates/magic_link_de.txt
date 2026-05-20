@@ -1,0 +1,9 @@
+Hallo!
+
+Du hast einen Anmeldelink für my-family angefordert. Klicke auf den folgenden Link, um dich anzumelden. Er ist 15 Minuten gültig.
+
+{{ link }}
+
+Wenn du das nicht warst, kannst du diese E-Mail ignorieren.
+
+— my-family

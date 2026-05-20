@@ -1,0 +1,9 @@
+Hello!
+
+You requested a sign-in link for my-family. Click the link below to sign in. It expires in 15 minutes.
+
+{{ link }}
+
+If you didn't ask for this, you can safely ignore the email.
+
+— my-family

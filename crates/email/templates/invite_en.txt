@@ -1,0 +1,7 @@
+Hello!
+
+{{ inviter_name }} invited you to join the "{{ family_name }}" family on my-family. Click below to accept. The invite expires in 14 days.
+
+{{ link }}
+
+— my-family

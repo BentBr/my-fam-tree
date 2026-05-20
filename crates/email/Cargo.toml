@@ -6,6 +6,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+askama.workspace = true
 async-trait.workspace = true
 lettre.workspace = true
 serde.workspace = true

@@ -1,11 +1,15 @@
-//! Outbound email: trait + SMTP implementation + in-memory fake for tests.
+//! Outbound email: trait + SMTP impl + Fake + locale-aware templates.
 
 pub mod error;
 pub mod fake;
+pub mod locale;
 pub mod sender;
 pub mod smtp;
+pub mod templates;
 
 pub use error::EmailError;
 pub use fake::FakeEmailSender;
+pub use locale::Locale;
 pub use sender::{EmailSender, OutboundEmail};
 pub use smtp::SmtpSender;
+pub use templates::{render_invite, render_magic_link};

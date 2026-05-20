@@ -1,0 +1,7 @@
+Hallo!
+
+{{ inviter_name }} hat dich zur Familie „{{ family_name }}" bei my-family eingeladen. Klicke auf den Link, um anzunehmen. Die Einladung ist 14 Tage gültig.
+
+{{ link }}
+
+— my-family
