@@ -1,5 +1,29 @@
 name: my-family
 
+x-rust-env: &rust_env
+    APP_ENV: development
+    RUST_LOG: info,my_family=debug
+    LOG_FORMAT: pretty
+    DATABASE_URL: postgres://my_family:my_family@postgres.my-family.docker:5432/my_family
+    DATABASE_MAX_CONNECTIONS: 20
+    DATABASE_ACQUIRE_TIMEOUT_SECONDS: 5
+    DATABASE_STATEMENT_TIMEOUT_MS: 30000
+    REDIS_URL: redis://redis.my-family.docker:6379/0
+    REDIS_MAX_CONNECTIONS: 10
+    REDIS_KEY_PREFIX: "my-family:"
+    EMAIL_DSN: smtp://mail.my-family.docker:1025
+    EMAIL_FROM_NAME: my-family
+    EMAIL_FROM_ADDRESS: no-reply@my-family.local
+    EMAIL_TIMEOUT_SECONDS: 10
+    WEB_PUBLIC_URL: http://my-family.docker
+    WORKER_TICK_INTERVAL_SECONDS: 300
+    WORKER_LEADER_LEASE_SECONDS: 60
+    WORKER_LEADER_REFRESH_SECONDS: 20
+    WORKER_MAX_RETRIES: 5
+    WORKER_RETRY_BACKOFF_MIN_SECONDS: 60
+    WORKER_RETRY_BACKOFF_MAX_SECONDS: 43200
+    WORKER_METRICS_BIND: 0.0.0.0:9091
+
 services:
     postgres:
         image: postgres:18-alpine
@@ -53,9 +77,122 @@ services:
                 aliases:
                     - mail.my-family.docker
 
+    migrator:
+        build:
+            context: .
+            dockerfile: .docker/migrator.Dockerfile
+        environment: *rust_env
+        depends_on:
+            postgres:
+                condition: service_healthy
+        restart: "no"
+        networks:
+            my-family:
+                aliases:
+                    - migrator.my-family.docker
+
+    api:
+        build:
+            context: .
+            dockerfile: .docker/api.Dockerfile
+        environment:
+            <<: *rust_env
+            MAIN_SERVICE: rust
+            API_HOST: 0.0.0.0
+            API_PORT: 8080
+            API_PUBLIC_URL: http://api.my-family.docker
+            CORS_ALLOWED_ORIGINS: http://my-family.docker
+            API_ENABLE_DOCS: "true"
+            API_METRICS_BIND: 0.0.0.0:9090
+            COOKIE_DOMAIN: .my-family.docker
+            COOKIE_SECURE: "false"
+            COOKIE_SAMESITE_ACCESS: Lax
+            COOKIE_SAMESITE_REFRESH: Strict
+            VIRTUAL_HOST: api.my-family.docker
+            VIRTUAL_PORT: "8080"
+            # JWT keys MUST be set by the operator before bringing the stack up.
+            # Run `cargo run -p my-family-api --bin gen-jwt-keys` (or `rdt gen-jwt-keys`)
+            # to generate a fresh keypair and append it to `.env`.
+            JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY required; run rdt gen-jwt-keys}
+            JWT_PRIVATE_KEY_ID: ${JWT_PRIVATE_KEY_ID:?JWT_PRIVATE_KEY_ID required}
+            JWT_PUBLIC_KEYS: ${JWT_PUBLIC_KEYS:?JWT_PUBLIC_KEYS required}
+            JWT_ISSUER: my-family
+            JWT_AUDIENCE: my-family-app
+            JWT_ACCESS_TTL_SECONDS: 900
+            JWT_REFRESH_TTL_SECONDS: 2592000
+            JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
+            MAGIC_LINK_TTL_SECONDS: 900
+            INVITE_TTL_SECONDS: 1209600
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 5
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 20
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            mailpit:
+                condition: service_healthy
+            migrator:
+                condition: service_completed_successfully
+        healthcheck:
+            test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/api/v1/health || exit 1" ]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+        networks:
+            my-family:
+                aliases:
+                    - api.my-family.docker
+
+    reminder-worker:
+        build:
+            context: .
+            dockerfile: .docker/worker.Dockerfile
+        environment:
+            <<: *rust_env
+            VIRTUAL_HOST: worker.my-family.docker
+            VIRTUAL_PORT: "9091"
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            migrator:
+                condition: service_completed_successfully
+        networks:
+            my-family:
+                aliases:
+                    - worker.my-family.docker
+
+    fe:
+        image: node:22-alpine
+        working_dir: /app
+        # First boot has no pnpm-lock.yaml yet — let pnpm install generate it.
+        # CI uses `pnpm install --frozen-lockfile` (Phase 0e) once the lockfile exists.
+        command: sh -c "corepack enable && corepack prepare pnpm@9 --activate && pnpm install && pnpm dev --host 0.0.0.0"
+        environment:
+            VITE_API_BASE_URL: http://api.my-family.docker
+            VITE_API_PROXY_TARGET: http://api.my-family.docker:8080
+            VIRTUAL_HOST: my-family.docker,app.my-family.docker
+            VIRTUAL_PORT: "5173"
+            PNPM_HOME: /pnpm
+            PATH: /pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        volumes:
+            - ./fe:/app
+            - fe-node-modules:/app/node_modules
+        depends_on:
+            api:
+                condition: service_healthy
+        networks:
+            my-family:
+                aliases:
+                    - my-family.docker
+                    - app.my-family.docker
+
 volumes:
     postgres-data:
     redis-data:
+    fe-node-modules:
 
 networks:
     my-family:
