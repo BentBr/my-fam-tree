@@ -1,0 +1,26 @@
+{
+    "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+    "packages": {
+        ".": {
+            "release-type": "rust",
+            "component": "core",
+            "changelog-path": "CHANGELOG.md",
+            "bump-minor-pre-major": true,
+            "bump-patch-for-minor-pre-major": true,
+            "draft": false,
+            "prerelease": false,
+            "include-v-in-tag": true,
+            "extra-files": [
+                "crates/api/Cargo.toml",
+                "crates/cache/Cargo.toml",
+                "crates/domain/Cargo.toml",
+                "crates/email/Cargo.toml",
+                "crates/migrator/Cargo.toml",
+                "crates/openapi/Cargo.toml",
+                "crates/persistence/Cargo.toml",
+                "crates/reminder-worker/Cargo.toml",
+                "fe/package.json"
+            ]
+        }
+    }
+}
