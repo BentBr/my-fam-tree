@@ -1948,7 +1948,7 @@ dependencies = [
  "my-family-email",
  "my-family-persistence",
  "once_cell",
- "rand 0.8.6",
+ "rand 0.10.1",
  "serde",
  "serde_json",
  "sha2 0.11.0",
