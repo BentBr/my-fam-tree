@@ -53,7 +53,11 @@ pub struct FieldViolation {
 impl FieldViolation {
     /// Convenience: create a violation with no `params`. Use this when the
     /// localized message doesn't need any runtime substitution.
-    pub fn new(path: impl Into<String>, code: impl Into<String>, message: impl Into<String>) -> Self {
+    pub fn new(
+        path: impl Into<String>,
+        code: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
         Self {
             path: path.into(),
             code: code.into(),
@@ -64,7 +68,11 @@ impl FieldViolation {
 
     /// Builder-style: attach a single named parameter.
     #[must_use]
-    pub fn with_param(mut self, key: impl Into<String>, value: impl Into<serde_json::Value>) -> Self {
+    pub fn with_param(
+        mut self,
+        key: impl Into<String>,
+        value: impl Into<serde_json::Value>,
+    ) -> Self {
         self.params.insert(key.into(), value.into());
         self
     }
@@ -363,9 +371,11 @@ mod tests {
 
     #[actix_web::test]
     async fn validation_includes_fields() {
-        let err = ApiError::Validation(vec![
-            FieldViolation::new("/email", "validation.email_invalid", "must be an email"),
-        ]);
+        let err = ApiError::Validation(vec![FieldViolation::new(
+            "/email",
+            "validation.email_invalid",
+            "must be an email",
+        )]);
         let resp = err.error_response();
         assert_eq!(resp.status(), 422);
         let body = to_bytes(resp.into_body()).await.unwrap();

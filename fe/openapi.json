@@ -112,6 +112,7 @@
       },
       "FieldViolation": {
         "type": "object",
+        "description": "A single field validation failure on the wire.\n\n- `path`: JSON Pointer or query/header path to the offending field (e.g.\n  `/email`, `/body/family_name`, `/headers/x-family-id`).\n- `code`: stable i18n key (e.g. `validation.email_invalid`,\n  `validation.string_too_long`). FE looks this up in en/de catalogs.\n- `message`: English fallback so non-FE clients still get a readable\n  error.\n- `params`: named placeholders FE substitutes into the localized\n  message. Always serialized (even when empty) so FE clients don't have\n  to guard `params?.max`. Use e.g. `{\"max\": 100, \"actual\": 105}`.",
         "required": [
           "path",
           "code",
@@ -123,6 +124,13 @@
           },
           "message": {
             "type": "string"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            }
           },
           "path": {
             "type": "string"
