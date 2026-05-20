@@ -69,6 +69,10 @@ pub struct LogoutRes {
 response_body!(pub MagicLinkResponseBody, MagicLinkRes);
 response_body!(pub ConsumeResponseBody, ConsumeRes);
 response_body!(pub LogoutResponseBody, LogoutRes);
+// `/auth/me` returns the same shape as `/auth/consume` — a `ConsumeRes` body.
+// Schemas in OpenAPI need distinct names per endpoint for client codegen to
+// name the response types meaningfully, so we declare a dedicated wrapper.
+response_body!(pub MeResponseBody, ConsumeRes);
 
 // ---------------------------------------------------------------------------
 // Helpers.
@@ -371,7 +375,7 @@ pub async fn logout(
     get,
     path = "/api/v1/auth/me",
     responses(
-        (status = 200, description = "Current session claims", body = ConsumeResponseBody),
+        (status = 200, description = "Current session claims", body = MeResponseBody),
         (status = 401, description = "No session"),
     ),
     tag = "auth",
