@@ -1,0 +1,65 @@
+# Project-level RDT config. See: https://github.com/BentBr/rusty_dev_tool
+
+[commands.migrate]
+description = "Apply pending DB migrations"
+aliases = ["m"]
+command = "docker compose run --rm migrator"
+
+[commands.migrate-status]
+description = "Show applied vs pending migrations"
+command = "docker compose run --rm migrator --status"
+
+[commands.migrate-check]
+description = "Exit non-zero if any migrations are pending"
+command = "docker compose run --rm migrator --check"
+
+[commands.sqlx-prepare]
+description = "Regenerate .sqlx/ offline query metadata (requires DATABASE_URL)"
+aliases = ["sqlx"]
+command = "cargo sqlx prepare --workspace"
+
+[commands.openapi]
+description = "Dump OpenAPI spec to fe/openapi.json and regenerate TS types"
+command = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && cd fe && pnpm openapi-codegen"
+
+[commands.openapi-check]
+description = "Fail if OpenAPI spec drifted from the committed one"
+command = "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
+
+[commands.lint]
+description = "Run all linters (rust + fe + file-size)"
+aliases = ["l"]
+command = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cd fe && pnpm lint && pnpm typecheck && cd .. && ./scripts/check-file-size.sh"
+
+[commands.test]
+description = "Run all unit tests (cargo + playwright component)"
+aliases = ["t"]
+command = "cargo test --workspace && cd fe && pnpm test"
+
+[commands.test-e2e]
+description = "Run Playwright end-to-end tests against running stack"
+command = "cd fe && pnpm test:e2e"
+
+[commands.coverage]
+description = "Coverage report (rust via cargo-llvm-cov, fe via playwright/v8)"
+command = "cargo llvm-cov --workspace --lcov --output-path coverage/rust.lcov && cd fe && pnpm coverage"
+
+[commands.fe]
+description = "Start the Vite dev server"
+command = "cd fe && pnpm dev"
+
+[commands.worker]
+description = "Run the reminder worker locally"
+command = "cargo run -p my-family-reminder-worker --bin reminder-worker"
+
+[commands.gen-jwt-keys]
+description = "Emit a fresh Ed25519 keypair for JWT_PRIVATE_KEY / JWT_PUBLIC_KEYS"
+command = "cargo run -p my-family-api --bin gen-jwt-keys"
+
+[commands.reset]
+description = "Drop all dev volumes and re-migrate from scratch"
+command = "docker compose down -v && docker compose up -d postgres redis mailpit && docker compose run --rm migrator"
+
+[commands.deny]
+description = "cargo-deny + cargo-machete supply-chain checks"
+command = "cargo deny check && cargo machete"
