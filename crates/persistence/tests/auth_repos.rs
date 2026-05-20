@@ -1,9 +1,10 @@
 //! End-to-end repo smoke tests against a real Postgres via testcontainers.
 //!
 //! Each test spins a fresh Postgres container, runs the migration set, then
-//! exercises one repo. The container is `Box::leak`-ed for the duration of the
-//! test so its docker handle outlives the pool. Containers are reaped when the
-//! test process exits.
+//! exercises one repo. The container value is bound in the test scope (NOT
+//! `Box::leak`-ed) so its `Drop` impl runs when the test finishes — which
+//! tells the testcontainers reaper to stop the container. Without that we
+//! leak running postgres instances on the docker host across runs.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::print_stderr)]
 
@@ -19,10 +20,20 @@ use my_family_persistence::{
     PgRefreshTokenRepo, PgUserRepo,
 };
 use sqlx::PgPool;
+use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
 
-async fn setup() -> PgPool {
+/// Bundles the pool + container so the test owns both. When `TestDb` drops,
+/// the container's `Drop` impl asks the testcontainers reaper to stop and
+/// remove the postgres container. The pool's drop is harmless.
+struct TestDb {
+    pool: PgPool,
+    // Underscore prefix: never read, only held for lifetime side effect.
+    _container: ContainerAsync<Postgres>,
+}
+
+async fn setup() -> TestDb {
     let container = Postgres::default()
         .with_db_name("test")
         .with_user("test")
@@ -33,7 +44,6 @@ async fn setup() -> PgPool {
     let port = container.get_host_port_ipv4(5432_u16).await.expect("port");
     let url = format!("postgres://test:test@127.0.0.1:{port}/test");
 
-    // Wait for ready.
     let mut connected = None;
     for _ in 0..40 {
         if let Ok(db) = Database::connect(&url, 2, StdDuration::from_secs(1), 30_000).await {
@@ -45,15 +55,13 @@ async fn setup() -> PgPool {
     let db = connected.expect("postgres never accepted connections");
     sqlx::migrate!("../../migrations").run(db.pool()).await.expect("migrate");
 
-    // Box-leak container so it lives for the test.
-    Box::leak(Box::new(container));
-    db.pool().clone()
+    TestDb { pool: db.pool().clone(), _container: container }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn user_create_then_find() {
-    let pool = setup().await;
-    let users = PgUserRepo::new(pool);
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
     let user = users.create("a@b.c", Locale::En).await.expect("create");
     let found = users.find_by_email("a@b.c").await.expect("find").expect("some");
     assert_eq!(found.id, user.id);
@@ -62,9 +70,9 @@ async fn user_create_then_find() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn magic_link_consume_once() {
-    let pool = setup().await;
-    let users = PgUserRepo::new(pool.clone());
-    let mls = PgMagicLinkRepo::new(pool);
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let mls = PgMagicLinkRepo::new(db.pool.clone());
     let u = users.create("a@b.c", Locale::En).await.unwrap();
     let hash = [0_u8; 32];
     mls.create(
@@ -84,10 +92,10 @@ async fn magic_link_consume_once() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn family_owner_uniqueness_enforced() {
-    let pool = setup().await;
-    let users = PgUserRepo::new(pool.clone());
-    let fams = PgFamilyRepo::new(pool.clone());
-    let mems = PgFamilyMembershipRepo::new(pool);
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let fams = PgFamilyRepo::new(db.pool.clone());
+    let mems = PgFamilyMembershipRepo::new(db.pool.clone());
     let u1 = users.create("a@b.c", Locale::En).await.unwrap();
     let u2 = users.create("c@d.e", Locale::En).await.unwrap();
     let fam = fams.create("Müller", u1.id).await.unwrap();
@@ -98,9 +106,9 @@ async fn family_owner_uniqueness_enforced() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn refresh_token_rotation_preserves_absolute_expiry() {
-    let pool = setup().await;
-    let users = PgUserRepo::new(pool.clone());
-    let rts = PgRefreshTokenRepo::new(pool);
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let rts = PgRefreshTokenRepo::new(db.pool.clone());
     let u = users.create("x@y.z", Locale::De).await.unwrap();
     let abs_exp = Utc::now() + Duration::days(90);
     let h1 = [1_u8; 32];
@@ -116,11 +124,11 @@ async fn refresh_token_rotation_preserves_absolute_expiry() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn invite_accept_is_idempotent() {
-    let pool = setup().await;
-    let users = PgUserRepo::new(pool.clone());
-    let fams = PgFamilyRepo::new(pool.clone());
-    let mems = PgFamilyMembershipRepo::new(pool.clone());
-    let invs = PgFamilyInviteRepo::new(pool);
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let fams = PgFamilyRepo::new(db.pool.clone());
+    let mems = PgFamilyMembershipRepo::new(db.pool.clone());
+    let invs = PgFamilyInviteRepo::new(db.pool.clone());
     let owner = users.create("o@x.y", Locale::En).await.unwrap();
     let fam = fams.create("Schmidt", owner.id).await.unwrap();
     mems.insert(fam.id, owner.id, Role::Owner).await.unwrap();
