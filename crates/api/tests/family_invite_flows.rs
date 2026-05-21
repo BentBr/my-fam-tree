@@ -308,3 +308,60 @@ async fn family_operations_require_membership_and_role() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn protected_endpoints_require_authentication() {
+    // Every endpoint mounted under the `AuthMiddleware::required()` scope must
+    // reject anonymous (no `access` cookie) callers with a 401 + RFC 7807
+    // envelope carrying `code = "auth_unauthenticated"`. `auth_errors.rs`
+    // already pins this for `/auth/logout`; this consolidated check guards the
+    // family + invite surface so a future refactor that drops the middleware
+    // wrap on any one route is caught here.
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+
+    // The `00000000-...` UUID is structurally valid (so path extraction passes)
+    // but obviously doesn't reference a real row; we never reach the handler
+    // since the middleware rejects before extraction runs anyway.
+    let endpoints: Vec<(&'static str, &'static str, serde_json::Value)> = vec![
+        ("GET", "/api/v1/auth/me", serde_json::Value::Null),
+        ("POST", "/api/v1/auth/logout", serde_json::Value::Null),
+        ("GET", "/api/v1/families/me", serde_json::Value::Null),
+        ("POST", "/api/v1/families", serde_json::json!({ "name": "x" })),
+        (
+            "PATCH",
+            "/api/v1/families/00000000-0000-0000-0000-000000000000",
+            serde_json::json!({ "name": "y" }),
+        ),
+        (
+            "DELETE",
+            "/api/v1/families/00000000-0000-0000-0000-000000000000",
+            serde_json::Value::Null,
+        ),
+        (
+            "POST",
+            "/api/v1/families/00000000-0000-0000-0000-000000000000/invites",
+            serde_json::json!({ "email": "a@b.co", "role": "user" }),
+        ),
+        ("POST", "/api/v1/invites/accept", serde_json::json!({ "token": "x" })),
+    ];
+
+    for (method, path, body) in endpoints {
+        let mut req = match method {
+            "GET" => test::TestRequest::get().uri(path),
+            "POST" => test::TestRequest::post().uri(path),
+            "PATCH" => test::TestRequest::patch().uri(path),
+            "DELETE" => test::TestRequest::delete().uri(path),
+            other => unreachable!("unsupported method {other}"),
+        };
+        if !body.is_null() {
+            req = req.set_json(&body);
+        }
+        let res = try_call(&app, req.to_request()).await;
+        assert_eq!(res.status(), 401, "expected 401 for {method} {path}, got {}", res.status());
+        let body_bytes = test::read_body(res).await;
+        let json: serde_json::Value =
+            serde_json::from_slice(&body_bytes).expect("response body is json");
+        assert_eq!(json["code"], "auth_unauthenticated", "wrong code for {method} {path}");
+    }
+}
