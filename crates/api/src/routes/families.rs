@@ -120,6 +120,7 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
         (status = 200, description = "Caller's family memberships", body = MyFamiliesResponseBody),
         (status = 401, description = "No session"),
     ),
+    security(("cookie_access" = [])),
     tag = "families",
 )]
 #[allow(clippy::future_not_send)]
@@ -148,6 +149,7 @@ pub async fn list_mine(req: HttpRequest) -> Result<ApiResponse<MyFamiliesRes>, A
         (status = 401, description = "No session"),
         (status = 422, description = "Validation failed"),
     ),
+    security(("cookie_access" = [])),
     tag = "families",
 )]
 #[allow(clippy::future_not_send)]
@@ -208,6 +210,7 @@ pub async fn create(
         (status = 403, description = "Insufficient role"),
         (status = 422, description = "Validation failed"),
     ),
+    security(("cookie_access" = [])),
     tag = "families",
 )]
 #[allow(clippy::future_not_send)]
@@ -244,6 +247,7 @@ pub async fn rename(
         (status = 401, description = "No session"),
         (status = 403, description = "Insufficient role"),
     ),
+    security(("cookie_access" = [])),
     tag = "families",
 )]
 #[allow(clippy::future_not_send)]
@@ -276,6 +280,7 @@ pub async fn delete_family(
         (status = 403, description = "Insufficient role"),
         (status = 422, description = "Validation failed"),
     ),
+    security(("cookie_access" = [])),
     tag = "families",
 )]
 #[allow(clippy::future_not_send)]

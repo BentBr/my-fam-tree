@@ -54,6 +54,7 @@ response_body!(pub AcceptResponseBody, AcceptRes);
         (status = 410, description = "Invite expired"),
         (status = 422, description = "Invite belongs to a different email"),
     ),
+    security(("cookie_access" = [])),
     tag = "invites",
 )]
 #[allow(clippy::future_not_send)]

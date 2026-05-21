@@ -347,6 +347,7 @@ pub async fn refresh(
     responses(
         (status = 200, description = "Logged out", body = LogoutResponseBody),
     ),
+    security(("cookie_access" = [])),
     tag = "auth",
 )]
 #[allow(clippy::future_not_send)]
@@ -378,6 +379,7 @@ pub async fn logout(
         (status = 200, description = "Current session claims", body = MeResponseBody),
         (status = 401, description = "No session"),
     ),
+    security(("cookie_access" = [])),
     tag = "auth",
 )]
 #[allow(clippy::future_not_send)]

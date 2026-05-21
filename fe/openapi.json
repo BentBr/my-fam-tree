@@ -66,7 +66,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/auth/magic-link": {
@@ -125,7 +130,12 @@
           "401": {
             "description": "No session"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/auth/refresh": {
@@ -184,7 +194,12 @@
           "422": {
             "description": "Validation failed"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/families/me": {
@@ -207,7 +222,12 @@
           "401": {
             "description": "No session"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/families/{id}": {
@@ -244,7 +264,12 @@
           "403": {
             "description": "Insufficient role"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -292,7 +317,12 @@
           "422": {
             "description": "Validation failed"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/families/{id}/invites": {
@@ -342,7 +372,12 @@
           "422": {
             "description": "Validation failed"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     },
     "/api/v1/health": {
@@ -401,7 +436,164 @@
           "422": {
             "description": "Invite belongs to a different email"
           }
-        }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "Caller's profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me/email-change": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "email_change_request",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation link sent to current email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "409": {
+            "description": "New email already in use by another account"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users/me/email-change/confirm": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "email_change_confirm",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeConfirmReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Email changed; verification cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfileResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session or token invalid"
+          },
+          "409": {
+            "description": "New email already in use"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
       }
     }
   },
@@ -606,6 +798,60 @@
           }
         }
       },
+      "EmailChangeConfirmReq": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailChangeReq": {
+        "type": "object",
+        "required": [
+          "new_email"
+        ],
+        "properties": {
+          "new_email": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailChangeRes": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "EmailChangeResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EmailChangeRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
       "ErrorCode": {
         "type": "string",
         "enum": [
@@ -626,6 +872,7 @@
           "partnership_duplicate",
           "validation_failed",
           "conflict_stale",
+          "email_taken",
           "rate_limited",
           "upstream",
           "internal"
@@ -1067,6 +1314,84 @@
           "admin",
           "owner"
         ]
+      },
+      "UpdateUserReq": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "locale": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "locale",
+          "timezone",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "email_verified_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          }
+        }
+      },
+      "UserProfileResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserProfile"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -1093,6 +1418,10 @@
     {
       "name": "invites",
       "description": "Invite acceptance"
+    },
+    {
+      "name": "users",
+      "description": "User profile and email change"
     }
   ]
 }
