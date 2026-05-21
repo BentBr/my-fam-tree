@@ -6,14 +6,44 @@ import { Socket } from 'node:net'
 // trip `MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR=5` and the magic-link send returns
 // 429 — the page never reaches its "Check your inbox" state and every signIn
 // helper fails. Mailpit is cleared per-test by `clearMailpit()`.
+
+interface RedisEndpoint {
+    host: string
+    port: number
+}
+
+/**
+ * Resolve the Redis (host, port) tuple from `REDIS_URL` if set, otherwise
+ * the compose alias. The compose-network host (`redis.my-family.docker`)
+ * resolves inside the Playwright container but not on a bare CI runner —
+ * GitHub Actions exposes the redis service container at `localhost:6379`
+ * via `REDIS_URL=redis://localhost:6379/0`. We only need the authority,
+ * not the database number.
+ */
+function resolveRedisEndpoint(): RedisEndpoint {
+    const raw = process.env['REDIS_URL']
+    if (raw !== undefined && raw !== '') {
+        try {
+            const url = new URL(raw)
+            const port = url.port !== '' ? Number.parseInt(url.port, 10) : 6379
+            return { host: url.hostname, port }
+        } catch {
+            // Fall through to the compose default; the connect attempt will
+            // surface the real issue if the URL is malformed.
+        }
+    }
+    return { host: 'redis.my-family.docker', port: 6379 }
+}
+
 function flushRedis(): Promise<void> {
     return new Promise((resolve, reject) => {
+        const endpoint = resolveRedisEndpoint()
         const socket = new Socket()
         const timer = setTimeout(() => {
             socket.destroy()
-            reject(new Error('redis flush timed out'))
+            reject(new Error(`redis flush timed out (${endpoint.host}:${endpoint.port})`))
         }, 5_000)
-        socket.connect(6379, 'redis.my-family.docker', () => {
+        socket.connect(endpoint.port, endpoint.host, () => {
             // Minimal RESP-2 frame: FLUSHDB has no args.
             socket.write('*1\r\n$7\r\nFLUSHDB\r\n')
         })
