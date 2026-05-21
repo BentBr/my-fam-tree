@@ -65,6 +65,36 @@
             "signOut": "Sign out"
         }
     },
+    "common": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "add": "Add"
+    },
+    "tree": {
+        "title": "Family tree",
+        "addPerson": "Add person",
+        "loading": "Loading…",
+        "error": "Could not load the family tree."
+    },
+    "person": {
+        "fields": {
+            "given_name": "First name",
+            "family_name": "Last name",
+            "birth_date": "Birthday",
+            "gender": "Gender",
+            "notes": "Notes"
+        },
+        "actions": {
+            "addParent": "Add as child of",
+            "addPartner": "Add partner"
+        },
+        "confirm": {
+            "deleteTitle": "Remove this person?",
+            "deleteText": "This deletes the person row and any links to it. This cannot be undone."
+        }
+    },
     "language": { "label": "Language", "en": "English", "de": "German" },
     "toast": {
         "dismiss": "Dismiss"

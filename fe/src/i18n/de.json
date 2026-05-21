@@ -65,6 +65,36 @@
             "signOut": "Abmelden"
         }
     },
+    "common": {
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "add": "Hinzufügen"
+    },
+    "tree": {
+        "title": "Stammbaum",
+        "addPerson": "Person hinzufügen",
+        "loading": "Lädt…",
+        "error": "Der Stammbaum konnte nicht geladen werden."
+    },
+    "person": {
+        "fields": {
+            "given_name": "Vorname",
+            "family_name": "Nachname",
+            "birth_date": "Geburtstag",
+            "gender": "Geschlecht",
+            "notes": "Notizen"
+        },
+        "actions": {
+            "addParent": "Als Kind von hinzufügen",
+            "addPartner": "Partner hinzufügen"
+        },
+        "confirm": {
+            "deleteTitle": "Diese Person entfernen?",
+            "deleteText": "Damit werden die Person und alle Verbindungen gelöscht. Das kann nicht rückgängig gemacht werden."
+        }
+    },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
     "toast": {
         "dismiss": "Schließen"

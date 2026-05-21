@@ -6,12 +6,17 @@
 
 import { hierarchy, tree as d3tree, type HierarchyPointNode } from 'd3-hierarchy'
 
+// Field shapes mirror the wire format from `/api/v1/relationships`. `birth_date`
+// and `death_date` are optional **and** nullable on the wire (utoipa emits
+// `Option<NaiveDate>` as `string | null | undefined`), so the FE layout sees
+// `undefined` when the column was never set and `null` when it was explicitly
+// cleared. Both collapse to "unknown" in the rendered date label.
 export interface BackendNode {
     id: string
     given_name: string
     family_name: string
-    birth_date: string | null
-    death_date: string | null
+    birth_date?: string | null
+    death_date?: string | null
     linked_user_id?: string | null
     parent_ids: string[]
     partner_ids: string[]
@@ -139,8 +144,8 @@ export function layoutTree(input: TreeInput): LayoutResult {
             id,
             given_name: node.given_name,
             family_name: node.family_name,
-            birth_date: node.birth_date,
-            death_date: node.death_date,
+            birth_date: node.birth_date ?? null,
+            death_date: node.death_date ?? null,
             linked_user_id: node.linked_user_id ?? null,
             x: pn.x,
             // Hide the virtual root row by subtracting 1.

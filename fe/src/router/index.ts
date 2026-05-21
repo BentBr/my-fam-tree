@@ -60,7 +60,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/account/EmailChangeConsumeView.vue'),
         meta: { layout: 'main', requiresAuth: true },
     },
-    // /tree, /reminders, etc. are added in Phase 1b / 2b / 4b.
+    {
+        path: '/tree',
+        name: 'tree',
+        component: () => import('@/views/tree/TreeView.vue'),
+        meta: { layout: 'main', requiresAuth: true },
+    },
+    // /reminders/* etc. are added in Phase 4b.
 ]
 
 export const router = createRouter({
