@@ -90,9 +90,8 @@ pub fn build_app(
         .service(routes::api_scope())
         .configure(move |app_cfg| {
             if api_enable_docs && let Some(doc) = openapi {
-                app_cfg.service(
-                    SwaggerUi::new("/api/docs/{_:.*}").url("/api/docs/openapi.json", doc),
-                );
+                app_cfg
+                    .service(SwaggerUi::new("/api/docs/{_:.*}").url("/api/docs/openapi.json", doc));
             }
         })
 }

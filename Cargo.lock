@@ -2448,6 +2448,7 @@ name = "my-family-api"
 version = "0.1.0"
 dependencies = [
  "actix-cors",
+ "actix-http",
  "actix-web",
  "anyhow",
  "async-trait",

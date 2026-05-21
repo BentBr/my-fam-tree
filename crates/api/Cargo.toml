@@ -45,6 +45,10 @@ utoipa-swagger-ui.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+# `actix-http` re-export is needed in integration tests so we can name the
+# `Service<Request, ...>` type returned by `actix_web::test::init_service`
+# inside test-local helper functions. actix-web does not re-export this type.
+actix-http = "3.12"
 figment = { workspace = true, features = ["test"] }
 sqlx = { workspace = true }
 testcontainers = "0.27"

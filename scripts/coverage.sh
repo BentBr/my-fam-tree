@@ -23,7 +23,9 @@ cd "$(dirname "$0")/.."
 #   - binary entry points (src/bin/*, src/main.rs)
 #   - tracing subscriber init (api/src/tracing_setup.rs)
 #   - cache/email/openapi wiring (pool/smtp/derive-only lib.rs)
-IGNORE='(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$)'
+#   - aggregated OpenAPI doc (api/src/openapi_doc.rs is derive-only; the
+#     openapi-dump binary serialises it but binaries are already excluded)
+IGNORE='(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$|/api/src/openapi_doc\.rs$)'
 
 # Minimum line-coverage threshold (percent). CI fails the build below this.
 MIN_LINES=80
