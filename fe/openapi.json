@@ -166,7 +166,7 @@
         "tags": [
           "families"
         ],
-        "operationId": "create",
+        "operationId": "families_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -449,7 +449,7 @@
         "tags": [
           "relationships"
         ],
-        "operationId": "create",
+        "operationId": "parent_links_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -496,7 +496,7 @@
         "tags": [
           "relationships"
         ],
-        "operationId": "delete",
+        "operationId": "parent_links_delete",
         "parameters": [
           {
             "name": "child",
@@ -552,7 +552,7 @@
         "tags": [
           "relationships"
         ],
-        "operationId": "create",
+        "operationId": "partnerships_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -599,7 +599,7 @@
         "tags": [
           "relationships"
         ],
-        "operationId": "delete",
+        "operationId": "partnerships_delete",
         "parameters": [
           {
             "name": "id",
@@ -643,7 +643,7 @@
         "tags": [
           "relationships"
         ],
-        "operationId": "update",
+        "operationId": "partnerships_update",
         "parameters": [
           {
             "name": "id",
@@ -702,7 +702,7 @@
         "tags": [
           "persons"
         ],
-        "operationId": "list",
+        "operationId": "persons_list",
         "parameters": [
           {
             "name": "cursor",
@@ -751,7 +751,7 @@
         "tags": [
           "persons"
         ],
-        "operationId": "create",
+        "operationId": "persons_create",
         "requestBody": {
           "content": {
             "application/json": {
@@ -792,7 +792,7 @@
         "tags": [
           "persons"
         ],
-        "operationId": "get_one",
+        "operationId": "persons_get_one",
         "parameters": [
           {
             "name": "id",
@@ -833,7 +833,7 @@
         "tags": [
           "persons"
         ],
-        "operationId": "delete",
+        "operationId": "persons_delete",
         "parameters": [
           {
             "name": "id",
@@ -877,7 +877,7 @@
         "tags": [
           "persons"
         ],
-        "operationId": "update",
+        "operationId": "persons_update",
         "parameters": [
           {
             "name": "id",

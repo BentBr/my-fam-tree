@@ -122,6 +122,7 @@ fn map_repo_err(e: PartnershipRepoError, id: Option<Uuid>) -> ApiError {
 #[utoipa::path(
     post,
     path = "/api/v1/partnerships",
+    operation_id = "partnerships_create",
     request_body = PartnershipCreateReq,
     responses(
         (status = 200, description = "Partnership created", body = PartnershipViewResponseBody),
@@ -175,6 +176,7 @@ pub async fn create(
 #[utoipa::path(
     patch,
     path = "/api/v1/partnerships/{id}",
+    operation_id = "partnerships_update",
     request_body = PartnershipUpdateReq,
     params(("id" = Uuid, Path, description = "Partnership id")),
     responses(
@@ -253,6 +255,7 @@ pub async fn update(
 #[utoipa::path(
     delete,
     path = "/api/v1/partnerships/{id}",
+    operation_id = "partnerships_delete",
     params(("id" = Uuid, Path, description = "Partnership id")),
     responses(
         (status = 200, description = "Partnership deleted", body = NullResponseBody),

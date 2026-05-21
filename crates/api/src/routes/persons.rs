@@ -157,6 +157,7 @@ fn map_person_repo_err(e: PersonRepoError, id: Option<Uuid>) -> ApiError {
 #[utoipa::path(
     get,
     path = "/api/v1/persons",
+    operation_id = "persons_list",
     params(
         ("cursor" = Option<Uuid>, Query, description = "Resume after this person id"),
         ("limit" = Option<u32>, Query, description = "Page size, 1..=100, default 50"),
@@ -209,6 +210,7 @@ pub async fn list(
 #[utoipa::path(
     post,
     path = "/api/v1/persons",
+    operation_id = "persons_create",
     request_body = PersonCreateReq,
     responses(
         (status = 200, description = "Person created", body = PersonViewResponseBody),
@@ -249,6 +251,7 @@ pub async fn create(
 #[utoipa::path(
     get,
     path = "/api/v1/persons/{id}",
+    operation_id = "persons_get_one",
     params(("id" = Uuid, Path, description = "Person id")),
     responses(
         (status = 200, description = "Person", body = PersonViewResponseBody),
@@ -284,6 +287,7 @@ pub async fn get_one(
 #[utoipa::path(
     patch,
     path = "/api/v1/persons/{id}",
+    operation_id = "persons_update",
     request_body = PersonUpdateReq,
     params(("id" = Uuid, Path, description = "Person id")),
     responses(
@@ -356,6 +360,7 @@ pub async fn update(
 #[utoipa::path(
     delete,
     path = "/api/v1/persons/{id}",
+    operation_id = "persons_delete",
     params(("id" = Uuid, Path, description = "Person id")),
     responses(
         (status = 200, description = "Person deleted", body = crate::response::NullResponseBody),

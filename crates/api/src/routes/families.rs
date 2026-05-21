@@ -143,6 +143,7 @@ pub async fn list_mine(req: HttpRequest) -> Result<ApiResponse<MyFamiliesRes>, A
 #[utoipa::path(
     post,
     path = "/api/v1/families",
+    operation_id = "families_create",
     request_body = CreateFamilyReq,
     responses(
         (status = 200, description = "Family created and caller auto-joined as Owner", body = CreateFamilyResponseBody),
