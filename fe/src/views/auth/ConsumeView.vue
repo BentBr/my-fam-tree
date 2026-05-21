@@ -11,7 +11,18 @@ const { t } = useI18n()
 const mutation = useConsumeMagicLink()
 const status = ref<'pending' | 'ok' | 'error'>('pending')
 
+// Single-use tokens MUST only be consumed once. Vite dev HMR / Vue's
+// dev double-mount semantics can re-trigger `onMounted` for the same
+// route, which fires `mutateAsync` twice — first call burns the token,
+// second sees the token gone and throws. Track the in-flight token to
+// guarantee idempotency.
+const consumed = ref(false)
+
 onMounted(async () => {
+    if (consumed.value) {
+        return
+    }
+    consumed.value = true
     const token = String(route.query['token'] ?? '')
     if (token === '') {
         status.value = 'error'
