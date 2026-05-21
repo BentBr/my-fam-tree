@@ -1,65 +1,82 @@
+local_key = "my-family"
+no_docker_compose = true
+
 # Project-level RDT config. See: https://github.com/BentBr/rusty_dev_tool
+[commands]
+    [commands.migrate]
+        "description" = "Apply pending DB migrations"
+        "alias" = "migrate"
+        "execution"  = "docker compose run --rm migrator"
 
-[commands.migrate]
-description = "Apply pending DB migrations"
-aliases = ["m"]
-command = "docker compose run --rm migrator"
+    [commands.migrate-status]
+        "description" = "Show applied vs pending migrations"
+        "alias" = "migrate-status"
+        "execution"  = "docker compose run --rm migrator --status"
 
-[commands.migrate-status]
-description = "Show applied vs pending migrations"
-command = "docker compose run --rm migrator --status"
+    [commands.migrate-check]
+        "description" = "Exit non-zero if any migrations are pending"
+        "alias" = "migrate-check"
+        "execution"  = "docker compose run --rm migrator --check"
 
-[commands.migrate-check]
-description = "Exit non-zero if any migrations are pending"
-command = "docker compose run --rm migrator --check"
+    [commands.sqlx-prepare]
+        "description" = "Regenerate .sqlx/ offline query metadata (requires DATABASE_URL)"
+        "alias" = "sqlx-prepare"
+        "execution"  = "cargo sqlx prepare --workspace"
 
-[commands.sqlx-prepare]
-description = "Regenerate .sqlx/ offline query metadata (requires DATABASE_URL)"
-aliases = ["sqlx"]
-command = "cargo sqlx prepare --workspace"
+    [commands.openapi]
+        "description" = "Dump OpenAPI spec to fe/openapi.json and regenerate TS types"
+        "alias" = "openapi"
+        "execution"  = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && ./scripts/fe-in-container.sh openapi-codegen"
 
-[commands.openapi]
-description = "Dump OpenAPI spec to fe/openapi.json and regenerate TS types"
-command = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && ./scripts/fe-in-container.sh openapi-codegen"
+    [commands.openapi-check]
+        "description" = "Fail if OpenAPI spec drifted from the committed one"
+        "alias" = "openapi-check"
+        "execution"  = "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
 
-[commands.openapi-check]
-description = "Fail if OpenAPI spec drifted from the committed one"
-command = "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
+    [commands.lint]
+        "description" = "Run all linters (rust + fe + file-size)"
+        "alias" = "lint"
+        "execution"  = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && ./scripts/fe-in-container.sh lint && ./scripts/fe-in-container.sh typecheck && ./scripts/check-file-size.sh"
 
-[commands.lint]
-description = "Run all linters (rust + fe + file-size)"
-aliases = ["l"]
-command = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && ./scripts/fe-in-container.sh lint && ./scripts/fe-in-container.sh typecheck && ./scripts/check-file-size.sh"
+    [commands.test]
+        "description" = "Run all unit tests (cargo + playwright component)"
+        "alias" = "test"
+        "execution"  = "cargo test --workspace && ./scripts/fe-in-container.sh test"
 
-[commands.test]
-description = "Run all unit tests (cargo + playwright component)"
-aliases = ["t"]
-command = "cargo test --workspace && ./scripts/fe-in-container.sh test"
+    [commands.test-e2e]
+        "description" = "Run Playwright end-to-end tests against running stack"
+        "alias" = "test-e2e"
+        "execution"  = "./scripts/fe-in-container.sh test:e2e"
 
-[commands.test-e2e]
-description = "Run Playwright end-to-end tests against running stack"
-command = "./scripts/fe-in-container.sh test:e2e"
+    [commands.coverage]
+        "description" = "Coverage report (rust via scripts/coverage.sh, fe via playwright/v8)"
+        "alias" = "coverage"
+        "execution"  = "./scripts/coverage.sh all && ./scripts/fe-in-container.sh coverage"
 
-[commands.coverage]
-description = "Coverage report (rust via scripts/coverage.sh, fe via playwright/v8)"
-command = "./scripts/coverage.sh all && ./scripts/fe-in-container.sh coverage"
+    [commands.fe]
+        "description" = "Start the Vite dev server"
+        "alias" = "fe"
+        "execution"  = "docker compose up fe"
 
-[commands.fe]
-description = "Start the Vite dev server"
-command = "docker compose up fe"
+    [commands.worker]
+        "description" = "Run the reminder worker locally"
+        "alias" = "worker"
+        "execution"  = "cargo run -p my-family-reminder-worker --bin reminder-worker"
 
-[commands.worker]
-description = "Run the reminder worker locally"
-command = "cargo run -p my-family-reminder-worker --bin reminder-worker"
+    [commands.gen-jwt-keys]
+        "description" = "Emit a fresh Ed25519 keypair for JWT_PRIVATE_KEY / JWT_PUBLIC_KEYS"
+        "alias" = "gen-jwt-keys"
+        "execution"  = "cargo run -p my-family-api --bin gen-jwt-keys"
 
-[commands.gen-jwt-keys]
-description = "Emit a fresh Ed25519 keypair for JWT_PRIVATE_KEY / JWT_PUBLIC_KEYS"
-command = "cargo run -p my-family-api --bin gen-jwt-keys"
+    [commands.reset]
+        "description" = "Drop all dev volumes and re-migrate from scratch"
+        "alias" = "reset"
+        "execution"  = "docker compose down -v && docker compose up -d postgres redis mailpit && docker compose run --rm migrator"
 
-[commands.reset]
-description = "Drop all dev volumes and re-migrate from scratch"
-command = "docker compose down -v && docker compose up -d postgres redis mailpit && docker compose run --rm migrator"
+    [commands.deny]
+        "description" = "cargo-deny + cargo-machete supply-chain checks"
+        "alias" = "deny"
+        "execution"  = "cargo deny check && cargo machete"
 
-[commands.deny]
-description = "cargo-deny + cargo-machete supply-chain checks"
-command = "cargo deny check && cargo machete"
+# Mandatory node
+[environments]
