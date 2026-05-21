@@ -16,6 +16,10 @@ pub mod auth;
 pub mod families;
 pub mod health;
 pub mod invites;
+pub mod parent_links;
+pub mod partnerships;
+pub mod persons;
+pub mod relationships;
 pub mod users;
 
 use actix_web::web;
@@ -51,6 +55,17 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(families::rename)
                 .service(families::delete_family)
                 .service(families::invite)
-                .service(invites::accept),
+                .service(invites::accept)
+                .service(persons::list)
+                .service(persons::create)
+                .service(persons::get_one)
+                .service(persons::update)
+                .service(persons::delete)
+                .service(parent_links::create)
+                .service(parent_links::delete)
+                .service(partnerships::create)
+                .service(partnerships::update)
+                .service(partnerships::delete)
+                .service(relationships::tree),
         )
 }

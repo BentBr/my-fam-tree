@@ -16,9 +16,10 @@ use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// One person + their relationship adjacency lists, in the shape the FE
-/// consumes. `parent_ids` and `partner_ids` are denormalized so the SVG
-/// layout doesn't have to join `parent_edges` / `partner_edges` itself.
+/// One person plus their relationship adjacency lists.
+///
+/// `parent_ids` and `partner_ids` are denormalized so the FE's SVG layout
+/// doesn't have to join `parent_edges` / `partner_edges` itself.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TreeNode {
     pub id: Uuid,
