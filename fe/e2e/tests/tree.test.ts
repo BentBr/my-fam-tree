@@ -80,6 +80,49 @@ async function clickTreeNode(page: Page, id: string): Promise<void> {
     await page.getByTestId(`tree-node-${id}`).dispatchEvent('click')
 }
 
+test('empty tree shows the CTA card and opens the create drawer on click', async ({ page }) => {
+    const stamp = Date.now()
+    await signIn(page, `empty-tree-${stamp}@example.com`)
+    await createFamily(page, `Empty-${stamp}`)
+
+    await page.goto('/tree')
+
+    // No persons yet: the empty-state card should render in place of the SVG.
+    await expect(page.getByTestId('tree-empty')).toBeVisible()
+    await expect(page.getByTestId('tree-canvas')).toHaveCount(0)
+
+    // Click the CTA button (not the outer card) — exercises the same path as
+    // the toolbar "Add person" button.
+    await page.getByTestId('tree-empty-cta').click()
+    await expect(page.getByTestId('person-edit')).toBeVisible()
+
+    // Sanity-check: the surrounding outer-card click also works. Close the
+    // drawer first, then click the card's title to reopen.
+    await page.getByTestId('person-edit-cancel').click()
+    await expect(page.locator('.v-navigation-drawer__scrim')).toHaveCount(0)
+    await page.getByTestId('tree-empty').click()
+    await expect(page.getByTestId('person-edit')).toBeVisible()
+})
+
+test('family switcher "create new" routes to /families/create', async ({ page }) => {
+    const stamp = Date.now()
+    await signIn(page, `fam-switch-${stamp}@example.com`)
+    await createFamily(page, `Switch-${stamp}`)
+
+    // After createFamily the redirect lands on /health; switcher is in AppBar
+    // and is reachable from any authenticated route.
+    await page.goto('/tree')
+    await expect(page.getByTestId('family-switcher')).toBeVisible()
+
+    // Open the v-select overlay and pick the "Create new family…" entry by
+    // its visible text. Locale auto-resolves the German label too.
+    await page.getByTestId('family-switcher').click()
+    await page.getByRole('option', { name: /Create new family|Neue Familie anlegen/ }).click()
+
+    await expect(page).toHaveURL(/\/families\/create$/)
+    await expect(page.getByTestId('family-name')).toBeVisible()
+})
+
 test('owner adds people, links a parent and a partner, tree renders edges', async ({ page }) => {
     // Unique per-run email + family so the truncate-on-teardown can't race a
     // re-run before postgres has finished cleanup (defense in depth — global
@@ -89,10 +132,13 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
     await createFamily(page, `Tree-${stamp}`)
 
     await page.goto('/tree')
-    await expect(page.getByTestId('tree-canvas')).toBeVisible()
+    // Fresh family — `tree-empty` is rendered in place of `tree-canvas` until
+    // the first person is added. Add Anna; the canvas takes over from there.
+    await expect(page.getByTestId('tree-empty')).toBeVisible()
 
     // 1. Add Anna.
     const annaId = await addPerson(page, 'Anna', 'Müller', '1980-04-15')
+    await expect(page.getByTestId('tree-canvas')).toBeVisible()
     expect(annaId).not.toBe('')
     await closeDrawer(page)
 

@@ -89,7 +89,9 @@ async function submit(): Promise<void> {
             data-testid="person-notes"
         />
         <div class="d-flex justify-end ga-2 mt-2">
-            <v-btn variant="text" @click="emit('cancel')">{{ t('common.cancel') }}</v-btn>
+            <v-btn variant="text" data-testid="person-edit-cancel" @click="emit('cancel')">
+                {{ t('common.cancel') }}
+            </v-btn>
             <v-btn
                 type="submit"
                 color="primary"
