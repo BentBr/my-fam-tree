@@ -63,11 +63,19 @@ pub fn refresh_cookie<'a>(cfg: &Config, value: String) -> Cookie<'a> {
     c
 }
 
-/// Build a zero-value, zero-age cookie used by `/auth/logout` to instruct the
-/// browser to drop the named cookie at the given path.
+/// Build a zero-value, zero-age cookie used by `/auth/logout`.
+///
+/// The domain must match the one used when issuing — without it, browsers
+/// treat the `Set-Cookie` as a different scope and the original
+/// (domain-scoped) cookie survives.
 #[must_use]
-pub fn revoked<'a>(name: &'static str, path: &'static str) -> Cookie<'a> {
-    Cookie::build(name, "").path(path).http_only(true).max_age(Duration::seconds(0)).finish()
+pub fn revoked<'a>(cfg: &Config, name: &'static str, path: &'static str) -> Cookie<'a> {
+    let mut c =
+        Cookie::build(name, "").path(path).http_only(true).max_age(Duration::seconds(0)).finish();
+    if !cfg.cookie_domain.is_empty() {
+        c.set_domain(cfg.cookie_domain.clone());
+    }
+    c
 }
 
 #[cfg(test)]
@@ -147,12 +155,21 @@ mod tests {
 
     #[test]
     fn revoked_cookie_has_zero_max_age_and_named_path() {
-        let c = revoked(ACCESS_COOKIE, "/");
+        let cfg = test_cfg();
+        let c = revoked(&cfg, ACCESS_COOKIE, "/");
         assert_eq!(c.name(), ACCESS_COOKIE);
         assert_eq!(c.value(), "");
         assert_eq!(c.path(), Some("/"));
         assert_eq!(c.http_only(), Some(true));
         assert_eq!(c.max_age().map(actix_web::cookie::time::Duration::whole_seconds), Some(0));
+    }
+
+    #[test]
+    fn revoked_cookie_inherits_domain_so_browsers_actually_drop_it() {
+        let mut cfg = test_cfg();
+        cfg.cookie_domain = ".my-family.docker".into();
+        let c = revoked(&cfg, ACCESS_COOKIE, "/");
+        assert_eq!(c.domain(), Some(".my-family.docker"));
     }
 
     #[test]

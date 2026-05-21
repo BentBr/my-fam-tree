@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 
+import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { LoginPage } from '../page-objects/login.page'
 
@@ -22,7 +23,7 @@ async function signIn(page: Page, email: string): Promise<void> {
     if (link === undefined) {
         throw new Error('consume link match was empty')
     }
-    await page.goto(link)
+    await page.goto(rewriteEmailLink(link))
     // After ConsumeView, the family guard sends a brand-new user (no families)
     // to /families/create. Either landing spot is fine — we just want past the
     // auth wall so the sign-out button is rendered by MainLayout's AppBar.

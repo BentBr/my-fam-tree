@@ -9,6 +9,12 @@ export interface Toast {
     requestId?: string
 }
 
+// Monotonic counter for toast IDs. `crypto.randomUUID()` is gated behind a
+// secure context (HTTPS / localhost / 127.0.0.1) and throws on plain-HTTP
+// dev domains like `http://my-family.docker`. Toast IDs only need to be
+// unique inside the array, so a counter is strictly better here.
+let toastIdSeq = 0
+
 export const useUiStore = defineStore('ui', () => {
     const sidebarCollapsed = ref(localStorage.getItem('my-family:sidebar') === '1')
     const toasts = ref<Toast[]>([])
@@ -19,7 +25,8 @@ export const useUiStore = defineStore('ui', () => {
     }
 
     function pushToast(t: Omit<Toast, 'id'>): void {
-        toasts.value.push({ ...t, id: crypto.randomUUID() })
+        toastIdSeq += 1
+        toasts.value.push({ ...t, id: `toast-${toastIdSeq}` })
     }
 
     function dismissToast(id: string): void {

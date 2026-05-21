@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 
+import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { LoginPage } from '../page-objects/login.page'
 
@@ -21,7 +22,7 @@ async function signIn(page: Page, email: string): Promise<void> {
     if (link === undefined) {
         throw new Error('consume link match was empty')
     }
-    await page.goto(link)
+    await page.goto(rewriteEmailLink(link))
     await expect(page).toHaveURL(/\/(health|families\/create|families\/pick)$/)
 }
 
@@ -34,8 +35,12 @@ async function createFamily(page: Page, name: string): Promise<void> {
 
 test.describe('FE account flow', () => {
     test('user can update display name and locale', async ({ page }) => {
-        await signIn(page, 'profile@example.com')
-        await createFamily(page, 'Profile-Test')
+        // Unique per run: previous runs flipped this user's locale to German,
+        // which makes the v-select option titles render as "Deutsch" — the
+        // `getByRole('option', { name: 'German' })` lookup then misses.
+        const stamp = Date.now()
+        await signIn(page, `profile-${stamp}@example.com`)
+        await createFamily(page, `Profile-Test-${stamp}`)
 
         // Open the user menu and navigate to /account.
         await page.getByTestId('user-menu').click()
@@ -58,25 +63,36 @@ test.describe('FE account flow', () => {
         // Reload and verify the backend really persisted the change.
         await page.reload()
         await expect(nameInput).toHaveValue('Anna Müller')
-        // Locale select shows the currently selected title — "German" because
-        // i18n was just switched to de? After PATCH the locale store flips, the
-        // UI re-renders in German, so the option title is "Deutsch". The
-        // underlying value is still "de" — assert via the model attribute.
+        // The access JWT carries the locale claim from sign-in and is not
+        // re-issued by PATCH /users/me, so i18n stays English after reload.
+        // The localeSelected model is hydrated from /users/me (= "de"), and
+        // v-select's input renders the option's title under the current UI
+        // locale — "German" in English. That's the proof the backend kept
+        // the change without depending on a JWT-refresh side effect.
         const localeInput = page.getByTestId('account-locale').locator('input').first()
-        await expect(localeInput).toHaveValue('de')
+        await expect(localeInput).toHaveValue('German')
     })
 
     test('email change roundtrip', async ({ page }) => {
-        await signIn(page, 'change@example.com')
-        await createFamily(page, 'Change-Test')
+        // Unique per run: the test mutates the user's email, and a hard-coded
+        // address would collide on subsequent runs (the previous run already
+        // renamed the user away, and `change-new@…` now exists with
+        // `email.taken`). A timestamp suffix sidesteps the need to truncate
+        // postgres between runs.
+        const stamp = Date.now()
+        const fromEmail = `change-${stamp}@example.com`
+        const toEmail = `change-new-${stamp}@example.com`
+
+        await signIn(page, fromEmail)
+        await createFamily(page, `Change-Test-${stamp}`)
 
         await page.goto('/account')
-        await expect(page.getByTestId('account-email-current')).toHaveText('change@example.com')
+        await expect(page.getByTestId('account-email-current')).toHaveText(fromEmail)
 
         // Clear mailpit so the next waitForEmail matches the email-change
         // notification, not the magic-link we just used to sign in.
         await clearMailpit()
-        await page.getByTestId('account-email-new').locator('input').fill('change-new@example.com')
+        await page.getByTestId('account-email-new').locator('input').fill(toEmail)
         await page.getByTestId('account-email-change-submit').click()
         await expect(page.getByTestId('email-change-pending')).toBeVisible()
 
@@ -90,7 +106,7 @@ test.describe('FE account flow', () => {
             throw new Error('email-change link match was empty')
         }
 
-        await page.goto(link)
+        await page.goto(rewriteEmailLink(link))
         // EmailChangeConsumeView routes back to /account after the confirm
         // mutation resolves. Accept the landing spot directly.
         await expect(page).toHaveURL(/\/account$/)
@@ -98,7 +114,7 @@ test.describe('FE account flow', () => {
         // Reload to refetch /users/me from the server and verify the new email
         // really stuck (not just an optimistic store update).
         await page.reload()
-        await expect(page.getByTestId('account-email-current')).toHaveText('change-new@example.com')
+        await expect(page.getByTestId('account-email-current')).toHaveText(toEmail)
     })
 
     test('manual sign-out clears storage and redirects', async ({ page }) => {

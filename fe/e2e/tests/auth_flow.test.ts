@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 
+import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { LoginPage } from '../page-objects/login.page'
 
@@ -18,7 +19,7 @@ async function signIn(page: Page, email: string): Promise<void> {
     if (link === undefined) {
         throw new Error('consume link match was empty')
     }
-    await page.goto(link)
+    await page.goto(rewriteEmailLink(link))
     // ConsumeView redirects to /health on success. The family guard may then
     // bounce a user with no active family to /families/create (new user) or
     // /families/pick (returning user with multiple). Accept any of the three —
@@ -81,7 +82,7 @@ test('owner signs in, creates family, invites a guest, guest joins', async ({ br
 
     // 5. Guest follows the invite link. InviteAccept consumes it (guest is
     //    already authenticated) and routes to /health.
-    await guest.goto(inviteLink)
+    await guest.goto(rewriteEmailLink(inviteLink))
     await expect(guest).toHaveURL(/\/health$/)
     await expect(guest.getByTestId('family-switcher')).toBeVisible()
 

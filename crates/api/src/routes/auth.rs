@@ -363,8 +363,8 @@ pub async fn logout(
         let _ = state.refresh_tokens.revoke_by_hash(&hash).await;
     }
     let mut resp = HttpResponse::Ok().json(ApiResponse::ok(LogoutRes { status: "logged out" }));
-    let _ = resp.add_cookie(&revoked(ACCESS_COOKIE, "/"));
-    let _ = resp.add_cookie(&revoked(REFRESH_COOKIE, REFRESH_COOKIE_PATH));
+    let _ = resp.add_cookie(&revoked(&state.cfg, ACCESS_COOKIE, "/"));
+    let _ = resp.add_cookie(&revoked(&state.cfg, REFRESH_COOKIE, REFRESH_COOKIE_PATH));
     Ok(resp)
 }
 

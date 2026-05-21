@@ -181,8 +181,12 @@ services:
             - "5173"
         environment:
             CI: "true"
-            VITE_API_BASE_URL: http://api.my-family.docker
-            VITE_API_PROXY_TARGET: http://api.my-family.docker:8080
+            # FE issues same-origin `/api/*` requests; Vite proxies them to the
+            # api service via the compose service alias (port 8080). We do NOT
+            # set VITE_API_BASE_URL so the browser bypass-path (absolute URL to
+            # api.my-family.docker:80) is never used — that only resolved from
+            # the host via dinghy, not from in-network Playwright.
+            VITE_API_PROXY_TARGET: http://api:8080
             VIRTUAL_HOST: my-family.docker
             VIRTUAL_PORT: "5173"
             PNPM_HOME: /pnpm
