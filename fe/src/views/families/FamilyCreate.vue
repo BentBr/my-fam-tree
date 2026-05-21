@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -20,7 +20,10 @@ async function submit(): Promise<void> {
         const res = await create.mutateAsync(name.value.trim())
         if (res !== undefined) {
             family.setActive(res.data.family.id as FamilyId)
-            await router.replace('/health')
+            // Flush reactivity so the family guard reads activeFamilyId
+            // BEFORE evaluating /health — otherwise it can bounce back.
+            await nextTick()
+            await router.push('/health')
         }
     } catch (e: unknown) {
         errorMsg.value = e instanceof Error ? e.message : 'unknown error'

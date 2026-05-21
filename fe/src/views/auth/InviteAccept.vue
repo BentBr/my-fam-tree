@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useAcceptInvite } from '@/api/hooks/families'
+import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
+import type { FamilyId } from '@/types/brand'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const auth = useAuthStore()
+const family = useActiveFamilyStore()
 const accept = useAcceptInvite()
 const status = ref<'pending' | 'ok' | 'error'>('pending')
+const processed = ref(false)
 
 onMounted(async () => {
+    if (processed.value) {
+        return
+    }
+    processed.value = true
     const token = String(route.query['token'] ?? '')
     if (token === '') {
         status.value = 'error'
@@ -26,9 +34,16 @@ onMounted(async () => {
         return
     }
     try {
-        await accept.mutateAsync(token)
+        const res = await accept.mutateAsync(token)
+        if (res !== undefined) {
+            // CRITICAL: select the newly-joined family before navigating,
+            // otherwise the family guard sees activeFamilyId === null and
+            // bounces /health → /families/pick.
+            family.setActive(res.data.family.id as FamilyId)
+        }
         status.value = 'ok'
-        await router.replace('/health')
+        await nextTick()
+        await router.push('/health')
     } catch {
         status.value = 'error'
     }
