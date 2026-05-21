@@ -1,9 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { client } from '@/api/client'
+import { ApiClientError } from '@/api/errors'
+import type { ClaimsPayload } from '@/api/types'
 import type { FamilyId, UserId } from '@/types/brand'
 
 export type Role = 'user' | 'admin' | 'owner'
+
+export type { ClaimsPayload }
 
 export interface FamilyMembership {
     id: FamilyId
@@ -16,13 +21,6 @@ export interface AuthUser {
     email: string
     locale: 'en' | 'de'
     displayName: string
-}
-
-interface ClaimsPayload {
-    user_id: string
-    email: string
-    locale: string
-    families: Array<{ id: string; name: string; role: Role }>
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -52,16 +50,36 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function hydrate(): Promise<void> {
-        // Implemented in Phase 1 (calls GET /auth/me). Phase 0d stays anonymous.
+        try {
+            const { data, error } = await client.GET('/api/v1/auth/me')
+            if (error !== undefined) throw error
+            if (data !== undefined) {
+                applyClaimsPayload(data.data)
+            }
+        } catch (e: unknown) {
+            if (e instanceof ApiClientError && e.status === 401) {
+                applyClaimsPayload(null)
+                return
+            }
+            throw e
+        }
     }
 
     async function refresh(): Promise<void> {
-        // Implemented in Phase 1 (calls POST /auth/refresh).
+        const { data, error } = await client.POST('/api/v1/auth/refresh')
+        if (error !== undefined) throw error
+        if (data !== undefined) {
+            applyClaimsPayload(data.data)
+        }
     }
 
     async function logout(): Promise<void> {
-        // Implemented in Phase 1 (calls POST /auth/logout).
-        applyClaimsPayload(null)
+        try {
+            const { error } = await client.POST('/api/v1/auth/logout')
+            if (error !== undefined) throw error
+        } finally {
+            applyClaimsPayload(null)
+        }
     }
 
     return { user, families, status, applyClaimsPayload, hydrate, refresh, logout }

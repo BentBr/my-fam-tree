@@ -20,7 +20,7 @@ onMounted(async () => {
     try {
         await mutation.mutateAsync(token)
         status.value = 'ok'
-        await router.replace('/tree')
+        await router.replace('/health')
     } catch {
         status.value = 'error'
     }
