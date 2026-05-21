@@ -44,6 +44,27 @@
         "requestId": "Request-ID: {id}",
         "error": "API konnte nicht erreicht werden."
     },
+    "account": {
+        "title": "Konto",
+        "profile": {
+            "title": "Profil",
+            "displayName": "Anzeigename",
+            "save": "Speichern"
+        },
+        "email": {
+            "title": "E-Mail",
+            "current": "Aktuelle E-Mail",
+            "newLabel": "Neue E-Mail-Adresse",
+            "submit": "Bestätigung an aktuelle E-Mail senden",
+            "pending": "Prüfe dein aktuelles Postfach, um die Änderung zu bestätigen.",
+            "confirmPending": "Bestätige deine E-Mail-Änderung…",
+            "confirmError": "E-Mail-Änderung fehlgeschlagen. Der Link ist möglicherweise abgelaufen."
+        },
+        "menu": {
+            "openAccount": "Konto",
+            "signOut": "Abmelden"
+        }
+    },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
     "validation": {
         "email_invalid": "Bitte gib eine gültige E-Mail-Adresse ein.",

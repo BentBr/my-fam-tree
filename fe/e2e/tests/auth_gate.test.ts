@@ -58,10 +58,12 @@ test.describe('FE auth gate', () => {
 
     test('logout from app-bar returns to /auth/sign-in', async ({ page }) => {
         // Sign in with a fresh email; family guard bounces to /families/create
-        // but MainLayout (and therefore AppBar with the sign-out button) is
-        // still rendered.
+        // but MainLayout (and therefore AppBar with the user menu) is still
+        // rendered.
         await signIn(page, 'gate-test@example.com')
 
+        // T6 moved sign-out behind a user-icon dropdown — open it first.
+        await page.getByTestId('user-menu').click()
         const signOut = page.getByTestId('sign-out')
         await expect(signOut).toBeVisible()
         await signOut.click()

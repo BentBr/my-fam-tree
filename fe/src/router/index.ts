@@ -48,6 +48,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/HealthView.vue'),
         meta: { layout: 'main', requiresAuth: false },
     },
+    {
+        path: '/account',
+        name: 'account',
+        component: () => import('@/views/account/AccountView.vue'),
+        meta: { layout: 'main', requiresAuth: true },
+    },
+    {
+        path: '/account/email-change/consume',
+        name: 'email-change-consume',
+        component: () => import('@/views/account/EmailChangeConsumeView.vue'),
+        meta: { layout: 'main', requiresAuth: true },
+    },
     // /tree, /reminders, etc. are added in Phase 1b / 2b / 4b.
 ]
 

@@ -44,6 +44,27 @@
         "requestId": "Request id: {id}",
         "error": "Could not reach the API."
     },
+    "account": {
+        "title": "Account",
+        "profile": {
+            "title": "Profile",
+            "displayName": "Display name",
+            "save": "Save"
+        },
+        "email": {
+            "title": "Email",
+            "current": "Current email",
+            "newLabel": "New email address",
+            "submit": "Send confirmation to current email",
+            "pending": "Check your current inbox to confirm the change.",
+            "confirmPending": "Confirming your email change…",
+            "confirmError": "Email change failed. The link may have expired."
+        },
+        "menu": {
+            "openAccount": "Account",
+            "signOut": "Sign out"
+        }
+    },
     "language": { "label": "Language", "en": "English", "de": "German" },
     "validation": {
         "email_invalid": "Please enter a valid email address.",

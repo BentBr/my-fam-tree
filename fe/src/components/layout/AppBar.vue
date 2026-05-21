@@ -29,12 +29,24 @@ async function signOut(): Promise<void> {
         <v-spacer />
         <FamilySwitcher class="mr-2" />
         <LangSwitcher class="mr-2" />
-        <v-btn
-            v-if="auth.status === 'authenticated'"
-            icon="log-out"
-            :title="t('auth.signOut')"
-            data-testid="sign-out"
-            @click="signOut"
-        />
+        <v-menu v-if="auth.status === 'authenticated'" location="bottom end">
+            <template #activator="{ props: activatorProps }">
+                <v-btn icon="user" :title="auth.user?.email ?? ''" data-testid="user-menu" v-bind="activatorProps" />
+            </template>
+            <v-list density="comfortable">
+                <v-list-item
+                    to="/account"
+                    prepend-icon="user"
+                    :title="t('account.menu.openAccount')"
+                    data-testid="user-menu-account"
+                />
+                <v-list-item
+                    prepend-icon="log-out"
+                    :title="t('account.menu.signOut')"
+                    data-testid="sign-out"
+                    @click="signOut"
+                />
+            </v-list>
+        </v-menu>
     </v-app-bar>
 </template>
