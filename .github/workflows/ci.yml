@@ -575,11 +575,17 @@ jobs:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
                   restore-keys: ${{ runner.os }}-pnpm-store-
-            - name: Generate Ed25519 JWT keypair
+            - name: Generate Ed25519 JWT keypair into .env
+              # gen-jwt-keys emits JWT_PRIVATE_KEY='-----BEGIN…\n…\n-----END…'
+              # — single-quoted with literal `\n` sequences. Writing that
+              # through $GITHUB_ENV mangles the multi-line content (quotes
+              # bleed in / NUL byte). The api binary reads `.env` via dotenvy
+              # when APP_ENV=development, which handles single-quoted values
+              # correctly. Write directly to `.env` so the api process picks
+              # them up at startup; no shell env round-trip.
               run: |
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" >> /tmp/jwt.env
-                  # Export the three JWT_* lines for subsequent steps.
-                  grep -E '^JWT_' /tmp/jwt.env >> "$GITHUB_ENV"
+                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  grep -E '^JWT_' /tmp/jwt.env >> .env
             - name: Build api binary
               # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.
