@@ -12,4 +12,4 @@ pub use fake::FakeEmailSender;
 pub use locale::Locale;
 pub use sender::{EmailSender, OutboundEmail};
 pub use smtp::SmtpSender;
-pub use templates::{render_invite, render_magic_link};
+pub use templates::{render_email_change, render_invite, render_magic_link};

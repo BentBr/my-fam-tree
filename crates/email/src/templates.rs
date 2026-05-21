@@ -41,6 +41,20 @@ struct InviteDe<'a> {
     family_name: &'a str,
 }
 
+#[derive(Template, Debug)]
+#[template(path = "email_change_en.txt", escape = "none")]
+struct EmailChangeEn<'a> {
+    link: &'a str,
+    new_email: &'a str,
+}
+
+#[derive(Template, Debug)]
+#[template(path = "email_change_de.txt", escape = "none")]
+struct EmailChangeDe<'a> {
+    link: &'a str,
+    new_email: &'a str,
+}
+
 /// Render the magic-link sign-in email for `locale`.
 ///
 /// Returns `(subject, body)`. Errors propagate from askama (template logic
@@ -71,6 +85,29 @@ pub fn render_invite(
         Locale::De => (
             format!("Einladung zur Familie {family_name} bei my-family"),
             InviteDe { link, inviter_name, family_name }.render()?,
+        ),
+    };
+    Ok((subject, body))
+}
+
+/// Render the confirm-email-change email for `locale`.
+///
+/// The email is sent to the user's **current** address; `new_email` is the
+/// address they want to switch to and is included in the body so the recipient
+/// can verify they really initiated the change. Returns `(subject, body)`.
+pub fn render_email_change(
+    locale: Locale,
+    link: &str,
+    new_email: &str,
+) -> Result<(String, String), askama::Error> {
+    let (subject, body) = match locale {
+        Locale::En => (
+            "Confirm your email change on my-family".to_string(),
+            EmailChangeEn { link, new_email }.render()?,
+        ),
+        Locale::De => (
+            "Bestätige deine E-Mail-Änderung bei my-family".to_string(),
+            EmailChangeDe { link, new_email }.render()?,
         ),
     };
     Ok((subject, body))
@@ -112,5 +149,24 @@ mod tests {
         assert!(subject.contains("Smith"));
         assert!(body.contains("Bob"));
         assert!(body.contains("https://app/i/xyz"));
+    }
+
+    #[test]
+    fn renders_de_email_change_with_umlauts_and_new_email() {
+        let (subject, body) =
+            render_email_change(Locale::De, "https://app/ec/abc", "neu@example.com").unwrap();
+        assert_eq!(subject, "Bestätige deine E-Mail-Änderung bei my-family");
+        assert!(body.contains("neu@example.com"));
+        assert!(body.contains("https://app/ec/abc"));
+        assert!(body.contains("bleibt unverändert"));
+    }
+
+    #[test]
+    fn renders_en_email_change() {
+        let (subject, body) =
+            render_email_change(Locale::En, "https://app/ec/xyz", "new@example.com").unwrap();
+        assert_eq!(subject, "Confirm your email change on my-family");
+        assert!(body.contains("new@example.com"));
+        assert!(body.contains("https://app/ec/xyz"));
     }
 }
