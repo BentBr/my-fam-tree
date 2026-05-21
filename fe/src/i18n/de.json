@@ -30,6 +30,9 @@
         "picker": {
             "title": "Familie wählen",
             "create": "Oder neue Familie anlegen"
+        },
+        "switcher": {
+            "createNew": "Neue Familie anlegen…"
         }
     },
     "invite": {
@@ -76,7 +79,12 @@
         "title": "Stammbaum",
         "addPerson": "Person hinzufügen",
         "loading": "Lädt…",
-        "error": "Der Stammbaum konnte nicht geladen werden."
+        "error": "Der Stammbaum konnte nicht geladen werden.",
+        "empty": {
+            "title": "Noch niemand da",
+            "subtitle": "Lege die erste Person an, um deinen Stammbaum zu starten.",
+            "cta": "Erste Person hinzufügen"
+        }
     },
     "person": {
         "fields": {

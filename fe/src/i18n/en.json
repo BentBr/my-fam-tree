@@ -30,6 +30,9 @@
         "picker": {
             "title": "Pick a family to view",
             "create": "Or create a new family"
+        },
+        "switcher": {
+            "createNew": "Create new family…"
         }
     },
     "invite": {
@@ -76,7 +79,12 @@
         "title": "Family tree",
         "addPerson": "Add person",
         "loading": "Loading…",
-        "error": "Could not load the family tree."
+        "error": "Could not load the family tree.",
+        "empty": {
+            "title": "No one here yet",
+            "subtitle": "Start your family tree by adding the first person.",
+            "cta": "Add your first person"
+        }
     },
     "person": {
         "fields": {

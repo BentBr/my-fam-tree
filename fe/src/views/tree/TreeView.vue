@@ -102,6 +102,39 @@ watch(
                 <v-alert v-else-if="tree.error.value" type="error" data-testid="tree-error">
                     {{ t('tree.error') }}
                 </v-alert>
+                <!-- Empty state: no persons in the active family yet. Render
+                     a centered card with a primary CTA that opens the same
+                     create-person drawer as the toolbar button. Clicking
+                     anywhere on the card (not just the button) triggers it
+                     so users who treat the whole canvas as actionable get
+                     the expected result. -->
+                <div
+                    v-else-if="tree.data.value && tree.data.value.nodes.length === 0"
+                    class="empty-state"
+                    role="button"
+                    tabindex="0"
+                    data-testid="tree-empty"
+                    @click="onCreateClick"
+                    @keydown.enter="onCreateClick"
+                    @keydown.space.prevent="onCreateClick"
+                >
+                    <v-card class="empty-card" elevation="2">
+                        <v-card-title class="text-h6">{{ t('tree.empty.title') }}</v-card-title>
+                        <v-card-text class="text-body-2">
+                            {{ t('tree.empty.subtitle') }}
+                        </v-card-text>
+                        <v-card-actions class="justify-center pb-4">
+                            <v-btn
+                                color="primary"
+                                prepend-icon="user-plus"
+                                data-testid="tree-empty-cta"
+                                @click.stop="onCreateClick"
+                            >
+                                {{ t('tree.empty.cta') }}
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </div>
                 <FamilyTree
                     v-else-if="tree.data.value"
                     :tree="tree.data.value"
@@ -148,5 +181,21 @@ watch(
 .canvas {
     flex: 1;
     min-width: 0;
+}
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: calc(100vh - 200px);
+    cursor: pointer;
+    outline: none;
+}
+.empty-state:focus-visible .empty-card {
+    outline: 2px solid rgb(var(--v-theme-primary));
+    outline-offset: 4px;
+}
+.empty-card {
+    max-width: 420px;
+    text-align: center;
 }
 </style>
