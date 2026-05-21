@@ -21,6 +21,21 @@
         },
         "signOut": "Abmelden"
     },
+    "family": {
+        "create": {
+            "title": "Familie anlegen",
+            "nameLabel": "Familienname",
+            "submit": "Familie erstellen"
+        },
+        "picker": {
+            "title": "Familie wählen",
+            "create": "Oder neue Familie anlegen"
+        }
+    },
+    "invite": {
+        "pending": "Familie wird beigetreten…",
+        "error": "Die Einladung konnte nicht angenommen werden. Sie ist möglicherweise abgelaufen oder gilt für eine andere E-Mail-Adresse."
+    },
     "health": {
         "title": "Service-Status",
         "loading": "Prüfe…",

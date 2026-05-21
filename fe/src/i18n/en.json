@@ -21,6 +21,21 @@
         },
         "signOut": "Sign out"
     },
+    "family": {
+        "create": {
+            "title": "Create your family",
+            "nameLabel": "Family name",
+            "submit": "Create family"
+        },
+        "picker": {
+            "title": "Pick a family to view",
+            "create": "Or create a new family"
+        }
+    },
+    "invite": {
+        "pending": "Joining the family…",
+        "error": "We couldn't accept this invite. It may have expired or be linked to a different email."
+    },
     "health": {
         "title": "Service health",
         "loading": "Checking…",
