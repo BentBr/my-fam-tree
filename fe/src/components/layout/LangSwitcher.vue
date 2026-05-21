@@ -1,13 +1,26 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import { useUpdateMe } from '@/api/hooks/users'
+import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore, type SupportedLocale } from '@/stores/locale'
 
 const store = useLocaleStore()
+const auth = useAuthStore()
+const update = useUpdateMe()
 const { t } = useI18n()
 
 function onChange(value: unknown): void {
-    if (value === 'en' || value === 'de') store.set(value as SupportedLocale)
+    if (value !== 'en' && value !== 'de') return
+    const next: SupportedLocale = value
+    // Optimistic local update so the UI flips immediately.
+    store.set(next)
+    // Persist to the backend when the caller has a session. Anonymous users
+    // (login screen) keep the locale local-only — the next sign-in then syncs
+    // it via applyClaimsPayload.
+    if (auth.status === 'authenticated') {
+        update.mutate({ locale: next })
+    }
 }
 </script>
 

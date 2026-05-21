@@ -6,6 +6,8 @@ import { ApiClientError } from '@/api/errors'
 import type { ClaimsPayload } from '@/api/types'
 import type { FamilyId, UserId } from '@/types/brand'
 
+import { useLocaleStore } from './locale'
+
 export type Role = 'user' | 'admin' | 'owner'
 
 export type { ClaimsPayload }
@@ -35,10 +37,11 @@ export const useAuthStore = defineStore('auth', () => {
             status.value = 'anonymous'
             return
         }
+        const locale: 'en' | 'de' = c.locale === 'de' ? 'de' : 'en'
         user.value = {
             id: c.user_id as UserId,
             email: c.email,
-            locale: (c.locale === 'de' ? 'de' : 'en') as 'en' | 'de',
+            locale,
             displayName: '',
         }
         families.value = c.families.map((f) => ({
@@ -47,6 +50,15 @@ export const useAuthStore = defineStore('auth', () => {
             role: f.role,
         }))
         status.value = 'authenticated'
+        // Mirror the backend's stored locale into the local store so the i18n
+        // switch follows the authenticated identity (overriding the anonymous
+        // navigator/localStorage default that detectInitialLocale picked).
+        useLocaleStore().set(locale)
+    }
+
+    function patchUser(patch: Partial<Pick<AuthUser, 'displayName' | 'locale' | 'email'>>): void {
+        if (user.value === null) return
+        user.value = { ...user.value, ...patch }
     }
 
     async function hydrate(): Promise<void> {
@@ -82,5 +94,5 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    return { user, families, status, applyClaimsPayload, hydrate, refresh, logout }
+    return { user, families, status, applyClaimsPayload, patchUser, hydrate, refresh, logout }
 })
