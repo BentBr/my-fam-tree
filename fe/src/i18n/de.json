@@ -69,6 +69,14 @@
     "toast": {
         "dismiss": "Schließen"
     },
+    "toasts": {
+        "profile_saved": "Profil gespeichert",
+        "email_change_sent": "Bestätigungs-E-Mail an deine aktuelle Adresse gesendet",
+        "email_changed": "E-Mail-Adresse aktualisiert",
+        "family_created": "Familie angelegt",
+        "invite_accepted": "Du bist der Familie beigetreten",
+        "signin_link_sent": "Anmeldelink gesendet"
+    },
     "errors": {
         "generic": "Etwas ist schiefgegangen."
     },

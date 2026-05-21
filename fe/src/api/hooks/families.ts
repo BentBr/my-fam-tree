@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
+import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
 
@@ -18,6 +20,7 @@ export function useMyFamilies() {
 export function useCreateFamily() {
     const auth = useAuthStore()
     const qc = useQueryClient()
+    const ui = useUiStore()
     return useMutation({
         mutationFn: async (name: string) => {
             const { data, error } = await client.POST('/api/v1/families', { body: { name } })
@@ -29,6 +32,7 @@ export function useCreateFamily() {
         },
         onSuccess: () => {
             qc.invalidateQueries()
+            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_created') })
         },
     })
 }
@@ -36,6 +40,7 @@ export function useCreateFamily() {
 export function useAcceptInvite() {
     const auth = useAuthStore()
     const qc = useQueryClient()
+    const ui = useUiStore()
     return useMutation({
         mutationFn: async (token: string) => {
             const { data, error } = await client.POST('/api/v1/invites/accept', { body: { token } })
@@ -47,6 +52,7 @@ export function useAcceptInvite() {
         },
         onSuccess: () => {
             qc.invalidateQueries()
+            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.invite_accepted') })
         },
     })
 }
