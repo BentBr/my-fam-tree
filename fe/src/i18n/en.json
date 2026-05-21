@@ -75,7 +75,10 @@
         "email_changed": "Email address updated",
         "family_created": "Family created",
         "invite_accepted": "You joined the family",
-        "signin_link_sent": "Sign-in link sent"
+        "signin_link_sent": "Sign-in link sent",
+        "person_created": "Person added",
+        "person_updated": "Person updated",
+        "person_deleted": "Person removed"
     },
     "errors": {
         "generic": "Something went wrong."

@@ -75,7 +75,10 @@
         "email_changed": "E-Mail-Adresse aktualisiert",
         "family_created": "Familie angelegt",
         "invite_accepted": "Du bist der Familie beigetreten",
-        "signin_link_sent": "Anmeldelink gesendet"
+        "signin_link_sent": "Anmeldelink gesendet",
+        "person_created": "Person hinzugefügt",
+        "person_updated": "Person aktualisiert",
+        "person_deleted": "Person entfernt"
     },
     "errors": {
         "generic": "Etwas ist schiefgegangen."
