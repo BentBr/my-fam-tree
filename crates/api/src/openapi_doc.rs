@@ -28,7 +28,12 @@ use crate::routes::families::{
 };
 use crate::routes::health::{self, HealthResponseBody};
 use crate::routes::invites::{self, AcceptResponseBody};
+use crate::routes::parent_links;
+use crate::routes::partnerships::{self, PartnershipViewResponseBody};
+use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
+use crate::routes::relationships::{self, TreePayloadResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
+use crate::services::relationships_tree::{EdgePair, TreeNode, TreePayload};
 
 /// Aggregated `OpenAPI` document for the entire HTTP surface.
 #[derive(Debug, OpenApi)]
@@ -58,6 +63,17 @@ use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBod
         users::update,
         users::email_change_request,
         users::email_change_confirm,
+        persons::list,
+        persons::create,
+        persons::get_one,
+        persons::update,
+        persons::delete,
+        parent_links::create,
+        parent_links::delete,
+        partnerships::create,
+        partnerships::update,
+        partnerships::delete,
+        relationships::tree,
     ),
     components(
         schemas(
@@ -76,6 +92,10 @@ use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBod
             AcceptResponseBody,
             UserProfileResponseBody,
             EmailChangeResponseBody,
+            PersonsListResponseBody,
+            PersonViewResponseBody,
+            PartnershipViewResponseBody,
+            TreePayloadResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -107,6 +127,17 @@ use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBod
             users::EmailChangeReq,
             users::EmailChangeRes,
             users::EmailChangeConfirmReq,
+            persons::PersonView,
+            persons::PersonCreateReq,
+            persons::PersonUpdateReq,
+            persons::PersonsQuery,
+            parent_links::ParentLinkReq,
+            partnerships::PartnershipView,
+            partnerships::PartnershipCreateReq,
+            partnerships::PartnershipUpdateReq,
+            TreePayload,
+            TreeNode,
+            EdgePair,
         ),
     ),
     tags(
@@ -115,6 +146,8 @@ use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBod
         (name = "families", description = "Family management"),
         (name = "invites", description = "Invite acceptance"),
         (name = "users", description = "User profile and email change"),
+        (name = "persons", description = "Family members"),
+        (name = "relationships", description = "Parent links, partnerships, tree"),
     ),
 )]
 pub struct ApiDoc;

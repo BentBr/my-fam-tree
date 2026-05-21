@@ -444,6 +444,521 @@
         ]
       }
     },
+    "/api/v1/parent-links": {
+      "post": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParentLinkReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Edge inserted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "409": {
+            "description": "Relationship would create a cycle"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/parent-links/{child}/{parent}": {
+      "delete": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "child",
+            "in": "path",
+            "description": "Child person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parent",
+            "in": "path",
+            "description": "Parent person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edge deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "404": {
+            "description": "Edge not found"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/partnerships": {
+      "post": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnershipCreateReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Partnership created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnershipViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "409": {
+            "description": "Duplicate open partnership"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/partnerships/{id}": {
+      "delete": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Partnership id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partnership deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "404": {
+            "description": "Partnership not found"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Partnership id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnershipUpdateReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Partnership updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnershipViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "404": {
+            "description": "Partnership not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/persons": {
+      "get": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "list",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "Resume after this person id",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size, 1..=100, default 50",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Family members page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonsListResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonCreateReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/persons/{id}": {
+      "get": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "get_one",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "404": {
+            "description": "Not found in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "404": {
+            "description": "Not found in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonUpdateReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Person updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit this person"
+          },
+          "404": {
+            "description": "Not found in this family"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/relationships": {
+      "get": {
+        "tags": [
+          "relationships"
+        ],
+        "operationId": "tree",
+        "responses": {
+          "200": {
+            "description": "Tree payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreePayloadResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "tags": [
@@ -795,6 +1310,23 @@
                 "$ref": "#/components/schemas/ResponseMeta"
               }
             ]
+          }
+        }
+      },
+      "EdgePair": {
+        "type": "object",
+        "required": [
+          "a",
+          "b"
+        ],
+        "properties": {
+          "a": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "b": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -1274,6 +1806,440 @@
           }
         }
       },
+      "ParentLinkReq": {
+        "type": "object",
+        "required": [
+          "child_id",
+          "parent_id",
+          "kind"
+        ],
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "One of `biological`, `legal`, `adoptive`, `step`, `social`."
+          },
+          "note": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PartnershipCreateReq": {
+        "type": "object",
+        "required": [
+          "partner_a_id",
+          "partner_b_id",
+          "kind"
+        ],
+        "properties": {
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of `divorce`, `separation`, `death`."
+          },
+          "ended_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "kind": {
+            "type": "string",
+            "description": "One of `marriage`, `civil_union`, `partnership`."
+          },
+          "note": {
+            "type": "string"
+          },
+          "partner_a_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "partner_b_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "started_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PartnershipUpdateReq": {
+        "type": "object",
+        "properties": {
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ended_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "kind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "started_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PartnershipView": {
+        "type": "object",
+        "required": [
+          "id",
+          "family_id",
+          "partner_a_id",
+          "partner_b_id",
+          "kind",
+          "note"
+        ],
+        "properties": {
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ended_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "partner_a_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "partner_b_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "started_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "PartnershipViewResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PartnershipView"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "PersonCreateReq": {
+        "type": "object",
+        "required": [
+          "given_name"
+        ],
+        "properties": {
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "birth_place": {
+            "type": "string"
+          },
+          "death_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "family_name": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given_name": {
+            "type": "string"
+          },
+          "linked_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name_at_birth": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "PersonUpdateReq": {
+        "type": "object",
+        "description": "Partial update. Every field is optional; only `Some(_)` fields overwrite\nthe corresponding column. An empty body is rejected as `validation.value_required`.",
+        "properties": {
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "birth_place": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "death_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "family_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gender": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "given_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linked_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name_at_birth": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nickname": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PersonView": {
+        "type": "object",
+        "required": [
+          "id",
+          "family_id",
+          "given_name",
+          "family_name",
+          "name_at_birth",
+          "nickname",
+          "gender",
+          "birth_place",
+          "notes"
+        ],
+        "properties": {
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "birth_place": {
+            "type": "string"
+          },
+          "death_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "family_name": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "linked_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "name_at_birth": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "PersonViewResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonView"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "PersonsListResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonView"
+            }
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "PersonsQuery": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "RenameFamilyReq": {
         "type": "object",
         "required": [
@@ -1314,6 +2280,106 @@
           "admin",
           "owner"
         ]
+      },
+      "TreeNode": {
+        "type": "object",
+        "description": "One person plus their relationship adjacency lists.\n\n`parent_ids` and `partner_ids` are denormalized so the FE's SVG layout\ndoesn't have to join `parent_edges` / `partner_edges` itself.",
+        "required": [
+          "id",
+          "given_name",
+          "family_name",
+          "parent_ids",
+          "partner_ids"
+        ],
+        "properties": {
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "death_date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "family_name": {
+            "type": "string"
+          },
+          "given_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "parent_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "partner_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "TreePayload": {
+        "type": "object",
+        "required": [
+          "nodes",
+          "parent_edges",
+          "partner_edges"
+        ],
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TreeNode"
+            }
+          },
+          "parent_edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgePair"
+            }
+          },
+          "partner_edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EdgePair"
+            }
+          }
+        }
+      },
+      "TreePayloadResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TreePayload"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
       },
       "UpdateUserReq": {
         "type": "object",
@@ -1422,6 +2488,14 @@
     {
       "name": "users",
       "description": "User profile and email change"
+    },
+    {
+      "name": "persons",
+      "description": "Family members"
+    },
+    {
+      "name": "relationships",
+      "description": "Parent links, partnerships, tree"
     }
   ]
 }
