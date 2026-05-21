@@ -586,6 +586,12 @@ jobs:
               run: |
                   cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
                   grep -E '^JWT_' /tmp/jwt.env >> .env
+            - name: Apply database migrations
+              # Without this the api boots and immediately 500s on every
+              # endpoint that touches a table (`relation "users" does not
+              # exist`). Uses the same DATABASE_URL the api process will pick
+              # up from the workflow env block.
+              run: cargo run -p my-family-migrator --bin run_migrations
             - name: Build api binary
               # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.
