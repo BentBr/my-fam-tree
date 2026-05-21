@@ -449,7 +449,7 @@
         "tags": [
           "users"
         ],
-        "operationId": "me",
+        "operationId": "user_me",
         "responses": {
           "200": {
             "description": "Caller's profile",
@@ -475,7 +475,7 @@
         "tags": [
           "users"
         ],
-        "operationId": "update",
+        "operationId": "user_update",
         "requestBody": {
           "content": {
             "application/json": {

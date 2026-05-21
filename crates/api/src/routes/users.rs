@@ -121,6 +121,7 @@ fn profile_from(user: &my_family_domain::User) -> UserProfile {
 #[utoipa::path(
     get,
     path = "/api/v1/users/me",
+    operation_id = "user_me",
     responses(
         (status = 200, description = "Caller's profile", body = UserProfileResponseBody),
         (status = 401, description = "No session"),
@@ -152,6 +153,7 @@ pub async fn me(
 #[utoipa::path(
     patch,
     path = "/api/v1/users/me",
+    operation_id = "user_update",
     request_body = UpdateUserReq,
     responses(
         (status = 200, description = "Profile updated", body = UserProfileResponseBody),
