@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 import { createVuetify, type IconOptions } from 'vuetify'
 import 'vuetify/styles'
 
+import { queryClient } from './api/queryClient'
 import App from './App.vue'
 import SmartIcon from './components/common/SmartIcon.vue'
 import { vuetifyDefaults, vuetifyTheme } from './design-system'
@@ -36,7 +37,7 @@ app.use(createPinia())
 app.use(router)
 app.use(i18n)
 app.use(vuetify)
-app.use(VueQueryPlugin)
+app.use(VueQueryPlugin, { queryClient })
 
 useLocaleStore().bindToI18n(i18n)
 

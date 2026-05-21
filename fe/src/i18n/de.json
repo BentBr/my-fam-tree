@@ -66,6 +66,12 @@
         }
     },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
+    "toast": {
+        "dismiss": "Schließen"
+    },
+    "errors": {
+        "generic": "Etwas ist schiefgegangen."
+    },
     "validation": {
         "email_invalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
         "header_required": "Der {header}-Header ist erforderlich.",

@@ -5,6 +5,8 @@ export interface Toast {
     id: string
     kind: 'info' | 'success' | 'error'
     message: string
+    code?: string
+    requestId?: string
 }
 
 export const useUiStore = defineStore('ui', () => {
