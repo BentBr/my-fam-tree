@@ -1,0 +1,111 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE persons SET\n                 given_name=$3, family_name=$4, name_at_birth=$5, nickname=$6, gender=$7,\n                 birth_date=$8, birth_place=$9, death_date=$10, notes=$11, linked_user_id=$12\n               WHERE family_id = $1 AND id = $2\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes, linked_user_id,\n                         created_at, updated_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "given_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "family_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "name_at_birth",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "nickname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "gender",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "birth_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "birth_place",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "death_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 10,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "linked_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Date",
+        "Text",
+        "Date",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d603d01edef5de4e26e5c9aae897f9cb206252942111ef9ee76abb8f3ed9be41"
+}

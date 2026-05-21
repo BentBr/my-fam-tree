@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO partnerships\n                 (family_id, partner_a_id, partner_b_id, kind, started_on, ended_on, end_reason, note)\n               VALUES ($1, $2, $3, ($4::text)::partnership_kind, $5, $6,\n                       ($7::text)::partnership_end_reason, $8)\n               RETURNING id, started_on, ended_on, end_reason::text AS end_reason, note",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "started_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 2,
+        "name": "ended_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 3,
+        "name": "end_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "note",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Date",
+        "Date",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "c9f6fc958dbfa58874f28c2c6a665a95ee1cbdd3f08e68edcb0eb56ea76bcb7f"
+}

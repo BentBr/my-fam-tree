@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO parent_links (child_id, parent_id, kind, note)\n             VALUES ($1, $2, ($3::text)::parent_link_kind, $4)\n             ON CONFLICT (child_id, parent_id) DO UPDATE\n                 SET kind = EXCLUDED.kind, note = EXCLUDED.note",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "854321f245daa8d8322e395b4a4e4c11939fd1c22e7fc04d80a2d9a83f0ed544"
+}

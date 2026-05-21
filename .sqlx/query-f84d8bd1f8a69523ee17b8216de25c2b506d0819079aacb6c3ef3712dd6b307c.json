@@ -1,0 +1,101 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                      gender, birth_date, birth_place, death_date, notes, linked_user_id,\n                      created_at, updated_at\n                 FROM persons WHERE family_id = $1 AND linked_user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "given_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "family_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "name_at_birth",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "nickname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "gender",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "birth_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "birth_place",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "death_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 10,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "linked_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "f84d8bd1f8a69523ee17b8216de25c2b506d0819079aacb6c3ef3712dd6b307c"
+}

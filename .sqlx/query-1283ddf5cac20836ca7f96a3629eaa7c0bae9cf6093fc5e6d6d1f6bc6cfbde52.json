@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE partnerships\n                  SET kind = ($3::text)::partnership_kind,\n                      started_on = $4,\n                      ended_on = $5,\n                      end_reason = ($6::text)::partnership_end_reason,\n                      note = $7\n                WHERE family_id = $1 AND id = $2\n                RETURNING id, family_id, partner_a_id, partner_b_id, kind::text AS \"kind!\",\n                          started_on, ended_on, end_reason::text AS end_reason, note",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "partner_a_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "partner_b_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "kind!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "started_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "ended_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 7,
+        "name": "end_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "note",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Date",
+        "Date",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "1283ddf5cac20836ca7f96a3629eaa7c0bae9cf6093fc5e6d6d1f6bc6cfbde52"
+}

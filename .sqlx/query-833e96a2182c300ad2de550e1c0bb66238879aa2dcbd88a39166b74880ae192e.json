@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM parent_links WHERE child_id = $1 AND parent_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "833e96a2182c300ad2de550e1c0bb66238879aa2dcbd88a39166b74880ae192e"
+}

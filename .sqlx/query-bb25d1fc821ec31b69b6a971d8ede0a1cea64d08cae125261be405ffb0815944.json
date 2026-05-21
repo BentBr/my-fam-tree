@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, family_id, partner_a_id, partner_b_id, kind::text AS \"kind!\",\n                      started_on, ended_on, end_reason::text AS end_reason, note\n                 FROM partnerships WHERE family_id = $1\n                 ORDER BY started_on NULLS LAST, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "partner_a_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "partner_b_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "kind!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "started_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "ended_on",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 7,
+        "name": "end_reason",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "note",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "bb25d1fc821ec31b69b6a971d8ede0a1cea64d08cae125261be405ffb0815944"
+}
