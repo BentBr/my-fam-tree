@@ -55,7 +55,7 @@ tracing = "0.1"
 tracing-actix-web = "0.7"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 utoipa = { version = "5.5", features = ["actix_extras", "uuid", "chrono"] }
-utoipa-swagger-ui = "9"
+utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [workspace.lints.rust]

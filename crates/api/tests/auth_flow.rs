@@ -168,7 +168,7 @@ fn extract_token_from_link(body: &str) -> String {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn magic_link_then_consume_then_me_then_create_family_then_refresh() {
     let stack = ephemeral_stack().await;
-    let app = test::init_service(build_app(stack.state.clone())).await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
 
     // 1. Request a magic link.
     let req = test::TestRequest::post()

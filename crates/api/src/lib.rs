@@ -5,6 +5,7 @@ pub mod config;
 pub mod cookies;
 pub mod error;
 pub mod middleware;
+pub mod openapi_doc;
 pub mod response;
 pub mod routes;
 pub mod services;
@@ -18,9 +19,11 @@ use actix_web::http::header::HeaderName;
 use actix_web::{App, middleware as actix_mw, web};
 pub use config::{AppEnv, Config, ConfigError, LogFormat};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
+pub use openapi_doc::ApiDoc;
 pub use response::{ApiResponse, Pagination, ResponseMeta};
 pub use state::AppState;
 pub use tracing_setup::init_tracing;
+use utoipa_swagger_ui::SwaggerUi;
 
 /// Build the `Actix` `App` with the full middleware stack and route registration.
 /// Shared by `bin/api.rs` and integration tests.
@@ -30,8 +33,13 @@ pub use tracing_setup::init_tracing;
 /// in `StreamSpan`, `Logger` in `StreamLog`). We expose it through `impl
 /// ServiceFactory` constrained only by `MessageBody` so callers don't need to
 /// spell out the concrete nested type.
+///
+/// `openapi` is `Some(spec)` when the caller wants Swagger UI mounted under
+/// `/api/docs/`; tests pass `None`. Even with `Some`, the UI is only mounted
+/// when `state.cfg.api_enable_docs` is `true`.
 pub fn build_app(
     state: AppState,
+    openapi: Option<utoipa::openapi::OpenApi>,
 ) -> App<
     impl actix_web::dev::ServiceFactory<
         actix_web::dev::ServiceRequest,
@@ -42,6 +50,7 @@ pub fn build_app(
     > + use<>,
 > {
     let cfg = state.cfg.clone();
+    let api_enable_docs = cfg.api_enable_docs;
     let allowed: Vec<&str> = cfg.cors_allowed_origins.split(',').map(str::trim).collect();
     // With `supports_credentials()`, the `CORS` spec forbids wildcards.
     // Enumerate the methods and headers we actually use.
@@ -65,6 +74,10 @@ pub fn build_app(
     // the chain. To get the logical order
     //   request -> CORS -> RequestId -> TracingLogger -> AccessLog -> PanicCatcher -> handler
     // we register them in reverse here.
+    //
+    // The Swagger UI service is registered via `.configure(...)` so we can
+    // conditionally mount it without exploding the `App`'s type parameter.
+    // `ServiceConfig::service` accepts any `HttpServiceFactory`.
     App::new()
         .app_data(web::Data::new(state))
         .wrap(middleware::PanicCatcher)
@@ -75,4 +88,11 @@ pub fn build_app(
         .wrap(middleware::RequestId)
         .wrap(cors)
         .service(routes::api_scope())
+        .configure(move |app_cfg| {
+            if api_enable_docs && let Some(doc) = openapi {
+                app_cfg.service(
+                    SwaggerUi::new("/api/docs/{_:.*}").url("/api/docs/openapi.json", doc),
+                );
+            }
+        })
 }

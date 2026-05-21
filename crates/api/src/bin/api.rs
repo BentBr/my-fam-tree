@@ -8,7 +8,7 @@ use std::time::Duration;
 use actix_web::HttpServer;
 use anyhow::Context;
 use my_family_api::auth::{JwtIssuer, JwtKeyset};
-use my_family_api::{AppEnv, AppState, Config, build_app, init_tracing};
+use my_family_api::{ApiDoc, AppEnv, AppState, Config, build_app, init_tracing};
 use my_family_cache::{RedisPool, RedisRateLimiter};
 use my_family_email::SmtpSender;
 use my_family_persistence::{
@@ -86,7 +86,14 @@ async fn main() -> anyhow::Result<()> {
 
     let bind = format!("{}:{}", state.cfg.api_host, state.cfg.api_port);
     let state_for_factory = state.clone();
-    HttpServer::new(move || build_app(state_for_factory.clone())).bind(&bind)?.run().await?;
+    // Build the OpenAPI spec once and clone the (cheap) `OpenApi` value per
+    // worker. The `Option` matches the `build_app` signature so tests can
+    // skip Swagger entirely by passing `None`.
+    let openapi = ApiDoc::with_cookie_auth();
+    HttpServer::new(move || build_app(state_for_factory.clone(), Some(openapi.clone())))
+        .bind(&bind)?
+        .run()
+        .await?;
 
     if matches!(cfg.app_env, AppEnv::Production) {
         tracing::info!("api shutdown clean");
