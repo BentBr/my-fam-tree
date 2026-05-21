@@ -12,7 +12,8 @@ use std::sync::Arc;
 
 use my_family_cache::{RateLimiter, RedisPool};
 use my_family_domain::{
-    FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, MagicLinkRepo, RefreshTokenRepo, UserRepo,
+    FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, MagicLinkRepo, ParentLinkRepo,
+    PartnershipRepo, PersonRepo, RefreshTokenRepo, UserRepo,
 };
 use my_family_email::EmailSender;
 
@@ -28,6 +29,9 @@ pub struct AppState {
     pub families: Arc<dyn FamilyRepo>,
     pub memberships: Arc<dyn FamilyMembershipRepo>,
     pub invites: Arc<dyn FamilyInviteRepo>,
+    pub persons: Arc<dyn PersonRepo>,
+    pub parent_links: Arc<dyn ParentLinkRepo>,
+    pub partnerships: Arc<dyn PartnershipRepo>,
     pub email: Arc<dyn EmailSender>,
     pub rate_limiter: Arc<dyn RateLimiter>,
     pub redis: RedisPool,

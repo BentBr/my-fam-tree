@@ -13,7 +13,7 @@ use my_family_cache::{RedisPool, RedisRateLimiter};
 use my_family_email::SmtpSender;
 use my_family_persistence::{
     Database, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgMagicLinkRepo,
-    PgRefreshTokenRepo, PgUserRepo,
+    PgParentLinkRepo, PgPartnershipRepo, PgPersonRepo, PgRefreshTokenRepo, PgUserRepo,
 };
 
 #[actix_web::main]
@@ -78,6 +78,9 @@ async fn main() -> anyhow::Result<()> {
         families: Arc::new(PgFamilyRepo::new(pool.clone())),
         memberships: Arc::new(PgFamilyMembershipRepo::new(pool.clone())),
         invites: Arc::new(PgFamilyInviteRepo::new(pool.clone())),
+        persons: Arc::new(PgPersonRepo::new(pool.clone())),
+        parent_links: Arc::new(PgParentLinkRepo::new(pool.clone())),
+        partnerships: Arc::new(PgPartnershipRepo::new(pool.clone())),
         email: Arc::new(email),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis.clone())),
         redis: redis.clone(),

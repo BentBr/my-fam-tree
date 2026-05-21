@@ -5,3 +5,4 @@
 //! `ApiError` and `ApiResponse`.
 
 pub mod auth_service;
+pub mod relationships_tree;
