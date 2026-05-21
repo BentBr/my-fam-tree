@@ -66,8 +66,12 @@ router.beforeEach(async (to) => {
             // will bounce the request to sign-in.
         }
     }
-    const isAuthRoute = to.path.startsWith('/auth/')
-    if (auth.status === 'anonymous' && !isAuthRoute) {
+    // `/invite/*` is also exempt: the InviteAccept view handles anonymous
+    // arrivals itself by stashing the token to sessionStorage and bouncing the
+    // user to /auth/sign-in. If the gate bounced first, the token would be
+    // dropped from the URL before InviteAccept ever saw it.
+    const isExempt = to.path.startsWith('/auth/') || to.path.startsWith('/invite/')
+    if (auth.status === 'anonymous' && !isExempt) {
         return '/auth/sign-in'
     }
     if (auth.status === 'authenticated' && to.path === '/auth/sign-in') {

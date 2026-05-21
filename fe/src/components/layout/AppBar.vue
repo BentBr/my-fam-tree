@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -10,6 +11,15 @@ import LangSwitcher from './LangSwitcher.vue'
 const { t } = useI18n()
 const auth = useAuthStore()
 const ui = useUiStore()
+const router = useRouter()
+
+// `auth.logout()` clears the store but does not navigate. We always send the
+// user to /auth/sign-in afterwards so the FE never leaves them on a now-empty
+// authenticated page where the router guard would re-bounce on the next nav.
+async function signOut(): Promise<void> {
+    await auth.logout()
+    await router.replace('/auth/sign-in')
+}
 </script>
 
 <template>
@@ -24,7 +34,7 @@ const ui = useUiStore()
             icon="log-out"
             :title="t('auth.signOut')"
             data-testid="sign-out"
-            @click="auth.logout"
+            @click="signOut"
         />
     </v-app-bar>
 </template>
