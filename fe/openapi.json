@@ -2316,6 +2316,14 @@
             "type": "string",
             "format": "uuid"
           },
+          "linked_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Set when this person row maps to a `users.id`. Used by the FE to\nresolve \"the signed-in user's own node\" so the tree can auto-center\non them on first load."
+          },
           "parent_ids": {
             "type": "array",
             "items": {

@@ -29,6 +29,10 @@ pub struct TreeNode {
     pub death_date: Option<NaiveDate>,
     pub parent_ids: Vec<Uuid>,
     pub partner_ids: Vec<Uuid>,
+    /// Set when this person row maps to a `users.id`. Used by the FE to
+    /// resolve "the signed-in user's own node" so the tree can auto-center
+    /// on them on first load.
+    pub linked_user_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -91,6 +95,7 @@ pub async fn build_tree(
                 .into_iter()
                 .map(PersonId::into_uuid)
                 .collect(),
+            linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
         })
         .collect();
 
