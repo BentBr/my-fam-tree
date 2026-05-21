@@ -28,6 +28,7 @@ use crate::routes::families::{
 };
 use crate::routes::health::{self, HealthResponseBody};
 use crate::routes::invites::{self, AcceptResponseBody};
+use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
 
 /// Aggregated `OpenAPI` document for the entire HTTP surface.
 #[derive(Debug, OpenApi)]
@@ -53,6 +54,10 @@ use crate::routes::invites::{self, AcceptResponseBody};
         families::delete_family,
         families::invite,
         invites::accept,
+        users::me,
+        users::update,
+        users::email_change_request,
+        users::email_change_confirm,
     ),
     components(
         schemas(
@@ -69,6 +74,8 @@ use crate::routes::invites::{self, AcceptResponseBody};
             FamilyViewResponseBody,
             InviteResponseBody,
             AcceptResponseBody,
+            UserProfileResponseBody,
+            EmailChangeResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -95,6 +102,11 @@ use crate::routes::invites::{self, AcceptResponseBody};
             families::InviteRes,
             invites::AcceptReq,
             invites::AcceptRes,
+            users::UserProfile,
+            users::UpdateUserReq,
+            users::EmailChangeReq,
+            users::EmailChangeRes,
+            users::EmailChangeConfirmReq,
         ),
     ),
     tags(
@@ -102,6 +114,7 @@ use crate::routes::invites::{self, AcceptResponseBody};
         (name = "auth", description = "Authentication"),
         (name = "families", description = "Family management"),
         (name = "invites", description = "Invite acceptance"),
+        (name = "users", description = "User profile and email change"),
     ),
 )]
 pub struct ApiDoc;

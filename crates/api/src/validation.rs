@@ -116,6 +116,38 @@ pub fn invite_email_mismatch(path: &str) -> ApiError {
     )])
 }
 
+/// `validation.email_same_as_current` violation. Surfaced by
+/// `/users/me/email-change` when the new address equals the current one.
+#[must_use]
+pub fn email_same_as_current(path: &str) -> ApiError {
+    ApiError::Validation(vec![FieldViolation::new(
+        path,
+        "validation.email_same_as_current",
+        "new email must differ from the current one",
+    )])
+}
+
+/// `validation.string_too_long` violation with a `max` parameter the FE can
+/// interpolate. Use for any bounded-length string field.
+#[must_use]
+pub fn string_too_long(path: &str, max: u32) -> ApiError {
+    ApiError::Validation(vec![
+        FieldViolation::new(path, "validation.string_too_long", "value exceeds maximum length")
+            .with_param("max", max),
+    ])
+}
+
+/// `validation.locale_invalid` violation. Surfaced when `PATCH /users/me`
+/// receives a `locale` outside the `Locale` enum.
+#[must_use]
+pub fn locale_invalid(path: &str) -> ApiError {
+    ApiError::Validation(vec![FieldViolation::new(
+        path,
+        "validation.locale_invalid",
+        "locale must be 'en' or 'de'",
+    )])
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic)]
 mod tests {

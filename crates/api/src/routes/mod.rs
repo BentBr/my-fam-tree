@@ -16,6 +16,7 @@ pub mod auth;
 pub mod families;
 pub mod health;
 pub mod invites;
+pub mod users;
 
 use actix_web::web;
 
@@ -41,6 +42,10 @@ pub fn api_scope() -> actix_web::Scope<
                 .wrap(AuthMiddleware::required())
                 .service(auth::logout)
                 .service(auth::me)
+                .service(users::me)
+                .service(users::update)
+                .service(users::email_change_request)
+                .service(users::email_change_confirm)
                 .service(families::list_mine)
                 .service(families::create)
                 .service(families::rename)

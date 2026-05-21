@@ -98,6 +98,7 @@ pub enum ErrorCode {
     PartnershipDuplicate,
     ValidationFailed,
     ConflictStale,
+    EmailTaken,
     RateLimited,
     Upstream,
     Internal,
@@ -119,9 +120,10 @@ impl ErrorCode {
             Self::PersonNotFound | Self::ContactNotFound | Self::ReminderNotFound => {
                 StatusCode::NOT_FOUND
             }
-            Self::RelationshipCycle | Self::PartnershipDuplicate | Self::ConflictStale => {
-                StatusCode::CONFLICT
-            }
+            Self::RelationshipCycle
+            | Self::PartnershipDuplicate
+            | Self::ConflictStale
+            | Self::EmailTaken => StatusCode::CONFLICT,
             Self::ValidationFailed => StatusCode::UNPROCESSABLE_ENTITY,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::Upstream => StatusCode::BAD_GATEWAY,
@@ -148,6 +150,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "Partnership already exists",
             Self::ValidationFailed => "Validation failed",
             Self::ConflictStale => "Stale state",
+            Self::EmailTaken => "Email already in use",
             Self::RateLimited => "Rate limited",
             Self::Upstream => "Upstream service error",
             Self::Internal => "Internal server error",
@@ -173,6 +176,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "partnership.duplicate",
             Self::ValidationFailed => "validation.failed",
             Self::ConflictStale => "conflict.stale",
+            Self::EmailTaken => "email.taken",
             Self::RateLimited => "rate_limited",
             Self::Upstream => "upstream",
             Self::Internal => "internal",
@@ -197,6 +201,7 @@ impl ErrorCode {
         Self::PartnershipDuplicate,
         Self::ValidationFailed,
         Self::ConflictStale,
+        Self::EmailTaken,
         Self::RateLimited,
         Self::Upstream,
         Self::Internal,
@@ -239,6 +244,8 @@ pub enum ApiError {
     Validation(Vec<FieldViolation>),
     #[error("stale state")]
     ConflictStale,
+    #[error("email {email} already in use")]
+    EmailTaken { email: String },
     #[error("rate limited; retry after {retry_after_secs}s")]
     RateLimited { retry_after_secs: u32 },
     #[error("upstream {service}: {detail}")]
@@ -267,6 +274,7 @@ impl ApiError {
             Self::PartnershipDuplicate => ErrorCode::PartnershipDuplicate,
             Self::Validation(_) => ErrorCode::ValidationFailed,
             Self::ConflictStale => ErrorCode::ConflictStale,
+            Self::EmailTaken { .. } => ErrorCode::EmailTaken,
             Self::RateLimited { .. } => ErrorCode::RateLimited,
             Self::Upstream { .. } => ErrorCode::Upstream,
             Self::Internal(_) => ErrorCode::Internal,

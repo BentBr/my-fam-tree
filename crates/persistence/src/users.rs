@@ -121,4 +121,46 @@ impl UserRepo for PgUserRepo {
         .map_err(|e| UserRepoError::Db(e.to_string()))?;
         Ok(())
     }
+
+    async fn update_display_name(
+        &self,
+        id: UserId,
+        display_name: &str,
+    ) -> Result<(), UserRepoError> {
+        sqlx::query!(
+            "UPDATE users SET display_name = $2 WHERE id = $1",
+            id.into_uuid(),
+            display_name
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| UserRepoError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn update_email(&self, id: UserId, new_email: &str) -> Result<(), UserRepoError> {
+        // Postgres defaults the constraint name for inline `UNIQUE` to
+        // `<table>_<column>_key`. Surfacing this as a typed error lets the
+        // route handler return a 409 `email.taken` envelope instead of a 500.
+        let res =
+            sqlx::query!("UPDATE users SET email = $2 WHERE id = $1", id.into_uuid(), new_email)
+                .execute(&self.pool)
+                .await;
+
+        if let Err(sqlx::Error::Database(ref db_err)) = res
+            && db_err.constraint() == Some("users_email_key")
+        {
+            return Err(UserRepoError::DuplicateEmail);
+        }
+        res.map_err(|e| UserRepoError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn mark_email_unverified(&self, id: UserId) -> Result<(), UserRepoError> {
+        sqlx::query!("UPDATE users SET email_verified_at = NULL WHERE id = $1", id.into_uuid())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| UserRepoError::Db(e.to_string()))?;
+        Ok(())
+    }
 }

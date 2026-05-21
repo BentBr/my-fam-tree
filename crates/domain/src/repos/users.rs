@@ -36,6 +36,8 @@ pub enum UserRepoError {
     Db(String),
     #[error("not found")]
     NotFound,
+    #[error("email already in use")]
+    DuplicateEmail,
 }
 
 #[async_trait]
@@ -45,4 +47,17 @@ pub trait UserRepo: Send + Sync {
     async fn create(&self, email: &str, locale: Locale) -> Result<User, UserRepoError>;
     async fn mark_verified(&self, id: UserId) -> Result<(), UserRepoError>;
     async fn update_locale(&self, id: UserId, locale: Locale) -> Result<(), UserRepoError>;
+    /// Update the user's display name. The caller is responsible for trimming
+    /// + length validation; the repo simply writes the value through.
+    async fn update_display_name(
+        &self,
+        id: UserId,
+        display_name: &str,
+    ) -> Result<(), UserRepoError>;
+    /// Update the user's email. Returns [`UserRepoError::DuplicateEmail`] if
+    /// another row already holds the address.
+    async fn update_email(&self, id: UserId, new_email: &str) -> Result<(), UserRepoError>;
+    /// Clears `email_verified_at`. Used after `update_email` so the new
+    /// address must be re-verified via the standard magic-link flow.
+    async fn mark_email_unverified(&self, id: UserId) -> Result<(), UserRepoError>;
 }

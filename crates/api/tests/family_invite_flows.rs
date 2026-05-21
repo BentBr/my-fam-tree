@@ -326,6 +326,14 @@ async fn protected_endpoints_require_authentication() {
     let endpoints: Vec<(&'static str, &'static str, serde_json::Value)> = vec![
         ("GET", "/api/v1/auth/me", serde_json::Value::Null),
         ("POST", "/api/v1/auth/logout", serde_json::Value::Null),
+        ("GET", "/api/v1/users/me", serde_json::Value::Null),
+        ("PATCH", "/api/v1/users/me", serde_json::json!({ "display_name": "x" })),
+        (
+            "POST",
+            "/api/v1/users/me/email-change",
+            serde_json::json!({ "new_email": "x@example.com" }),
+        ),
+        ("POST", "/api/v1/users/me/email-change/confirm", serde_json::json!({ "token": "x" })),
         ("GET", "/api/v1/families/me", serde_json::Value::Null),
         ("POST", "/api/v1/families", serde_json::json!({ "name": "x" })),
         (
