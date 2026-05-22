@@ -18,7 +18,7 @@ use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 
 use crate::auth::{FamilyClaim, JwtClaims};
 use crate::error::{ApiErrorBody, ErrorCode, FieldViolation};
-use crate::response::{NullResponseBody, Pagination, ResponseMeta};
+use crate::response::{NullResponseBody, Pagination, ResponseMeta, Warning};
 use crate::routes::auth::{
     self, ConsumeResponseBody, LogoutResponseBody, MagicLinkResponseBody, MeResponseBody,
 };
@@ -101,6 +101,7 @@ use crate::services::relationships_tree::{EdgePair, TreeNode, TreePayload};
             // Envelope + error scalars (shared across every response).
             ResponseMeta,
             Pagination,
+            Warning,
             ApiErrorBody,
             ErrorCode,
             FieldViolation,

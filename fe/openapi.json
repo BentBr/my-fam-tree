@@ -2253,7 +2253,7 @@
       },
       "ResponseMeta": {
         "type": "object",
-        "description": "Per-response metadata. Currently carries pagination cursors and the\n`request_id` for tracing-friendly client diagnostics.",
+        "description": "Per-response metadata. Currently carries pagination cursors, the\n`request_id` for tracing-friendly client diagnostics, and any soft\nvalidation `warnings` attached by the handler.",
         "properties": {
           "pagination": {
             "oneOf": [
@@ -2270,6 +2270,13 @@
               "string",
               "null"
             ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            },
+            "description": "Soft warnings. Serialized only when non-empty so the wire shape\nstays unchanged for handlers that don't produce any."
           }
         }
       },
@@ -2463,6 +2470,28 @@
               {
                 "$ref": "#/components/schemas/ResponseMeta"
               }
+            ]
+          }
+        }
+      },
+      "Warning": {
+        "type": "object",
+        "description": "Soft-validation warning.\n\nSurfaced under `meta.warnings` on the success envelope when the\ncaller's input violates a heuristic rule that we don't want to reject\noutright (e.g. parent-child age gap < 14 years). The `code` is a\nstable i18n key (`warning.<snake_case>`); `path` is an optional JSON\nPointer to the relevant field.",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
             ]
           }
         }

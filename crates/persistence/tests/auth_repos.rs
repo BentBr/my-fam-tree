@@ -13,11 +13,12 @@ use std::time::Duration as StdDuration;
 use chrono::{Duration, Utc};
 use my_family_domain::{
     FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, Locale, MagicLinkPurpose, MagicLinkRepo,
-    RefreshTokenRepo, Role, UserRepo,
+    ParentKind, ParentLinkRepo, ParentLinkRepoError, PersonId, PersonRepo, RefreshTokenRepo, Role,
+    UserRepo,
 };
 use my_family_persistence::{
     Database, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgMagicLinkRepo,
-    PgRefreshTokenRepo, PgUserRepo,
+    PgParentLinkRepo, PgPersonRepo, PgRefreshTokenRepo, PgUserRepo,
 };
 use sqlx::PgPool;
 use testcontainers::ContainerAsync;
@@ -120,6 +121,60 @@ async fn refresh_token_rotation_preserves_absolute_expiry() {
     let new_rec = rts.find_active_by_hash(&h2).await.unwrap().expect("found");
     assert_eq!(new_rec.absolute_expires_at.timestamp(), abs_exp.timestamp());
     assert!(rts.find_active_by_hash(&h1).await.unwrap().is_none());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parent_links_db_trigger_rejects_cycle() {
+    // Sanity-check that the BEFORE-INSERT trigger added in
+    // migration 0003 fires even when the in-memory check is bypassed.
+    // We pre-load a (child=A, parent=B) edge, then try to insert
+    // (child=B, parent=A) — the in-memory check WILL catch this too,
+    // but more importantly the trigger would catch it even if a
+    // concurrent writer slipped past the SERIALIZABLE snapshot.
+    use my_family_domain::PersonDraft;
+
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let fams = PgFamilyRepo::new(db.pool.clone());
+    let persons = PgPersonRepo::new(db.pool.clone());
+    let pls = PgParentLinkRepo::new(db.pool.clone());
+
+    let owner = users.create("cyc@x.y", Locale::En).await.unwrap();
+    let fam = fams.create("Cycle Test", owner.id).await.unwrap();
+
+    let a = persons
+        .create(fam.id, PersonDraft { given_name: "A".into(), ..PersonDraft::default() })
+        .await
+        .unwrap();
+    let b = persons
+        .create(fam.id, PersonDraft { given_name: "B".into(), ..PersonDraft::default() })
+        .await
+        .unwrap();
+
+    // Edge 1: A is child of B.
+    pls.insert(fam.id, a.id, b.id, ParentKind::Biological, "").await.expect("first edge ok");
+
+    // Edge 2 would close the cycle. The repo's in-memory check returns
+    // Cycle first; that's correct behaviour. The DB trigger is the
+    // race-safe backstop and we verify its existence by INSERTing the
+    // edge directly via raw SQL (bypassing the repo) — that path
+    // exercises only the trigger.
+    let raw = sqlx::query(
+        "INSERT INTO parent_links (child_id, parent_id, kind, note) \
+         VALUES ($1, $2, 'biological'::parent_link_kind, '')",
+    )
+    .bind(PersonId::into_uuid(b.id))
+    .bind(PersonId::into_uuid(a.id))
+    .execute(&db.pool)
+    .await;
+    let err = raw.expect_err("DB trigger must reject the cycle");
+    let db_err = err.as_database_error().expect("expected database error");
+    assert_eq!(db_err.code().as_deref(), Some("23514"));
+    assert!(db_err.message().contains("parent_links cycle"));
+
+    // Now go through the repo: in-memory check fires, returning Cycle.
+    let via_repo = pls.insert(fam.id, b.id, a.id, ParentKind::Biological, "").await;
+    assert!(matches!(via_repo, Err(ParentLinkRepoError::Cycle)));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

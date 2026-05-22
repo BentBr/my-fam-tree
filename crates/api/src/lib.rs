@@ -20,7 +20,7 @@ use actix_web::{App, middleware as actix_mw, web};
 pub use config::{AppEnv, Config, ConfigError, LogFormat};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
 pub use openapi_doc::ApiDoc;
-pub use response::{ApiResponse, Pagination, ResponseMeta};
+pub use response::{ApiResponse, Pagination, ResponseMeta, Warning};
 pub use state::AppState;
 pub use tracing_setup::init_tracing;
 use utoipa_swagger_ui::SwaggerUi;

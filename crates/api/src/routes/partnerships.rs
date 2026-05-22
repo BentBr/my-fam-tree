@@ -19,6 +19,7 @@ use uuid::Uuid;
 
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, NullResponseBody};
+use crate::validation::relationships::check_partnership;
 use crate::validation::value_required;
 use crate::{ApiError, AppState, response_body};
 
@@ -154,6 +155,32 @@ pub async fn create(
     let a = PersonId::from_uuid(payload.partner_a_id);
     let b = PersonId::from_uuid(payload.partner_b_id);
 
+    // Cross-aggregate validation: partnership-before-birth, sibling
+    // warning, death cross-check. Pulls the family graph (same scope and
+    // bounds as the relationships-tree service uses elsewhere).
+    let persons = state
+        .persons
+        .list_for_family(active.id, None, 100)
+        .await
+        .map_err(|e| internal(format!("persons.list_for_family: {e}")))?;
+    let parent_links = state
+        .parent_links
+        .list_for_family(active.id)
+        .await
+        .map_err(|e| internal(format!("parent_links.list_for_family: {e}")))?;
+    let partnerships_now =
+        state.partnerships.list_for_family(active.id).await.map_err(|e| map_repo_err(e, None))?;
+    let warnings = check_partnership(
+        a,
+        b,
+        payload.started_on,
+        payload.ended_on,
+        end_reason,
+        &persons,
+        &parent_links,
+        &partnerships_now,
+    )?;
+
     let draft = PartnershipDraft {
         kind,
         started_on: payload.started_on,
@@ -166,7 +193,7 @@ pub async fn create(
         .create(active.id, a, b, draft)
         .await
         .map_err(|e| map_repo_err(e, None))?;
-    Ok(ApiResponse::ok(to_view(partnership)))
+    Ok(ApiResponse::ok(to_view(partnership)).with_warnings(warnings))
 }
 
 // ---------------------------------------------------------------------------

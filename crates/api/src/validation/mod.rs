@@ -8,6 +8,17 @@
 //! Helpers live here (not in `routes/auth.rs`) so the same email-syntax check
 //! and the same validation envelopes are used by every route that needs them
 //! — `/auth/magic-link`, `/families`, `/families/{id}/invites`, etc.
+//!
+//! ## Layout
+//!
+//! This module was promoted to a `mod.rs` so we can host non-trivial
+//! validators in dedicated peer files without breaking existing
+//! `crate::validation::value_required` imports. The HTTP-field helpers below
+//! stay here (they're small, share the same `FieldViolation` shape, and form
+//! the single re-export surface), while the relationship/cross-aggregate
+//! validators live in [`relationships`].
+
+pub mod relationships;
 
 use crate::{ApiError, FieldViolation};
 

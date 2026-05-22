@@ -125,7 +125,7 @@ impl ParentLinkRepo for PgParentLinkRepo {
             return Err(ParentLinkRepoError::Cycle);
         }
 
-        sqlx::query!(
+        let insert_res = sqlx::query!(
             "INSERT INTO parent_links (child_id, parent_id, kind, note)
              VALUES ($1, $2, ($3::text)::parent_link_kind, $4)
              ON CONFLICT (child_id, parent_id) DO UPDATE
@@ -136,8 +136,17 @@ impl ParentLinkRepo for PgParentLinkRepo {
             note
         )
         .execute(&mut *tx)
-        .await
-        .map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
+        .await;
+        if let Err(sqlx::Error::Database(db)) = &insert_res
+            && db.code().as_deref() == Some("23514")
+            && db.message().contains("parent_links cycle")
+        {
+            // The DB-level trigger fired: a concurrent writer slipped a
+            // conflicting edge in between our SERIALIZABLE snapshot read
+            // and this INSERT. Surface the cycle to the route layer.
+            return Err(ParentLinkRepoError::Cycle);
+        }
+        insert_res.map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
 
         tx.commit().await.map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
         Ok(())

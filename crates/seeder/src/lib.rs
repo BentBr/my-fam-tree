@@ -25,6 +25,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use chrono::NaiveDate;
 use my_family_api::Config;
 use my_family_api::services::auth_service::mint_magic_link_url;
 use my_family_domain::{MagicLinkRepo, UserId};
@@ -164,33 +165,181 @@ async fn seed_memberships(pool: &PgPool) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Static seed of every person field. Picks dates that satisfy the
+/// `validation::relationships` hard rules (parent older than child;
+/// biological parents alive at conception; partnership starts after
+/// both partners' birthdays) so future flows that re-run validation
+/// against the seeded graph never fail. The fields beyond the
+/// (id, given, family, linked) tuple are illustrative dev/test fixtures
+/// — none of this is real data.
+struct PersonSeed {
+    id: Uuid,
+    given: &'static str,
+    family: &'static str,
+    name_at_birth: &'static str,
+    nickname: &'static str,
+    gender: &'static str,
+    birth_date: NaiveDate,
+    birth_place: &'static str,
+    death_date: Option<NaiveDate>,
+    notes: &'static str,
+    linked_user_id: Option<Uuid>,
+}
+
+#[allow(
+    clippy::panic,
+    reason = "const-fn date constructor: arguments are static literals validated at build time"
+)]
+const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
+    match NaiveDate::from_ymd_opt(y, m, d) {
+        Some(date) => date,
+        None => panic!("static seed date must be valid"),
+    }
+}
+
+#[allow(clippy::too_many_lines, reason = "static table of 8 persons; splitting hurts readability")]
 async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
-    // (id, given, family, linked_user_id_opt).
-    let rows: [(Uuid, &str, &str, Option<Uuid>); 8] = [
-        (SEED_PERSON_OTTO_ID, "Otto", "Müller", None),
-        (SEED_PERSON_HANNELORE_ID, "Hannelore", "Müller", None),
-        (SEED_PERSON_WERNER_ID, "Werner", "Schmidt", None),
-        (SEED_PERSON_GRETA_ID, "Greta", "Schmidt", None),
-        (SEED_PERSON_KLAUS_ID, "Klaus", "Müller", Some(SEED_ADMIN_USER_ID)),
-        (SEED_PERSON_ANNA_ID, "Anna", "Müller", Some(SEED_ALICE_USER_ID)),
-        (SEED_PERSON_LINA_ID, "Lina", "Müller", Some(SEED_BOB_USER_ID)),
-        (SEED_PERSON_MAX_ID, "Max", "Müller", None),
+    let rows: [PersonSeed; 8] = [
+        // G1 — Müller line.
+        PersonSeed {
+            id: SEED_PERSON_OTTO_ID,
+            given: "Otto",
+            family: "Müller",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1935, 3, 12),
+            birth_place: "Hamburg",
+            death_date: Some(ymd(2010, 11, 4)),
+            notes: "G1 patriarch; worked at the shipyard until retirement.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_HANNELORE_ID,
+            given: "Hannelore",
+            family: "Müller",
+            name_at_birth: "Becker",
+            nickname: "Hanni",
+            gender: "female",
+            birth_date: ymd(1938, 7, 23),
+            birth_place: "Lübeck",
+            death_date: None,
+            notes: "Schoolteacher; still tends the garden in Hamburg.",
+            linked_user_id: None,
+        },
+        // G1 — Schmidt line.
+        PersonSeed {
+            id: SEED_PERSON_WERNER_ID,
+            given: "Werner",
+            family: "Schmidt",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1936, 5, 18),
+            birth_place: "München",
+            death_date: None,
+            notes: "Retired engineer; lives in Bayern.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_GRETA_ID,
+            given: "Greta",
+            family: "Schmidt",
+            name_at_birth: "Hoffmann",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1940, 2, 9),
+            birth_place: "Augsburg",
+            death_date: None,
+            notes: "Long-time librarian; family historian.",
+            linked_user_id: None,
+        },
+        // G2.
+        PersonSeed {
+            id: SEED_PERSON_KLAUS_ID,
+            given: "Klaus",
+            family: "Müller",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1965, 4, 22),
+            birth_place: "Hamburg",
+            death_date: None,
+            notes: "Owner of the seeded family; runs a small architecture studio.",
+            linked_user_id: Some(SEED_ADMIN_USER_ID),
+        },
+        PersonSeed {
+            id: SEED_PERSON_ANNA_ID,
+            given: "Anna",
+            family: "Müller",
+            name_at_birth: "Schmidt",
+            nickname: "Annie",
+            gender: "female",
+            birth_date: ymd(1968, 8, 11),
+            birth_place: "München",
+            death_date: None,
+            notes: "Pediatrician; née Schmidt — took Müller after partnering with Klaus.",
+            linked_user_id: Some(SEED_ALICE_USER_ID),
+        },
+        // G3.
+        PersonSeed {
+            id: SEED_PERSON_LINA_ID,
+            given: "Lina",
+            family: "Müller",
+            name_at_birth: "",
+            nickname: "Lini",
+            gender: "female",
+            birth_date: ymd(1995, 12, 3),
+            birth_place: "Berlin",
+            death_date: None,
+            notes: "G3 — software developer in Berlin.",
+            linked_user_id: Some(SEED_BOB_USER_ID),
+        },
+        PersonSeed {
+            id: SEED_PERSON_MAX_ID,
+            given: "Max",
+            family: "Müller",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1998, 4, 17),
+            birth_place: "Berlin",
+            death_date: None,
+            notes: "G3 — university student studying chemistry.",
+            linked_user_id: None,
+        },
     ];
-    for (id, given, family, linked) in rows {
+    for p in rows {
         sqlx::query(
-            "INSERT INTO persons (id, family_id, given_name, family_name, linked_user_id) \
-             VALUES ($1, $2, $3, $4, $5) \
+            "INSERT INTO persons \
+                 (id, family_id, given_name, family_name, name_at_birth, nickname, gender, \
+                  birth_date, birth_place, death_date, notes, linked_user_id) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
              ON CONFLICT (id) DO UPDATE SET \
                  family_id = EXCLUDED.family_id, \
                  given_name = EXCLUDED.given_name, \
                  family_name = EXCLUDED.family_name, \
+                 name_at_birth = EXCLUDED.name_at_birth, \
+                 nickname = EXCLUDED.nickname, \
+                 gender = EXCLUDED.gender, \
+                 birth_date = EXCLUDED.birth_date, \
+                 birth_place = EXCLUDED.birth_place, \
+                 death_date = EXCLUDED.death_date, \
+                 notes = EXCLUDED.notes, \
                  linked_user_id = EXCLUDED.linked_user_id",
         )
-        .bind(id)
+        .bind(p.id)
         .bind(SEED_FAMILY_ID)
-        .bind(given)
-        .bind(family)
-        .bind(linked)
+        .bind(p.given)
+        .bind(p.family)
+        .bind(p.name_at_birth)
+        .bind(p.nickname)
+        .bind(p.gender)
+        .bind(p.birth_date)
+        .bind(p.birth_place)
+        .bind(p.death_date)
+        .bind(p.notes)
+        .bind(p.linked_user_id)
         .execute(pool)
         .await?;
     }

@@ -18,14 +18,34 @@ pub struct ApiResponse<T> {
     pub meta: Option<ResponseMeta>,
 }
 
-/// Per-response metadata. Currently carries pagination cursors and the
-/// `request_id` for tracing-friendly client diagnostics.
+/// Soft-validation warning.
+///
+/// Surfaced under `meta.warnings` on the success envelope when the
+/// caller's input violates a heuristic rule that we don't want to reject
+/// outright (e.g. parent-child age gap < 14 years). The `code` is a
+/// stable i18n key (`warning.<snake_case>`); `path` is an optional JSON
+/// Pointer to the relevant field.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct Warning {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+}
+
+/// Per-response metadata. Currently carries pagination cursors, the
+/// `request_id` for tracing-friendly client diagnostics, and any soft
+/// validation `warnings` attached by the handler.
 #[derive(Debug, Default, Serialize, ToSchema)]
 pub struct ResponseMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pagination: Option<Pagination>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
+    /// Soft warnings. Serialized only when non-empty so the wire shape
+    /// stays unchanged for handlers that don't produce any.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub warnings: Vec<Warning>,
 }
 
 /// Cursor-based pagination block. `next_cursor` is `None` on the last page.
@@ -74,6 +94,20 @@ impl<T: Serialize> ApiResponse<T> {
         self.meta = Some(meta);
         self
     }
+
+    /// Attach soft validation warnings to `meta.warnings`. A no-op when
+    /// `warnings` is empty so handlers can call this unconditionally
+    /// without changing the wire shape on the happy path.
+    #[must_use]
+    pub fn with_warnings(mut self, warnings: Vec<Warning>) -> Self {
+        if warnings.is_empty() {
+            return self;
+        }
+        let mut meta = self.meta.take().unwrap_or_default();
+        meta.warnings = warnings;
+        self.meta = Some(meta);
+        self
+    }
 }
 
 impl<T: Serialize> ApiResponse<Vec<T>> {
@@ -81,7 +115,11 @@ impl<T: Serialize> ApiResponse<Vec<T>> {
     pub const fn page(items: Vec<T>, pagination: Pagination) -> Self {
         Self {
             data: items,
-            meta: Some(ResponseMeta { pagination: Some(pagination), request_id: None }),
+            meta: Some(ResponseMeta {
+                pagination: Some(pagination),
+                request_id: None,
+                warnings: Vec::new(),
+            }),
         }
     }
 }

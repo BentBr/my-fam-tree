@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, NullResponseBody};
+use crate::validation::relationships::check_parent_link;
 use crate::validation::value_required;
 use crate::{ApiError, AppState};
 
@@ -88,12 +89,23 @@ pub async fn create(
         return Err(ApiError::RelationshipCycle);
     }
 
+    // Cross-aggregate validation: parent age, deceased-before-birth,
+    // bio-parent cap. Pulls a fresh snapshot of the family graph so the
+    // rules see the same view the cycle check just read.
+    let persons = state
+        .persons
+        .list_for_family(active.id, None, 100)
+        .await
+        .map_err(|e| internal(format!("persons.list_for_family: {e}")))?;
+    let links = state.parent_links.list_for_family(active.id).await.map_err(internal_link_err)?;
+    let warnings = check_parent_link(child, parent, kind, &persons, &links)?;
+
     state
         .parent_links
         .insert(active.id, child, parent, kind, &payload.note)
         .await
         .map_err(internal_link_err)?;
-    Ok(ApiResponse::ok(serde_json::Value::Null))
+    Ok(ApiResponse::ok(serde_json::Value::Null).with_warnings(warnings))
 }
 
 // ---------------------------------------------------------------------------
