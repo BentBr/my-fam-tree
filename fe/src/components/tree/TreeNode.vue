@@ -173,9 +173,19 @@ function onSelect(): void {
     pointer-events: none;
 }
 
-/* `.current-user` is a hook for later styling; intentionally left without
- * a visual treatment for now so the design can be finalized in a follow-up.
- * Tests assert the class is applied, not its CSS. */
+/* Baseline "this is you" treatment: warm amber ring + soft amber wash,
+ * distinct from the primary-blue used for selected/hovered cards so the
+ * user marker doesn't read as a transient state. The final design will
+ * iterate; this only needs to be unmistakable at a glance. */
+.tree-node.current-user rect {
+    stroke: #f59e0b;
+    stroke-width: 2.5;
+    fill: #fffbeb;
+}
+.tree-node.current-user.selected rect,
+.tree-node.current-user:focus-visible rect {
+    stroke-width: 3;
+}
 
 /* Deceased cards get a soft grey wash so they read as historical at a
  * glance. The avatar+text inside the SVG can't use `filter: grayscale` —
