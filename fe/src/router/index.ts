@@ -106,5 +106,18 @@ router.beforeEach((to) => {
     const isExempt = to.path.startsWith('/auth/') || to.path.startsWith('/families/') || to.path.startsWith('/invite/')
     if (isExempt) return true
     if (family.activeFamilyId !== null) return true
+    // Auto-select when the user belongs to exactly one family — there's nothing
+    // to pick, sending them through the picker just adds an extra click. Two or
+    // more families still go through the picker; zero families fall through to
+    // /families/create. Persisted activeFamilyId in localStorage is honoured
+    // first (the `!== null` short-circuit above) so a returning user keeps
+    // their last selection even with multiple families.
+    if (auth.families.length === 1) {
+        const sole = auth.families[0]
+        if (sole !== undefined) {
+            family.setActive(sole.id)
+            return true
+        }
+    }
     return auth.families.length === 0 ? '/families/create' : '/families/pick'
 })

@@ -57,9 +57,15 @@ describe('FamilySwitcher', () => {
         mockStorage()
     })
 
-    it('renders nothing when the user has no families', async () => {
+    it('renders a create-only switcher when the user has no families', async () => {
         const { w } = await mountSwitcher()
-        expect(w.find('.select-stub').exists()).toBe(false)
+        // T7: the switcher is always visible; with zero families the only
+        // entry is the "create new" sentinel — never disappear entirely.
+        const stub = w.find('.select-stub')
+        expect(stub.exists()).toBe(true)
+        const items = JSON.parse(stub.attributes('data-items') ?? '[]') as Array<Record<string, unknown>>
+        expect(items.length).toBe(1)
+        expect(items[0]?.['value']).toBe('__create__')
     })
 
     it('renders items + divider + create-new sentinel when families are present', async () => {

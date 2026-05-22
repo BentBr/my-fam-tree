@@ -23,22 +23,32 @@ const items = computed(() => {
         value: f.id as string,
         title: f.name,
     }))
+    const createEntry = {
+        value: CREATE_SENTINEL,
+        title: t('family.switcher.createNew'),
+        // `props` is forwarded to the underlying v-list-item, so we can give
+        // the create entry a distinct icon without a custom slot.
+        props: { prependIcon: 'plus' },
+    }
+    // Empty-family case: only the create entry, no divider (nothing to separate).
+    // The picker visibly invites the user to bootstrap their first family
+    // rather than disappearing entirely — keeps the AppBar geometry stable
+    // and gives a one-click path to /families/create.
+    if (familyItems.length === 0) {
+        return [createEntry]
+    }
     return [
         ...familyItems,
         // Divider before the create entry so it visually separates from the
-        // family list. v-select honours `props: { divider: true }` on item
-        // objects via the `header` slot, but the simpler portable approach
-        // is a `type: 'divider'` item that v-select renders as a divider.
+        // family list. `type: 'divider'` is rendered by v-select as a divider.
         { type: 'divider' as const },
-        {
-            value: CREATE_SENTINEL,
-            title: t('family.switcher.createNew'),
-            // `props` is forwarded to the underlying v-list-item, so we can
-            // give the create entry a distinct icon without a custom slot.
-            props: { prependIcon: 'plus' },
-        },
+        createEntry,
     ]
 })
+
+// Placeholder shown when the active family is null (e.g. before a 1-family
+// user gets auto-picked, or when they have zero families). Localized.
+const placeholder = computed(() => t('family.switcher.placeholder'))
 
 function onChange(value: unknown): void {
     if (value === CREATE_SENTINEL) {
@@ -51,9 +61,9 @@ function onChange(value: unknown): void {
 
 <template>
     <v-select
-        v-if="auth.families.length > 0"
         :model-value="family.activeFamilyId"
         :items="items"
+        :placeholder="placeholder"
         item-value="value"
         item-title="title"
         density="compact"

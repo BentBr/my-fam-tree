@@ -82,13 +82,33 @@ describe('router guards', () => {
         expect(router.currentRoute.value.path).toBe('/families/create')
     })
 
-    it('authenticated user with families but none active is redirected to /families/pick', async () => {
+    it('authenticated user with exactly one family auto-selects it and proceeds', async () => {
+        // T7: single-family users skip the picker entirely — there's nothing
+        // to choose between, so the guard sets the family active in-place
+        // and continues the navigation rather than bouncing through /families/pick.
         const auth = useAuthStore()
         auth.applyClaimsPayload({
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
+        } as never)
+        await router.push('/tree')
+        expect(router.currentRoute.value.path).toBe('/tree')
+        const family = useActiveFamilyStore()
+        expect(family.activeFamilyId).toBe('f-1')
+    })
+
+    it('authenticated user with multiple families and none active is redirected to /families/pick', async () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [
+                { id: 'f-1', name: 'F1', role: 'owner' },
+                { id: 'f-2', name: 'F2', role: 'user' },
+            ],
         } as never)
         await router.push('/tree')
         expect(router.currentRoute.value.path).toBe('/families/pick')

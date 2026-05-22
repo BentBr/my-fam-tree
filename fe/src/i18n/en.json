@@ -32,7 +32,8 @@
             "create": "Or create a new family"
         },
         "switcher": {
-            "createNew": "Create new family…"
+            "createNew": "Create new family…",
+            "placeholder": "Pick a family"
         }
     },
     "invite": {
