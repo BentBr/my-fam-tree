@@ -134,6 +134,38 @@ function onRelationsChanged(): void {
 
             <v-divider class="my-3" />
 
+            <!-- Contact section. Renders empty fields as em-dash, matching
+                 the profile section above so the drawer stays scannable. -->
+            <h4 class="text-subtitle-1 mb-2">{{ t('person.sections.contact') }}</h4>
+            <v-list density="compact" class="mb-2" data-testid="person-contact-list">
+                <v-list-item data-testid="person-field-email">
+                    <v-list-item-title>{{ t('person.fields.email') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.email || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-phone">
+                    <v-list-item-title>{{ t('person.fields.phone') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.phone || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-street">
+                    <v-list-item-title>{{ t('person.fields.street') }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                        {{ [person.street, person.house_number].filter(Boolean).join(' ') || '—' }}
+                    </v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-city">
+                    <v-list-item-title>{{ t('person.fields.city') }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                        {{ [person.zip, person.city].filter(Boolean).join(' ') || '—' }}
+                    </v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-country">
+                    <v-list-item-title>{{ t('person.fields.country') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.country || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+            </v-list>
+
+            <v-divider class="my-3" />
+
             <PersonRelations :person-id="props.personId" :can-edit="canEdit" @changed="onRelationsChanged" />
 
             <v-divider class="my-3" />
@@ -181,12 +213,21 @@ function onRelationsChanged(): void {
                 id: person.id,
                 given_name: person.given_name,
                 family_name: person.family_name,
+                name_at_birth: person.name_at_birth,
                 nickname: person.nickname,
                 gender: person.gender,
                 birth_date: person.birth_date ?? null,
                 birth_place: person.birth_place,
                 death_date: person.death_date ?? null,
                 notes: person.notes,
+                email: person.email,
+                phone: person.phone,
+                street: person.street,
+                house_number: person.house_number,
+                zip: person.zip,
+                city: person.city,
+                country: person.country,
+                linked_user_id: person.linked_user_id ?? null,
             }"
             @saved="onSaved"
             @cancel="editing = false"

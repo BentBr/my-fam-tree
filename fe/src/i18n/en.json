@@ -102,6 +102,13 @@
             "deceased": "Deceased",
             "death_date": "Date of death",
             "notes": "Notes",
+            "email": "Email",
+            "phone": "Phone",
+            "street": "Street",
+            "house_number": "Number",
+            "zip": "ZIP",
+            "city": "City",
+            "country": "Country",
             "parentKind": "Relationship type",
             "partnerKind": "Partnership type",
             "started_on": "Start date (optional)",
@@ -110,9 +117,14 @@
         },
         "sections": {
             "profile": "Profile",
+            "contact": "Contact",
+            "address": "Address",
             "parents": "Parents",
             "partners": "Partners",
             "children": "Children"
+        },
+        "hints": {
+            "emailFromLinkedUser": "Synced from the linked user's account"
         },
         "endReason": {
             "divorce": "Divorce",

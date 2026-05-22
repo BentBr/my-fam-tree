@@ -16,6 +16,13 @@ export interface PersonInput {
     birth_place?: string
     death_date?: string | null
     notes?: string
+    email?: string
+    phone?: string
+    street?: string
+    house_number?: string
+    zip?: string
+    city?: string
+    country?: string
     linked_user_id?: string | null
 }
 
@@ -29,6 +36,13 @@ export interface PersonUpdateInput {
     birth_place?: string | null
     death_date?: string | null
     notes?: string | null
+    email?: string | null
+    phone?: string | null
+    street?: string | null
+    house_number?: string | null
+    zip?: string | null
+    city?: string | null
+    country?: string | null
     linked_user_id?: string | null
 }
 

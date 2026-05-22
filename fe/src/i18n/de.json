@@ -119,6 +119,13 @@
             "deceased": "Verstorben",
             "death_date": "Sterbedatum",
             "notes": "Notizen",
+            "email": "E-Mail",
+            "phone": "Telefon",
+            "street": "Straße",
+            "house_number": "Nr.",
+            "zip": "PLZ",
+            "city": "Ort",
+            "country": "Land",
             "parentKind": "Verwandtschaftsart",
             "partnerKind": "Partnerschaftsart",
             "started_on": "Beginn (optional)",
@@ -127,9 +134,14 @@
         },
         "sections": {
             "profile": "Profil",
+            "contact": "Kontakt",
+            "address": "Adresse",
             "parents": "Eltern",
             "partners": "Partner",
             "children": "Kinder"
+        },
+        "hints": {
+            "emailFromLinkedUser": "Wird vom verknüpften Benutzerkonto übernommen"
         },
         "endReason": {
             "divorce": "Scheidung",
