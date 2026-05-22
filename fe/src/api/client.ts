@@ -1,10 +1,12 @@
 import createClient, { type Middleware } from 'openapi-fetch'
 
+import { i18n } from '@/i18n'
 import { router } from '@/router'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 
-import { ApiClientError, type ApiErrorBody } from './errors'
+import { ApiClientError, type ApiErrorBody, type Warning } from './errors'
 import type { paths } from './schema'
 
 // When the api hands back a 401 that can't be silently refreshed (refresh
@@ -93,5 +95,36 @@ const errorTranslator: Middleware = {
     },
 }
 
+// Soft validations (e.g. sibling partnership, parent-child gap < 14y) ride
+// along on the success envelope's `meta.warnings`. Surface them as info
+// toasts so the user sees the heuristic flag without blocking the write.
+//
+// Only fires on mutating verbs — GETs returning the same payload on every
+// refetch would otherwise spam the toast stack. Translation goes through
+// the same i18n catalog as field violations, so adding a new warning code
+// only needs a key in `en.json` / `de.json`.
+const warningsBroadcaster: Middleware = {
+    async onResponse({ request, response }) {
+        if (request.method === 'GET') return response
+        if (!response.ok) return response
+        const ct = response.headers.get('content-type') ?? ''
+        if (!ct.includes('application/json')) return response
+        let envelope: { meta?: { warnings?: Warning[] } | null }
+        try {
+            envelope = (await response.clone().json()) as typeof envelope
+        } catch {
+            return response
+        }
+        const warnings = envelope.meta?.warnings ?? []
+        if (warnings.length === 0) return response
+        const ui = useUiStore()
+        for (const w of warnings) {
+            const msg = i18n.global.te(w.code) ? i18n.global.t(w.code) : w.message
+            ui.pushToast({ kind: 'info', message: msg, code: w.code })
+        }
+        return response
+    },
+}
+
 export const client = createClient<paths>({ baseUrl, credentials: 'include' })
-client.use(familyIdInjector, authRefresh, errorTranslator)
+client.use(familyIdInjector, authRefresh, errorTranslator, warningsBroadcaster)

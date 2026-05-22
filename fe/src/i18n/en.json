@@ -153,6 +153,30 @@
         "string_too_long": "Must be at most {max} characters (got {actual}).",
         "string_too_short": "Must be at least {min} characters (got {actual}).",
         "value_required": "This field is required.",
-        "uuid_invalid": "Must be a valid UUID."
+        "uuid_invalid": "Must be a valid UUID.",
+        "parent_not_older_than_child": "A parent must be born before the child.",
+        "parent_deceased_before_child": "A biological parent must be alive at conception (death more than nine months before the child's birth is not possible).",
+        "too_many_biological_parents": "A child can have at most two biological parents.",
+        "partnership_before_birth": "A partnership cannot start before either partner was born."
+    },
+    "warning": {
+        "parent_child_age_gap_under_14y": "Heads up: the age gap between parent and child is under 14 years.",
+        "sibling_partnership": "Heads up: the two partners share at least one parent.",
+        "end_reason_death_mismatch": "Heads up: end reason is 'death' but no partner has a matching date of death."
+    },
+    "errorCodes": {
+        "validation_failed": "The submitted data is invalid.",
+        "relationship_cycle": "That link would create a cycle in the family tree.",
+        "partnership_duplicate": "A current partnership of the same kind already exists for these partners.",
+        "person_not_found": "We couldn't find that person.",
+        "person_not_editable": "You don't have permission to edit this person.",
+        "family_not_member": "You're not a member of this family.",
+        "family_insufficient_role": "You need admin or owner rights to do this.",
+        "family_invite_expired": "This invite has expired.",
+        "conflict_stale": "Someone else updated this just now. Reload and try again.",
+        "email_taken": "That email address is already in use.",
+        "rate_limited": "Too many attempts. Please wait a moment and try again.",
+        "upstream": "An upstream service is unavailable. Please retry shortly.",
+        "internal": "Something went wrong on our side. The team has been notified."
     }
 }

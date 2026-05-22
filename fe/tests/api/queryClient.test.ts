@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { ApiClientError, type ApiErrorBody } from '@/api/errors'
+import { ApiClientError, type ApiErrorBody, type FieldViolation } from '@/api/errors'
 import { queryClient } from '@/api/queryClient'
 import { useUiStore } from '@/stores/ui'
 
@@ -35,6 +35,53 @@ describe('queryClient onError handler (via QueryCache)', () => {
         expect(ui.toasts).toHaveLength(1)
         expect(ui.toasts[0]?.kind).toBe('error')
         expect(ui.toasts[0]?.code).toBe('validation_failed')
+    })
+
+    it('translates the top-level error code via errorCodes catalog', () => {
+        const ui = useUiStore()
+        fireError(new ApiClientError(body({ code: 'relationship_cycle', title: 'raw english' })))
+        expect(ui.toasts[0]?.message).toBe('That link would create a cycle in the family tree.')
+    })
+
+    it('translates field violations to localized strings, joined by "; "', () => {
+        const ui = useUiStore()
+        const fields: FieldViolation[] = [
+            {
+                path: '/parent_id',
+                code: 'validation.parent_not_older_than_child',
+                message: 'english fallback',
+            },
+            {
+                path: '/parent_id',
+                code: 'validation.too_many_biological_parents',
+                message: 'english fallback',
+            },
+        ]
+        fireError(new ApiClientError(body({ code: 'validation_failed', fields })))
+        expect(ui.toasts[0]?.message).toBe(
+            'A parent must be born before the child.; A child can have at most two biological parents.',
+        )
+    })
+
+    it('falls back to the english violation message when the code is unknown', () => {
+        const ui = useUiStore()
+        const fields: FieldViolation[] = [
+            {
+                path: '/parent_id',
+                code: 'validation.brand_new_rule_we_have_not_translated_yet',
+                message: 'english fallback message',
+            },
+        ]
+        fireError(new ApiClientError(body({ code: 'validation_failed', fields })))
+        expect(ui.toasts[0]?.message).toBe('english fallback message')
+    })
+
+    it('falls back to body.title when the top-level code has no catalog entry', () => {
+        const ui = useUiStore()
+        // Cast through unknown to a code we deliberately keep out of the
+        // catalog. The fallback chain ends at `body.title`.
+        fireError(new ApiClientError(body({ code: 'totally_made_up_code' as never, title: 'Server-rendered title' })))
+        expect(ui.toasts[0]?.message).toBe('Server-rendered title')
     })
 
     it('drops 401 errors silently (auth refresh middleware owns them)', () => {

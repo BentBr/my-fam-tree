@@ -17,6 +17,14 @@ const props = defineProps<{
     selectedId: string | null
     /** When set, centers the viewport on this person on mount and on subsequent change. */
     centerOnId: string | null
+    /**
+     * `users.id` of the signed-in user. Compared against each TreeNode's
+     * `linked_user_id` to flag the "this is you" card. Decoupled from
+     * `centerOnId`: an explicit `?center=` deep-link or persisted focus
+     * may point to a different person, but the user-highlight should
+     * always track the signed-in user.
+     */
+    currentUserId: string | null
 }>()
 
 const emit = defineEmits<{
@@ -36,6 +44,21 @@ function nodeCenter(id: string): { x: number; y: number } | null {
     return { x: n.x + NODE_W / 2, y: n.y + NODE_H / 2 }
 }
 
+/** Compute the scale that fits the whole layout into the viewport. */
+function fitScale(): number {
+    const wrap = wrapEl.value
+    if (wrap === null) return 1
+    const w = wrap.clientWidth
+    const h = wrap.clientHeight
+    const contentW = Math.max(layout.value.width, 1)
+    const contentH = Math.max(layout.value.height, 1)
+    const padding = 60
+    const scaleX = (w - padding * 2) / contentW
+    const scaleY = (h - padding * 2) / contentH
+    const raw = Math.min(scaleX, scaleY, 1)
+    return Math.max(raw, 0.25)
+}
+
 function centerOn(id: string, animate: boolean): void {
     const c = nodeCenter(id)
     const svg = svgEl.value
@@ -43,7 +66,11 @@ function centerOn(id: string, animate: boolean): void {
     if (c === null || svg === null || zoomBehavior === null || wrap === null) return
     const w = wrap.clientWidth
     const h = wrap.clientHeight
-    const scale = 1
+    // Re-use the fit scale rather than snapping to 1×. At 1× a non-trivial
+    // tree no longer fits the viewport and the rest of the family slides off
+    // the canvas — which was the prior on-load regression. Same scale ⇒ a
+    // pan, not a zoom-and-clip.
+    const scale = fitScale()
     const transform = zoomIdentity.translate(w / 2 - c.x * scale, h / 2 - c.y * scale).scale(scale)
     const sel = select(svg)
     if (animate) {
@@ -97,14 +124,16 @@ onMounted(() => {
         })
     select(svg).call(zoomBehavior)
 
-    // Initial layout: ALWAYS fit-to-view so the user sees the entire tree
-    // on first paint, regardless of which person is linked to their user.
-    // The previous "center on self at scale 1" path put the focused node
-    // dead-center and shoved every other generation off the canvas — for
-    // a G3 user with G1+G2 ancestors, the tree looked like one floating
-    // node + a few orphan hearts. `centerOnId` still takes effect via
-    // the watch below when the user explicitly picks a different person.
+    // Initial layout: fit-to-view first so the whole tree paints (the
+    // earlier regression was: snap to 1× and shove ancestors off-canvas).
+    // Then, if we have a center target (signed-in user by default), pan to
+    // it — `centerOn` now reuses the fit scale, so this is a pan, not a
+    // zoom. Result: the tree fits AND the user's node lands at viewport
+    // center.
     fitToView(false)
+    if (props.centerOnId !== null) {
+        centerOn(props.centerOnId, false)
+    }
 })
 
 watch(
@@ -177,6 +206,7 @@ defineExpose({ refit: () => fitToView(true) })
                     :key="n.id"
                     :node="n"
                     :selected="n.id === selectedId"
+                    :is-current-user="n.linked_user_id !== null && n.linked_user_id === props.currentUserId"
                     @select="(id: string) => emit('select', id)"
                 />
             </g>

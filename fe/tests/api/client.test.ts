@@ -108,6 +108,51 @@ describe('@/api/client middlewares', () => {
         expect(thrown).toBeInstanceOf(ApiClientError)
     })
 
+    it('warningsBroadcaster surfaces meta.warnings as info toasts on POST', async () => {
+        const { client } = await import('@/api/client')
+        const { useUiStore } = await import('@/stores/ui')
+        fetchSpy.mockResolvedValueOnce(
+            jsonResponse(200, {
+                data: { id: 'x' },
+                meta: {
+                    warnings: [
+                        {
+                            code: 'warning.sibling_partnership',
+                            message: 'english fallback',
+                            path: null,
+                        },
+                    ],
+                },
+            }),
+        )
+        await client.POST(
+            '/api/v1/partnerships' as never,
+            {
+                body: { partner_a_id: 'a', partner_b_id: 'b', kind: 'marriage' },
+            } as never,
+        )
+        const toasts = useUiStore().toasts
+        expect(toasts).toHaveLength(1)
+        expect(toasts[0]?.kind).toBe('info')
+        expect(toasts[0]?.code).toBe('warning.sibling_partnership')
+        expect(toasts[0]?.message).toContain('share at least one parent')
+    })
+
+    it('warningsBroadcaster does not fire on GET responses', async () => {
+        const { client } = await import('@/api/client')
+        const { useUiStore } = await import('@/stores/ui')
+        fetchSpy.mockResolvedValueOnce(
+            jsonResponse(200, {
+                data: { status: 'ok' },
+                meta: {
+                    warnings: [{ code: 'warning.parent_child_age_gap_under_14y', message: 'x', path: null }],
+                },
+            }),
+        )
+        await client.GET('/api/v1/health' as never)
+        expect(useUiStore().toasts).toHaveLength(0)
+    })
+
     it('authRefresh throws ApiClientError on a non-expired 401', async () => {
         const { client } = await import('@/api/client')
         const { ApiClientError } = await import('@/api/errors')

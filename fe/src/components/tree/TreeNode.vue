@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { NODE_H, NODE_W, type Positioned } from './layout'
 
 const props = defineProps<{
     node: Positioned
     selected: boolean
+    isCurrentUser?: boolean
 }>()
+
+const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
 
 const emit = defineEmits<{
     (e: 'select', id: string): void
@@ -14,13 +17,37 @@ const emit = defineEmits<{
 
 const hovered = ref(false)
 
-function dateLabel(p: Positioned): string {
-    const b = p.birth_date ?? ''
-    const d = p.death_date ?? ''
-    if (b === '' && d === '') return ''
-    if (d === '') return b
-    return `${b} – ${d}`
+// Width budget for the text columns (right of the avatar circle). Used to
+// truncate the full name with ellipsis when it would overflow the card.
+const TEXT_LEFT = 64
+const TEXT_RIGHT_PAD = 12
+const TEXT_WIDTH = NODE_W - TEXT_LEFT - TEXT_RIGHT_PAD
+
+// Average glyph width for `system-ui` at the sizes we use. Cheap heuristic
+// — better than measuring per-glyph and good enough for ellipsizing names
+// that overflow the card. The card is 220px wide; the budget here lands
+// around 18-22 chars for the name and ~24 for the smaller dates row.
+const NAME_AVG_CHAR_PX = 7.5
+const DATES_AVG_CHAR_PX = 5.8
+
+function truncate(s: string, maxChars: number): string {
+    if (s.length <= maxChars) return s
+    if (maxChars <= 1) return '…'
+    return `${s.slice(0, maxChars - 1)}…`
 }
+
+const fullName = computed(() => {
+    const raw = `${props.node.given_name} ${props.node.family_name}`.trim()
+    return truncate(raw, Math.floor(TEXT_WIDTH / NAME_AVG_CHAR_PX))
+})
+
+const datesLabel = computed(() => {
+    const b = props.node.birth_date ?? ''
+    const d = props.node.death_date ?? ''
+    if (b === '' && d === '') return ''
+    const raw = d === '' ? b : `${b} – ${d}`
+    return truncate(raw, Math.floor(TEXT_WIDTH / DATES_AVG_CHAR_PX))
+})
 
 function initials(p: Positioned): string {
     const a = p.given_name.charAt(0)
@@ -39,7 +66,15 @@ function onSelect(): void {
         role="button"
         tabindex="0"
         :aria-label="`${props.node.given_name} ${props.node.family_name}, born ${props.node.birth_date ?? 'unknown'}`"
-        :class="['tree-node', { selected: props.selected, hovered }]"
+        :class="[
+            'tree-node',
+            {
+                selected: props.selected,
+                hovered,
+                'current-user': props.isCurrentUser === true,
+                deceased: isDeceased(),
+            },
+        ]"
         :transform="`translate(${props.node.x}, ${props.node.y})`"
         :data-testid="`tree-node-${props.node.id}`"
         :filter="hovered || props.selected ? 'url(#treeNodeHoverShadow)' : 'url(#treeNodeShadow)'"
@@ -54,30 +89,43 @@ function onSelect(): void {
         <text :x="32" :y="NODE_H / 2 + 6" text-anchor="middle" class="initials">
             {{ initials(props.node) }}
         </text>
-        <foreignObject :x="64" :y="6" :width="NODE_W - 72" :height="NODE_H - 12">
-            <div class="node-body">
-                <div class="name">{{ props.node.given_name }} {{ props.node.family_name }}</div>
-                <div class="dates">{{ dateLabel(props.node) }}</div>
-            </div>
-        </foreignObject>
+        <!--
+            Native SVG <text> rather than <foreignObject>+<div>. Chromium
+            inconsistently applies parent <g> transforms to HTML content
+            inside <foreignObject>, which made nodes vanish under the
+            fit-to-view zoom. SVG <text> scales uniformly with the canvas.
+        -->
+        <text
+            :x="TEXT_LEFT"
+            :y="datesLabel === '' ? NODE_H / 2 + 5 : NODE_H / 2 - 4"
+            class="name"
+            data-testid="tree-node-name"
+        >
+            {{ fullName }}
+        </text>
+        <text v-if="datesLabel !== ''" :x="TEXT_LEFT" :y="NODE_H / 2 + 14" class="dates" data-testid="tree-node-dates">
+            {{ datesLabel }}
+        </text>
     </g>
 </template>
 
 <style scoped>
 .tree-node {
     cursor: pointer;
-    /* Soft fade-in whenever the node mounts (re-layout after add/remove). */
+    /* Soft fade-in whenever the node mounts (re-layout after add/remove).
+     * NB: we animate ONLY opacity here. CSS `transform` on an SVG <g>
+     * overrides the `transform` *attribute* set by Vue's :transform binding,
+     * collapsing every node to (0,0) of the parent group. We learned that
+     * the hard way — a scale(0.96 → 1) keyframe made the entire tree look
+     * like a single floating card on first paint. */
     animation: tree-node-in 300ms ease-out both;
-    transition: transform 200ms ease-out;
 }
 @keyframes tree-node-in {
     from {
         opacity: 0;
-        transform: scale(0.96);
     }
     to {
         opacity: 1;
-        transform: scale(1);
     }
 }
 
@@ -110,26 +158,42 @@ function onSelect(): void {
     fill: rgb(var(--v-theme-primary));
     pointer-events: none;
 }
-.node-body {
-    width: 100%;
-    height: 100%;
-    box-sizing: border-box;
-    font:
-        13px system-ui,
-        sans-serif;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: rgb(var(--v-theme-on-surface));
-}
 .name {
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font:
+        600 13px system-ui,
+        sans-serif;
+    fill: rgb(var(--v-theme-on-surface));
+    pointer-events: none;
 }
 .dates {
-    color: rgb(var(--v-theme-on-surface) / 0.6);
-    font-size: 11px;
+    font:
+        11px system-ui,
+        sans-serif;
+    fill: rgb(var(--v-theme-on-surface) / 0.6);
+    pointer-events: none;
+}
+
+/* `.current-user` is a hook for later styling; intentionally left without
+ * a visual treatment for now so the design can be finalized in a follow-up.
+ * Tests assert the class is applied, not its CSS. */
+
+/* Deceased cards get a soft grey wash so they read as historical at a
+ * glance. The avatar+text inside the SVG can't use `filter: grayscale` —
+ * SVG filters require a <filter> def — so we tint the rect fill and the
+ * stroke instead, and lighten the text/initials. */
+.tree-node.deceased rect {
+    fill: #f1f5f9;
+    stroke: #cbd5e1;
+}
+.tree-node.deceased .avatar {
+    fill: #e2e8f0;
+    stroke: #94a3b8;
+}
+.tree-node.deceased .initials {
+    fill: #64748b;
+}
+.tree-node.deceased .name,
+.tree-node.deceased .dates {
+    fill: #64748b;
 }
 </style>

@@ -18,7 +18,7 @@ function tree(): TreeInput {
 describe('FamilyTree', () => {
     it('mounts and renders an SVG tree with nodes + edges', () => {
         const w = mount(FamilyTree, {
-            props: { tree: tree(), selectedId: null, centerOnId: null },
+            props: { tree: tree(), selectedId: null, centerOnId: null, currentUserId: null },
             global: {
                 stubs: {
                     TreeNode: { template: '<g class="tree-node-stub" />' },
@@ -33,7 +33,7 @@ describe('FamilyTree', () => {
 
     it('mounts with centerOnId targeting an existing node', async () => {
         const w = mount(FamilyTree, {
-            props: { tree: tree(), selectedId: null, centerOnId: 'b' },
+            props: { tree: tree(), selectedId: null, centerOnId: 'b', currentUserId: null },
             attachTo: document.body,
             global: {
                 stubs: {
@@ -48,7 +48,7 @@ describe('FamilyTree', () => {
 
     it('reacts to centerOnId changes after mount', async () => {
         const w = mount(FamilyTree, {
-            props: { tree: tree(), selectedId: null, centerOnId: null },
+            props: { tree: tree(), selectedId: null, centerOnId: null, currentUserId: null },
             attachTo: document.body,
             global: {
                 stubs: {
@@ -64,7 +64,7 @@ describe('FamilyTree', () => {
 
     it('forwards select events from TreeNode', async () => {
         const w = mount(FamilyTree, {
-            props: { tree: tree(), selectedId: null, centerOnId: null },
+            props: { tree: tree(), selectedId: null, centerOnId: null, currentUserId: null },
             global: {
                 stubs: {
                     TreeNode: {

@@ -167,6 +167,7 @@ watch(
                     :tree="tree.data.value"
                     :selected-id="selectedId"
                     :center-on-id="centerOnId"
+                    :current-user-id="auth.user?.id ?? null"
                     @select="onSelect"
                 />
             </div>

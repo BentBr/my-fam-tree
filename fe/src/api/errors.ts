@@ -2,6 +2,8 @@ import type { components } from './schema'
 
 export type ApiErrorBody = components['schemas']['ApiErrorBody']
 export type ErrorCode = components['schemas']['ErrorCode']
+export type FieldViolation = components['schemas']['FieldViolation']
+export type Warning = components['schemas']['Warning']
 
 export class ApiClientError extends Error {
     readonly code: ErrorCode

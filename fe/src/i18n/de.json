@@ -153,6 +153,30 @@
         "string_too_long": "Darf höchstens {max} Zeichen lang sein ({actual} eingegeben).",
         "string_too_short": "Muss mindestens {min} Zeichen lang sein ({actual} eingegeben).",
         "value_required": "Dieses Feld ist erforderlich.",
-        "uuid_invalid": "Muss eine gültige UUID sein."
+        "uuid_invalid": "Muss eine gültige UUID sein.",
+        "parent_not_older_than_child": "Ein Elternteil muss vor dem Kind geboren sein.",
+        "parent_deceased_before_child": "Ein leiblicher Elternteil muss bei der Empfängnis gelebt haben (ein Tod mehr als neun Monate vor der Geburt ist nicht möglich).",
+        "too_many_biological_parents": "Ein Kind kann höchstens zwei leibliche Eltern haben.",
+        "partnership_before_birth": "Eine Partnerschaft kann nicht vor der Geburt einer der Partner:innen beginnen."
+    },
+    "warning": {
+        "parent_child_age_gap_under_14y": "Hinweis: Der Altersunterschied zwischen Elternteil und Kind beträgt weniger als 14 Jahre.",
+        "sibling_partnership": "Hinweis: Die beiden Partner:innen haben mindestens ein gemeinsames Elternteil.",
+        "end_reason_death_mismatch": "Hinweis: Der Endgrund ist „Tod“, aber keine der Partner:innen hat ein passendes Sterbedatum."
+    },
+    "errorCodes": {
+        "validation_failed": "Die übermittelten Daten sind ungültig.",
+        "relationship_cycle": "Diese Verbindung würde einen Kreis im Stammbaum erzeugen.",
+        "partnership_duplicate": "Eine aktuelle Partnerschaft gleicher Art zwischen diesen Personen existiert bereits.",
+        "person_not_found": "Diese Person konnten wir nicht finden.",
+        "person_not_editable": "Du hast keine Berechtigung, diese Person zu bearbeiten.",
+        "family_not_member": "Du bist kein Mitglied dieser Familie.",
+        "family_insufficient_role": "Dafür brauchst du Admin- oder Inhaberrechte.",
+        "family_invite_expired": "Diese Einladung ist abgelaufen.",
+        "conflict_stale": "Jemand anderes hat das gerade aktualisiert. Bitte neu laden und erneut versuchen.",
+        "email_taken": "Diese E-Mail-Adresse wird bereits verwendet.",
+        "rate_limited": "Zu viele Versuche. Bitte einen Moment warten und erneut versuchen.",
+        "upstream": "Ein vorgelagerter Dienst ist nicht erreichbar. Bitte gleich erneut versuchen.",
+        "internal": "Da ist etwas auf unserer Seite schiefgelaufen. Das Team wurde informiert."
     }
 }

@@ -65,8 +65,9 @@ describe('TreeNode', () => {
                 selected: false,
             },
         })
-        const dates = w.find('.dates')
-        expect(dates.text()).toBe('')
+        // The dates row is omitted entirely (v-if) when there is nothing to
+        // render — keeps the card visually balanced without an empty line.
+        expect(w.find('.dates').exists()).toBe(false)
     })
 
     it('hover/leave toggles the hovered class', async () => {
@@ -80,5 +81,34 @@ describe('TreeNode', () => {
     it('applies the selected class when selected', () => {
         const w = mount(TreeNode, { props: { node: node(), selected: true } })
         expect(w.find('g').classes()).toContain('selected')
+    })
+
+    it('applies the current-user class when isCurrentUser is true', () => {
+        const w = mount(TreeNode, {
+            props: { node: node(), selected: false, isCurrentUser: true },
+        })
+        expect(w.find('g').classes()).toContain('current-user')
+    })
+
+    it('does NOT apply current-user when the prop is false / omitted', () => {
+        const w = mount(TreeNode, { props: { node: node(), selected: false } })
+        expect(w.find('g').classes()).not.toContain('current-user')
+    })
+
+    it('applies the deceased class when death_date is set', () => {
+        const w = mount(TreeNode, {
+            props: {
+                node: node({ death_date: '1980-04-12' }),
+                selected: false,
+            },
+        })
+        expect(w.find('g').classes()).toContain('deceased')
+    })
+
+    it('does NOT apply deceased when death_date is null', () => {
+        const w = mount(TreeNode, {
+            props: { node: node({ death_date: null }), selected: false },
+        })
+        expect(w.find('g').classes()).not.toContain('deceased')
     })
 })

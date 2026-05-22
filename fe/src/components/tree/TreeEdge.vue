@@ -39,8 +39,14 @@ const midY = computed(() => (props.ay + props.by) / 2)
     fill: none;
 }
 .edge-group.parent .edge {
-    stroke: rgb(var(--v-theme-on-surface) / 0.35);
-    stroke-width: 1.5;
+    /* NB: avoid `rgb(var(--v-theme-on-surface) / α)` — Vuetify's theme tokens
+     * are emitted as `R, G, B` (comma-separated), and the CSS slash-alpha
+     * syntax requires SPACE-separated channels. The mixed form silently
+     * resolves to `stroke: none` and the edges vanish. A concrete neutral
+     * grey is fine for the parent-link visual treatment. */
+    stroke: #94a3b8;
+    stroke-width: 2;
+    stroke-linecap: round;
 }
 .edge-group.partner .edge {
     stroke: rgb(var(--v-theme-secondary));
