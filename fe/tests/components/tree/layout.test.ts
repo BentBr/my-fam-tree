@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import { layoutTree, NODE_H, NODE_W, type TreeInput } from '@/components/tree/layout'
 
+const COL_GAP = 24
+const CLUSTER_GAP = COL_GAP * 2
+
 function person(
     id: string,
     parents: string[] = [],
@@ -392,6 +395,293 @@ describe('layoutTree', () => {
             expect(peer.y).toBe(0)
             expect(Number.isFinite(alone.y)).toBe(true)
             expect(Number.isFinite(peer.y)).toBe(true)
+        }
+    })
+
+    // v2: a couple's children sit centered on the couple's midpoint.
+    it("centers a couple's children cluster on the couple midpoint", () => {
+        // Two same-row partners with three children. Pre-v2 the children's
+        // d3-tree x would have wandered. Post-v2 the children block-cluster
+        // midpoint == the couple midpoint (within a half-COL_GAP slack to
+        // account for odd-child counts producing a centered middle child).
+        const out = layoutTree({
+            nodes: [
+                { id: 'dad', given_name: 'Dad', family_name: 'X', parent_ids: [], partner_ids: ['mom'] },
+                { id: 'mom', given_name: 'Mom', family_name: 'X', parent_ids: [], partner_ids: ['dad'] },
+                {
+                    id: 'k1',
+                    given_name: 'K1',
+                    family_name: 'X',
+                    birth_date: '2000',
+                    parent_ids: ['dad', 'mom'],
+                    partner_ids: [],
+                },
+                {
+                    id: 'k2',
+                    given_name: 'K2',
+                    family_name: 'X',
+                    birth_date: '2002',
+                    parent_ids: ['dad', 'mom'],
+                    partner_ids: [],
+                },
+                {
+                    id: 'k3',
+                    given_name: 'K3',
+                    family_name: 'X',
+                    birth_date: '2004',
+                    parent_ids: ['dad', 'mom'],
+                    partner_ids: [],
+                },
+            ],
+            parent_edges: [
+                { a: 'k1', b: 'dad' },
+                { a: 'k1', b: 'mom' },
+                { a: 'k2', b: 'dad' },
+                { a: 'k2', b: 'mom' },
+                { a: 'k3', b: 'dad' },
+                { a: 'k3', b: 'mom' },
+            ],
+            partner_edges: [{ a: 'dad', b: 'mom' }],
+        })
+        const dad = out.nodes.find((n) => n.id === 'dad')
+        const mom = out.nodes.find((n) => n.id === 'mom')
+        const k1 = out.nodes.find((n) => n.id === 'k1')
+        const k3 = out.nodes.find((n) => n.id === 'k3')
+        expect(dad).toBeDefined()
+        expect(mom).toBeDefined()
+        expect(k1).toBeDefined()
+        expect(k3).toBeDefined()
+        if (dad && mom && k1 && k3) {
+            // Partners adjacent on the same row.
+            expect(dad.y).toBe(mom.y)
+            expect(Math.abs(dad.x - mom.x)).toBe(NODE_W + COL_GAP)
+            const coupleMid = (Math.min(dad.x, mom.x) + Math.max(dad.x, mom.x) + NODE_W) / 2
+            // Leftmost child's left edge and rightmost child's right edge
+            // bracket the children-cluster. Its midpoint should match the
+            // couple's midpoint.
+            const childMid = (k1.x + 0 + (k3.x + NODE_W)) / 2
+            expect(Math.abs(childMid - coupleMid)).toBeLessThanOrEqual(1)
+        }
+    })
+
+    // v2: partners always adjacent (Δx == NODE_W + COL_GAP). Repro of the
+    // user-reported "Werner – Hannelore – Greta – Otto" visual bug.
+    it('keeps partners adjacent in a two-couple/two-grandchild layout', () => {
+        const out = layoutTree({
+            nodes: [
+                {
+                    id: 'otto',
+                    given_name: 'O',
+                    family_name: 'M',
+                    birth_date: '1935',
+                    parent_ids: [],
+                    partner_ids: ['hannelore'],
+                },
+                {
+                    id: 'hannelore',
+                    given_name: 'H',
+                    family_name: 'M',
+                    birth_date: '1938',
+                    parent_ids: [],
+                    partner_ids: ['otto'],
+                },
+                {
+                    id: 'werner',
+                    given_name: 'W',
+                    family_name: 'S',
+                    birth_date: '1936',
+                    parent_ids: [],
+                    partner_ids: ['greta'],
+                },
+                {
+                    id: 'greta',
+                    given_name: 'G',
+                    family_name: 'S',
+                    birth_date: '1940',
+                    parent_ids: [],
+                    partner_ids: ['werner'],
+                },
+                {
+                    id: 'klaus',
+                    given_name: 'K',
+                    family_name: 'M',
+                    birth_date: '1965',
+                    parent_ids: ['otto', 'hannelore'],
+                    partner_ids: ['anna'],
+                },
+                {
+                    id: 'anna',
+                    given_name: 'A',
+                    family_name: 'M',
+                    birth_date: '1968',
+                    parent_ids: ['werner', 'greta'],
+                    partner_ids: ['klaus'],
+                },
+            ],
+            parent_edges: [
+                { a: 'klaus', b: 'otto' },
+                { a: 'klaus', b: 'hannelore' },
+                { a: 'anna', b: 'werner' },
+                { a: 'anna', b: 'greta' },
+            ],
+            partner_edges: [
+                { a: 'otto', b: 'hannelore' },
+                { a: 'werner', b: 'greta' },
+                { a: 'klaus', b: 'anna' },
+            ],
+        })
+        const dx = (a: string, b: string): number => {
+            const na = out.nodes.find((n) => n.id === a)
+            const nb = out.nodes.find((n) => n.id === b)
+            if (na === undefined || nb === undefined) throw new Error('missing node')
+            return Math.abs(na.x - nb.x)
+        }
+        // Each couple sits adjacent on the same row.
+        expect(dx('otto', 'hannelore')).toBe(NODE_W + COL_GAP)
+        expect(dx('werner', 'greta')).toBe(NODE_W + COL_GAP)
+        expect(dx('klaus', 'anna')).toBe(NODE_W + COL_GAP)
+        // Row y matches inside each couple.
+        const yOf = (id: string): number => out.nodes.find((n) => n.id === id)?.y ?? -1
+        expect(yOf('otto')).toBe(yOf('hannelore'))
+        expect(yOf('werner')).toBe(yOf('greta'))
+    })
+
+    // v2: between two sibling clusters (different parent blocks) the gap
+    // must be ≥ CLUSTER_GAP; inside one cluster it stays at COL_GAP.
+    it('separates two sibling clusters by at least CLUSTER_GAP', () => {
+        // Two couples on row 0, each with one child on row 1. The two row-1
+        // singletons are NOT siblings — they belong to different parent
+        // blocks — so they must be separated by ≥ CLUSTER_GAP.
+        const out = layoutTree({
+            nodes: [
+                { id: 'a1', given_name: 'A1', family_name: 'X', parent_ids: [], partner_ids: ['a2'] },
+                { id: 'a2', given_name: 'A2', family_name: 'X', parent_ids: [], partner_ids: ['a1'] },
+                { id: 'b1', given_name: 'B1', family_name: 'Y', parent_ids: [], partner_ids: ['b2'] },
+                { id: 'b2', given_name: 'B2', family_name: 'Y', parent_ids: [], partner_ids: ['b1'] },
+                { id: 'ca', given_name: 'Ca', family_name: 'X', parent_ids: ['a1', 'a2'], partner_ids: [] },
+                { id: 'cb', given_name: 'Cb', family_name: 'Y', parent_ids: ['b1', 'b2'], partner_ids: [] },
+            ],
+            parent_edges: [
+                { a: 'ca', b: 'a1' },
+                { a: 'ca', b: 'a2' },
+                { a: 'cb', b: 'b1' },
+                { a: 'cb', b: 'b2' },
+            ],
+            partner_edges: [
+                { a: 'a1', b: 'a2' },
+                { a: 'b1', b: 'b2' },
+            ],
+        })
+        const ca = out.nodes.find((n) => n.id === 'ca')
+        const cb = out.nodes.find((n) => n.id === 'cb')
+        expect(ca).toBeDefined()
+        expect(cb).toBeDefined()
+        if (ca && cb) {
+            const left = ca.x < cb.x ? ca : cb
+            const right = ca.x < cb.x ? cb : ca
+            // Right child's left edge - left child's right edge >= CLUSTER_GAP.
+            const gap = right.x - (left.x + NODE_W)
+            expect(gap).toBeGreaterThanOrEqual(CLUSTER_GAP)
+        }
+    })
+
+    // v2: inside one sibling group, gap stays at COL_GAP between adjacent
+    // singletons. Same parents → siblings → tight COL_GAP.
+    it('uses COL_GAP between siblings inside one cluster', () => {
+        const out = layoutTree({
+            nodes: [
+                { id: 'p1', given_name: 'P1', family_name: 'X', parent_ids: [], partner_ids: ['p2'] },
+                { id: 'p2', given_name: 'P2', family_name: 'X', parent_ids: [], partner_ids: ['p1'] },
+                {
+                    id: 'k1',
+                    given_name: 'K1',
+                    family_name: 'X',
+                    birth_date: '2000',
+                    parent_ids: ['p1', 'p2'],
+                    partner_ids: [],
+                },
+                {
+                    id: 'k2',
+                    given_name: 'K2',
+                    family_name: 'X',
+                    birth_date: '2002',
+                    parent_ids: ['p1', 'p2'],
+                    partner_ids: [],
+                },
+            ],
+            parent_edges: [
+                { a: 'k1', b: 'p1' },
+                { a: 'k1', b: 'p2' },
+                { a: 'k2', b: 'p1' },
+                { a: 'k2', b: 'p2' },
+            ],
+            partner_edges: [{ a: 'p1', b: 'p2' }],
+        })
+        const k1 = out.nodes.find((n) => n.id === 'k1')
+        const k2 = out.nodes.find((n) => n.id === 'k2')
+        expect(k1).toBeDefined()
+        expect(k2).toBeDefined()
+        if (k1 && k2) {
+            const left = k1.x < k2.x ? k1 : k2
+            const right = k1.x < k2.x ? k2 : k1
+            const gap = right.x - (left.x + NODE_W)
+            // Siblings: tight COL_GAP between them. CLUSTER_GAP gap would
+            // mean we're failing to recognise them as same-cluster.
+            expect(gap).toBe(COL_GAP)
+        }
+    })
+
+    // v2: children sort left-to-right by birth date (oldest first, missing
+    // trails). Birth-year ties fall back to the full ISO string.
+    it('sorts siblings left-to-right by birth date', () => {
+        const out = layoutTree({
+            nodes: [
+                { id: 'p1', given_name: 'P1', family_name: 'X', parent_ids: [], partner_ids: ['p2'] },
+                { id: 'p2', given_name: 'P2', family_name: 'X', parent_ids: [], partner_ids: ['p1'] },
+                {
+                    id: 'youngest',
+                    given_name: 'Y',
+                    family_name: 'X',
+                    birth_date: '2005',
+                    parent_ids: ['p1', 'p2'],
+                    partner_ids: [],
+                },
+                {
+                    id: 'middle',
+                    given_name: 'M',
+                    family_name: 'X',
+                    birth_date: '2002',
+                    parent_ids: ['p1', 'p2'],
+                    partner_ids: [],
+                },
+                {
+                    id: 'oldest',
+                    given_name: 'O',
+                    family_name: 'X',
+                    birth_date: '1998',
+                    parent_ids: ['p1', 'p2'],
+                    partner_ids: [],
+                },
+            ],
+            parent_edges: [
+                { a: 'youngest', b: 'p1' },
+                { a: 'youngest', b: 'p2' },
+                { a: 'middle', b: 'p1' },
+                { a: 'middle', b: 'p2' },
+                { a: 'oldest', b: 'p1' },
+                { a: 'oldest', b: 'p2' },
+            ],
+            partner_edges: [{ a: 'p1', b: 'p2' }],
+        })
+        const o = out.nodes.find((n) => n.id === 'oldest')
+        const m = out.nodes.find((n) => n.id === 'middle')
+        const y = out.nodes.find((n) => n.id === 'youngest')
+        expect(o).toBeDefined()
+        expect(m).toBeDefined()
+        expect(y).toBeDefined()
+        if (o && m && y) {
+            expect(o.x).toBeLessThan(m.x)
+            expect(m.x).toBeLessThan(y.x)
         }
     })
 

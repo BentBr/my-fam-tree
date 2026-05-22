@@ -1,13 +1,11 @@
-// SVG layout for the family tree. We build a generational tree via d3-hierarchy
-// (one canonical parent per child so we have a proper tree) for **x** positions
-// only — sibling order + partner adjacency benefit from d3-hierarchy's well
-// tuned spacing. The **y** rank is computed independently from generation
-// (descendant-depth + an eldest-orphan promotion pass), so that a parentless
-// 1910 ancestor lands ABOVE a 1935 row even though it has no canonical parent
-// in the tree. Extra (non-canonical) parent edges are still rendered as
-// straight lines from the child up to each parent.
-
-import { hierarchy, tree as d3tree, type HierarchyPointNode } from 'd3-hierarchy'
+// SVG layout for the family tree. v2: block-based layout where each
+// "couple" (two same-row partners) is the placement unit. Children sit
+// centered under their parent block; sibling groups of different parent
+// blocks are separated by a wider CLUSTER_GAP so the visual grouping is
+// unambiguous. Top-row blocks are laid out left-to-right in stable id
+// order. We compute the generation rank independently from the canonical
+// parent edge so that parentless older ancestors still land above younger
+// rows.
 
 // Field shapes mirror the wire format from `/api/v1/relationships`. `birth_date`
 // and `death_date` are optional **and** nullable on the wire (utoipa emits
@@ -79,28 +77,15 @@ export const NODE_W = 200
 export const NODE_H = 72
 const ROW_GAP = 100
 const COL_GAP = 24
+// Wider gap between sibling-clusters of *different* parent blocks. Inside one
+// parent's children we use the standard COL_GAP; between two adjacent parent
+// groups we want the visual grouping to be unambiguous so the user can tell
+// "these three siblings belong to that couple" at a glance.
+const CLUSTER_GAP = COL_GAP * 2
 // Years per "generation" when promoting an eldest orphan. A 1910 person seen
 // against a 1935 row sits one row up (25y gap); a 1885 person two rows up.
 // Round half-up so a 12-year gap still nudges, but a 5-year gap does not.
 const YEARS_PER_GENERATION = 25
-
-// LayoutData carries the original person id (or `null` for the virtual root)
-// through the d3-hierarchy pipeline. The shape must be a recursive tree the
-// `hierarchy()` constructor can walk via the default `(d) => d.children`
-// accessor, so `children` lives on the data node itself, not a wrapping object.
-interface LayoutData {
-    id: string | null
-    children?: LayoutData[]
-}
-
-function buildLayoutNode(id: string | null, childrenOf: Map<string | null, string[]>): LayoutData {
-    const childIds = childrenOf.get(id) ?? []
-    const children = childIds.map((c) => buildLayoutNode(c, childrenOf))
-    if (children.length === 0) {
-        return { id }
-    }
-    return { id, children }
-}
 
 /**
  * Parse the year out of a (possibly partial) ISO date string. Accepts the
@@ -117,6 +102,18 @@ function parseBirthYear(date: string | null | undefined): number | null {
     if (head === undefined) return null
     const yr = Number.parseInt(head, 10)
     return Number.isFinite(yr) ? yr : null
+}
+
+/**
+ * Numeric sort key for birth date strings. Missing/invalid dates sort to
+ * the end (Infinity) so children with known birth dates always come first
+ * within a sibling group. Falls back to the full ISO string for tie-breaks
+ * inside the same year — `1990-01-12` < `1990-02-01` and so on.
+ */
+function birthSortKey(date: string | null | undefined): [number, string] {
+    const yr = parseBirthYear(date)
+    if (yr === null) return [Number.POSITIVE_INFINITY, '']
+    return [yr, date ?? '']
 }
 
 /**
@@ -206,55 +203,259 @@ function promoteEldestOrphans(
     return promoted
 }
 
+// A "block" is the placement unit on each row. Either a single person
+// (`members.length === 1`) or a couple — two same-row partners drawn
+// side-by-side. The block.id is a stable string derived from the member
+// ids so we can key parent-of relations on it.
+interface Block {
+    id: string
+    members: string[] // 1 or 2 person ids, left-to-right
+    /** Y row (already in pixel space; same value for all members of the block). */
+    y: number
+    /** Number of person columns this block occupies (1 or 2). */
+    width: number
+}
+
+interface PositionedBlock extends Block {
+    /** x of the LEFT edge of the leftmost member. */
+    x: number
+}
+
+/**
+ * Build the per-generation block list. For each row we walk the row members
+ * in stable id order and pair anyone partnered to a same-row peer that hasn't
+ * already been paired. Everyone else becomes a singleton block.
+ */
+function buildBlocks(
+    nodeIds: string[],
+    generation: Map<string, number>,
+    partnerOf: Map<string, Set<string>>,
+): Map<number, Block[]> {
+    // Group ids by row, sorted stably for determinism. Stable id order lets
+    // the top-row layout (which has no canonical-parent anchor) repaint
+    // identically across reloads.
+    const byRow = new Map<number, string[]>()
+    for (const id of nodeIds) {
+        const g = generation.get(id) ?? 0
+        const row = byRow.get(g) ?? []
+        row.push(id)
+        byRow.set(g, row)
+    }
+    for (const row of byRow.values()) row.sort()
+
+    const blocks = new Map<number, Block[]>()
+    for (const [g, ids] of byRow.entries()) {
+        const consumed = new Set<string>()
+        const list: Block[] = []
+        for (const id of ids) {
+            if (consumed.has(id)) continue
+            const partners = partnerOf.get(id) ?? new Set<string>()
+            // Pick the smallest-id same-row partner that hasn't been paired yet.
+            let mate: string | null = null
+            for (const p of partners) {
+                if (consumed.has(p)) continue
+                if ((generation.get(p) ?? -1) !== g) continue
+                if (mate === null || p < mate) mate = p
+            }
+            if (mate !== null) {
+                consumed.add(id)
+                consumed.add(mate)
+                // Left member is the smaller id for stable visuals.
+                const left = id < mate ? id : mate
+                const right = id < mate ? mate : id
+                list.push({
+                    id: `couple:${left}|${right}`,
+                    members: [left, right],
+                    y: 0, // filled in later
+                    width: 2,
+                })
+            } else {
+                consumed.add(id)
+                list.push({
+                    id: `single:${id}`,
+                    members: [id],
+                    y: 0,
+                    width: 1,
+                })
+            }
+        }
+        blocks.set(g, list)
+    }
+    return blocks
+}
+
+/**
+ * Choose a canonical parent block for each non-top block. A block hangs from
+ * one parent block (the block that contains its canonical parent person);
+ * extra parent edges still render as straight lines but don't influence
+ * placement. Couples inherit the canonical parent of their LEFT member,
+ * which keeps the tree shape predictable when both partners have known
+ * ancestors.
+ */
+function chooseParentBlock(
+    block: Block,
+    blockOfPerson: Map<string, Block>,
+    nodeById: Map<string, BackendNode>,
+): Block | null {
+    const anchorId = block.members[0]
+    if (anchorId === undefined) return null
+    const anchor = nodeById.get(anchorId)
+    if (anchor === undefined) return null
+    const sortedParents = [...anchor.parent_ids].sort()
+    for (const pid of sortedParents) {
+        const pb = blockOfPerson.get(pid)
+        if (pb !== undefined) return pb
+    }
+    return null
+}
+
+/**
+ * Compute the natural sort key for a block — used to order both root blocks
+ * and sibling blocks (children of the same parent). Couples sort by their
+ * left member's birth_date so the *oldest* of the pair anchors the order;
+ * within ties we fall back to the left member's id for stability.
+ */
+function blockSortKey(block: Block, nodeById: Map<string, BackendNode>): [number, string, string] {
+    const leftId = block.members[0]
+    if (leftId === undefined) return [Number.POSITIVE_INFINITY, '', block.id]
+    const n = nodeById.get(leftId)
+    const [yr, iso] = birthSortKey(n?.birth_date)
+    return [yr, iso, block.id]
+}
+
+function compareBlockKeys(a: [number, string, string], b: [number, string, string]): number {
+    if (a[0] !== b[0]) return a[0] - b[0]
+    if (a[1] !== b[1]) return a[1] < b[1] ? -1 : 1
+    return a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0
+}
+
+/**
+ * Recursive subtree placement. Returns the placed x-extent (`[xL, xR]`) of
+ * the subtree rooted at `block`. The recursion:
+ *   1. Lays out all of `block`'s children first, left-to-right with COL_GAP
+ *      inside the cluster.
+ *   2. Centers `block` on the children's mid-point. If the children cluster
+ *      is narrower than the block itself, the block extends past the cluster
+ *      on either side — the caller compensates with CLUSTER_GAP between
+ *      sibling clusters.
+ *   3. If the block has no children, it gets placed at the leftmost free x
+ *      passed in by the caller via the `cursor` ref.
+ *
+ * Each block contributes `width * NODE_W + (width - 1) * COL_GAP` columns.
+ */
+function layoutSubtree(
+    block: Block,
+    childrenOfBlock: Map<string, Block[]>,
+    nodeById: Map<string, BackendNode>,
+    placed: Map<string, PositionedBlock>,
+    cursor: { x: number },
+    rowStep: number,
+): { xL: number; xR: number } {
+    const blockWidth = block.width * NODE_W + Math.max(0, block.width - 1) * COL_GAP
+    const children = childrenOfBlock.get(block.id) ?? []
+    if (children.length === 0) {
+        const xL = cursor.x
+        const xR = xL + blockWidth
+        placed.set(block.id, { ...block, x: xL })
+        cursor.x = xR
+        return { xL, xR }
+    }
+
+    // Sort children left-to-right by birth date (oldest first) then id.
+    const sortedChildren = [...children].sort((a, b) =>
+        compareBlockKeys(blockSortKey(a, nodeById), blockSortKey(b, nodeById)),
+    )
+
+    // Place each child subtree in turn, using COL_GAP between adjacent
+    // children. The cursor advances naturally as each subtree consumes
+    // its width.
+    let firstL = Number.POSITIVE_INFINITY
+    let lastR = Number.NEGATIVE_INFINITY
+    for (let i = 0; i < sortedChildren.length; i += 1) {
+        if (i > 0) cursor.x += COL_GAP
+        const child = sortedChildren[i]
+        if (child === undefined) continue
+        const { xL, xR } = layoutSubtree(child, childrenOfBlock, nodeById, placed, cursor, rowStep)
+        if (xL < firstL) firstL = xL
+        if (xR > lastR) lastR = xR
+    }
+    if (!Number.isFinite(firstL)) {
+        // Defensive — shouldn't happen because we checked `children.length`.
+        const xL = cursor.x
+        placed.set(block.id, { ...block, x: xL })
+        cursor.x = xL + blockWidth
+        return { xL, xR: cursor.x }
+    }
+
+    // Center the block over its children. If the resulting block extends
+    // left past the cluster's leftmost child, we shift the entire subtree
+    // right so the block's left edge sits at the original `firstL`. This
+    // preserves the per-row "no overlap" invariant by guaranteeing the
+    // block never reaches into the previous sibling's space.
+    const childrenMid = (firstL + lastR) / 2
+    let blockL = childrenMid - blockWidth / 2
+    if (blockL < firstL) {
+        const delta = firstL - blockL
+        // Shift every child placement inside this subtree right by `delta`.
+        for (const child of sortedChildren) {
+            shiftSubtree(child, childrenOfBlock, placed, delta)
+        }
+        blockL = firstL
+        // cursor advanced based on the shifted children's new right edge.
+        cursor.x = lastR + delta
+    }
+    const blockR = blockL + blockWidth
+    // Block never *recedes* past lastR — if children are wider than the
+    // block, the cursor is already past blockR.
+    if (blockR > cursor.x) cursor.x = blockR
+    placed.set(block.id, { ...block, x: blockL })
+    return { xL: Math.min(blockL, firstL), xR: Math.max(blockR, lastR) }
+}
+
+/**
+ * Shift every already-placed block in this subtree right by `delta`. Used
+ * when centering a parent over its children requires moving the children
+ * cluster to make room.
+ */
+function shiftSubtree(
+    block: Block,
+    childrenOfBlock: Map<string, Block[]>,
+    placed: Map<string, PositionedBlock>,
+    delta: number,
+): void {
+    const p = placed.get(block.id)
+    if (p !== undefined) placed.set(block.id, { ...p, x: p.x + delta })
+    const kids = childrenOfBlock.get(block.id) ?? []
+    for (const k of kids) shiftSubtree(k, childrenOfBlock, placed, delta)
+}
+
 /**
  * Compute SVG-ready positions and edge coordinates for the family tree.
  *
- * Strategy:
- *   1. Pick one canonical parent per child (smallest parent_id, so the choice
- *      is stable across reloads) — d3-hierarchy needs a true tree. Used for
- *      sibling-ordering x positions only.
- *   2. Insert a virtual root above every parentless person; tree() needs a
- *      single root.
- *   3. Run d3-hierarchy's `tree()` to assign x by sibling order. Discard the
- *      depth-derived y — we replace it with the generation index below.
- *   4. Compute generation per person bottom-up from the FULL parent_edges
- *      adjacency; promote eldest orphans by birth-year gap.
- *   5. Override y with `(topGen - generation) * (NODE_H + ROW_GAP)` so the
- *      highest generation sits at y=0 (top of screen).
- *   6. Partner pass: average each in-row partner pair's x to sit them
- *      side-by-side. Cross-row partners stay where layout put them; the edge
- *      drawer handles them as long lines.
- *   7. Shift all x by -minX so the leftmost node lands at x=0.
+ * Strategy (v2):
+ *   1. Build the full child-of-person adjacency from parent_edges. Compute
+ *      a generation index per person (bottom-up over that adjacency) and
+ *      promote eldest orphans by birth-year gap.
+ *   2. Build per-row blocks: each pair of same-row partners becomes a couple
+ *      block; singletons get their own block.
+ *   3. Choose a canonical parent block for each non-top block (the block
+ *      containing the smallest-id parent of the block's anchor member).
+ *      Top-row blocks have no parent block.
+ *   4. Place top-row blocks left-to-right in stable id order with
+ *      CLUSTER_GAP between them. Recursively lay out each top block's
+ *      subtree: children are placed left-to-right by birth date, then the
+ *      parent block is centered over the children cluster.
+ *   5. Materialize positioned persons by reading each block's x and
+ *      distributing it over the 1 or 2 members.
+ *   6. Build parent + partner edges from the placed coordinates. Partner
+ *      edges between same-row members of one block are short adjacent
+ *      lines by construction.
  */
 export function layoutTree(input: TreeInput): LayoutResult {
     const byId = new Map(input.nodes.map((n) => [n.id, n]))
 
-    // Step 1: canonical parent per child (sorted parent_ids => smallest wins).
-    const canonicalParent = new Map<string, string | null>()
-    for (const n of input.nodes) {
-        const sorted = [...n.parent_ids].sort()
-        canonicalParent.set(n.id, sorted[0] ?? null)
-    }
-
-    // Step 2: child lists per canonical parent (including the virtual `null`
-    // root). This map drives d3-hierarchy's x layout only.
-    const canonicalChildrenOf = new Map<string | null, string[]>()
-    for (const n of input.nodes) {
-        const p = canonicalParent.get(n.id) ?? null
-        const list = canonicalChildrenOf.get(p) ?? []
-        list.push(n.id)
-        canonicalChildrenOf.set(p, list)
-    }
-
-    const root = buildLayoutNode(null, canonicalChildrenOf)
-    const h = hierarchy<LayoutData>(root)
-    const layoutFn = d3tree<LayoutData>().nodeSize([NODE_W + COL_GAP, NODE_H + ROW_GAP])
-    const laidOut = layoutFn(h)
-
-    // Step 4: full parent-edge adjacency, so step / poly / multi-parent
-    // relationships all count toward generation depth. `a` = child, `b` =
-    // parent in EdgePair. Filter to known nodes so a stale edge can't
-    // poison the recursion.
+    // Full parent adjacency for the generation-rank pass (and for the
+    // post-layout parent-edge render). EdgePair: `a` = child, `b` = parent.
     const childrenOfPerson = new Map<string, string[]>()
     for (const e of input.parent_edges) {
         if (!byId.has(e.a) || !byId.has(e.b)) continue
@@ -271,78 +472,146 @@ export function layoutTree(input: TreeInput): LayoutResult {
     let topGen = 0
     for (const g of generation.values()) if (g > topGen) topGen = g
 
-    // Step 3 + 5: materialize real-node positions; skip the virtual root.
-    // x comes from d3-hierarchy; y is overridden by generation rank.
-    const positioned = new Map<string, Positioned>()
-    laidOut.each((pn: HierarchyPointNode<LayoutData>) => {
-        const id = pn.data.id
-        if (id === null) return
-        const node = byId.get(id)
-        if (node === undefined) return
-        const gen = generation.get(id) ?? 0
-        positioned.set(id, {
-            id,
-            given_name: node.given_name,
-            family_name: node.family_name,
-            birth_date: node.birth_date ?? null,
-            death_date: node.death_date ?? null,
-            linked_user_id: node.linked_user_id ?? null,
-            x: pn.x,
-            // Highest generation at the top of the canvas (y=0); each step
-            // down moves one row of node-height + row-gap.
-            y: (topGen - gen) * (NODE_H + ROW_GAP),
-        })
-    })
-
-    // Step 6: partner pass — pull open in-row pairs adjacent.
+    // Partner adjacency. Both directions get stored so the buildBlocks pass
+    // is symmetric regardless of which member's id appears first in the
+    // edge. Filter to known persons.
+    const partnerOf = new Map<string, Set<string>>()
     for (const e of input.partner_edges) {
-        const a = positioned.get(e.a)
-        const b = positioned.get(e.b)
-        if (a === undefined || b === undefined) continue
-        if (a.y !== b.y) continue
-        const mid = (a.x + b.x) / 2
-        const half = (NODE_W + COL_GAP) / 2
-        if (a.x < b.x) {
-            a.x = mid - half
-            b.x = mid + half
-        } else {
-            b.x = mid - half
-            a.x = mid + half
+        if (!byId.has(e.a) || !byId.has(e.b)) continue
+        const sa = partnerOf.get(e.a) ?? new Set<string>()
+        sa.add(e.b)
+        partnerOf.set(e.a, sa)
+        const sb = partnerOf.get(e.b) ?? new Set<string>()
+        sb.add(e.a)
+        partnerOf.set(e.b, sb)
+    }
+
+    const blocksByRow = buildBlocks(
+        input.nodes.map((n) => n.id),
+        generation,
+        partnerOf,
+    )
+
+    // Block-by-person reverse index. Used to look up a block's parent block
+    // (block containing the canonical parent person).
+    const blockOfPerson = new Map<string, Block>()
+    for (const list of blocksByRow.values()) {
+        for (const b of list) {
+            for (const m of b.members) blockOfPerson.set(m, b)
         }
     }
 
-    // Step 6b: row-spread. The partner pass averages each pair to a
-    // midpoint of its members' pre-pass x. When two pairs share that
-    // midpoint (e.g. Otto+Hannelore vs Werner+Greta after a deep
-    // grandparent subtree shifts Otto leftward), both pairs collapse to
-    // the same (x, y) and one stacks invisibly behind the other. This
-    // post-pass walks each y-row left-to-right and enforces a minimum
-    // NODE_W + COL_GAP between adjacent x positions. Partner adjacency
-    // is preserved by treating each pair as a contiguous block during
-    // the sort (smallest x in the pair wins ordering).
-    {
-        const rowMap = new Map<number, Positioned[]>()
-        for (const p of positioned.values()) {
-            const row = rowMap.get(p.y) ?? []
-            row.push(p)
-            rowMap.set(p.y, row)
+    // Tag every block with its y in pixel space (top row at y=0).
+    const rowStep = NODE_H + ROW_GAP
+    for (const [g, list] of blocksByRow.entries()) {
+        const y = (topGen - g) * rowStep
+        for (const b of list) b.y = y
+    }
+
+    // Build child-of-block adjacency: for each non-top block, find its
+    // canonical parent block. A block with no canonical parent block is a
+    // "root" of its own subtree (placed at the top level in id order).
+    const childrenOfBlock = new Map<string, Block[]>()
+    const rootBlocks: Block[] = []
+    for (const [g, list] of blocksByRow.entries()) {
+        for (const b of list) {
+            if (g === topGen) {
+                rootBlocks.push(b)
+                continue
+            }
+            const pb = chooseParentBlock(b, blockOfPerson, byId)
+            if (pb === null) {
+                // No parent on the canvas — treat as a root anchored at this row.
+                rootBlocks.push(b)
+                continue
+            }
+            const kids = childrenOfBlock.get(pb.id) ?? []
+            kids.push(b)
+            childrenOfBlock.set(pb.id, kids)
         }
-        const minStep = NODE_W + COL_GAP
-        for (const row of rowMap.values()) {
+    }
+
+    // Sort root blocks: top-row by birth date (oldest first) then id;
+    // mid-row roots (orphans of a non-top block) follow the same key. The
+    // ordering anchors visual stability across reloads.
+    rootBlocks.sort((a, b) => compareBlockKeys(blockSortKey(a, byId), blockSortKey(b, byId)))
+
+    // Place every root subtree left-to-right with CLUSTER_GAP between them.
+    const placed = new Map<string, PositionedBlock>()
+    const cursor = { x: 0 }
+    for (let i = 0; i < rootBlocks.length; i += 1) {
+        if (i > 0) cursor.x += CLUSTER_GAP
+        const root = rootBlocks[i]
+        if (root === undefined) continue
+        layoutSubtree(root, childrenOfBlock, byId, placed, cursor, rowStep)
+    }
+
+    // Per-row separation pass. The recursive layout guarantees no overlap
+    // *within* a subtree, but two subtrees on the same row may collide if a
+    // descendant cluster is wider than the available top-row slot. Walk
+    // each row left-to-right and enforce a hard floor of CLUSTER_GAP
+    // between blocks that share no parent block, COL_GAP between siblings.
+    // Sibling vs cousin is distinguished by parent-block id.
+    const parentOfBlock = new Map<string, string | null>()
+    for (const [pid, kids] of childrenOfBlock.entries()) {
+        for (const k of kids) parentOfBlock.set(k.id, pid)
+    }
+    {
+        const rowBlocks = new Map<number, PositionedBlock[]>()
+        for (const pb of placed.values()) {
+            const row = rowBlocks.get(pb.y) ?? []
+            row.push(pb)
+            rowBlocks.set(pb.y, row)
+        }
+        for (const row of rowBlocks.values()) {
             row.sort((a, b) => a.x - b.x)
             for (let i = 1; i < row.length; i += 1) {
                 const prev = row[i - 1]
                 const curr = row[i]
                 if (prev === undefined || curr === undefined) continue
-                const floor = prev.x + minStep
-                if (curr.x < floor) curr.x = floor
+                const prevWidth = prev.width * NODE_W + Math.max(0, prev.width - 1) * COL_GAP
+                const sameParent =
+                    parentOfBlock.get(prev.id) !== undefined &&
+                    parentOfBlock.get(prev.id) === parentOfBlock.get(curr.id) &&
+                    parentOfBlock.get(prev.id) !== null
+                const gap = sameParent ? COL_GAP : CLUSTER_GAP
+                const floor = prev.x + prevWidth + gap
+                if (curr.x < floor) {
+                    const delta = floor - curr.x
+                    // Shift the curr block and everything in its subtree.
+                    const block: Block = curr
+                    shiftSubtree(block, childrenOfBlock, placed, delta)
+                }
             }
         }
     }
 
-    // Step 7: shift so minX = 0; collect bounds.
-    let minX = Infinity
-    let maxX = -Infinity
+    // Materialize positioned persons. For couples, the LEFT member sits at
+    // the block's x, the RIGHT member at x + NODE_W + COL_GAP.
+    const positioned = new Map<string, Positioned>()
+    for (const pb of placed.values()) {
+        for (let i = 0; i < pb.members.length; i += 1) {
+            const memberId = pb.members[i]
+            if (memberId === undefined) continue
+            const n = byId.get(memberId)
+            if (n === undefined) continue
+            const memberX = pb.x + i * (NODE_W + COL_GAP)
+            positioned.set(memberId, {
+                id: memberId,
+                given_name: n.given_name,
+                family_name: n.family_name,
+                birth_date: n.birth_date ?? null,
+                death_date: n.death_date ?? null,
+                linked_user_id: n.linked_user_id ?? null,
+                x: memberX,
+                y: pb.y,
+            })
+        }
+    }
+
+    // Shift so minX == 0; collect bounds.
+    let minX = Number.POSITIVE_INFINITY
+    let maxX = Number.NEGATIVE_INFINITY
     let maxY = 0
     for (const p of positioned.values()) {
         if (p.x < minX) minX = p.x
