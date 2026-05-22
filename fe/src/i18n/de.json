@@ -116,7 +116,8 @@
             "death_date": "Sterbedatum",
             "notes": "Notizen",
             "parentKind": "Verwandtschaftsart",
-            "partnerKind": "Partnerschaftsart"
+            "partnerKind": "Partnerschaftsart",
+            "started_on": "Beginn (optional)"
         },
         "actions": {
             "addParent": "Als Kind von hinzufügen",

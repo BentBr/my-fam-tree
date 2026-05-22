@@ -99,7 +99,8 @@
             "death_date": "Date of death",
             "notes": "Notes",
             "parentKind": "Relationship type",
-            "partnerKind": "Partnership type"
+            "partnerKind": "Partnership type",
+            "started_on": "Start date (optional)"
         },
         "gender": {
             "male": "Male",

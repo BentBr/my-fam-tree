@@ -30,15 +30,28 @@ async function createFamily(page: Page, name: string): Promise<void> {
     await expect(page).toHaveURL(/\/tree$/)
 }
 
+// The TreeNode SVG emits sibling `<text>` elements with non-UUID testids
+// (`tree-node-name`, `tree-node-birth`, `tree-node-death`) for granular
+// assertions, so a bare `[data-testid^="tree-node-"]` selector returns
+// 2–4 hits per actual person. We pull all matches and keep only the
+// UUID-shaped ids — the outer `<g data-testid="tree-node-<uuid>">` groups.
+const TREE_NODE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+async function listTreeNodeIds(page: Page): Promise<string[]> {
+    const raw = await page
+        .locator('[data-testid^="tree-node-"]')
+        .evaluateAll((els) => els.map((el) => (el.getAttribute('data-testid') ?? '').replace('tree-node-', '')))
+    return raw.filter((id) => TREE_NODE_UUID_RE.test(id))
+}
+
 /**
  * Adds a person via the create drawer.  Returns the new person's id, read off
  * the `data-testid="tree-node-<uuid>"` attribute that lands once the drawer
  * has switched into the post-save detail view.
  */
 async function addPerson(page: Page, given: string, family: string, birth?: string): Promise<string> {
-    const existingIds = await page
-        .locator('[data-testid^="tree-node-"]')
-        .evaluateAll((els) => els.map((el) => (el.getAttribute('data-testid') ?? '').replace('tree-node-', '')))
+    const existingIds = await listTreeNodeIds(page)
+    const expectedAfter = existingIds.length + 1
 
     await page.getByTestId('tree-add-person').click()
     await page.getByTestId('person-given-name').locator('input').fill(given)
@@ -48,16 +61,12 @@ async function addPerson(page: Page, given: string, family: string, birth?: stri
     }
     await page.getByTestId('person-submit').click()
 
-    // After save the drawer flips to the detail view for the new person; wait
-    // for the new tree-node-<id> element to appear and capture the id from it.
+    // After save the drawer flips to the detail view for the new person; poll
+    // until the post-mutation tree refetch settles and exactly one new UUID
+    // appears in the canvas (the SVG re-render lags the mutation by a tick).
     await expect(page.getByTestId('person-detail')).toBeVisible()
-    const newSelector = page.locator('[data-testid^="tree-node-"]').filter({
-        hasNotText: '__never_match__',
-    })
-    await expect(newSelector).toHaveCount(existingIds.length + 1)
-    const ids = await newSelector.evaluateAll((els) =>
-        els.map((el) => (el.getAttribute('data-testid') ?? '').replace('tree-node-', '')),
-    )
+    await expect.poll(async () => (await listTreeNodeIds(page)).length, { timeout: 10_000 }).toBe(expectedAfter)
+    const ids = await listTreeNodeIds(page)
     const added = ids.find((id) => !existingIds.includes(id))
     if (added === undefined) throw new Error('could not resolve newly-added person id')
     return added

@@ -33,6 +33,11 @@ const parentKind = ref<'biological' | 'legal' | 'adoptive' | 'step' | 'social'>(
 // different legal/historical weight and we'd rather force a deliberate
 // pick than mis-tag the user's first attempt.
 const partnerKind = ref<'marriage' | 'civil_union' | 'partnership' | null>(null)
+// Optional partnership start date. Backend validation rejects starts
+// before either partner's birth (`validation.partnership_before_birth`);
+// we surface a UI field so users can record real wedding / civil-union
+// dates and so e2e coverage can drive that rule.
+const partnerStartedOn = ref<string | null>(null)
 const confirmDelete = ref(false)
 
 const parentKindOptions = computed(() => [
@@ -86,13 +91,25 @@ async function linkPartner(): Promise<void> {
     const pid = partnerToAdd.value
     const kind = partnerKind.value
     if (pid === null || pid === '' || kind === null) return
-    await createPartner.mutateAsync({
+    // Only thread `started_on` when the user actually filled it in —
+    // sending an empty string would round-trip through the backend's
+    // serde as `Some("")` and fail the date parser.
+    const started = partnerStartedOn.value
+    const payload: {
+        partner_a_id: string
+        partner_b_id: string
+        kind: typeof kind
+        started_on?: string
+    } = {
         partner_a_id: props.personId,
         partner_b_id: pid,
         kind,
-    })
+    }
+    if (started !== null && started !== '') payload.started_on = started
+    await createPartner.mutateAsync(payload)
     partnerToAdd.value = null
     partnerKind.value = null
+    partnerStartedOn.value = null
     emit('changed')
 }
 
@@ -180,6 +197,14 @@ function onSaved(): void {
                     density="comfortable"
                     clearable
                     data-testid="person-add-partner-kind"
+                />
+                <v-text-field
+                    v-model="partnerStartedOn"
+                    :label="t('person.fields.started_on')"
+                    type="date"
+                    density="comfortable"
+                    clearable
+                    data-testid="person-add-partner-started-on"
                 />
                 <v-btn
                     block
