@@ -42,6 +42,11 @@ impl JwtIssuer {
         Self { keys, issuer, audience, access_ttl_seconds }
     }
 
+    /// Issue an access token signed with the active signing key.
+    ///
+    /// # Errors
+    /// Returns an error if the active signing key cannot be parsed as a
+    /// PKCS#8 Ed25519 PEM, or if JWT encoding fails.
     pub fn issue(
         &self,
         sub: Uuid,
@@ -69,6 +74,12 @@ impl JwtIssuer {
         encode(&header, &claims, &encoding).context("encode JWT")
     }
 
+    /// Verify a token and return its claims.
+    ///
+    /// # Errors
+    /// Returns an error if the token has no `kid` header, references an
+    /// unknown key, fails signature / issuer / audience / expiry checks, or
+    /// the corresponding verifying key cannot be parsed.
     pub fn verify(&self, token: &str) -> anyhow::Result<JwtClaims> {
         let header = decode_header(token).context("invalid JWT header")?;
         let kid = header.kid.ok_or_else(|| anyhow!("JWT missing kid"))?;

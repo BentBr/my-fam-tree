@@ -10,6 +10,7 @@ pub enum Role {
 }
 
 impl Role {
+    #[must_use]
     pub const fn at_least(self, needed: Self) -> bool {
         self.rank() >= needed.rank()
     }

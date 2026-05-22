@@ -64,9 +64,14 @@ unused_must_use = "deny"
 missing_debug_implementations = "warn"
 unreachable_pub = "warn"
 
+# Strict gate: `pedantic` + `nursery` at deny, all four big lint groups
+# enforced. No targeted allows — every clippy finding gets fixed in
+# source per Phase 2c spec (workstream D). If a specific lint is
+# genuinely inappropriate later, add it back here with a one-line
+# rationale rather than scattering `#[allow]` across files.
 [workspace.lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
@@ -77,10 +82,6 @@ print_stderr = "deny"
 indexing_slicing = "deny"
 float_arithmetic = "warn"
 shadow_unrelated = "warn"
-module_name_repetitions = "allow"
-must_use_candidate = "allow"
-missing_errors_doc = "allow"
-missing_panics_doc = "allow"
 
 [profile.release]
 lto = "thin"

@@ -40,6 +40,7 @@ pub async fn health(req: actix_web::HttpRequest) -> Result<ApiResponse<Health>, 
     Ok(resp)
 }
 
+#[must_use]
 pub fn scope() -> actix_web::Scope {
     web::scope("/api/v1").service(health)
 }

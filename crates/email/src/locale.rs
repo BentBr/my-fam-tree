@@ -13,6 +13,7 @@ pub enum Locale {
 impl Locale {
     /// Parse `"en"` / `"de"` (case-insensitive). Falls back to [`Locale::En`]
     /// for anything else.
+    #[must_use]
     pub const fn from_str_or_en(s: &str) -> Self {
         if s.as_bytes().eq_ignore_ascii_case(b"de") { Self::De } else { Self::En }
     }

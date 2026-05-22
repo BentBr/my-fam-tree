@@ -55,6 +55,7 @@ pub struct RedisRateLimiter {
 }
 
 impl RedisRateLimiter {
+    #[must_use]
     pub const fn new(pool: RedisPool) -> Self {
         Self { pool }
     }

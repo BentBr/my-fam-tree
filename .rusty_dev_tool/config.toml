@@ -36,7 +36,7 @@ no_docker_compose = true
     [commands.lint]
         "description" = "Run all linters (rust + fe + file-size)"
         "alias" = "lint"
-        "execution"  = "cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && ./scripts/fe-in-container.sh lint && ./scripts/fe-in-container.sh typecheck && ./scripts/check-file-size.sh"
+        "execution"  = "cargo fmt --check && cargo +nightly clippy --workspace --all-targets --all-features -- -D clippy::all -D warnings -D clippy::pedantic -D clippy::nursery && ./scripts/fe-in-container.sh lint && ./scripts/fe-in-container.sh typecheck && ./scripts/check-file-size.sh"
 
     [commands.test]
         "description" = "Run all unit tests (cargo + playwright component)"

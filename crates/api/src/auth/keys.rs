@@ -51,6 +51,12 @@ impl JwtKeyset {
     ///
     /// `private_pem` and any `public_pem` may contain literal `\n` sequences
     /// (as produced by `gen-jwt-keys`); those get unescaped before parsing.
+    ///
+    /// # Errors
+    /// Returns an error if `JWT_PRIVATE_KEY` is not a valid Ed25519 PKCS#8
+    /// PEM, if `JWT_PUBLIC_KEYS` cannot be parsed as a JSON array of
+    /// `{kid, public_pem}` entries, if any `public_pem` is invalid SPKI, or
+    /// if `active_kid` is missing from the verifying-key set.
     pub fn load(
         private_pem: &str,
         active_kid: &str,

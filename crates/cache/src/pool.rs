@@ -12,6 +12,10 @@ pub struct RedisPool {
 
 impl RedisPool {
     /// Build a new pool from a Redis URL with the given max size and key prefix.
+    ///
+    /// # Errors
+    /// Returns [`CacheError::Config`] if the URL is malformed or the
+    /// `deadpool-redis` builder rejects the configuration.
     pub fn build(
         url: &str,
         max_size: usize,
@@ -27,15 +31,21 @@ impl RedisPool {
         Ok(Self { inner, key_prefix: key_prefix.into() })
     }
 
+    #[must_use]
     pub fn prefix(&self) -> &str {
         &self.key_prefix
     }
 
+    #[must_use]
     pub const fn inner(&self) -> &Pool {
         &self.inner
     }
 
     /// Acquire a connection and issue a `PING` against it.
+    ///
+    /// # Errors
+    /// Returns [`CacheError::Pool`] if no connection can be acquired, or
+    /// [`CacheError::Redis`] if the server rejects the `PING` command.
     pub async fn ping(&self) -> Result<(), CacheError> {
         let mut conn = self.inner.get().await?;
         let _: String = redis::cmd("PING").query_async(&mut conn).await?;

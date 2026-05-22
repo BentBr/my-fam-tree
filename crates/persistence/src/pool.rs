@@ -12,6 +12,11 @@ pub struct Database {
 }
 
 impl Database {
+    /// Connect to Postgres at `url` and configure the pool.
+    ///
+    /// # Errors
+    /// Returns [`PersistenceError::Config`] if the URL is unparseable, or
+    /// [`PersistenceError::Sqlx`] if the server is unreachable.
     pub async fn connect(
         url: &str,
         max_connections: u32,
@@ -40,10 +45,16 @@ impl Database {
         Ok(Self { pool })
     }
 
+    #[must_use]
     pub const fn pool(&self) -> &PgPool {
         &self.pool
     }
 
+    /// Verify the connection by issuing `SELECT 1`.
+    ///
+    /// # Errors
+    /// Returns [`PersistenceError::Sqlx`] if the query fails or the server is
+    /// unreachable.
     pub async fn ping(&self) -> Result<(), PersistenceError> {
         let _: (i32,) = sqlx::query_as("SELECT 1").fetch_one(&self.pool).await?;
         Ok(())

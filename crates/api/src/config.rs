@@ -84,12 +84,20 @@ impl From<figment::Error> for ConfigError {
 }
 
 impl Config {
+    /// Load and validate the config from process environment variables.
+    ///
+    /// # Errors
+    /// Returns [`ConfigError::Figment`] if any required env var is missing or
+    /// fails to deserialize, or [`ConfigError::Validation`] if a cross-field
+    /// invariant is violated (e.g. `JWT_PRIVATE_KEY_ID` not in
+    /// `JWT_PUBLIC_KEYS`).
     pub fn load_from_env() -> Result<Self, ConfigError> {
         let cfg: Self = Figment::new().merge(Env::raw()).extract()?;
         cfg.validate()?;
         Ok(cfg)
     }
 
+    #[must_use]
     pub const fn database_acquire_timeout(&self) -> Duration {
         Duration::from_secs(self.database_acquire_timeout_seconds)
     }

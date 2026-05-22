@@ -59,6 +59,9 @@ struct EmailChangeDe<'a> {
 ///
 /// Returns `(subject, body)`. Errors propagate from askama (template logic
 /// errors only; the template files themselves are compiled in).
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
 pub fn render_magic_link(locale: Locale, link: &str) -> Result<(String, String), askama::Error> {
     let (subject, body) = match locale {
         Locale::En => ("Sign in to my-family".to_string(), MagicLinkEn { link }.render()?),
@@ -71,6 +74,9 @@ pub fn render_magic_link(locale: Locale, link: &str) -> Result<(String, String),
 ///
 /// Returns `(subject, body)`. The subject embeds the family name verbatim
 /// since email clients render plain text in the subject line.
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
 pub fn render_invite(
     locale: Locale,
     family_name: &str,
@@ -95,6 +101,9 @@ pub fn render_invite(
 /// The email is sent to the user's **current** address; `new_email` is the
 /// address they want to switch to and is included in the body so the recipient
 /// can verify they really initiated the change. Returns `(subject, body)`.
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
 pub fn render_email_change(
     locale: Locale,
     link: &str,

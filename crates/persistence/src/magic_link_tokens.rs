@@ -14,6 +14,7 @@ pub struct PgMagicLinkRepo {
 }
 
 impl PgMagicLinkRepo {
+    #[must_use]
     pub const fn new(pool: PgPool) -> Self {
         Self { pool }
     }

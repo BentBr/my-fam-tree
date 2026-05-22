@@ -27,7 +27,7 @@ run() {
 }
 
 run "rust fmt"        SKIP_FMT     cargo fmt --all -- --check
-run "clippy"          SKIP_CLIPPY  cargo clippy --workspace --all-targets -- -D warnings
+run "clippy"          SKIP_CLIPPY  cargo +nightly clippy --workspace --all-targets --all-features -- -D clippy::all -D warnings -D clippy::pedantic -D clippy::nursery
 run "rust tests"      SKIP_RTEST   cargo test --workspace --all-targets
 run "fe lint"         SKIP_FELINT  ./scripts/fe-in-container.sh lint
 run "fe typecheck"    SKIP_FETSC   ./scripts/fe-in-container.sh typecheck

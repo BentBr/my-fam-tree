@@ -53,6 +53,11 @@ pub struct TreePayload {
 /// the response — for now `nodes` is bounded by `MAX_NODES`.
 const MAX_NODES: u32 = 1_000;
 
+/// Assemble the full tree payload for a family.
+///
+/// # Errors
+/// Returns any error surfaced by the underlying repos (DB connectivity,
+/// query failure).
 pub async fn build_tree(
     persons: &Arc<dyn PersonRepo>,
     parent_links: &Arc<dyn ParentLinkRepo>,

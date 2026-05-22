@@ -1,3 +1,7 @@
+// This binary is a CLI; --status, --check, and --dry-run all print
+// human-readable migration state to stdout/stderr by design.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use std::time::Duration;
 
 use clap::Parser;
@@ -19,7 +23,7 @@ struct Args {
     /// Apply up to (and including) this version, then stop.
     #[arg(long)]
     target: Option<i64>,
-    /// DATABASE_URL override.
+    /// `DATABASE_URL` override.
     #[arg(long, env = "DATABASE_URL")]
     database_url: String,
 }

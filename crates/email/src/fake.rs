@@ -15,19 +15,35 @@ pub struct FakeEmailSender {
 }
 
 impl FakeEmailSender {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns and clears the captured emails.
+    ///
+    /// # Panics
+    /// Panics if the internal `Mutex` is poisoned (only happens if another
+    /// thread panicked while holding the lock).
     pub fn drain(&self) -> Vec<OutboundEmail> {
         let mut guard = self.inbox.lock().expect("fake email mutex");
         std::mem::take(&mut *guard)
     }
 
+    /// Returns the number of currently captured emails.
+    ///
+    /// # Panics
+    /// Panics if the internal `Mutex` is poisoned.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.inbox.lock().expect("fake email mutex").len()
     }
 
+    /// Returns `true` if no emails are currently captured.
+    ///
+    /// # Panics
+    /// Panics if the internal `Mutex` is poisoned.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }

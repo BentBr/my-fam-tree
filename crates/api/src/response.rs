@@ -58,6 +58,7 @@ macro_rules! response_body {
 response_body!(pub NullResponseBody, serde_json::Value);
 
 impl<T: Serialize> ApiResponse<T> {
+    #[must_use]
     pub const fn ok(data: T) -> Self {
         Self { data, meta: None }
     }
@@ -76,6 +77,7 @@ impl<T: Serialize> ApiResponse<T> {
 }
 
 impl<T: Serialize> ApiResponse<Vec<T>> {
+    #[must_use]
     pub const fn page(items: Vec<T>, pagination: Pagination) -> Self {
         Self {
             data: items,

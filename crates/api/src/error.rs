@@ -105,6 +105,7 @@ pub enum ErrorCode {
 }
 
 impl ErrorCode {
+    #[must_use]
     pub const fn http_status(self) -> StatusCode {
         match self {
             Self::AuthUnauthenticated
@@ -131,6 +132,7 @@ impl ErrorCode {
         }
     }
 
+    #[must_use]
     pub const fn title(self) -> &'static str {
         match self {
             Self::AuthUnauthenticated => "Authentication required",
@@ -157,6 +159,7 @@ impl ErrorCode {
         }
     }
 
+    #[must_use]
     pub const fn slug(self) -> &'static str {
         match self {
             Self::AuthUnauthenticated => "auth.unauthenticated",
@@ -255,6 +258,7 @@ pub enum ApiError {
 }
 
 impl ApiError {
+    #[must_use]
     pub const fn code(&self) -> ErrorCode {
         match self {
             Self::Unauthenticated => ErrorCode::AuthUnauthenticated,
@@ -286,6 +290,7 @@ impl ApiError {
     }
 
     /// Build the wire-safe body. Internal errors get a sanitized detail.
+    #[must_use]
     pub fn to_body(&self, request_id: Option<&str>) -> ApiErrorBody {
         let code = self.code();
         let mut body = ApiErrorBody {

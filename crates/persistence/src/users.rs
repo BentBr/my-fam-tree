@@ -12,6 +12,7 @@ pub struct PgUserRepo {
 }
 
 impl PgUserRepo {
+    #[must_use]
     pub const fn new(pool: PgPool) -> Self {
         Self { pool }
     }

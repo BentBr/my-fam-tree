@@ -18,6 +18,12 @@ pub struct SmtpSender {
 }
 
 impl SmtpSender {
+    /// Build an SMTP sender from a `smtp` / `smtp+starttls` / `smtps` DSN.
+    ///
+    /// # Errors
+    /// Returns [`EmailError::Config`] if the DSN is unparseable, has no host,
+    /// uses an unsupported scheme, or the underlying `lettre` builder
+    /// rejects the TLS configuration.
     pub fn from_dsn(
         dsn: &str,
         from_name: &str,
