@@ -231,13 +231,7 @@ defineExpose({ refit: () => fitToView(true) })
 
 <template>
     <div ref="wrapEl" class="tree-wrap" data-testid="tree-canvas">
-        <svg
-            ref="svgEl"
-            :viewBox="`0 0 ${Math.max(layout.width + 80, 1)} ${Math.max(layout.height + 80, 1)}`"
-            preserveAspectRatio="xMidYMid meet"
-            role="application"
-            aria-label="Family tree"
-        >
+        <svg ref="svgEl" role="application" aria-label="Family tree">
             <defs>
                 <filter id="treeNodeShadow" x="-30%" y="-30%" width="160%" height="160%">
                     <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.08" />
