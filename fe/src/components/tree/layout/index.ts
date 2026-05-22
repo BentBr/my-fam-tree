@@ -1,11 +1,10 @@
-// SVG layout for the family tree. v2: block-based layout where each
-// "couple" (two same-row partners) is the placement unit. Children sit
-// centered under their parent block; sibling groups of different parent
-// blocks are separated by a wider CLUSTER_GAP so the visual grouping is
-// unambiguous. Top-row blocks are laid out left-to-right by birth date
-// in stable id order. Generation rank is computed independently from
-// canonical-parent edges so older parentless ancestors still land above
-// younger rows.
+// SVG layout for the family tree. v3: top-down generation rank from
+// parentless anchors with partner equalization (see ./generations.ts),
+// then the block-based layout from v2 — each "couple" (two same-row
+// partners) is the placement unit. Children sit centered under their
+// parent block; sibling groups of different parent blocks are separated
+// by a wider CLUSTER_GAP so the visual grouping is unambiguous. Top-row
+// blocks are laid out left-to-right by birth date in stable id order.
 
 import { blockSortKey, buildBlocks, chooseParentBlock, compareBlockKeys } from './blocks'
 import { computeGenerations, promoteEldestOrphans } from './generations'
@@ -43,9 +42,11 @@ export {
 /**
  * Compute SVG-ready positions and edge coordinates for the family tree.
  *
- * Strategy (v2):
- *   1. Build the full child-of-person adjacency from parent_edges. Compute
- *      a generation index per person (bottom-up over that adjacency) and
+ * Strategy (v3):
+ *   1. Build child-of-person AND parent-of-person adjacency from
+ *      parent_edges. Compute the depth of every person top-down from
+ *      parentless anchors, equalize partners + propagate upward to a
+ *      fixed point, invert to a "gen" index (top row == max gen), and
  *      promote eldest orphans by birth-year gap.
  *   2. Build per-row blocks: each pair of same-row partners becomes a couple
  *      block; singletons get their own block.
@@ -69,16 +70,21 @@ export function layoutTree(input: TreeInput): LayoutResult {
     // Full parent adjacency for the generation-rank pass (and for the
     // post-layout parent-edge render). EdgePair: `a` = child, `b` = parent.
     const childrenOfPerson = new Map<string, string[]>()
+    const parentsOfPerson = new Map<string, string[]>()
     for (const e of input.parent_edges) {
         if (!byId.has(e.a) || !byId.has(e.b)) continue
-        const list = childrenOfPerson.get(e.b) ?? []
-        list.push(e.a)
-        childrenOfPerson.set(e.b, list)
+        const kids = childrenOfPerson.get(e.b) ?? []
+        kids.push(e.a)
+        childrenOfPerson.set(e.b, kids)
+        const parents = parentsOfPerson.get(e.a) ?? []
+        parents.push(e.b)
+        parentsOfPerson.set(e.a, parents)
     }
 
     const baseGeneration = computeGenerations(
         input.nodes.map((n) => n.id),
-        childrenOfPerson,
+        parentsOfPerson,
+        input.partner_edges.filter((e) => byId.has(e.a) && byId.has(e.b)),
     )
     const generation = promoteEldestOrphans(input.nodes, baseGeneration, childrenOfPerson)
     let topGen = 0
