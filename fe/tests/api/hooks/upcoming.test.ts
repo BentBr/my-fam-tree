@@ -20,7 +20,7 @@ beforeEach(() => {
 })
 
 describe('useUpcoming', () => {
-    it('GETs /upcoming without a filter param when filter=all', async () => {
+    it('GETs /upcoming without a query param when filter=all', async () => {
         mocked.GET.mockResolvedValueOnce({
             data: { data: [{ kind: 'birthday', next_date: '2026-12-01', years: 30, label: 'A' }] },
             error: undefined,
@@ -28,9 +28,9 @@ describe('useUpcoming', () => {
         const filter = ref<UpcomingFilter>('all')
         const { result } = makeHookWrapper(() => useUpcoming(filter))
         await new Promise<void>((r) => setTimeout(r, 5))
-        expect(mocked.GET).toHaveBeenCalledWith('/api/v1/upcoming', {
-            params: { query: undefined },
-        })
+        // `all` is the backend default, so the hook omits the filter
+        // query string entirely (single-arg GET call).
+        expect(mocked.GET).toHaveBeenCalledWith('/api/v1/upcoming')
         expect(result.data.value?.[0]?.kind).toBe('birthday')
     })
 

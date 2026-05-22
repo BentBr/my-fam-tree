@@ -17,10 +17,15 @@ export function useUpcoming(filter: Ref<UpcomingFilter>) {
         queryKey: ['upcoming', filter] as const,
         queryFn: async () => {
             const f = filter.value
-            const query: Record<string, string> | undefined = f === 'all' ? undefined : { filter: f }
-            const { data, error } = await client.GET('/api/v1/upcoming', {
-                params: { query },
-            })
+            // The backend treats a missing `filter` as `all`, so we
+            // omit the query parameter entirely when filter is `all`
+            // to keep the URL minimal. openapi-fetch's typed `query`
+            // object disallows `undefined` under
+            // `exactOptionalPropertyTypes`, so we split the call.
+            const { data, error } =
+                f === 'all'
+                    ? await client.GET('/api/v1/upcoming')
+                    : await client.GET('/api/v1/upcoming', { params: { query: { filter: f } } })
             if (error !== undefined) throw error
             if (data === undefined) throw new Error('empty response from /upcoming')
             return data.data

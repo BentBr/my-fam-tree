@@ -53,8 +53,8 @@ describe('NavDrawer', () => {
         // "No match found" warn on every navigation.
         const w = mountDrawer()
         const items = w.findAll('.li')
-        expect(items).toHaveLength(2)
-        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/health'])
+        expect(items).toHaveLength(3)
+        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/upcoming', '/health'])
     })
 
     it('rail mode follows ui.sidebarCollapsed when not mobile', async () => {

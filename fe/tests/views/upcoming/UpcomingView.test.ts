@@ -38,12 +38,16 @@ function stubs() {
             emits: ['update:modelValue'],
         },
         'v-btn': {
-            template: '<button :data-testid="$attrs[\'data-testid\']" @click="$emit(\'click\', $event)"><slot /></button>',
+            template:
+                '<button :data-testid="$attrs[\'data-testid\']" @click="$emit(\'click\', $event)"><slot /></button>',
             inheritAttrs: false,
             emits: ['click'],
         },
         'v-skeleton-loader': { template: '<div class="skel" />' },
-        'v-alert': { template: '<div class="alert" :data-testid="$attrs[\'data-testid\']"><slot /></div>', inheritAttrs: false },
+        'v-alert': {
+            template: '<div class="alert" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
+            inheritAttrs: false,
+        },
         'v-card': { template: '<div><slot /></div>' },
         'v-card-title': { template: '<div><slot /></div>' },
         'v-card-text': { template: '<div><slot /></div>' },
@@ -56,7 +60,10 @@ function stubs() {
         },
         'v-list-item-title': { template: '<div class="title"><slot /></div>' },
         'v-list-item-subtitle': { template: '<div class="sub"><slot /></div>' },
-        'v-chip': { template: '<span class="chip" :data-testid="$attrs[\'data-testid\']"><slot /></span>', inheritAttrs: false },
+        'v-chip': {
+            template: '<span class="chip" :data-testid="$attrs[\'data-testid\']"><slot /></span>',
+            inheritAttrs: false,
+        },
     }
 }
 
@@ -119,19 +126,15 @@ describe('UpcomingView', () => {
     })
 
     it('toggling birthday once enters filter=birthday; clicking again reverts to all', async () => {
-        // The view re-calls useUpcoming on each render with the same ref.
-        // Returning a captured ref lets us watch the filter value change.
-        const data = ref<unknown>([])
-        const stateFactory = (): QueryState => ({
-            data: data as never,
-            isLoading: ref(false),
-            error: ref(null),
-        })
-        // Always provide the stateFactory output when the view re-mounts the hook.
+        // Capture the filter ref the view passes into useUpcoming so the
+        // test can observe its value across toggle interactions. The
+        // mock returns an empty-data state on every invocation so the
+        // list renders the empty card rather than the row template
+        // (formatDate would throw on placeholder rows).
+        let capturedFilter: { value: string } | null = null
         mocked.mockImplementation((filterRef: { value: string }) => {
-            // Mirror filter to data for assertion convenience.
-            data.value = filterRef
-            return stateFactory()
+            capturedFilter = filterRef
+            return { data: ref([]), isLoading: ref(false), error: ref(null) }
         })
 
         const w = mount(UpcomingView, {
@@ -139,19 +142,19 @@ describe('UpcomingView', () => {
         })
 
         // Initial: filter ref starts at 'all'.
-        const filterRefAfterMount = data.value as { value: string }
-        expect(filterRefAfterMount.value).toBe('all')
+        expect(capturedFilter).not.toBeNull()
+        expect((capturedFilter as Ref<string>).value).toBe('all')
 
         // First click on Birthday ⇒ filter becomes 'birthday'.
         await w.find('[data-testid="upcoming-filter-birthday"]').trigger('click')
-        expect((data.value as { value: string }).value).toBe('birthday')
+        expect((capturedFilter as Ref<string>).value).toBe('birthday')
 
         // Second click on Birthday ⇒ filter reverts to 'all'.
         await w.find('[data-testid="upcoming-filter-birthday"]').trigger('click')
-        expect((data.value as { value: string }).value).toBe('all')
+        expect((capturedFilter as Ref<string>).value).toBe('all')
 
         // Click on Anniversary ⇒ filter becomes 'anniversary'.
         await w.find('[data-testid="upcoming-filter-anniversary"]').trigger('click')
-        expect((data.value as { value: string }).value).toBe('anniversary')
+        expect((capturedFilter as Ref<string>).value).toBe('anniversary')
     })
 })

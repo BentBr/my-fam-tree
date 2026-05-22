@@ -26,13 +26,14 @@ const iconFor: Record<string, string> = {
     death_anniversary: 'candle',
 }
 
-const dateFormatter = computed(() =>
-    new Intl.DateTimeFormat(locale.value, {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    }),
+const dateFormatter = computed(
+    () =>
+        new Intl.DateTimeFormat(locale.value, {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        }),
 )
 
 interface UpcomingRow {

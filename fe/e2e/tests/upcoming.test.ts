@@ -39,11 +39,7 @@ test('upcoming dates page filters by birthday + anniversary toggles', async ({ p
 
     // Seed a small family graph via the API directly: two people with
     // different birthdays + one open partnership (wedding anniversary).
-    const create = async (
-        given: string,
-        family: string,
-        birth: string,
-    ): Promise<string> => {
+    const create = async (given: string, family: string, birth: string): Promise<string> => {
         const res = await page.request.post('/api/v1/persons', {
             headers: { 'X-Family-Id': familyId },
             data: { given_name: given, family_name: family, birth_date: birth },
@@ -71,9 +67,7 @@ test('upcoming dates page filters by birthday + anniversary toggles', async ({ p
 
     // Click "Birthday" — only birthdays should remain (2).
     await page.getByTestId('upcoming-filter-birthday').click()
-    await expect
-        .poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 })
-        .toBe(2)
+    await expect.poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 }).toBe(2)
     const allRowsAfterBirthday = await page.locator('[data-testid^="upcoming-row-"]').all()
     for (const row of allRowsAfterBirthday) {
         const tid = await row.getAttribute('data-testid')
@@ -82,14 +76,10 @@ test('upcoming dates page filters by birthday + anniversary toggles', async ({ p
 
     // Click "Birthday" again — filter reverts to "all" (3 rows again).
     await page.getByTestId('upcoming-filter-birthday').click()
-    await expect
-        .poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 })
-        .toBe(3)
+    await expect.poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 }).toBe(3)
 
     // Click "Jahrestag" — only the wedding anniversary should remain.
     await page.getByTestId('upcoming-filter-anniversary').click()
-    await expect
-        .poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 })
-        .toBe(1)
+    await expect.poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 }).toBe(1)
     await expect(page.locator('[data-testid="upcoming-row-wedding_anniversary"]')).toHaveCount(1)
 })
