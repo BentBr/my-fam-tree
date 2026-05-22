@@ -244,14 +244,28 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
         })
         expect(res.ok()).toBeTruthy()
     }
-    const partner = async (aId: string, bId: string): Promise<void> => {
+    interface PartnershipBody {
+        partner_a_id: string
+        partner_b_id: string
+        kind: string
+        ended_on?: string
+        end_reason?: string
+    }
+    const partner = async (
+        aId: string,
+        bId: string,
+        opts?: { ended_on?: string; end_reason?: string },
+    ): Promise<void> => {
+        const body: PartnershipBody = { partner_a_id: aId, partner_b_id: bId, kind: 'marriage' }
+        if (opts?.ended_on !== undefined) body.ended_on = opts.ended_on
+        if (opts?.end_reason !== undefined) body.end_reason = opts.end_reason
         const res = await page.request.post('/api/v1/partnerships', {
             headers: { 'X-Family-Id': familyId },
             // Field names match `PartnershipCreateReq` in
             // `crates/api/src/routes/partnerships.rs` — `partner_a_id` /
             // `partner_b_id`, not `a_id` / `b_id`. The shorter form was a
             // copy-paste from the relationships tree edge JSON shape.
-            data: { partner_a_id: aId, partner_b_id: bId, kind: 'marriage' },
+            data: body,
         })
         if (!res.ok()) {
             console.error(`partnership POST failed ${res.status()}:`, await res.text())
@@ -273,11 +287,13 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     await link(max, klaus)
     await link(max, anna)
     await link(emma, lina)
-    // Partnerships: Otto+Hannelore, Werner+Greta, Klaus+Anna, Klaus+Brigitte.
+    // Partnerships: Otto+Hannelore, Werner+Greta, Klaus+Anna, Klaus+Brigitte
+    // (divorced 2000 so the ex-spouse-adjacency layout pass threads
+    // Brigitte to Klaus's LEFT, current partner Anna to his RIGHT).
     await partner(otto, hannelore)
     await partner(werner, greta)
     await partner(klaus, anna)
-    await partner(klaus, brigitte)
+    await partner(klaus, brigitte, { ended_on: '2000-06-30', end_reason: 'divorce' })
 
     await page.reload()
     await expect(page.getByTestId('tree-canvas')).toBeVisible()
@@ -329,6 +345,21 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     // Brigitte (a root partner of Klaus) shares Klaus's row — Bug 2.
     const yBrigitte = await yOf(brigitte)
     expect(yBrigitte).toBe(yKlaus)
+
+    // v3.1 ex-spouse adjacency: Brigitte is Klaus's divorced (ended_on
+    // 2000) first wife; Anna is the current partner. The multi-couple
+    // block threads Brigitte to Klaus's LEFT and Anna to his RIGHT.
+    const xOf = async (id: string): Promise<number> =>
+        page.getByTestId(`tree-node-${id}`).evaluate((el) => {
+            const transform = el.getAttribute('transform') ?? ''
+            const m = transform.match(/translate\(\s*([-\d.]+)/)
+            return m !== null && m[1] !== undefined ? Number.parseFloat(m[1]) : Number.NaN
+        })
+    const xBrigitte = await xOf(brigitte)
+    const xKlaus = await xOf(klaus)
+    const xAnna = await xOf(anna)
+    expect(xBrigitte).toBeLessThan(xKlaus)
+    expect(xKlaus).toBeLessThan(xAnna)
     // peter old (1910) sits strictly above Otto's row.
     const yOtto = await yOf(otto)
     const yPeter = await yOf(peter)

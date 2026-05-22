@@ -142,11 +142,7 @@ function collectComponent(
  *   the open side in stable id order — a safety net for unusual topologies
  *   (multi-hub components); the seed and the common case never hit it.
  */
-function threadComponent(
-    component: Set<string>,
-    fallbackSeed: string,
-    edgesByPerson: Map<string, RowEdge[]>,
-): Block {
+function threadComponent(component: Set<string>, fallbackSeed: string, edgesByPerson: Map<string, RowEdge[]>): Block {
     const ids = [...component]
     if (ids.length === 1) {
         const only = ids[0] ?? fallbackSeed
