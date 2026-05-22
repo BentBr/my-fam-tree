@@ -169,6 +169,7 @@
         "validation_failed": "The submitted data is invalid.",
         "relationship_cycle": "That link would create a cycle in the family tree.",
         "partnership_duplicate": "A current partnership of the same kind already exists for these partners.",
+        "parent_link_duplicate": "That parent-child link already exists.",
         "person_not_found": "We couldn't find that person.",
         "person_not_editable": "You don't have permission to edit this person.",
         "family_not_member": "You're not a member of this family.",

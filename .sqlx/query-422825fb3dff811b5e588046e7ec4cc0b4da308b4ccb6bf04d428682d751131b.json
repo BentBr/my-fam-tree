@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO parent_links (child_id, parent_id, kind, note)\n             VALUES ($1, $2, ($3::text)::parent_link_kind, $4)\n             ON CONFLICT (child_id, parent_id) DO NOTHING\n             RETURNING child_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "child_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "422825fb3dff811b5e588046e7ec4cc0b4da308b4ccb6bf04d428682d751131b"
+}

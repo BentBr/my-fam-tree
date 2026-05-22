@@ -96,6 +96,48 @@ async fn parent_links_happy_path_and_delete_round_trip() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn parent_links_rejects_duplicate_edge_with_409() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let (access, _r) = sign_in(&stack, &app, "pl-dup@example.com").await;
+    let (access, family_id) = create_family(&app, &access, "Dupes").await;
+    let child = create_person(&app, &access, &family_id, "Child").await;
+    let parent = create_person(&app, &access, &family_id, "Parent").await;
+
+    // First insert -> 200.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/parent-links")
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({
+            "child_id": child,
+            "parent_id": parent,
+            "kind": "biological",
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200);
+
+    // Re-inserting the SAME (child, parent) pair -> 409 parent_link_duplicate.
+    // Different `kind` would also collide; the repo unique key is on
+    // (child_id, parent_id) without `kind`.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/parent-links")
+        .cookie(Cookie::new("access", access))
+        .insert_header(("X-Family-Id", family_id))
+        .set_json(serde_json::json!({
+            "child_id": child,
+            "parent_id": parent,
+            "kind": "step",
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 409);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["code"], "parent_link_duplicate");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn parent_links_rejects_self_parent_and_cycles() {
     let stack = ephemeral_stack().await;
     let app = test::init_service(build_app(stack.state.clone(), None)).await;

@@ -125,17 +125,24 @@ impl ParentLinkRepo for PgParentLinkRepo {
             return Err(ParentLinkRepoError::Cycle);
         }
 
+        // `DO NOTHING RETURNING` is the cleanest "insert or 409" surface in
+        // Postgres: a duplicate `(child_id, parent_id)` returns zero rows,
+        // which we map to `Duplicate`. A successful insert returns one row.
+        // We deliberately drop the previous UPSERT-on-conflict semantics —
+        // re-posting the same edge with a different `kind` used to silently
+        // mutate the row, which let bugs hide behind a 200. Callers that
+        // truly need to change `kind` must DELETE + POST.
         let insert_res = sqlx::query!(
             "INSERT INTO parent_links (child_id, parent_id, kind, note)
              VALUES ($1, $2, ($3::text)::parent_link_kind, $4)
-             ON CONFLICT (child_id, parent_id) DO UPDATE
-                 SET kind = EXCLUDED.kind, note = EXCLUDED.note",
+             ON CONFLICT (child_id, parent_id) DO NOTHING
+             RETURNING child_id",
             child_id.into_uuid(),
             parent_id.into_uuid(),
             kind.as_db(),
             note
         )
-        .execute(&mut *tx)
+        .fetch_optional(&mut *tx)
         .await;
         if let Err(sqlx::Error::Database(db)) = &insert_res
             && db.code().as_deref() == Some("23514")
@@ -146,7 +153,10 @@ impl ParentLinkRepo for PgParentLinkRepo {
             // and this INSERT. Surface the cycle to the route layer.
             return Err(ParentLinkRepoError::Cycle);
         }
-        insert_res.map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
+        let row = insert_res.map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
+        if row.is_none() {
+            return Err(ParentLinkRepoError::Duplicate);
+        }
 
         tx.commit().await.map_err(|e| ParentLinkRepoError::Db(e.to_string()))?;
         Ok(())

@@ -57,7 +57,7 @@ fn parse_kind(raw: &str) -> Option<ParentKind> {
         (status = 200, description = "Edge inserted", body = NullResponseBody),
         (status = 401, description = "No session"),
         (status = 403, description = "Admin or owner required"),
-        (status = 409, description = "Relationship would create a cycle"),
+        (status = 409, description = "Cycle or duplicate edge"),
         (status = 422, description = "Validation failed"),
     ),
     security(("cookie_access" = [])),
@@ -98,6 +98,13 @@ pub async fn create(
         .await
         .map_err(|e| internal(format!("persons.list_for_family: {e}")))?;
     let links = state.parent_links.list_for_family(active.id).await.map_err(internal_link_err)?;
+    // Fast-path: surface a duplicate edge before running the cross-aggregate
+    // validations or hitting the DB. The repo's INSERT is the race-safe
+    // backstop; this just spares the round-trip on the common case where
+    // the FE clicked "add" twice or replayed an idempotent request.
+    if links.iter().any(|l| l.child_id == child && l.parent_id == parent) {
+        return Err(ApiError::ParentLinkDuplicate);
+    }
     let warnings = check_parent_link(child, parent, kind, &persons, &links)?;
 
     state
@@ -154,6 +161,7 @@ pub async fn delete(
 fn internal_link_err(e: ParentLinkRepoError) -> ApiError {
     match e {
         ParentLinkRepoError::Cycle | ParentLinkRepoError::SelfParent => ApiError::RelationshipCycle,
+        ParentLinkRepoError::Duplicate => ApiError::ParentLinkDuplicate,
         other => internal(other),
     }
 }

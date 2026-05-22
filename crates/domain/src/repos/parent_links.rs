@@ -51,6 +51,8 @@ pub enum ParentLinkRepoError {
     Cycle,
     #[error("self-parent disallowed")]
     SelfParent,
+    #[error("duplicate: edge (child_id, parent_id) already exists")]
+    Duplicate,
 }
 
 #[async_trait]
@@ -64,9 +66,12 @@ pub trait ParentLinkRepo: Send + Sync {
         &self,
         family_id: FamilyId,
     ) -> Result<Vec<ParentLink>, ParentLinkRepoError>;
-    /// Insert or upsert a parent link. Implementations must perform the
-    /// cycle check + insert atomically (SERIALIZABLE transaction) so
-    /// concurrent inserts cannot bypass it.
+    /// Insert a new parent link. Returns `Duplicate` when a row with the
+    /// same `(child_id, parent_id)` already exists — the caller is
+    /// expected to delete + re-create (or expose a `PATCH` for changing
+    /// `kind`/`note`) rather than silently upserting. Implementations
+    /// must perform the cycle check + insert atomically (SERIALIZABLE
+    /// transaction) so concurrent inserts cannot bypass it.
     async fn insert(
         &self,
         family_id: FamilyId,

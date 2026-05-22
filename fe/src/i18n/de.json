@@ -169,6 +169,7 @@
         "validation_failed": "Die übermittelten Daten sind ungültig.",
         "relationship_cycle": "Diese Verbindung würde einen Kreis im Stammbaum erzeugen.",
         "partnership_duplicate": "Eine aktuelle Partnerschaft gleicher Art zwischen diesen Personen existiert bereits.",
+        "parent_link_duplicate": "Diese Eltern-Kind-Verbindung existiert bereits.",
         "person_not_found": "Diese Person konnten wir nicht finden.",
         "person_not_editable": "Du hast keine Berechtigung, diese Person zu bearbeiten.",
         "family_not_member": "Du bist kein Mitglied dieser Familie.",

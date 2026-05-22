@@ -478,7 +478,7 @@
             "description": "Admin or owner required"
           },
           "409": {
-            "description": "Relationship would create a cycle"
+            "description": "Cycle or duplicate edge"
           },
           "422": {
             "description": "Validation failed"
@@ -1402,6 +1402,7 @@
           "reminder_not_found",
           "relationship_cycle",
           "partnership_duplicate",
+          "parent_link_duplicate",
           "validation_failed",
           "conflict_stale",
           "email_taken",

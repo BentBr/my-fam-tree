@@ -96,6 +96,7 @@ pub enum ErrorCode {
     ReminderNotFound,
     RelationshipCycle,
     PartnershipDuplicate,
+    ParentLinkDuplicate,
     ValidationFailed,
     ConflictStale,
     EmailTaken,
@@ -123,6 +124,7 @@ impl ErrorCode {
             }
             Self::RelationshipCycle
             | Self::PartnershipDuplicate
+            | Self::ParentLinkDuplicate
             | Self::ConflictStale
             | Self::EmailTaken => StatusCode::CONFLICT,
             Self::ValidationFailed => StatusCode::UNPROCESSABLE_ENTITY,
@@ -150,6 +152,7 @@ impl ErrorCode {
             Self::ReminderNotFound => "Reminder not found",
             Self::RelationshipCycle => "Relationship would create a cycle",
             Self::PartnershipDuplicate => "Partnership already exists",
+            Self::ParentLinkDuplicate => "Parent link already exists",
             Self::ValidationFailed => "Validation failed",
             Self::ConflictStale => "Stale state",
             Self::EmailTaken => "Email already in use",
@@ -177,6 +180,7 @@ impl ErrorCode {
             Self::ReminderNotFound => "reminder.not_found",
             Self::RelationshipCycle => "relationship.cycle",
             Self::PartnershipDuplicate => "partnership.duplicate",
+            Self::ParentLinkDuplicate => "parent_link.duplicate",
             Self::ValidationFailed => "validation.failed",
             Self::ConflictStale => "conflict.stale",
             Self::EmailTaken => "email.taken",
@@ -202,6 +206,7 @@ impl ErrorCode {
         Self::ReminderNotFound,
         Self::RelationshipCycle,
         Self::PartnershipDuplicate,
+        Self::ParentLinkDuplicate,
         Self::ValidationFailed,
         Self::ConflictStale,
         Self::EmailTaken,
@@ -243,6 +248,8 @@ pub enum ApiError {
     RelationshipCycle,
     #[error("partnership already exists")]
     PartnershipDuplicate,
+    #[error("parent link already exists")]
+    ParentLinkDuplicate,
     #[error("validation failed")]
     Validation(Vec<FieldViolation>),
     #[error("stale state")]
@@ -276,6 +283,7 @@ impl ApiError {
             Self::ReminderNotFound => ErrorCode::ReminderNotFound,
             Self::RelationshipCycle => ErrorCode::RelationshipCycle,
             Self::PartnershipDuplicate => ErrorCode::PartnershipDuplicate,
+            Self::ParentLinkDuplicate => ErrorCode::ParentLinkDuplicate,
             Self::Validation(_) => ErrorCode::ValidationFailed,
             Self::ConflictStale => ErrorCode::ConflictStale,
             Self::EmailTaken { .. } => ErrorCode::EmailTaken,
