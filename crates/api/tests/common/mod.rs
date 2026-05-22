@@ -227,3 +227,40 @@ where
     let refresh = res.response().cookies().find(|c| c.name() == "refresh").expect("refresh cookie");
     (access.value().to_string(), refresh.value().to_string())
 }
+
+/// Create a family for the caller (becomes Owner) and return the rotated
+/// access cookie plus the new `family_id` as a string.
+///
+/// Mirrors what `POST /api/v1/families` does in the real client: the
+/// response sets a fresh `access` cookie reflecting the new Owner membership,
+/// and the response body's `data.family.id` carries the UUID. Test code
+/// then attaches `X-Family-Id` to subsequent requests against the
+/// persons / parent-links / partnerships / relationships scope.
+#[allow(clippy::future_not_send)]
+pub async fn create_family<S, B>(app: &S, access: &str, name: &str) -> (String, String)
+where
+    S: actix_web::dev::Service<
+            actix_http::Request,
+            Response = actix_web::dev::ServiceResponse<B>,
+            Error = actix_web::Error,
+        >,
+    B: actix_web::body::MessageBody,
+{
+    let req = test::TestRequest::post()
+        .uri("/api/v1/families")
+        .cookie(actix_web::cookie::Cookie::new("access", access.to_string()))
+        .set_json(serde_json::json!({ "name": name }))
+        .to_request();
+    let res = test::call_service(app, req).await;
+    assert_eq!(res.status(), 200, "create family should succeed for {name}");
+    let new_access = res
+        .response()
+        .cookies()
+        .find(|c| c.name() == "access")
+        .expect("rotated access cookie")
+        .value()
+        .to_string();
+    let body: serde_json::Value = test::read_body_json(res).await;
+    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
+    (new_access, family_id)
+}
