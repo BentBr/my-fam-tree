@@ -5,6 +5,12 @@
 // parent block; sibling groups of different parent blocks are separated
 // by a wider CLUSTER_GAP so the visual grouping is unambiguous. Top-row
 // blocks are laid out left-to-right by birth date in stable id order.
+//
+// v3.1 (ex-spouse adjacency): a person with both an open and an ended
+// partnership on the same row gets ONE multi-member block instead of two
+// disjoint slots. Ended partners thread to the LEFT of the shared anchor,
+// open ones to the RIGHT; each sub-cluster of children centres under its
+// own bio-couple midpoint.
 
 import { blockSortKey, buildBlocks, chooseParentBlock, compareBlockKeys } from './blocks'
 import { computeGenerations, promoteEldestOrphans } from './generations'
@@ -27,6 +33,7 @@ import {
 export {
     type BackendEdge,
     type BackendNode,
+    type BackendPartnerEdge,
     CLUSTER_GAP,
     COL_GAP,
     type LayoutResult,
@@ -42,27 +49,27 @@ export {
 /**
  * Compute SVG-ready positions and edge coordinates for the family tree.
  *
- * Strategy (v3):
+ * Strategy (v3.1):
  *   1. Build child-of-person AND parent-of-person adjacency from
- *      parent_edges. Compute the depth of every person top-down from
- *      parentless anchors, equalize partners + propagate upward to a
- *      fixed point, invert to a "gen" index (top row == max gen), and
- *      promote eldest orphans by birth-year gap.
- *   2. Build per-row blocks: each pair of same-row partners becomes a couple
- *      block; singletons get their own block.
+ *      parent_edges. Track biological parents separately so a step-link
+ *      doesn't pull a child under the wrong couple inside a multi-couple
+ *      block. Compute the depth of every person top-down from parentless
+ *      anchors, equalize partners + propagate upward to a fixed point,
+ *      invert to a "gen" index (top row == max gen), and promote eldest
+ *      orphans by birth-year gap.
+ *   2. Build per-row blocks: each same-row partner-edge connected
+ *      component becomes one block (singleton, couple, or N≥3 chain).
  *   3. Choose a canonical parent block for each non-top block (the block
  *      containing the smallest-id parent of the block's anchor member).
- *      Top-row blocks have no parent block.
  *   4. Place top-row blocks left-to-right with CLUSTER_GAP between them.
- *      Recursively lay out each top block's subtree: children placed
- *      left-to-right by birth date, then the parent block is centered over
- *      the children cluster.
+ *      Recursively lay out each top block's subtree, with multi-couple
+ *      blocks splitting their children into per-couple sub-clusters.
  *   5. Sweep each row for inter-cluster collisions and enforce COL_GAP
  *      within a cluster, CLUSTER_GAP between clusters belonging to
- *      different parent blocks.
- *   6. Materialize positioned persons by reading each block's x and
- *      distributing it over the 1 or 2 members. Emit parent + partner
- *      edges from those coordinates.
+ *      different parent blocks. Uses each block's `pixelWidth` so widened
+ *      multi-couple blocks still get correct separation.
+ *   6. Materialize positioned persons by reading each block's per-member
+ *      x offset. Emit parent + partner edges from those coordinates.
  */
 export function layoutTree(input: TreeInput): LayoutResult {
     const byId = new Map(input.nodes.map((n) => [n.id, n]))
@@ -71,6 +78,10 @@ export function layoutTree(input: TreeInput): LayoutResult {
     // post-layout parent-edge render). EdgePair: `a` = child, `b` = parent.
     const childrenOfPerson = new Map<string, string[]>()
     const parentsOfPerson = new Map<string, string[]>()
+    // Bio parents: edges with `kind === 'biological'` or unknown kind (the
+    // unit-test fixtures elide the field). Used by `subtree.ts` to bucket
+    // children of a multi-couple block under the correct bio couple.
+    const bioParents = new Map<string, Set<string>>()
     for (const e of input.parent_edges) {
         if (!byId.has(e.a) || !byId.has(e.b)) continue
         const kids = childrenOfPerson.get(e.b) ?? []
@@ -79,35 +90,29 @@ export function layoutTree(input: TreeInput): LayoutResult {
         const parents = parentsOfPerson.get(e.a) ?? []
         parents.push(e.b)
         parentsOfPerson.set(e.a, parents)
+        const isBio = e.kind === undefined || e.kind === 'biological'
+        if (isBio) {
+            const bp = bioParents.get(e.a) ?? new Set<string>()
+            bp.add(e.b)
+            bioParents.set(e.a, bp)
+        }
     }
+
+    const validPartnerEdges = input.partner_edges.filter((e) => byId.has(e.a) && byId.has(e.b))
 
     const baseGeneration = computeGenerations(
         input.nodes.map((n) => n.id),
         parentsOfPerson,
-        input.partner_edges.filter((e) => byId.has(e.a) && byId.has(e.b)),
+        validPartnerEdges,
     )
     const generation = promoteEldestOrphans(input.nodes, baseGeneration, childrenOfPerson)
     let topGen = 0
     for (const g of generation.values()) if (g > topGen) topGen = g
 
-    // Partner adjacency. Both directions get stored so the buildBlocks pass
-    // is symmetric regardless of which member's id appears first in the
-    // edge. Filter to known persons.
-    const partnerOf = new Map<string, Set<string>>()
-    for (const e of input.partner_edges) {
-        if (!byId.has(e.a) || !byId.has(e.b)) continue
-        const sa = partnerOf.get(e.a) ?? new Set<string>()
-        sa.add(e.b)
-        partnerOf.set(e.a, sa)
-        const sb = partnerOf.get(e.b) ?? new Set<string>()
-        sb.add(e.a)
-        partnerOf.set(e.b, sb)
-    }
-
     const blocksByRow = buildBlocks(
         input.nodes.map((n) => n.id),
         generation,
-        partnerOf,
+        validPartnerEdges,
     )
 
     // Block-by-person reverse index. Used to look up a block's parent block
@@ -155,12 +160,12 @@ export function layoutTree(input: TreeInput): LayoutResult {
         if (i > 0) cursor.x += CLUSTER_GAP
         const root = rootBlocks[i]
         if (root === undefined) continue
-        layoutSubtree(root, childrenOfBlock, byId, placed, cursor)
+        layoutSubtree(root, childrenOfBlock, byId, bioParents, placed, cursor)
     }
 
     // Per-row separation pass. The recursive layout guarantees no overlap
-    // *within* a subtree, but two subtrees on the same row may collide if a
-    // descendant cluster is wider than the available slot. Walk each row
+    // *within* a subtree, but two subtrees on the same row may collide if
+    // a descendant cluster is wider than the available slot. Walk each row
     // left-to-right and enforce a hard floor between blocks: COL_GAP if
     // they share a parent block (siblings), CLUSTER_GAP otherwise.
     const parentOfBlock = new Map<string, string | null>()
@@ -179,7 +184,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
             const prev = row[i - 1]
             const curr = row[i]
             if (prev === undefined || curr === undefined) continue
-            const prevWidth = prev.width * NODE_W + Math.max(0, prev.width - 1) * COL_GAP
+            const prevWidth = prev.pixelWidth
             const sameParent =
                 parentOfBlock.get(prev.id) !== undefined &&
                 parentOfBlock.get(prev.id) === parentOfBlock.get(curr.id) &&
@@ -193,8 +198,10 @@ export function layoutTree(input: TreeInput): LayoutResult {
         }
     }
 
-    // Materialize positioned persons. For couples, the LEFT member sits at
-    // the block's x, the RIGHT member at x + NODE_W + COL_GAP.
+    // Materialize positioned persons. Each block carries its own per-member
+    // x offset array — for default-spaced blocks that's
+    // `i * (NODE_W + COL_GAP)`; for widened multi-couple blocks the
+    // offsets grow to align each couple-midpoint with its sub-cluster.
     const positioned = new Map<string, Positioned>()
     for (const pb of placed.values()) {
         for (let i = 0; i < pb.members.length; i += 1) {
@@ -202,7 +209,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
             if (memberId === undefined) continue
             const n = byId.get(memberId)
             if (n === undefined) continue
-            const memberX = pb.x + i * (NODE_W + COL_GAP)
+            const offset = pb.memberOffsets[i] ?? i * (NODE_W + COL_GAP)
             positioned.set(memberId, {
                 id: memberId,
                 given_name: n.given_name,
@@ -210,7 +217,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
                 birth_date: n.birth_date ?? null,
                 death_date: n.death_date ?? null,
                 linked_user_id: n.linked_user_id ?? null,
-                x: memberX,
+                x: pb.x + offset,
                 y: pb.y,
             })
         }

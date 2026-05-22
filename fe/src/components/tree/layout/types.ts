@@ -18,15 +18,40 @@ export interface BackendNode {
     partner_ids: string[]
 }
 
+/**
+ * Parent-edge wire shape. `kind` is optional because test fixtures construct
+ * bare `{a, b}` pairs; the runtime payload always carries it. The layout
+ * uses `kind` to split children of a multi-couple block under the correct
+ * bio-couple midpoint — a step-link to a current partner doesn't drag the
+ * child under that partnership.
+ */
 export interface BackendEdge {
     a: string
     b: string
+    kind?: string
+}
+
+/**
+ * Partner-edge wire shape. Carries the lifecycle fields the layout needs to
+ * order multi-partner blocks: open partnerships (`ended_on === null`) sit on
+ * the right of the shared person, ended ones (`ended_on !== null`) on the
+ * left, sorted by `ended_on` ascending so the oldest divorce ends up
+ * leftmost. Optional fields keep test fixtures (`{a, b}`) compatible.
+ */
+export interface BackendPartnerEdge {
+    a: string
+    b: string
+    id?: string
+    kind?: string
+    started_on?: string | null
+    ended_on?: string | null
+    end_reason?: string | null
 }
 
 export interface TreeInput {
     nodes: BackendNode[]
     parent_edges: BackendEdge[]
-    partner_edges: BackendEdge[]
+    partner_edges: BackendPartnerEdge[]
 }
 
 export interface Positioned {
@@ -82,20 +107,51 @@ export const CLUSTER_GAP = COL_GAP * 2
 // Round half-up so a 12-year gap still nudges, but a 5-year gap does not.
 export const YEARS_PER_GENERATION = 25
 
+/**
+ * A same-row partnership inside a block. `leftIdx` / `rightIdx` are indices
+ * into `Block.members` (left < right, adjacent in the threaded order). The
+ * `ended` flag drives styling/ordering — open partnerships sit to the right
+ * of the shared anchor, ended ones to the left.
+ */
+export interface BlockCouple {
+    leftIdx: number
+    rightIdx: number
+    ended: boolean
+}
+
 // A "block" is the placement unit on each row. Either a single person
-// (`members.length === 1`) or a couple — two same-row partners drawn
-// side-by-side. The block.id is a stable string derived from the member
-// ids so we can key parent-of relations on it.
+// (`members.length === 1`) or N≥2 same-row partners threaded through a shared
+// anchor (a 3-member block models "Brigitte (ex), Klaus, Anna (current)"
+// where Klaus is the anchor). The block.id is a stable string derived from
+// the member ids so we can key parent-of relations on it.
 export interface Block {
     id: string
-    members: string[] // 1 or 2 person ids, left-to-right
+    /** ≥1 person ids, left-to-right. */
+    members: string[]
+    /**
+     * Internal partnerships, one per adjacent member pair that has a partner
+     * edge. Empty for singletons. For a plain 2-member couple, exactly one
+     * entry. Used by `subtree.ts` to split children under the correct
+     * bio-couple midpoint when the block has more than one couple.
+     */
+    couples: BlockCouple[]
     /** Y row (already in pixel space; same value for all members of the block). */
     y: number
-    /** Number of person columns this block occupies (1 or 2). */
+    /** Number of person columns this block occupies (== members.length). */
     width: number
 }
 
 export interface PositionedBlock extends Block {
     /** x of the LEFT edge of the leftmost member. */
     x: number
+    /**
+     * Per-member x offset from the block's left edge. Length === members.length.
+     * For a default-spaced block this is `[0, NODE_W+COL_GAP, 2*(NODE_W+COL_GAP), …]`;
+     * a multi-couple block whose children sub-clusters would otherwise collide
+     * grows its internal gaps so each couple's midpoint can match its
+     * sub-cluster midpoint.
+     */
+    memberOffsets: number[]
+    /** Total pixel width including any widened internal gaps. */
+    pixelWidth: number
 }
