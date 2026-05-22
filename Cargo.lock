@@ -2583,6 +2583,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "my-family-seeder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dotenvy",
+ "my-family-api",
+ "my-family-domain",
+ "my-family-persistence",
+ "sqlx",
+ "testcontainers",
+ "testcontainers-modules",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "nom"
 version = "8.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -5,8 +5,9 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use my_family_api::{Config, init_tracing, seed};
+use my_family_api::{Config, init_tracing};
 use my_family_persistence::Database;
+use my_family_seeder::run_seed;
 
 #[allow(
     clippy::print_stdout,
@@ -33,7 +34,7 @@ async fn main() -> anyhow::Result<()> {
     .await
     .context("connect postgres pool")?;
 
-    let report = seed::run_seed(db.pool(), &cfg).await.context("run seed")?;
+    let report = run_seed(db.pool(), &cfg).await.context("run seed")?;
 
     println!("seeded {} users, {} persons", report.users_upserted, report.persons_upserted);
     for (email, url) in &report.magic_links {

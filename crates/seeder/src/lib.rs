@@ -1,6 +1,12 @@
 //! Deterministic dev/test seed: 3 users, 1 family, 3 memberships, 8 persons,
 //! 8 `parent_links`, 3 partnerships, and one minted magic-link URL per user.
 //!
+//! Lives in a dedicated `crates/seeder/` crate — **not** in `my-family-api` —
+//! so the production api image never ships a binary capable of mutating real
+//! data via hardcoded UUIDs. The compose `seeder` service builds from
+//! `.docker/seeder.Dockerfile` and is only invoked in dev (`rdt seed` /
+//! `rdt reset`) and in CI test/coverage jobs.
+//!
 //! Every row is keyed on hardcoded `Uuid`s and inserted with `ON CONFLICT … DO
 //! UPDATE`, so repeated invocations are no-ops on row counts. The tree itself
 //! (G1: Otto/Hannelore/Werner/Greta · G2: Klaus/Anna · G3: Lina/Max) is acyclic
@@ -19,13 +25,12 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use my_family_api::Config;
+use my_family_api::services::auth_service::mint_magic_link_url;
 use my_family_domain::{MagicLinkRepo, UserId};
 use my_family_persistence::PgMagicLinkRepo;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::Config;
-use crate::services::auth_service::mint_magic_link_url;
 
 // ---------------------------------------------------------------------------
 // Hardcoded UUIDs. Structured hex blocks make the seeded rows immediately
@@ -298,6 +303,7 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
+    use my_family_api::{AppEnv, LogFormat};
     use my_family_persistence::Database;
     use sqlx::Row;
     use testcontainers::ContainerAsync;
@@ -305,7 +311,6 @@ mod tests {
     use testcontainers_modules::postgres::Postgres;
 
     use super::*;
-    use crate::{AppEnv, LogFormat};
 
     struct Harness {
         pool: sqlx::PgPool,

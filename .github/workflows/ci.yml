@@ -296,7 +296,7 @@ jobs:
               # so they do NOT read from this service-container DB. This step
               # is a documentation/spec-compliance no-op safety net per the
               # Phase 2c plan, NOT a functional dependency of `cargo test`.
-              run: cargo run -p my-family-api --bin seed
+              run: cargo run -p my-family-seeder
             - run: cargo test --workspace --all-targets
 
     backend-build:
@@ -397,7 +397,7 @@ jobs:
             - name: Apply database migrations
               run: cargo run -p my-family-migrator --bin run_migrations
             - name: Seed dev data
-              run: cargo run -p my-family-api --bin seed
+              run: cargo run -p my-family-seeder
             # Exclusion regex + threshold live in scripts/coverage.sh — single
             # source of truth for both CI and local `rdt coverage`.
             - name: Run coverage (profdata + LCOV + JSON)
@@ -691,7 +691,7 @@ jobs:
               # Deterministic UPSERT seed (3 users, 1 family, 8 persons, etc).
               # The Playwright e2e suite can rely on these stable UUIDs
               # without per-test fixtures. Idempotent: a re-run is a no-op.
-              run: cargo run -p my-family-api --bin seed
+              run: cargo run -p my-family-seeder
             - name: Build api binary
               # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.

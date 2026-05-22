@@ -9,6 +9,7 @@ members = [
   "crates/migrator",
   "crates/reminder-worker",
   "crates/api",
+  "crates/seeder",
 ]
 
 [workspace.package]

@@ -92,14 +92,11 @@ services:
                     - migrator.my-family.docker
 
     seeder:
-        # Uses the same image as the api service (built from .docker/api.Dockerfile
-        # below); just runs the `seed` binary one-shot instead of `api`.
+        # Dedicated dev/CI image — production api/worker images never include
+        # the seed binary. Source lives in `crates/seeder/` (not `crates/api`).
         build:
             context: .
-            dockerfile: .docker/api.Dockerfile
-        # The api Dockerfile compiles the `api` bin only — override the entry
-        # point to invoke the `seed` bin we ship in the same crate.
-        entrypoint: ["/usr/local/bin/seed"]
+            dockerfile: .docker/seeder.Dockerfile
         environment:
             <<: *rust_env
             # JWT keys aren't read by the seed binary itself (no token issuance),

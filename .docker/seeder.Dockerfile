@@ -12,20 +12,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY . .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release --bin api
+RUN cargo build --release --bin seed
 
 FROM debian:bookworm-slim
 ARG OCI_SOURCE
 ARG OCI_REVISION
 ARG OCI_CREATED
-LABEL org.opencontainers.image.title="my-family-api" \
-      org.opencontainers.image.description="my-family HTTP API (Actix-web)" \
+LABEL org.opencontainers.image.title="my-family-seeder" \
+      org.opencontainers.image.description="my-family dev/CI deterministic seed" \
       org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"
-# `wget` is required by the compose healthcheck (`wget -qO- /api/v1/health`).
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=builder /app/target/release/api /usr/local/bin/api
-EXPOSE 8080
-ENTRYPOINT ["/usr/local/bin/api"]
+COPY --from=builder /app/target/release/seed /usr/local/bin/seed
+ENTRYPOINT ["/usr/local/bin/seed"]

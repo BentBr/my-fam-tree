@@ -13,10 +13,6 @@ path = "src/bin/api.rs"
 name = "gen-jwt-keys"
 path = "src/bin/gen_jwt_keys.rs"
 
-[[bin]]
-name = "seed"
-path = "src/bin/seed.rs"
-
 [dependencies]
 my-family-domain = { path = "../domain" }
 my-family-cache = { path = "../cache" }
