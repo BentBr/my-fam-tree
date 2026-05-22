@@ -4,7 +4,7 @@ import vue from 'eslint-plugin-vue'
 import globals from 'globals'
 
 export default [
-    { ignores: ['dist/**', 'src/api/schema.d.ts', 'playwright-report/**', 'test-results/**'] },
+    { ignores: ['dist/**', 'src/api/schema.d.ts', 'playwright-report/**', 'test-results/**', 'coverage/**'] },
     ...vue.configs['flat/recommended'],
     ...vueTypescript(),
     prettier,

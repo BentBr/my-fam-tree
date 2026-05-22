@@ -1,11 +1,6 @@
 {
     "$schema": "https://unpkg.com/knip@6/schema.json",
-    "entry": [
-        "src/router/index.ts",
-        "e2e/**/*.test.ts",
-        "e2e/global-setup.ts",
-        "e2e/global-teardown.ts"
-    ],
+    "entry": ["src/router/index.ts", "e2e/**/*.test.ts", "e2e/global-setup.ts", "e2e/global-teardown.ts"],
     "project": ["src/**/*.{ts,vue}", "tests/**/*.ts", "e2e/**/*.ts"],
     "paths": { "@/*": ["./src/*"] },
     "rules": {
