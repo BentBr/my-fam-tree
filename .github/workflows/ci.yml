@@ -441,7 +441,7 @@ jobs:
                       else if (p+0 >= 50) print "orange";
                       else print "red";
                   }')
-                  printf '{"schemaVersion":1,"label":"backend coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage.json
+                  printf '{"schemaVersion":1,"label":"BE coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage.json
 
                   # Clone gh-pages (or initialize it if it doesn't exist yet).
                   cd /tmp
@@ -646,7 +646,7 @@ jobs:
                       else if (p+0 >= 50) print "orange";
                       else print "red";
                   }')
-                  printf '{"schemaVersion":1,"label":"frontend coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage-fe.json
+                  printf '{"schemaVersion":1,"label":"FE coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage-fe.json
 
                   cd /tmp
                   rm -rf pages

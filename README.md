@@ -5,8 +5,8 @@
 [![Latest release](https://img.shields.io/github/v/release/BentBr/my-family?display_name=tag&sort=semver&label=release)](https://github.com/BentBr/my-family/releases/latest)
 [![License: BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-blue.svg)](LICENSE)
 [![Rust nightly](https://img.shields.io/badge/rust-nightly-orange.svg)](rust-toolchain.toml)
-[![Backend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
-[![Frontend coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage-fe.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
+[![BE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
+[![FE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage-fe.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
 
 A platform for managing family trees, contact data, and birthday reminders. Built with Rust + PostgreSQL + Redis + Vue 3.
 
