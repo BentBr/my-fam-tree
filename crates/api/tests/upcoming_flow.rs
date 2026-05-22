@@ -109,8 +109,12 @@ where
 }
 
 /// All three filter modes share the same seed so we only build the
-/// graph once. Open partnership ⇒ wedding_anniversary; ended
+/// graph once. Open partnership ⇒ `wedding_anniversary`; ended
 /// partnership ⇒ no event. Death-this-year is suppressed.
+#[allow(
+    clippy::too_many_lines,
+    reason = "single end-to-end scenario covering all three filter modes"
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upcoming_filter_modes_sort_and_limit() {
     let stack = ephemeral_stack().await;
