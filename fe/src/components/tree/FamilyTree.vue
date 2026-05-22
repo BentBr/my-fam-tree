@@ -97,13 +97,14 @@ onMounted(() => {
         })
     select(svg).call(zoomBehavior)
 
-    // Initial layout: always fit-to-view so the user sees the whole tree
-    // by default. Explicit `centerOnId` (deep link, clicked node) takes
-    // over via the watch below once the user signals intent.
+    // Initial layout: ALWAYS fit-to-view so the user sees the entire tree
+    // on first paint, regardless of which person is linked to their user.
+    // The previous "center on self at scale 1" path put the focused node
+    // dead-center and shoved every other generation off the canvas — for
+    // a G3 user with G1+G2 ancestors, the tree looked like one floating
+    // node + a few orphan hearts. `centerOnId` still takes effect via
+    // the watch below when the user explicitly picks a different person.
     fitToView(false)
-    if (props.centerOnId !== null) {
-        centerOn(props.centerOnId, false)
-    }
 })
 
 watch(
@@ -122,6 +123,11 @@ watch(
         if (props.centerOnId === null) fitToView(true)
     },
 )
+
+// Imperative refit handle for the parent view's "Fit to view" toolbar
+// button. Lets the user recover from any panned/zoomed state with one
+// click instead of having to scroll the canvas back themselves.
+defineExpose({ refit: () => fitToView(true) })
 </script>
 
 <template>

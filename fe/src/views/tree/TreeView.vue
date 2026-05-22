@@ -73,6 +73,14 @@ function onChanged(): void {
     void tree.refetch()
 }
 
+// Imperative ref into FamilyTree; the child uses `defineExpose({ refit })`.
+// `instance & { refit?: () => void }` keeps the typecheck honest under
+// `noUncheckedIndexedAccess` without leaking the d3 internals.
+const treeRef = ref<{ refit: () => void } | null>(null)
+function onFit(): void {
+    treeRef.value?.refit()
+}
+
 function onCreated(id: string): void {
     creating.value = false
     onSelect(id)
@@ -100,6 +108,15 @@ watch(
         <v-toolbar density="comfortable" elevation="0" color="transparent">
             <v-toolbar-title data-testid="tree-page-title">{{ pageTitle }}</v-toolbar-title>
             <v-spacer />
+            <v-btn
+                v-if="tree.data.value !== undefined && tree.data.value.nodes.length > 0"
+                prepend-icon="maximize"
+                variant="text"
+                data-testid="tree-fit-to-view"
+                @click="onFit"
+            >
+                {{ t('tree.fitToView') }}
+            </v-btn>
             <v-btn prepend-icon="user-plus" color="primary" data-testid="tree-add-person" @click="onCreateClick">
                 {{ t('tree.addPerson') }}
             </v-btn>
@@ -146,6 +163,7 @@ watch(
                 </div>
                 <FamilyTree
                     v-else-if="tree.data.value"
+                    ref="treeRef"
                     :tree="tree.data.value"
                     :selected-id="selectedId"
                     :center-on-id="centerOnId"

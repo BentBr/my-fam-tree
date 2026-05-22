@@ -80,6 +80,7 @@
         "title": "Stammbaum",
         "titleOf": "Familienstammbaum von {name}",
         "addPerson": "Person hinzufügen",
+        "fitToView": "An Ansicht anpassen",
         "loading": "Lädt…",
         "error": "Der Stammbaum konnte nicht geladen werden.",
         "empty": {

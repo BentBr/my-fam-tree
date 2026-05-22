@@ -80,6 +80,7 @@
         "title": "Family tree",
         "titleOf": "Family tree of {name}",
         "addPerson": "Add person",
+        "fitToView": "Fit to view",
         "loading": "Loading…",
         "error": "Could not load the family tree.",
         "empty": {
