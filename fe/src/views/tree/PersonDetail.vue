@@ -25,7 +25,29 @@ const createPartner = useCreatePartnership()
 const editing = ref(false)
 const parentToAdd = ref<string | null>(null)
 const partnerToAdd = ref<string | null>(null)
+// Default: biological — that's the overwhelming majority of family-tree
+// edges and matches what every backend test seeds. The dropdown still
+// lets the user override before submit.
+const parentKind = ref<'biological' | 'legal' | 'adoptive' | 'step' | 'social'>('biological')
+// No default for partnership kind — civil unions vs marriages have
+// different legal/historical weight and we'd rather force a deliberate
+// pick than mis-tag the user's first attempt.
+const partnerKind = ref<'marriage' | 'civil_union' | 'partnership' | null>(null)
 const confirmDelete = ref(false)
+
+const parentKindOptions = computed(() => [
+    { value: 'biological', title: t('person.parentKind.biological') },
+    { value: 'legal', title: t('person.parentKind.legal') },
+    { value: 'adoptive', title: t('person.parentKind.adoptive') },
+    { value: 'step', title: t('person.parentKind.step') },
+    { value: 'social', title: t('person.parentKind.social') },
+])
+
+const partnerKindOptions = computed(() => [
+    { value: 'marriage', title: t('person.partnerKind.marriage') },
+    { value: 'civil_union', title: t('person.partnerKind.civil_union') },
+    { value: 'partnership', title: t('person.partnerKind.partnership') },
+])
 
 const person = computed(() => list.data.value?.find((p) => p.id === props.personId) ?? null)
 
@@ -53,21 +75,24 @@ async function linkParent(): Promise<void> {
     await addParent.mutateAsync({
         child_id: props.personId,
         parent_id: pid,
-        kind: 'biological',
+        kind: parentKind.value,
     })
     parentToAdd.value = null
+    parentKind.value = 'biological'
     emit('changed')
 }
 
 async function linkPartner(): Promise<void> {
     const pid = partnerToAdd.value
-    if (pid === null || pid === '') return
+    const kind = partnerKind.value
+    if (pid === null || pid === '' || kind === null) return
     await createPartner.mutateAsync({
         partner_a_id: props.personId,
         partner_b_id: pid,
-        kind: 'partnership',
+        kind,
     })
     partnerToAdd.value = null
+    partnerKind.value = null
     emit('changed')
 }
 
@@ -113,6 +138,15 @@ function onSaved(): void {
                     density="comfortable"
                     data-testid="person-add-parent"
                 />
+                <v-select
+                    v-model="parentKind"
+                    :items="parentKindOptions"
+                    item-value="value"
+                    item-title="title"
+                    :label="t('person.fields.parentKind')"
+                    density="comfortable"
+                    data-testid="person-add-parent-kind"
+                />
                 <v-btn
                     block
                     color="primary"
@@ -137,11 +171,21 @@ function onSaved(): void {
                     density="comfortable"
                     data-testid="person-add-partner"
                 />
+                <v-select
+                    v-model="partnerKind"
+                    :items="partnerKindOptions"
+                    item-value="value"
+                    item-title="title"
+                    :label="t('person.fields.partnerKind')"
+                    density="comfortable"
+                    clearable
+                    data-testid="person-add-partner-kind"
+                />
                 <v-btn
                     block
                     color="primary"
                     variant="tonal"
-                    :disabled="partnerToAdd === null || partnerToAdd === ''"
+                    :disabled="partnerToAdd === null || partnerToAdd === '' || partnerKind === null"
                     :loading="createPartner.isPending.value"
                     data-testid="person-add-partner-submit"
                     @click="linkPartner"

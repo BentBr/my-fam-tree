@@ -47,8 +47,19 @@ function mountDetail(personId: string) {
                 'v-list-item-subtitle': { template: '<div><slot /></div>' },
                 'v-divider': { template: '<hr />' },
                 'v-select': {
-                    template:
-                        '<select :data-testid="$attrs[\'data-testid\']" @change="$emit(\'update:modelValue\', $event.target.value)"><option value="p2">p2</option></select>',
+                    // Stub renders one <option> per item so `setValue` works for
+                    // any value the test passes in (people ids, parent kinds,
+                    // partner kinds). Mirrors how the real v-select binds.
+                    template: `
+                        <select
+                            :data-testid="$attrs['data-testid']"
+                            @change="$emit('update:modelValue', $event.target.value)"
+                        >
+                            <option v-for="item in items" :key="item.value ?? item" :value="item.value ?? item">
+                                {{ item.title ?? item }}
+                            </option>
+                        </select>
+                    `,
                     props: ['modelValue', 'items', 'label'],
                     emits: ['update:modelValue'],
                 },
@@ -120,16 +131,21 @@ describe('PersonDetail', () => {
         })
     })
 
-    it('linkPartner calls mutation when a partner is selected', async () => {
+    it('linkPartner calls mutation when both a partner and kind are selected', async () => {
+        // The partner-kind dropdown has no default — submit stays disabled
+        // until the user picks marriage / civil_union / partnership. The
+        // test must therefore set both fields before clicking submit, and
+        // assert the chosen kind reaches the mutation.
         partnerMutate.mockResolvedValueOnce(undefined)
         const w = mountDetail('p1')
         await w.find('[data-testid="person-add-partner"]').setValue('p2')
+        await w.find('[data-testid="person-add-partner-kind"]').setValue('marriage')
         await w.find('[data-testid="person-add-partner-submit"]').trigger('click')
         await flushPromises()
         expect(partnerMutate).toHaveBeenCalledWith({
             partner_a_id: 'p1',
             partner_b_id: 'p2',
-            kind: 'partnership',
+            kind: 'marriage',
         })
     })
 

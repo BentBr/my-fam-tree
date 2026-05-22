@@ -55,6 +55,37 @@ function centerOn(id: string, animate: boolean): void {
     }
 }
 
+/**
+ * Compute a transform that fits the full layout bounding box into the
+ * viewport with a small padding. Used on initial mount so the user
+ * sees every person at once instead of an arbitrary corner of the tree.
+ * `scaleExtent` clamps the result so very small / very large trees still
+ * render at a readable scale rather than a postage stamp / a blur.
+ */
+function fitToView(animate: boolean): void {
+    const svg = svgEl.value
+    const wrap = wrapEl.value
+    if (svg === null || zoomBehavior === null || wrap === null) return
+    const w = wrap.clientWidth
+    const h = wrap.clientHeight
+    const contentW = Math.max(layout.value.width, 1)
+    const contentH = Math.max(layout.value.height, 1)
+    const padding = 60
+    const scaleX = (w - padding * 2) / contentW
+    const scaleY = (h - padding * 2) / contentH
+    const scale = Math.min(scaleX, scaleY, 1)
+    const clamped = Math.max(scale, 0.25)
+    const tx = (w - contentW * clamped) / 2
+    const ty = (h - contentH * clamped) / 2
+    const transform = zoomIdentity.translate(tx, ty).scale(clamped)
+    const sel = select(svg)
+    if (animate) {
+        sel.transition().duration(600).ease(easeCubicInOut).call(zoomBehavior.transform, transform)
+    } else {
+        sel.call(zoomBehavior.transform, transform)
+    }
+}
+
 onMounted(() => {
     const svg = svgEl.value
     const g = gEl.value
@@ -66,13 +97,12 @@ onMounted(() => {
         })
     select(svg).call(zoomBehavior)
 
-    // Initial centering: explicit centerOnId wins; otherwise nudge the layout
-    // so the top-left of the canvas sits at a comfortable gutter.
+    // Initial layout: always fit-to-view so the user sees the whole tree
+    // by default. Explicit `centerOnId` (deep link, clicked node) takes
+    // over via the watch below once the user signals intent.
+    fitToView(false)
     if (props.centerOnId !== null) {
         centerOn(props.centerOnId, false)
-    } else {
-        const sel = select(svg)
-        sel.call(zoomBehavior.transform, zoomIdentity.translate(40, 40))
     }
 })
 
@@ -80,6 +110,16 @@ watch(
     () => props.centerOnId,
     (id) => {
         if (id !== null) centerOn(id, true)
+    },
+)
+
+// Refit when the node count changes (person added / removed). Without
+// this, a freshly-added person can land outside the current viewport
+// and look like the tree didn't update — even though the SVG did.
+watch(
+    () => layout.value.nodes.length,
+    () => {
+        if (props.centerOnId === null) fitToView(true)
     },
 )
 </script>

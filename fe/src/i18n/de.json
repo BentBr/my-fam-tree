@@ -94,6 +94,18 @@
             "female": "Weiblich",
             "diverse": "Divers"
         },
+        "parentKind": {
+            "biological": "Leiblich",
+            "legal": "Rechtlich",
+            "adoptive": "Adoptiert",
+            "step": "Stief",
+            "social": "Sozial"
+        },
+        "partnerKind": {
+            "marriage": "Ehe",
+            "civil_union": "Eingetragene Partnerschaft",
+            "partnership": "Partnerschaft"
+        },
         "fields": {
             "given_name": "Vorname",
             "family_name": "Nachname",
@@ -101,7 +113,9 @@
             "gender": "Geschlecht",
             "deceased": "Verstorben",
             "death_date": "Sterbedatum",
-            "notes": "Notizen"
+            "notes": "Notizen",
+            "parentKind": "Verwandtschaftsart",
+            "partnerKind": "Partnerschaftsart"
         },
         "actions": {
             "addParent": "Als Kind von hinzufügen",

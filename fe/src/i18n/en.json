@@ -96,12 +96,26 @@
             "gender": "Gender",
             "deceased": "Deceased",
             "death_date": "Date of death",
-            "notes": "Notes"
+            "notes": "Notes",
+            "parentKind": "Relationship type",
+            "partnerKind": "Partnership type"
         },
         "gender": {
             "male": "Male",
             "female": "Female",
             "diverse": "Diverse"
+        },
+        "parentKind": {
+            "biological": "Biological",
+            "legal": "Legal",
+            "adoptive": "Adoptive",
+            "step": "Step",
+            "social": "Social"
+        },
+        "partnerKind": {
+            "marriage": "Marriage",
+            "civil_union": "Civil union",
+            "partnership": "Partnership"
         },
         "actions": {
             "addParent": "Add as child of",

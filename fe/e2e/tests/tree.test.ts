@@ -168,6 +168,9 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
     await expect(page.getByTestId('person-detail')).toBeVisible()
     await page.getByTestId('person-add-partner').click()
     await page.getByRole('option', { name: 'Maria Schmidt' }).click()
+    // Partner-kind has no default — must pick one before submit enables.
+    await page.getByTestId('person-add-partner-kind').click()
+    await page.getByRole('option', { name: /Marriage|Ehe/ }).click()
     await page.getByTestId('person-add-partner-submit').click()
 
     // At least one partner edge appears on the canvas.
