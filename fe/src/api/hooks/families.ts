@@ -1,21 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
-
-export function useMyFamilies() {
-    return useQuery({
-        queryKey: ['families', 'me'],
-        queryFn: async () => {
-            const { data, error } = await client.GET('/api/v1/families/me')
-            if (error !== undefined) throw error
-            return data
-        },
-    })
-}
 
 export function useCreateFamily() {
     const auth = useAuthStore()

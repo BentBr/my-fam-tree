@@ -32,5 +32,6 @@ run "rust tests"      SKIP_RTEST   cargo test --workspace --all-targets
 run "fe lint"         SKIP_FELINT  ./scripts/fe-in-container.sh lint
 run "fe typecheck"    SKIP_FETSC   ./scripts/fe-in-container.sh typecheck
 run "fe component"    SKIP_FETEST  ./scripts/fe-in-container.sh test
+run "fe knip"         SKIP_FEKNIP  ./scripts/fe-in-container.sh knip
 run "openapi drift"   SKIP_OPENAPI bash -c "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
 run "file-size"       SKIP_SIZE    ./scripts/check-file-size.sh

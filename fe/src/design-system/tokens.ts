@@ -29,16 +29,4 @@ export const colorTokens = {
     },
 } as const
 
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const
 export const radii = { sm: 4, md: 8, lg: 12, xl: 16, pill: 999 } as const
-export const transitions = {
-    fade: '0.4s',
-    drawer: '0.25s',
-    hover: '0.15s',
-    easing: 'ease-in-out',
-} as const
-export const zIndex = { appBar: 1100, drawer: 1200, dialog: 2400, snackbar: 3000 } as const
-export const typography = {
-    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    scale: { caption: 12, body: 14, h6: 16, h5: 18, h4: 22, h3: 28 },
-} as const

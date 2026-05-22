@@ -525,6 +525,7 @@ jobs:
             - run: cd fe && pnpm install --frozen-lockfile
             - run: cd fe && pnpm openapi-codegen
             - run: cd fe && pnpm lint
+            - run: cd fe && pnpm knip
 
     frontend-typecheck:
         needs: [changes, frontend-prepare]

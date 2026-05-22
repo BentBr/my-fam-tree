@@ -40,21 +40,6 @@ export function useAddParentLink() {
     })
 }
 
-export function useDeleteParentLink() {
-    const qc = useQueryClient()
-    return useMutation({
-        mutationFn: async (vars: { child_id: string; parent_id: string }) => {
-            const { error } = await client.DELETE('/api/v1/parent-links/{child}/{parent}', {
-                params: { path: { child: vars.child_id, parent: vars.parent_id } },
-            })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-        },
-    })
-}
-
 export interface PartnershipInput {
     partner_a_id: string
     partner_b_id: string
@@ -70,21 +55,6 @@ export function useCreatePartnership() {
     return useMutation({
         mutationFn: async (vars: PartnershipInput) => {
             const { error } = await client.POST('/api/v1/partnerships', { body: vars })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-        },
-    })
-}
-
-export function useDeletePartnership() {
-    const qc = useQueryClient()
-    return useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await client.DELETE('/api/v1/partnerships/{id}', {
-                params: { path: { id } },
-            })
             if (error !== undefined) throw error
         },
         onSuccess: () => {

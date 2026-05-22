@@ -6,14 +6,3 @@ import type { components } from './schema'
  * from the generated schema barrel — see the `no-restricted-imports` rule.
  */
 export type ClaimsPayload = components['schemas']['ConsumeRes']
-
-export type FamilyClaim = components['schemas']['FamilyClaim']
-
-export type ApiRole = components['schemas']['Role']
-
-/**
- * Caller profile returned by `/users/me` (GET + PATCH) and by
- * `/users/me/email-change/confirm`. Re-exported here so views can stay clear
- * of the generated schema barrel (see the `no-restricted-imports` rule).
- */
-export type UserProfile = components['schemas']['UserProfile']
