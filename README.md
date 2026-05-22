@@ -10,7 +10,7 @@
 
 A platform for managing family trees, contact data, and birthday reminders. Built with Rust + PostgreSQL + Redis + Vue 3.
 
-**Status:** Phase 0 complete (scaffold + CI + docs) · **License:** [BUSL-1.1](./LICENSE) · **Plain-English:** [LICENSING.md](./LICENSING.md)
+**License:** [BUSL-1.1](./LICENSE) · **Plain-English:** [LICENSING.md](./LICENSING.md)
 
 ## Quick start
 
@@ -19,10 +19,24 @@ A platform for managing family trees, contact data, and birthday reminders. Buil
 #    Rust nightly auto-installs via rust-toolchain.toml on first build.
 #    Docker Desktop (or daemon). No host-side Node or pnpm install required;
 #    everything FE runs in the `fe` compose container.
-cargo install rusty-dev-tool sqlx-cli cargo-llvm-cov cargo-deny cargo-machete
+cargo install sqlx-cli cargo-llvm-cov cargo-deny cargo-machete
 
 # 2. dinghy for *.docker subdomain routing (macOS).
-brew install dinghy && dinghy create
+
+# Install Dinghy (just another docker container) - for MAC OS:
+docker run -d --restart=always \
+   -v /var/run/docker.sock:/tmp/docker.sock:ro \
+   -v ~/.dinghy/certs:/etc/nginx/certs \
+   -p 80:80 -p 443:443 -p 19322:19322/udp \
+   -e CONTAINER_NAME=http-proxy \
+   --name http-proxy \
+   codekitchen/dinghy-http-proxy
+
+# Setup the resolver
+sudo mkdir -pv /etc/resolver
+sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/docker'
+sudo bash -c 'echo "port 19322" >> /etc/resolver/docker'
+
 
 # 3. Install git hooks (commit-msg + pre-push). Run once per checkout.
 ./scripts/install-hooks.sh
