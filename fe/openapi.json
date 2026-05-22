@@ -1315,9 +1315,11 @@
       },
       "EdgePair": {
         "type": "object",
+        "description": "A parent → child edge with the kind needed by the FE drawer's inline\n\"change parent-link kind\" affordance. `a` is the child, `b` is the parent\n— matches the historical `EdgePair` orientation the FE layout code expects.",
         "required": [
           "a",
-          "b"
+          "b",
+          "kind"
         ],
         "properties": {
           "a": {
@@ -1327,6 +1329,9 @@
           "b": {
             "type": "string",
             "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
           }
         }
       },
@@ -1829,6 +1834,53 @@
           "parent_id": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "PartnerEdge": {
+        "type": "object",
+        "description": "A partnership edge with the partnership's `id`, `kind`, and lifecycle\ndates. The id is what `PATCH /partnerships/{id}` keys on — without it the\nFE has no way to edit or end an existing partnership inline.",
+        "required": [
+          "id",
+          "a",
+          "b",
+          "kind"
+        ],
+        "properties": {
+          "a": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "b": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ended_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "started_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
           }
         }
       },
@@ -2371,7 +2423,7 @@
           "partner_edges": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EdgePair"
+              "$ref": "#/components/schemas/PartnerEdge"
             }
           }
         }

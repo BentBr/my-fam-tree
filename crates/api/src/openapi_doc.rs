@@ -33,7 +33,7 @@ use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
 use crate::routes::relationships::{self, TreePayloadResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
-use crate::services::relationships_tree::{EdgePair, TreeNode, TreePayload};
+use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreePayload};
 
 /// Aggregated `OpenAPI` document for the entire HTTP surface.
 #[derive(Debug, OpenApi)]
@@ -139,6 +139,7 @@ use crate::services::relationships_tree::{EdgePair, TreeNode, TreePayload};
             TreePayload,
             TreeNode,
             EdgePair,
+            PartnerEdge,
         ),
     ),
     tags(

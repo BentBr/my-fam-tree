@@ -35,17 +35,35 @@ pub struct TreeNode {
     pub linked_user_id: Option<Uuid>,
 }
 
+/// A parent → child edge with the kind needed by the FE drawer's inline
+/// "change parent-link kind" affordance. `a` is the child, `b` is the parent
+/// — matches the historical `EdgePair` orientation the FE layout code expects.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct EdgePair {
     pub a: Uuid,
     pub b: Uuid,
+    pub kind: String,
+}
+
+/// A partnership edge with the partnership's `id`, `kind`, and lifecycle
+/// dates. The id is what `PATCH /partnerships/{id}` keys on — without it the
+/// FE has no way to edit or end an existing partnership inline.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PartnerEdge {
+    pub id: Uuid,
+    pub a: Uuid,
+    pub b: Uuid,
+    pub kind: String,
+    pub started_on: Option<NaiveDate>,
+    pub ended_on: Option<NaiveDate>,
+    pub end_reason: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TreePayload {
     pub nodes: Vec<TreeNode>,
     pub parent_edges: Vec<EdgePair>,
-    pub partner_edges: Vec<EdgePair>,
+    pub partner_edges: Vec<PartnerEdge>,
 }
 
 /// Phase 2a returns the entire tree per request. Phase 4+ may switch to a
@@ -108,11 +126,23 @@ pub async fn build_tree(
         nodes,
         parent_edges: parents
             .into_iter()
-            .map(|p| EdgePair { a: p.child_id.into_uuid(), b: p.parent_id.into_uuid() })
+            .map(|p| EdgePair {
+                a: p.child_id.into_uuid(),
+                b: p.parent_id.into_uuid(),
+                kind: p.kind.as_db().to_owned(),
+            })
             .collect(),
         partner_edges: parts
             .into_iter()
-            .map(|p| EdgePair { a: p.partner_a_id.into_uuid(), b: p.partner_b_id.into_uuid() })
+            .map(|p| PartnerEdge {
+                id: p.id,
+                a: p.partner_a_id.into_uuid(),
+                b: p.partner_b_id.into_uuid(),
+                kind: p.kind.as_db().to_owned(),
+                started_on: p.started_on,
+                ended_on: p.ended_on,
+                end_reason: p.end_reason.map(|r| r.as_db().to_owned()),
+            })
             .collect(),
     })
 }
