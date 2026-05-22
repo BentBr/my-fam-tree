@@ -21,7 +21,7 @@ use std::time::Duration as StdDuration;
 
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use chrono::{Duration, Utc};
-use my_family_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError};
+use my_family_domain::{Locale, MagicLinkRepoError};
 use my_family_email::{Locale as EmailLocale, OutboundEmail, render_magic_link};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -30,7 +30,7 @@ use crate::auth::{FamilyClaim, generate_opaque_token, hash_token};
 use crate::cookies::{
     ACCESS_COOKIE, REFRESH_COOKIE, REFRESH_COOKIE_PATH, access_cookie, refresh_cookie, revoked,
 };
-use crate::services::auth_service::issue_access_token_for;
+use crate::services::auth_service::{issue_access_token_for, mint_magic_link_url};
 use crate::validation::{email_invalid, looks_like_email};
 use crate::{ApiError, ApiResponse, AppState, response_body};
 
@@ -148,22 +148,19 @@ pub async fn magic_link(
             .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?,
     };
 
-    // Issue and persist a single-use token (we store only the hash).
-    let (token, hash) = generate_opaque_token();
-    state
-        .magic_links
-        .create(
-            Some(user.id),
-            &user.email,
-            &hash,
-            MagicLinkPurpose::Login,
-            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link_ttl_seconds)),
-        )
-        .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    // Issue and persist a single-use token; the helper returns the full
+    // consume URL (only the hash hits the DB).
+    let link = mint_magic_link_url(
+        &state.magic_links,
+        user.id,
+        &user.email,
+        &state.cfg.web_public_url,
+        state.cfg.magic_link_ttl_seconds,
+    )
+    .await
+    .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
 
     // Render + send the email.
-    let link = format!("{}/auth/consume?token={}", state.cfg.web_public_url, token);
     let locale = EmailLocale::from_str_or_en(user.locale.as_str());
     let (subject, text_body) = render_magic_link(locale, &link)
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
@@ -413,7 +410,7 @@ pub async fn me(req: HttpRequest) -> Result<ApiResponse<ConsumeRes>, ApiError> {
     clippy::panic
 )]
 mod tests {
-    use my_family_domain::Role;
+    use my_family_domain::{MagicLinkPurpose, Role};
     use uuid::Uuid;
 
     use super::*;

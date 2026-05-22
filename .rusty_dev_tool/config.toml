@@ -68,10 +68,15 @@ no_docker_compose = true
         "alias" = "gen-jwt-keys"
         "execution"  = "cargo run -p my-family-api --bin gen-jwt-keys"
 
+    [commands.seed]
+        "description" = "Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs)"
+        "alias" = "seed"
+        "execution"  = "docker compose run --rm seeder"
+
     [commands.reset]
-        "description" = "Drop all dev volumes and re-migrate from scratch"
+        "description" = "Drop all dev volumes and re-migrate + re-seed from scratch"
         "alias" = "reset"
-        "execution"  = "docker compose down -v && docker compose up -d postgres redis mailpit && docker compose run --rm migrator"
+        "execution"  = "docker compose down -v && docker compose up -d postgres redis mailpit && docker compose run --rm migrator && docker compose run --rm seeder"
 
     [commands.deny]
         "description" = "cargo-deny + cargo-machete supply-chain checks"

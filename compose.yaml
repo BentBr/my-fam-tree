@@ -91,6 +91,51 @@ services:
                 aliases:
                     - migrator.my-family.docker
 
+    seeder:
+        # Uses the same image as the api service (built from .docker/api.Dockerfile
+        # below); just runs the `seed` binary one-shot instead of `api`.
+        build:
+            context: .
+            dockerfile: .docker/api.Dockerfile
+        # The api Dockerfile compiles the `api` bin only — override the entry
+        # point to invoke the `seed` bin we ship in the same crate.
+        entrypoint: ["/usr/local/bin/seed"]
+        environment:
+            <<: *rust_env
+            # JWT keys aren't read by the seed binary itself (no token issuance),
+            # but `Config::load_from_env` validates them. Reuse the same env
+            # discipline as the api service so a missing key surfaces immediately.
+            JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY required; run rdt gen-jwt-keys}
+            JWT_PRIVATE_KEY_ID: ${JWT_PRIVATE_KEY_ID:?JWT_PRIVATE_KEY_ID required}
+            JWT_PUBLIC_KEYS: ${JWT_PUBLIC_KEYS:?JWT_PUBLIC_KEYS required}
+            JWT_ISSUER: my-family
+            JWT_AUDIENCE: my-family-app
+            JWT_ACCESS_TTL_SECONDS: 900
+            JWT_REFRESH_TTL_SECONDS: 2592000
+            JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
+            MAGIC_LINK_TTL_SECONDS: 900
+            INVITE_TTL_SECONDS: 1209600
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 5
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 20
+            API_HOST: 0.0.0.0
+            API_PORT: 8080
+            API_PUBLIC_URL: http://api.my-family.docker
+            CORS_ALLOWED_ORIGINS: http://my-family.docker
+            API_ENABLE_DOCS: "false"
+            API_METRICS_BIND: 0.0.0.0:9090
+            COOKIE_DOMAIN: .my-family.docker
+            COOKIE_SECURE: "false"
+            COOKIE_SAMESITE_ACCESS: Lax
+            COOKIE_SAMESITE_REFRESH: Strict
+        depends_on:
+            migrator:
+                condition: service_completed_successfully
+        restart: "no"
+        networks:
+            my-family:
+                aliases:
+                    - seeder.my-family.docker
+
     api:
         build:
             context: .

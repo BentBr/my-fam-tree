@@ -44,6 +44,8 @@ Open **http://my-family.docker** in your browser — you should see the health p
 - Mailpit: http://mail.my-family.docker
 - Postgres: `psql -h localhost -p 3458 -U my_family my_family` (or point your IDE at port 3458)
 
+The `seeder` container runs once after `migrator` completes and prints three `MAGIC_LINK` lines — one per seeded user (admin / alice / bob). View them with `docker compose logs seeder` (or `rdt seed` to re-run; the seed is idempotent) and paste the URL into the browser to sign in.
+
 > Linux / no-dinghy local dev support is on the roadmap; for now the local stack assumes dinghy is installed (macOS one-liner above). CI uses ephemeral GitHub Actions services and does not depend on dinghy.
 
 ### Troubleshooting first boot
@@ -94,7 +96,8 @@ compose.yaml    Postgres, Redis, Mailpit, api, worker, migrator, fe
 | `rdt test-e2e` | Playwright E2E against the running stack |
 | `rdt coverage` | Coverage report |
 | `rdt gen-jwt-keys` | Print a fresh Ed25519 keypair for .env |
-| `rdt reset` | Drop dev DB volume and re-migrate |
+| `rdt seed` | Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs) |
+| `rdt reset` | Drop dev DB volume, re-migrate, and re-seed |
 
 Run `rdt help` for the full list. FE commands (`pnpm lint`, `pnpm test`, codegen) are always dispatched via `scripts/fe-in-container.sh` — you never invoke pnpm on the host.
 

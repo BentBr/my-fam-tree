@@ -13,6 +13,10 @@ path = "src/bin/api.rs"
 name = "gen-jwt-keys"
 path = "src/bin/gen_jwt_keys.rs"
 
+[[bin]]
+name = "seed"
+path = "src/bin/seed.rs"
+
 [dependencies]
 my-family-domain = { path = "../domain" }
 my-family-cache = { path = "../cache" }
@@ -35,6 +39,7 @@ rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
@@ -50,7 +55,6 @@ uuid.workspace = true
 # inside test-local helper functions. actix-web does not re-export this type.
 actix-http = "3.12"
 figment = { workspace = true, features = ["test"] }
-sqlx = { workspace = true }
 testcontainers = "0.27"
 testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
 

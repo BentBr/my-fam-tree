@@ -12,7 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY . .
 ENV SQLX_OFFLINE=true
-RUN cargo build --release --bin api
+# Build both the long-running api server and the one-shot seed binary in the
+# same image — they share the same workspace so this is a single compile pass.
+RUN cargo build --release --bin api --bin seed
 
 FROM debian:bookworm-slim
 ARG OCI_SOURCE
@@ -27,5 +29,6 @@ LABEL org.opencontainers.image.title="my-family-api" \
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/target/release/api /usr/local/bin/api
+COPY --from=builder /app/target/release/seed /usr/local/bin/seed
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/api"]

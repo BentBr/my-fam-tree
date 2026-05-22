@@ -238,13 +238,65 @@ jobs:
                 image: axllent/mailpit:latest
                 ports: ["1025:1025", "8025:8025"]
         env:
+            RUN_ID: ${{ github.run_id }}
+            APP_ENV: development
+            LOG_FORMAT: pretty
+            RUST_LOG: info
             DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            DATABASE_MAX_CONNECTIONS: "10"
+            DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
+            DATABASE_STATEMENT_TIMEOUT_MS: "30000"
             REDIS_URL: redis://localhost:6379/0
+            REDIS_MAX_CONNECTIONS: "10"
+            REDIS_KEY_PREFIX: "my-family:"
             EMAIL_DSN: smtp://localhost:1025
+            EMAIL_FROM_NAME: my-family
+            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_TIMEOUT_SECONDS: "10"
+            API_HOST: 127.0.0.1
+            API_PORT: "8080"
+            API_PUBLIC_URL: http://localhost:8080
+            WEB_PUBLIC_URL: http://localhost:5173
+            CORS_ALLOWED_ORIGINS: http://localhost:5173
+            API_ENABLE_DOCS: "false"
+            API_METRICS_BIND: 127.0.0.1:9090
+            COOKIE_DOMAIN: ""
+            COOKIE_SECURE: "false"
+            COOKIE_SAMESITE_ACCESS: Lax
+            COOKIE_SAMESITE_REFRESH: Strict
+            JWT_ISSUER: my-family
+            JWT_AUDIENCE: my-family-app
+            JWT_ACCESS_TTL_SECONDS: "900"
+            JWT_REFRESH_TTL_SECONDS: "2592000"
+            JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
+            MAGIC_LINK_TTL_SECONDS: "900"
+            INVITE_TTL_SECONDS: "1209600"
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
+            # The seed binary's `Config::load_from_env` validates JWT_*; the
+            # tests themselves don't read these values (testcontainers tests
+            # spin up isolated postgres containers per test — see the seed
+            # step comment below for why this step is run anyway), but a
+            # missing JWT_* would fail config load before run_seed gets a
+            # chance to insert anything. Same gen-jwt-keys → .env pattern
+            # used by frontend-e2e.
+            - name: Generate Ed25519 JWT keypair into .env
+              run: |
+                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  grep -E '^JWT_' /tmp/jwt.env >> .env
+            - name: Apply database migrations
+              run: cargo run -p my-family-migrator --bin run_migrations
+            - name: Seed dev data
+              # The backend-tests integration tests spin up isolated postgres
+              # containers via testcontainers (see crates/api/tests/common/mod.rs),
+              # so they do NOT read from this service-container DB. This step
+              # is a documentation/spec-compliance no-op safety net per the
+              # Phase 2c plan, NOT a functional dependency of `cargo test`.
+              run: cargo run -p my-family-api --bin seed
             - run: cargo test --workspace --all-targets
 
     backend-build:
@@ -282,9 +334,41 @@ jobs:
                 image: axllent/mailpit:latest
                 ports: ["1025:1025", "8025:8025"]
         env:
+            RUN_ID: ${{ github.run_id }}
+            APP_ENV: development
+            LOG_FORMAT: pretty
+            RUST_LOG: info
             DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            DATABASE_MAX_CONNECTIONS: "10"
+            DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
+            DATABASE_STATEMENT_TIMEOUT_MS: "30000"
             REDIS_URL: redis://localhost:6379/0
+            REDIS_MAX_CONNECTIONS: "10"
+            REDIS_KEY_PREFIX: "my-family:"
             EMAIL_DSN: smtp://localhost:1025
+            EMAIL_FROM_NAME: my-family
+            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_TIMEOUT_SECONDS: "10"
+            API_HOST: 127.0.0.1
+            API_PORT: "8080"
+            API_PUBLIC_URL: http://localhost:8080
+            WEB_PUBLIC_URL: http://localhost:5173
+            CORS_ALLOWED_ORIGINS: http://localhost:5173
+            API_ENABLE_DOCS: "false"
+            API_METRICS_BIND: 127.0.0.1:9090
+            COOKIE_DOMAIN: ""
+            COOKIE_SECURE: "false"
+            COOKIE_SAMESITE_ACCESS: Lax
+            COOKIE_SAMESITE_REFRESH: Strict
+            JWT_ISSUER: my-family
+            JWT_AUDIENCE: my-family-app
+            JWT_ACCESS_TTL_SECONDS: "900"
+            JWT_REFRESH_TTL_SECONDS: "2592000"
+            JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
+            MAGIC_LINK_TTL_SECONDS: "900"
+            INVITE_TTL_SECONDS: "1209600"
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
@@ -303,6 +387,17 @@ jobs:
                   if ! command -v cargo-llvm-cov >/dev/null 2>&1; then
                       cargo install cargo-llvm-cov --locked
                   fi
+            # Like backend-tests: tests use isolated testcontainers instances,
+            # so this migrate+seed pair against the service-container DB is a
+            # no-op safety net for spec compliance, not a functional gate.
+            - name: Generate Ed25519 JWT keypair into .env
+              run: |
+                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  grep -E '^JWT_' /tmp/jwt.env >> .env
+            - name: Apply database migrations
+              run: cargo run -p my-family-migrator --bin run_migrations
+            - name: Seed dev data
+              run: cargo run -p my-family-api --bin seed
             # Exclusion regex + threshold live in scripts/coverage.sh — single
             # source of truth for both CI and local `rdt coverage`.
             - name: Run coverage (profdata + LCOV + JSON)
@@ -592,6 +687,11 @@ jobs:
               # exist`). Uses the same DATABASE_URL the api process will pick
               # up from the workflow env block.
               run: cargo run -p my-family-migrator --bin run_migrations
+            - name: Seed dev data
+              # Deterministic UPSERT seed (3 users, 1 family, 8 persons, etc).
+              # The Playwright e2e suite can rely on these stable UUIDs
+              # without per-test fixtures. Idempotent: a re-run is a no-op.
+              run: cargo run -p my-family-api --bin seed
             - name: Build api binary
               # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.

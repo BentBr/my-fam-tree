@@ -8,6 +8,7 @@ pub mod middleware;
 pub mod openapi_doc;
 pub mod response;
 pub mod routes;
+pub mod seed;
 pub mod services;
 pub mod state;
 pub mod tracing_setup;
