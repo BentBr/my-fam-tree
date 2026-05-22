@@ -41,13 +41,21 @@ const fullName = computed(() => {
     return truncate(raw, Math.floor(TEXT_WIDTH / NAME_AVG_CHAR_PX))
 })
 
-const datesLabel = computed(() => {
+const DATES_MAX_CHARS = Math.floor(TEXT_WIDTH / DATES_AVG_CHAR_PX)
+
+const birthLabel = computed(() => {
     const b = props.node.birth_date ?? ''
-    const d = props.node.death_date ?? ''
-    if (b === '' && d === '') return ''
-    const raw = d === '' ? b : `${b} – ${d}`
-    return truncate(raw, Math.floor(TEXT_WIDTH / DATES_AVG_CHAR_PX))
+    if (b === '') return ''
+    return truncate(`* ${b}`, DATES_MAX_CHARS)
 })
+
+const deathLabel = computed(() => {
+    const d = props.node.death_date ?? ''
+    if (d === '') return ''
+    return truncate(`† ${d}`, DATES_MAX_CHARS)
+})
+
+const hasDates = computed(() => birthLabel.value !== '' || deathLabel.value !== '')
 
 function initials(p: Positioned): string {
     const a = p.given_name.charAt(0)
@@ -95,16 +103,26 @@ function onSelect(): void {
             inside <foreignObject>, which made nodes vanish under the
             fit-to-view zoom. SVG <text> scales uniformly with the canvas.
         -->
-        <text
-            :x="TEXT_LEFT"
-            :y="datesLabel === '' ? NODE_H / 2 + 5 : NODE_H / 2 - 4"
-            class="name"
-            data-testid="tree-node-name"
-        >
+        <text :x="TEXT_LEFT" :y="hasDates ? NODE_H / 2 - 6 : NODE_H / 2 + 5" class="name" data-testid="tree-node-name">
             {{ fullName }}
         </text>
-        <text v-if="datesLabel !== ''" :x="TEXT_LEFT" :y="NODE_H / 2 + 14" class="dates" data-testid="tree-node-dates">
-            {{ datesLabel }}
+        <text
+            v-if="birthLabel !== ''"
+            :x="TEXT_LEFT"
+            :y="NODE_H / 2 + 10"
+            class="dates dates-birth"
+            data-testid="tree-node-birth"
+        >
+            {{ birthLabel }}
+        </text>
+        <text
+            v-if="deathLabel !== ''"
+            :x="TEXT_LEFT"
+            :y="NODE_H / 2 + 24"
+            class="dates dates-death"
+            data-testid="tree-node-death"
+        >
+            {{ deathLabel }}
         </text>
     </g>
 </template>
@@ -171,6 +189,14 @@ function onSelect(): void {
         sans-serif;
     fill: rgb(var(--v-theme-on-surface) / 0.6);
     pointer-events: none;
+}
+/* Death date sits on its own row below birth and reads smaller + fainter
+ * so the "*" / "†" lines pair visually like a small obituary detail. */
+.dates-death {
+    font:
+        9.5px system-ui,
+        sans-serif;
+    fill: rgb(var(--v-theme-on-surface) / 0.45);
 }
 
 /* Baseline "this is you" treatment: warm amber ring + soft amber wash,

@@ -19,11 +19,11 @@ function node(over: Partial<Positioned> = {}): Positioned {
 }
 
 describe('TreeNode', () => {
-    it('renders given+family name and the date label', () => {
+    it('renders given+family name and the birth date row', () => {
         const w = mount(TreeNode, { props: { node: node(), selected: false } })
         expect(w.text()).toContain('Alice')
         expect(w.text()).toContain('Smith')
-        expect(w.text()).toContain('1990-01-01')
+        expect(w.text()).toContain('* 1990-01-01')
     })
 
     it('emits select on click', async () => {
@@ -48,14 +48,29 @@ describe('TreeNode', () => {
         expect(w.find('text').text()).toBe('?')
     })
 
-    it('renders a date range when death_date is set', () => {
+    it('renders birth and death dates on separate lines (* / † prefixes)', () => {
         const w = mount(TreeNode, {
             props: {
                 node: node({ birth_date: '1900', death_date: '1980' }),
                 selected: false,
             },
         })
-        expect(w.text()).toContain('1900 – 1980')
+        const birth = w.find('[data-testid="tree-node-birth"]')
+        const death = w.find('[data-testid="tree-node-death"]')
+        expect(birth.exists()).toBe(true)
+        expect(death.exists()).toBe(true)
+        expect(birth.text()).toBe('* 1900')
+        expect(death.text()).toBe('† 1980')
+        // Death date sits below birth in the layout.
+        expect(Number(death.attributes('y'))).toBeGreaterThan(Number(birth.attributes('y')))
+    })
+
+    it('omits the death row when only birth_date is set', () => {
+        const w = mount(TreeNode, {
+            props: { node: node({ birth_date: '1990-01-01' }), selected: false },
+        })
+        expect(w.find('[data-testid="tree-node-birth"]').exists()).toBe(true)
+        expect(w.find('[data-testid="tree-node-death"]').exists()).toBe(false)
     })
 
     it('renders no date label when neither is set', () => {
