@@ -32,8 +32,10 @@ use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
 use crate::routes::relationships::{self, TreePayloadResponseBody};
+use crate::routes::upcoming::{self, UpcomingResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
 use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreePayload};
+use crate::services::upcoming::UpcomingEvent;
 
 /// Aggregated `OpenAPI` document for the entire HTTP surface.
 #[derive(Debug, OpenApi)]
@@ -74,6 +76,7 @@ use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreeP
         partnerships::update,
         partnerships::delete,
         relationships::tree,
+        upcoming::list,
     ),
     components(
         schemas(
@@ -96,6 +99,7 @@ use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreeP
             PersonViewResponseBody,
             PartnershipViewResponseBody,
             TreePayloadResponseBody,
+            UpcomingResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -140,6 +144,8 @@ use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreeP
             TreeNode,
             EdgePair,
             PartnerEdge,
+            UpcomingEvent,
+            upcoming::UpcomingQuery,
         ),
     ),
     tags(
@@ -150,6 +156,7 @@ use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreeP
         (name = "users", description = "User profile and email change"),
         (name = "persons", description = "Family members"),
         (name = "relationships", description = "Parent links, partnerships, tree"),
+        (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
     ),
 )]
 pub struct ApiDoc;

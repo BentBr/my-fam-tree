@@ -959,6 +959,56 @@
         ]
       }
     },
+    "/api/v1/upcoming": {
+      "get": {
+        "tags": [
+          "upcoming"
+        ],
+        "operationId": "upcoming_list",
+        "parameters": [
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "all | birthday | anniversary",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cap on rows, 1..=200, default 20",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upcoming events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpcomingResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/users/me": {
       "get": {
         "tags": [
@@ -2541,6 +2591,92 @@
           }
         }
       },
+      "UpcomingEvent": {
+        "type": "object",
+        "description": "One enumerated future date.\n\n`kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.\n`person_id` is set for `birthday` and `death_anniversary`;\n`partnership_id` is set for `wedding_anniversary`.\n`label` is pre-rendered server-side so the FE doesn't need to\nre-translate the \"Nth birthday\" phrasing per locale (i18n stays\non `upcoming.kinds.*`; the name + N come from the API).",
+        "required": [
+          "kind",
+          "next_date",
+          "years",
+          "label"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "next_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "partnership_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "years": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "UpcomingQuery": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "One of `all` (default), `birthday`, `anniversary`. Unknown\nvalues fall through to `all` — the FE never sends arbitrary\nstrings, but a hand-crafted URL stays gracefully degraded."
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1..=200, default 20. Clamped to the cap so callers can't\nexhaust memory by passing `limit=999999`.",
+            "minimum": 0
+          }
+        }
+      },
+      "UpcomingResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpcomingEvent"
+            }
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
       "UpdateUserReq": {
         "type": "object",
         "properties": {
@@ -2678,6 +2814,10 @@
     {
       "name": "relationships",
       "description": "Parent links, partnerships, tree"
+    },
+    {
+      "name": "upcoming",
+      "description": "Upcoming birthdays + anniversaries"
     }
   ]
 }

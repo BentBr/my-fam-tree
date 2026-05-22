@@ -21,6 +21,7 @@ pub mod partnerships;
 pub mod persons;
 pub mod persons_contact;
 pub mod relationships;
+pub mod upcoming;
 pub mod users;
 
 use actix_web::web;
@@ -67,6 +68,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(partnerships::create)
                 .service(partnerships::update)
                 .service(partnerships::delete)
-                .service(relationships::tree),
+                .service(relationships::tree)
+                .service(upcoming::list),
         )
 }
