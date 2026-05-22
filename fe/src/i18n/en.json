@@ -78,6 +78,7 @@
     },
     "tree": {
         "title": "Family tree",
+        "titleOf": "Family tree of {name}",
         "addPerson": "Add person",
         "loading": "Loading…",
         "error": "Could not load the family tree.",
@@ -93,7 +94,14 @@
             "family_name": "Last name",
             "birth_date": "Birthday",
             "gender": "Gender",
+            "deceased": "Deceased",
+            "death_date": "Date of death",
             "notes": "Notes"
+        },
+        "gender": {
+            "male": "Male",
+            "female": "Female",
+            "diverse": "Diverse"
         },
         "actions": {
             "addParent": "Add as child of",

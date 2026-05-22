@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -16,6 +17,7 @@ const CREATE_SENTINEL = '__create__'
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
 const router = useRouter()
+const queryClient = useQueryClient()
 const { t } = useI18n()
 
 const items = computed(() => {
@@ -55,7 +57,15 @@ function onChange(value: unknown): void {
         void router.push('/families/create')
         return
     }
-    if (typeof value === 'string') family.setActive(value as FamilyId)
+    if (typeof value !== 'string') return
+    if (value === family.activeFamilyId) return
+    family.setActive(value as FamilyId)
+    // Refetch every query so the current view shows the new family's
+    // data. invalidateQueries (no key filter) flips all caches to
+    // stale + triggers refetch of any active observer — the client
+    // middleware then re-issues each request with the new X-Family-Id
+    // header. No page reload, no flicker, persisted Pinia state intact.
+    void queryClient.invalidateQueries()
 }
 </script>
 

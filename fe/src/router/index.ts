@@ -105,6 +105,18 @@ router.beforeEach((to) => {
     if (auth.status !== 'authenticated') return true
     const isExempt = to.path.startsWith('/auth/') || to.path.startsWith('/families/') || to.path.startsWith('/invite/')
     if (isExempt) return true
+    // Reconcile stale active-family: localStorage may carry an
+    // `activeFamilyId` from a previous session whose membership no longer
+    // exists in `auth.families` (the user got removed, the family was
+    // deleted, or the run signed in as a different identity on the same
+    // browser). Letting the tree query fire with that stale id triggers
+    // a 422 X-Family-Id validation on the API, surfacing as the toast
+    // "Validation failed" — and the switcher shows the raw UUID because
+    // no item title matches. Wipe it here; the next branches will
+    // bounce / auto-select / pick fresh.
+    if (family.activeFamilyId !== null && !auth.families.some((f) => f.id === family.activeFamilyId)) {
+        family.clearOnLogout()
+    }
     if (family.activeFamilyId !== null) return true
     // Auto-select when the user belongs to exactly one family — there's nothing
     // to pick, sending them through the picker just adds an extra click. Two or

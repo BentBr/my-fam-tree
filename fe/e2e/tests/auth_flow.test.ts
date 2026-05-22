@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '../fixtures/console.fixture'
 
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
@@ -24,7 +25,7 @@ async function signIn(page: Page, email: string): Promise<void> {
     // bounce a user with no active family to /families/create (new user) or
     // /families/pick (returning user with multiple). Accept any of the three —
     // we just need to know the consume succeeded and we're past the auth wall.
-    await expect(page).toHaveURL(/\/(health|families\/create|families\/pick)$/)
+    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
 }
 
 test('owner signs in, creates family, invites a guest, guest joins', async ({ browser }) => {
@@ -40,7 +41,7 @@ test('owner signs in, creates family, invites a guest, guest joins', async ({ br
     await owner.goto('/families/create')
     await owner.getByTestId('family-name').locator('input').fill('Müller')
     await owner.getByTestId('family-create-submit').click()
-    await expect(owner).toHaveURL(/\/health$/)
+    await expect(owner).toHaveURL(/\/tree$/)
     await expect(owner.getByTestId('family-switcher')).toBeVisible()
 
     // 2. Owner invites a guest via REST. The FE has no invite UI in 1b.
@@ -81,9 +82,10 @@ test('owner signs in, creates family, invites a guest, guest joins', async ({ br
     await signIn(guest, 'guest@example.com')
 
     // 5. Guest follows the invite link. InviteAccept consumes it (guest is
-    //    already authenticated) and routes to /health.
+    //    already authenticated) and the single-family auto-select then sends
+    //    them straight to /tree.
     await guest.goto(rewriteEmailLink(inviteLink))
-    await expect(guest).toHaveURL(/\/health$/)
+    await expect(guest).toHaveURL(/\/tree$/)
     await expect(guest.getByTestId('family-switcher')).toBeVisible()
 
     await ownerCtx.close()

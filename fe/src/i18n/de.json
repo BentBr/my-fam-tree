@@ -78,6 +78,7 @@
     },
     "tree": {
         "title": "Stammbaum",
+        "titleOf": "Familienstammbaum von {name}",
         "addPerson": "Person hinzufügen",
         "loading": "Lädt…",
         "error": "Der Stammbaum konnte nicht geladen werden.",
@@ -88,11 +89,18 @@
         }
     },
     "person": {
+        "gender": {
+            "male": "Männlich",
+            "female": "Weiblich",
+            "diverse": "Divers"
+        },
         "fields": {
             "given_name": "Vorname",
             "family_name": "Nachname",
             "birth_date": "Geburtstag",
             "gender": "Geschlecht",
+            "deceased": "Verstorben",
+            "death_date": "Sterbedatum",
             "notes": "Notizen"
         },
         "actions": {

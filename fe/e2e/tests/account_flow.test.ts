@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '../fixtures/console.fixture'
 
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
@@ -23,14 +24,14 @@ async function signIn(page: Page, email: string): Promise<void> {
         throw new Error('consume link match was empty')
     }
     await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(health|families\/create|families\/pick)$/)
+    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
 }
 
 async function createFamily(page: Page, name: string): Promise<void> {
     await page.goto('/families/create')
     await page.getByTestId('family-name').locator('input').fill(name)
     await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/health$/)
+    await expect(page).toHaveURL(/\/tree$/)
 }
 
 test.describe('FE account flow', () => {

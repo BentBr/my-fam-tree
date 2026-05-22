@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '../fixtures/console.fixture'
 
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
@@ -27,7 +28,7 @@ async function signIn(page: Page, email: string): Promise<void> {
     // After ConsumeView, the family guard sends a brand-new user (no families)
     // to /families/create. Either landing spot is fine — we just want past the
     // auth wall so the sign-out button is rendered by MainLayout's AppBar.
-    await expect(page).toHaveURL(/\/(health|families\/create|families\/pick)$/)
+    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
 }
 
 test.describe('FE auth gate', () => {

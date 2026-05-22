@@ -1,3 +1,4 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,9 +35,13 @@ async function mountSwitcher() {
     })
     await router.push('/')
     await router.isReady()
+    // FamilySwitcher calls `useQueryClient()` to invalidate caches on family
+    // switch; mount needs a QueryClient in scope. `retry: 0` keeps the
+    // post-change invalidate a no-op in this stub context.
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 0 } } })
     const w = mount(FamilySwitcher, {
         global: {
-            plugins: [i18n, router],
+            plugins: [i18n, router, [VueQueryPlugin, { queryClient }]],
             stubs: {
                 VSelect: {
                     name: 'VSelectStub',

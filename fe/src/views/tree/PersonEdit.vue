@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { type PersonInput, useCreatePerson, useUpdatePerson } from '@/api/hooks/persons'
+import { useCreatePerson, useUpdatePerson } from '@/api/hooks/persons'
 
 interface Initial {
     id?: string
@@ -30,7 +30,22 @@ const { t } = useI18n()
 
 // `reactive` (not `ref`) so v-model two-way binding works against the
 // individual fields without unwrapping a giant `.value` per field.
-const form = reactive<PersonInput>({
+// `reactive` with concrete `string` types (no `undefined`) so v-model
+// binds work cleanly against Vuetify components under
+// `exactOptionalPropertyTypes`. The wire payload is built from this in
+// `submit()`; empty strings collapse to "no value" naturally on the API
+// side. PersonInput is a wider typescript view; we narrow here.
+interface FormShape {
+    given_name: string
+    family_name: string
+    nickname: string
+    gender: string
+    birth_date: string | null
+    birth_place: string
+    death_date: string | null
+    notes: string
+}
+const form = reactive<FormShape>({
     given_name: props.initial?.given_name ?? '',
     family_name: props.initial?.family_name ?? '',
     nickname: props.initial?.nickname ?? '',
@@ -40,6 +55,21 @@ const form = reactive<PersonInput>({
     death_date: props.initial?.death_date ?? null,
     notes: props.initial?.notes ?? '',
 })
+
+// "Deceased" is a UI-only checkbox; it gates whether the death_date
+// field is shown. On uncheck we clear `form.death_date` so the wire
+// payload doesn't carry a stale date the user can't see.
+const deceased = ref(form.death_date !== null && form.death_date !== '')
+watch(deceased, (v) => {
+    if (!v) form.death_date = null
+})
+
+// Canonical gender options as v-combobox items. `combobox` (not `select`)
+// keeps the field free-text-capable: the user can type something the
+// dropdown doesn't list and it goes to the backend verbatim. The items
+// are plain strings (localized labels) — v-combobox then binds the
+// model directly to a string, which matches `PersonInput.gender`.
+const genderOptions = computed(() => [t('person.gender.male'), t('person.gender.female'), t('person.gender.diverse')])
 
 const create = useCreatePerson()
 const update = useUpdatePerson()
@@ -80,7 +110,26 @@ async function submit(): Promise<void> {
             type="date"
             data-testid="person-birth-date"
         />
-        <v-text-field v-model="form.gender" :label="t('person.fields.gender')" data-testid="person-gender" />
+        <v-checkbox
+            v-model="deceased"
+            :label="t('person.fields.deceased')"
+            density="compact"
+            hide-details
+            data-testid="person-deceased"
+        />
+        <v-text-field
+            v-if="deceased"
+            v-model="form.death_date"
+            :label="t('person.fields.death_date')"
+            type="date"
+            data-testid="person-death-date"
+        />
+        <v-combobox
+            v-model="form.gender"
+            :items="genderOptions"
+            :label="t('person.fields.gender')"
+            data-testid="person-gender"
+        />
         <v-textarea
             v-model="form.notes"
             :label="t('person.fields.notes')"

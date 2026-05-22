@@ -33,14 +33,14 @@ onMounted(async () => {
         // re-mounted before the navigation settled, finish the redirect
         // here rather than re-firing the now-invalid POST.
         status.value = 'ok'
-        await router.replace('/health')
+        await router.replace('/tree')
         return
     }
     sessionStorage.setItem(dedupeKey, '1')
     try {
         await mutation.mutateAsync(token)
         status.value = 'ok'
-        await router.replace('/health')
+        await router.replace('/tree')
     } catch {
         // Roll back the dedup marker so a manual retry (refresh) can
         // re-attempt with the same URL. The token is single-use server-

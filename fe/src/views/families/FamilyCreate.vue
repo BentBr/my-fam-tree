@@ -23,7 +23,7 @@ async function submit(): Promise<void> {
             // Flush reactivity so the family guard reads activeFamilyId
             // BEFORE evaluating /health — otherwise it can bounce back.
             await nextTick()
-            await router.push('/health')
+            await router.push('/tree')
         }
     } catch (e: unknown) {
         errorMsg.value = e instanceof Error ? e.message : 'unknown error'

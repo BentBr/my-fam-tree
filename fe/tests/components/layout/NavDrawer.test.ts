@@ -47,11 +47,14 @@ describe('NavDrawer', () => {
         mockStorage()
     })
 
-    it('renders three nav items', () => {
+    it('renders the live nav items only (no /reminders/* yet)', () => {
+        // /reminders/history is wired by Phase 4b. Until the route exists,
+        // the nav must not list it — otherwise vue-router emits a
+        // "No match found" warn on every navigation.
         const w = mountDrawer()
         const items = w.findAll('.li')
-        expect(items).toHaveLength(3)
-        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/reminders/history', '/health'])
+        expect(items).toHaveLength(2)
+        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/health'])
     })
 
     it('rail mode follows ui.sidebarCollapsed when not mobile', async () => {

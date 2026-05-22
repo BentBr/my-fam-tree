@@ -43,7 +43,7 @@ onMounted(async () => {
         }
         status.value = 'ok'
         await nextTick()
-        await router.push('/health')
+        await router.push('/tree')
     } catch {
         status.value = 'error'
     }

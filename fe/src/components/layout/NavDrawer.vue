@@ -11,9 +11,11 @@ const { mobile } = useDisplay()
 const railMode = computed(() => !mobile.value && ui.sidebarCollapsed)
 const open = computed(() => !mobile.value || !ui.sidebarCollapsed)
 
+// `/reminders/history` is added by Phase 4b. Until the route + view land,
+// listing it here triggers a vue-router "No match found" warning on every
+// navigation; keep the nav truthful to what actually exists.
 const items = computed(() => [
     { to: '/tree', title: t('nav.tree'), icon: 'network' },
-    { to: '/reminders/history', title: t('nav.reminders'), icon: 'bell' },
     { to: '/health', title: t('nav.health'), icon: 'activity' },
 ])
 </script>
@@ -27,7 +29,7 @@ const items = computed(() => [
                 :to="item.to"
                 :prepend-icon="item.icon"
                 :title="item.title"
-                active-color="primary"
+                color="primary"
             />
         </v-list>
     </v-navigation-drawer>

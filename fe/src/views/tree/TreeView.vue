@@ -18,6 +18,15 @@ const tree = useTree()
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
 
+// "Family tree of <name>" once a family is active; bare "Family tree"
+// otherwise (e.g. during the brief window between consume + guard auto-
+// select, or if the user has manually cleared activeFamilyId).
+const pageTitle = computed(() => {
+    const name = family.activeFamily?.name
+    if (name === undefined || name === '') return t('tree.title')
+    return t('tree.titleOf', { name })
+})
+
 const selectedId = ref<string | null>(null)
 const creating = ref(false)
 
@@ -89,7 +98,7 @@ watch(
 <template>
     <div class="tree-page">
         <v-toolbar density="comfortable" elevation="0" color="transparent">
-            <v-toolbar-title>{{ t('tree.title') }}</v-toolbar-title>
+            <v-toolbar-title data-testid="tree-page-title">{{ pageTitle }}</v-toolbar-title>
             <v-spacer />
             <v-btn prepend-icon="user-plus" color="primary" data-testid="tree-add-person" @click="onCreateClick">
                 {{ t('tree.addPerson') }}

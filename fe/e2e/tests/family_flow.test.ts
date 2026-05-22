@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from '../fixtures/console.fixture'
 
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
@@ -35,7 +36,7 @@ async function createFamily(page: Page, name: string): Promise<void> {
     await page.goto('/families/create')
     await page.getByTestId('family-name').locator('input').fill(name)
     await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/health$/)
+    await expect(page).toHaveURL(/\/tree$/)
 }
 
 test.describe('FE family flow', () => {
