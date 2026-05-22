@@ -12,7 +12,12 @@ async function signIn(page: Page, email: string): Promise<void> {
     const login = new LoginPage(page)
     await login.goto()
     await login.signIn(email)
-    await expect(login.sent).toBeVisible()
+    // Cold API requests on the CI runner occasionally take >5s on the
+    // first /auth/magic-link POST of a suite-late test, which times out
+    // Playwright's default 5s `toBeVisible`. The element appears as soon
+    // as the POST resolves; bumping the wait is cheaper than adding a
+    // retry loop and avoids reordering tests.
+    await expect(login.sent).toBeVisible({ timeout: 15_000 })
     const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
     const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
     if (match === null) throw new Error('consume link not in email body')

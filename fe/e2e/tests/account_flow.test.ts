@@ -43,7 +43,15 @@ test.describe('FE account flow', () => {
         await createFamily(page, `Profile-Test-${stamp}`)
 
         // Open the user menu and navigate to /account.
+        // Vuetify's v-menu teleports its overlay to <body> after a render
+        // tick; clicking the activator and the item in immediate succession
+        // can land the second click before the menu has fully painted in
+        // CI's headless Chrome, which Playwright still considers "clicked"
+        // but the v-list-item's @click handler hasn't bound. Wait for the
+        // menu's first list item (data-testid="user-menu-account") to be
+        // visible before clicking it.
         await page.getByTestId('user-menu').click()
+        await expect(page.getByTestId('user-menu-account')).toBeVisible()
         await page.getByTestId('user-menu-account').click()
         await expect(page).toHaveURL(/\/account$/)
         await expect(page.getByTestId('account-card')).toBeVisible()
@@ -130,7 +138,9 @@ test.describe('FE account flow', () => {
         })
 
         await page.getByTestId('user-menu').click()
-        await page.getByTestId('sign-out').click()
+        const signOut = page.getByTestId('sign-out')
+        await expect(signOut).toBeVisible()
+        await signOut.click()
         await expect(page).toHaveURL(/\/auth\/sign-in$/)
 
         const localKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('my-family:')))
