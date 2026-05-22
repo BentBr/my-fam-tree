@@ -791,14 +791,24 @@ jobs:
             - name: Install Playwright Chromium
               working-directory: fe
               run: pnpm exec playwright install --with-deps chromium
-            - name: Start Vite dev server in background
+            - name: Build FE for production
+              # We deliberately E2E the production bundle (not `pnpm dev`)
+              # because Vite dev's on-demand module loading + HMR
+              # instrumentation can re-evaluate components mid-flight under
+              # headless Chromium, causing legitimate single-use actions
+              # (magic-link consume, form submit, menu-item click) to
+              # double-fire. The production build is a single pre-bundled
+              # SPA that matches what we actually ship.
+              working-directory: fe
+              run: pnpm build
+            - name: Start Vite preview server in background
               working-directory: fe
               run: |
-                  pnpm dev > /tmp/vite.log 2>&1 &
+                  pnpm preview --port 5173 --strictPort > /tmp/vite.log 2>&1 &
                   echo "VITE_PID=$!" >> "$GITHUB_ENV"
                   for i in $(seq 1 30); do
                       curl -fsS http://localhost:5173/ >/dev/null && break
-                      echo "waiting for vite..."
+                      echo "waiting for vite preview..."
                       sleep 2
                   done
             - name: Run Playwright E2E
