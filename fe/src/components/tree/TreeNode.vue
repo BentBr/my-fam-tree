@@ -66,6 +66,60 @@ const deathLabel = computed(() => {
 
 const hasDates = computed(() => birthLabel.value !== '' || deathLabel.value !== '')
 
+/**
+ * Parse a (possibly partial) ISO date string into a Date. Accepts the
+ * full `YYYY-MM-DD` shape, `YYYY-MM`, and bare `YYYY`. Returns null on
+ * anything else. We hand-parse rather than feeding partial ISO to the
+ * `Date` constructor — Safari rejects bare `YYYY-MM` and Chromium
+ * interprets it as UTC midnight which can land on the previous local
+ * day depending on the runtime tz.
+ */
+function parseIsoDate(s: string): Date | null {
+    const parts = s.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/)
+    if (parts === null) return null
+    const head = parts[1]
+    if (head === undefined) return null
+    const yr = Number.parseInt(head, 10)
+    if (!Number.isFinite(yr)) return null
+    const mo = parts[2] !== undefined ? Number.parseInt(parts[2], 10) - 1 : 0
+    const da = parts[3] !== undefined ? Number.parseInt(parts[3], 10) : 1
+    return new Date(yr, mo, da)
+}
+
+/**
+ * Full years between two dates, day-precision. Canonical "how old are
+ * you" semantics — subtracts a year if the end month/day hasn't reached
+ * the start month/day yet.
+ */
+function fullYearsBetween(from: Date, to: Date): number {
+    let years = to.getFullYear() - from.getFullYear()
+    if (to.getMonth() < from.getMonth() || (to.getMonth() === from.getMonth() && to.getDate() < from.getDate())) {
+        years -= 1
+    }
+    return years
+}
+
+/**
+ * Age label shown right-aligned on the birth date row. Living: just the
+ * number. Deceased: `N (†)` to mark age-at-death. Returns the empty
+ * string when birth_date is missing or unparseable — no cell rendered.
+ */
+const ageLabel = computed(() => {
+    const birth = props.node.birth_date ?? ''
+    if (birth === '') return ''
+    const birthDate = parseIsoDate(birth)
+    if (birthDate === null) return ''
+    const deathStr = props.node.death_date ?? ''
+    if (deathStr === '') {
+        const years = fullYearsBetween(birthDate, new Date())
+        return years >= 0 ? String(years) : ''
+    }
+    const deathDate = parseIsoDate(deathStr)
+    if (deathDate === null) return ''
+    const years = fullYearsBetween(birthDate, deathDate)
+    return years >= 0 ? `${years} (†)` : ''
+})
+
 function initials(p: Positioned): string {
     const a = p.given_name.charAt(0)
     const b = p.family_name.charAt(0)
@@ -133,6 +187,21 @@ function onHoverLeave(): void {
             data-testid="tree-node-birth"
         >
             {{ birthLabel }}
+        </text>
+        <!--
+            Age cell, right-aligned on the birth row. Living shows current
+            age in full years; deceased shows age at death suffixed with
+            "(†)" so it's clear we're not still counting. Hidden when the
+            birth date is missing/unparseable — no row, no zero. -->
+        <text
+            v-if="ageLabel !== ''"
+            :x="NODE_W - TEXT_RIGHT_PAD"
+            :y="NODE_H / 2 + 10"
+            text-anchor="end"
+            class="dates dates-age"
+            data-testid="tree-node-age"
+        >
+            {{ ageLabel }}
         </text>
         <text
             v-if="deathLabel !== ''"
@@ -233,6 +302,16 @@ function onHoverLeave(): void {
         9.5px system-ui,
         sans-serif;
     fill: rgb(var(--v-theme-on-surface) / 0.45);
+}
+
+/* Age cell shares the birth row but sits on the right margin, in a
+ * slightly tabular weight so it reads as a stat next to the date. */
+.dates-age {
+    font:
+        600 11px system-ui,
+        sans-serif;
+    fill: rgb(var(--v-theme-on-surface) / 0.7);
+    font-variant-numeric: tabular-nums;
 }
 
 /* Baseline "this is you" treatment: warm amber ring + soft amber wash,

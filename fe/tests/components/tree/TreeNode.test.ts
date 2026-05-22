@@ -150,4 +150,79 @@ describe('TreeNode', () => {
         })
         expect(w.find('g').classes()).not.toContain('deceased')
     })
+
+    // --- Age cell ---
+    // Living person: shows full years since birth. We freeze "today" via
+    // vi.useFakeTimers so the test is stable across years.
+
+    it('renders current age (full years today minus birth) for a living person', async () => {
+        const { vi } = await import('vitest')
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date(2026, 5, 1)) // 2026-06-01 local
+        try {
+            const w = mount(TreeNode, {
+                props: { node: node({ birth_date: '1990-01-12' }), selected: false },
+            })
+            const age = w.find('[data-testid="tree-node-age"]')
+            expect(age.exists()).toBe(true)
+            // 1990-01-12 → 2026-06-01: birthday already past, full years = 36.
+            expect(age.text()).toBe('36')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('subtracts a year when the birthday has not happened yet this year', async () => {
+        const { vi } = await import('vitest')
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date(2026, 0, 1)) // 2026-01-01 local
+        try {
+            const w = mount(TreeNode, {
+                props: { node: node({ birth_date: '1990-06-15' }), selected: false },
+            })
+            // 2026-01-01 hasn't reached 1990-06-15's anniversary, so age = 35.
+            expect(w.find('[data-testid="tree-node-age"]').text()).toBe('35')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('shows age at death (with †) for a deceased person', () => {
+        const w = mount(TreeNode, {
+            props: { node: node({ birth_date: '1900-05-04', death_date: '1980-04-12' }), selected: false },
+        })
+        const age = w.find('[data-testid="tree-node-age"]')
+        expect(age.exists()).toBe(true)
+        // 1900-05-04 → 1980-04-12: birthday not yet reached in 1980 → 79.
+        expect(age.text()).toBe('79 (†)')
+    })
+
+    it('omits the age cell when birth_date is missing', () => {
+        const w = mount(TreeNode, {
+            props: { node: node({ birth_date: null }), selected: false },
+        })
+        expect(w.find('[data-testid="tree-node-age"]').exists()).toBe(false)
+    })
+
+    it('omits the age cell for an unparseable birth_date', () => {
+        const w = mount(TreeNode, {
+            props: { node: node({ birth_date: 'not-a-date' }), selected: false },
+        })
+        expect(w.find('[data-testid="tree-node-age"]').exists()).toBe(false)
+    })
+
+    it('accepts a bare YYYY birth_date and computes age from Jan 1', async () => {
+        const { vi } = await import('vitest')
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date(2026, 5, 1)) // 2026-06-01
+        try {
+            const w = mount(TreeNode, {
+                props: { node: node({ birth_date: '1990' }), selected: false },
+            })
+            // 1990-01-01 → 2026-06-01: birthday passed → 36.
+            expect(w.find('[data-testid="tree-node-age"]').text()).toBe('36')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
 })
