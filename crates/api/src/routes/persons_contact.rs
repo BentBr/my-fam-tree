@@ -1,6 +1,8 @@
-//! Server-side rules for the person contact fields (`email`, `phone`, postal
-//! address). Split out of `persons.rs` to keep that file inside the 500-line
-//! cap while still living next to the route module that owns the policy.
+//! Server-side rules for the person contact fields.
+//!
+//! Covers `email`, `phone`, and the postal address columns. Split out of
+//! `persons.rs` to keep that file inside the 500-line cap while still
+//! living next to the route module that owns the policy.
 //!
 //! Two concerns:
 //! - [`validate_contact_fields`] applies the shared per-field length cap and
@@ -15,12 +17,13 @@ use my_family_domain::PersonDraft;
 use crate::validation::{email_invalid, looks_like_email, string_too_long};
 use crate::{ApiError, AppState};
 
-/// Cap free-form contact strings so the column doesn't get used as a notes
-/// dump. Picked at 128 chars — plenty for a phone number or a German postal
-/// address line ("Friedrich-Ebert-Allee 25b") while still small enough that
-/// indexing + SVG-tooltip rendering stay cheap. `email` re-uses the same cap;
-/// every contact field surfaces a `validation.string_too_long` violation when
-/// the user exceeds it.
+/// Per-field cap (chars) shared across every contact column.
+///
+/// Picked to leave room for a phone number or a German postal address line
+/// ("Friedrich-Ebert-Allee 25b") while still small enough that indexing +
+/// SVG-tooltip rendering stay cheap. `email` re-uses the same cap; every
+/// contact field surfaces a `validation.string_too_long` violation when the
+/// user exceeds it.
 pub const CONTACT_FIELD_MAX_LEN: usize = 128;
 
 /// Map any error from the user repo into our sanitized internal error
@@ -32,10 +35,15 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 
 /// Validate the contact fields on a draft before it hits the DB.
 ///
-/// - Every contact string is capped at [`CONTACT_FIELD_MAX_LEN`] so a single
-///   field can't be abused as a notes dump.
-/// - `email` (when non-empty AND not about to be overwritten by the
-///   linked-user sync path) must look like an email.
+/// Every contact string is capped at [`CONTACT_FIELD_MAX_LEN`] so a single
+/// field can't be abused as a notes dump, and `email` (when non-empty AND
+/// not about to be overwritten by the linked-user sync path) must look like
+/// an email.
+///
+/// # Errors
+/// Returns `ApiError::Validation` with a `validation.string_too_long`
+/// violation when any field exceeds the cap, or `validation.email_invalid`
+/// when the body-supplied email is malformed.
 pub fn validate_contact_fields(d: &PersonDraft, email_overridden: bool) -> Result<(), ApiError> {
     let max = u32::try_from(CONTACT_FIELD_MAX_LEN).unwrap_or(u32::MAX);
     let too_long = |path: &str, v: &str| -> Option<ApiError> {
@@ -76,11 +84,14 @@ pub fn validate_contact_fields(d: &PersonDraft, email_overridden: bool) -> Resul
 /// Apply the "email is synced from the linked user" rule on a draft.
 ///
 /// When `draft.linked_user_id` is `Some`, look up `users.email` and rewrite
-/// `draft.email` to that value, regardless of what the body said. A stale id
-/// (the user vanished between request build-time and the DB lookup) maps to
-/// [`ApiError::ConflictStale`] — the caller can resync and retry. Returns
+/// `draft.email` to that value, regardless of what the body said. Returns
 /// `true` when the override fired so the validator can skip the email-syntax
 /// check (the linked `users.email` is guaranteed valid by the auth flow).
+///
+/// # Errors
+/// Returns `ApiError::ConflictStale` when `linked_user_id` references a row
+/// that no longer exists (the user vanished between request build-time and
+/// the DB lookup), or `ApiError::Internal` when the user repo fails.
 #[allow(clippy::future_not_send, reason = "AppState repos are Arc<dyn _> trait objects")]
 pub async fn sync_email_from_linked_user(
     state: &AppState,
