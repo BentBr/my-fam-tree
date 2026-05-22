@@ -441,7 +441,7 @@ jobs:
                       else if (p+0 >= 50) print "orange";
                       else print "red";
                   }')
-                  printf '{"schemaVersion":1,"label":"coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage.json
+                  printf '{"schemaVersion":1,"label":"backend coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage.json
 
                   # Clone gh-pages (or initialize it if it doesn't exist yet).
                   cd /tmp
@@ -590,6 +590,83 @@ jobs:
             - run: cd fe && pnpm install --frozen-lockfile
             - run: cd fe && pnpm openapi-codegen
             - run: cd fe && pnpm build
+
+    frontend-coverage:
+        needs: [changes, frontend-prepare]
+        if: ${{ needs.changes.outputs.frontend == 'true' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10.33.4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+            - uses: actions/cache@v4
+              with:
+                  path: fe/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
+                  restore-keys: ${{ runner.os }}-pnpm-store-
+            - run: cd fe && pnpm install --frozen-lockfile
+            - run: cd fe && pnpm openapi-codegen
+            - name: Run FE coverage
+              run: cd fe && pnpm coverage
+            - name: Append FE coverage summary to step summary
+              run: |
+                  {
+                      echo "## Frontend coverage"
+                      echo ""
+                      echo '```'
+                      jq -r '"lines:      \(.total.lines.pct)%\nstatements: \(.total.statements.pct)%\nfunctions:  \(.total.functions.pct)%\nbranches:   \(.total.branches.pct)%"' fe/coverage/coverage-summary.json
+                      echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: fe-coverage
+                  path: |
+                      fe/coverage/lcov.info
+                      fe/coverage/coverage-summary.json
+                  retention-days: 14
+            - name: Publish FE coverage badge to gh-pages
+              # Mirror of the backend-coverage gh-pages push. Only on push to
+              # main — avoids gh-pages churn during PRs and cross-fork token
+              # issues. Uses GITHUB_TOKEN with workflow-level contents:write.
+              if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  PCT=$(jq -r '.total.lines.pct | tostring | .[0:5]' fe/coverage/coverage-summary.json)
+                  COLOR=$(awk -v p="$PCT" 'BEGIN{
+                      if (p+0 >= 90) print "brightgreen";
+                      else if (p+0 >= 80) print "green";
+                      else if (p+0 >= 70) print "yellowgreen";
+                      else if (p+0 >= 60) print "yellow";
+                      else if (p+0 >= 50) print "orange";
+                      else print "red";
+                  }')
+                  printf '{"schemaVersion":1,"label":"frontend coverage","message":"%s%%","color":"%s"}\n' "$PCT" "$COLOR" > /tmp/coverage-fe.json
+
+                  cd /tmp
+                  rm -rf pages
+                  if git clone --branch gh-pages --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" pages 2>/dev/null; then
+                      cd pages
+                  else
+                      mkdir pages && cd pages
+                      git init -b gh-pages
+                      git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+                  fi
+                  git config user.name 'github-actions[bot]'
+                  git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+                  cp /tmp/coverage-fe.json coverage-fe.json
+                  git add coverage-fe.json
+                  if git diff --staged --quiet; then
+                      echo "FE coverage unchanged — skipping push"
+                  else
+                      git commit -m "chore(coverage): update FE badge to ${PCT}%"
+                      git push origin gh-pages
+                  fi
 
     # ============================================================================
     # Frontend E2E - full stack: cargo build api + pnpm dev + Playwright.
@@ -821,6 +898,7 @@ jobs:
             - frontend-typecheck
             - frontend-tests
             - frontend-build
+            - frontend-coverage
             - frontend-e2e
             - docker-build
         if: ${{ always() }}
@@ -850,6 +928,7 @@ jobs:
                   FRONTEND_TYPECHECK: ${{ needs.frontend-typecheck.result }}
                   FRONTEND_TESTS: ${{ needs.frontend-tests.result }}
                   FRONTEND_BUILD: ${{ needs.frontend-build.result }}
+                  FRONTEND_COVERAGE: ${{ needs.frontend-coverage.result }}
                   FRONTEND_E2E: ${{ needs.frontend-e2e.result }}
                   DOCKER_BUILD: ${{ needs.docker-build.result }}
                   EVENT_NAME: ${{ github.event_name }}
@@ -887,6 +966,7 @@ jobs:
                       require_success frontend-typecheck   "$FRONTEND_TYPECHECK"
                       require_success frontend-tests       "$FRONTEND_TESTS"
                       require_success frontend-build       "$FRONTEND_BUILD"
+                      require_success frontend-coverage    "$FRONTEND_COVERAGE"
                   fi
                   # E2E + docker-build run when either group is in scope
                   if [[ "$BACKEND_NEEDED" == "true" || "$FRONTEND_NEEDED" == "true" ]]; then
