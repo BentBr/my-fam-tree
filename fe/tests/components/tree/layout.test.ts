@@ -2,11 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import { layoutTree, NODE_H, NODE_W, type TreeInput } from '@/components/tree/layout'
 
-function person(id: string, parents: string[] = [], partners: string[] = []): TreeInput['nodes'][number] {
+function person(
+    id: string,
+    parents: string[] = [],
+    partners: string[] = [],
+    birth?: string,
+): TreeInput['nodes'][number] {
     return {
         id,
         given_name: `G${id}`,
         family_name: `F${id}`,
+        ...(birth === undefined ? {} : { birth_date: birth }),
         parent_ids: parents,
         partner_ids: partners,
     }
@@ -126,5 +132,133 @@ describe('layoutTree', () => {
         })
         // Two parent edges drawn even though only one canonical parent shaped the tree.
         expect(out.parentEdges).toHaveLength(2)
+    })
+
+    it('ranks a 4-generation lineage by descendant depth, not parent-chain depth', () => {
+        // ggp -> gp -> p -> c — every link has only one parent, but the
+        // important thing is each row sits at its own y. Pre-fix the
+        // canonical-parent virtual-root collapsed roots to depth 1; post-fix
+        // each generation is a distinct y because gen() = 1 + max(child).
+        const out = layoutTree({
+            nodes: [person('ggp'), person('gp', ['ggp']), person('p', ['gp']), person('c', ['p'])],
+            parent_edges: [
+                { a: 'gp', b: 'ggp' },
+                { a: 'p', b: 'gp' },
+                { a: 'c', b: 'p' },
+            ],
+            partner_edges: [],
+        })
+        const ys = new Map(out.nodes.map((n) => [n.id, n.y]))
+        const ggp = ys.get('ggp')
+        const gp = ys.get('gp')
+        const p = ys.get('p')
+        const c = ys.get('c')
+        expect(ggp).toBeDefined()
+        expect(gp).toBeDefined()
+        expect(p).toBeDefined()
+        expect(c).toBeDefined()
+        if (ggp !== undefined && gp !== undefined && p !== undefined && c !== undefined) {
+            // Highest generation (ggp) at the top of the canvas (y=0); each
+            // subsequent generation steps down by one full row.
+            expect(ggp).toBe(0)
+            expect(gp).toBeGreaterThan(ggp)
+            expect(p).toBeGreaterThan(gp)
+            expect(c).toBeGreaterThan(p)
+            // Uniform spacing — rows are evenly stacked.
+            const step = NODE_H + 100
+            expect(gp - ggp).toBe(step)
+            expect(p - gp).toBe(step)
+            expect(c - p).toBe(step)
+        }
+    })
+
+    it('eldest orphan with much older birth_date sits ABOVE the youngest top-row member', () => {
+        // Two existing top-row people (one canonical-parent, one parentless)
+        // and one true orphan whose birth date predates them by decades.
+        // Pre-fix: all three share y=0 (depth-1 children of virtual root).
+        // Post-fix: gp + grand-orphan-sibling sit on row 1, the 1910 orphan
+        // is bumped above them.
+        const out = layoutTree({
+            nodes: [
+                person('gp', [], [], '1936'),
+                person('aunt', [], [], '1938'),
+                person('child', ['gp']),
+                person('elder', [], [], '1910-05-06'),
+            ],
+            parent_edges: [{ a: 'child', b: 'gp' }],
+            partner_edges: [],
+        })
+        const ys = new Map(out.nodes.map((n) => [n.id, n.y]))
+        const gp = ys.get('gp')
+        const aunt = ys.get('aunt')
+        const elder = ys.get('elder')
+        expect(gp).toBeDefined()
+        expect(aunt).toBeDefined()
+        expect(elder).toBeDefined()
+        if (gp !== undefined && aunt !== undefined && elder !== undefined) {
+            // The 1910 person sits ABOVE (smaller y means higher up on the
+            // canvas) the 1936/1938 top row.
+            expect(elder).toBeLessThan(gp)
+            expect(elder).toBeLessThan(aunt)
+        }
+    })
+
+    it('two parentless people with very different birth_dates rank older above younger', () => {
+        const out = layoutTree({
+            nodes: [person('young', [], [], '1980'), person('old', [], [], '1900')],
+            parent_edges: [],
+            partner_edges: [],
+        })
+        const young = out.nodes.find((n) => n.id === 'young')
+        const old = out.nodes.find((n) => n.id === 'old')
+        expect(young).toBeDefined()
+        expect(old).toBeDefined()
+        if (young && old) {
+            // Older person above means smaller y on the SVG canvas.
+            expect(old.y).toBeLessThan(young.y)
+        }
+    })
+
+    it('orphan leaf with NO birth_date falls back to generation 0 and does not crash', () => {
+        const out = layoutTree({
+            nodes: [
+                person('alone'), // no parents, no children, no birth_date
+                person('peer'),
+            ],
+            parent_edges: [],
+            partner_edges: [],
+        })
+        // Both end up on the same row (gen 0). No throw, no NaN, no Infinity.
+        const alone = out.nodes.find((n) => n.id === 'alone')
+        const peer = out.nodes.find((n) => n.id === 'peer')
+        expect(alone).toBeDefined()
+        expect(peer).toBeDefined()
+        if (alone && peer) {
+            expect(alone.y).toBe(0)
+            expect(peer.y).toBe(0)
+            expect(Number.isFinite(alone.y)).toBe(true)
+            expect(Number.isFinite(peer.y)).toBe(true)
+        }
+    })
+
+    it('partner pass still pulls in-row partners adjacent after the generation rerank', () => {
+        // Both partners have ONE shared child, so they each end up at gen 1 —
+        // same row, eligible for the partner-adjacency nudge.
+        const out = layoutTree({
+            nodes: [person('mom', [], ['dad']), person('dad', [], ['mom']), person('kid', ['mom', 'dad'])],
+            parent_edges: [
+                { a: 'kid', b: 'mom' },
+                { a: 'kid', b: 'dad' },
+            ],
+            partner_edges: [{ a: 'mom', b: 'dad' }],
+        })
+        const mom = out.nodes.find((n) => n.id === 'mom')
+        const dad = out.nodes.find((n) => n.id === 'dad')
+        expect(mom).toBeDefined()
+        expect(dad).toBeDefined()
+        if (mom && dad) {
+            expect(mom.y).toBe(dad.y)
+            expect(Math.abs(mom.x - dad.x)).toBe(NODE_W + 24)
+        }
     })
 })
