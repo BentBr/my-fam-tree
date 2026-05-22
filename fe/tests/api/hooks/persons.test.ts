@@ -4,10 +4,13 @@ vi.mock('@/api/client', () => ({
     client: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
 
+import { ref } from 'vue'
+
 import { client } from '@/api/client'
 import {
     useCreatePerson,
     useDeletePerson,
+    useGetPerson,
     useListPersons,
     useUpdatePerson,
     type PersonInput,
@@ -51,6 +54,29 @@ describe('useListPersons', () => {
         const { result } = makeHookWrapper(() => useListPersons())
         await new Promise<void>((r) => setTimeout(r, 5))
         expect(result.error.value).toBeDefined()
+    })
+})
+
+describe('useGetPerson', () => {
+    it('GETs /persons/{id} with the ref id when enabled', async () => {
+        mocked.GET.mockResolvedValueOnce({
+            data: { data: { id: 'p1', given_name: 'A' } },
+            error: undefined,
+        })
+        const id = ref<string | null>('p1')
+        const { result } = makeHookWrapper(() => useGetPerson(id))
+        await new Promise<void>((r) => setTimeout(r, 5))
+        expect(mocked.GET).toHaveBeenCalledWith('/api/v1/persons/{id}', {
+            params: { path: { id: 'p1' } },
+        })
+        expect(result.data.value).toEqual({ id: 'p1', given_name: 'A' })
+    })
+
+    it('skips the fetch when id is null', async () => {
+        const id = ref<string | null>(null)
+        makeHookWrapper(() => useGetPerson(id))
+        await new Promise<void>((r) => setTimeout(r, 5))
+        expect(mocked.GET).not.toHaveBeenCalled()
     })
 })
 

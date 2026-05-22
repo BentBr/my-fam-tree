@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, type Ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useUiStore } from '@/stores/ui'
@@ -51,6 +52,37 @@ export function useListPersons() {
     })
 }
 
+/**
+ * Async fetch of a single `PersonView` by id. Backs the tree drawer so the
+ * "click → drawer" path always renders the latest server state (vs the
+ * possibly-stale `useListPersons` cache shared with the page).
+ *
+ * The query key is reactive: when the caller flips the ref to a new id the
+ * query swaps cleanly; setting it to `null` disables the query, which is
+ * what the drawer wants when nothing is selected.
+ */
+export function useGetPerson(id: Ref<string | null>) {
+    return useQuery({
+        queryKey: ['person', id] as const,
+        // `enabled` short-circuits the fetch while id is null — react-query
+        // still returns a usable result object, just `data === undefined`.
+        enabled: computed(() => id.value !== null && id.value !== ''),
+        queryFn: async () => {
+            const pid = id.value
+            // `enabled` guards against this, but the queryFn type still needs
+            // to refuse a null id at runtime so the URL builder doesn't see
+            // the literal string `null`.
+            if (pid === null || pid === '') throw new Error('useGetPerson: id is null')
+            const { data, error } = await client.GET('/api/v1/persons/{id}', {
+                params: { path: { id: pid } },
+            })
+            if (error !== undefined) throw error
+            if (data === undefined) throw new Error('empty response from GET /persons/{id}')
+            return data.data
+        },
+    })
+}
+
 export function useCreatePerson() {
     const qc = useQueryClient()
     const ui = useUiStore()
@@ -82,9 +114,14 @@ export function useUpdatePerson() {
             if (data === undefined) throw new Error('empty response from PATCH /persons/{id}')
             return data.data
         },
-        onSuccess: () => {
+        onSuccess: (_data, vars) => {
             void qc.invalidateQueries({ queryKey: ['persons'] })
             void qc.invalidateQueries({ queryKey: ['tree'] })
+            // Refresh the per-person GET so the drawer sees the new fields
+            // without waiting for a manual refetch. The query key includes a
+            // ref-wrapping id, so we invalidate the broad list of keys with
+            // the same root tag — tanstack-query treats the prefix as a match.
+            void qc.invalidateQueries({ queryKey: ['person', vars.id] })
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.person_updated') })
         },
     })

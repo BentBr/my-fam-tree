@@ -74,7 +74,8 @@
         "cancel": "Cancel",
         "edit": "Edit",
         "delete": "Delete",
-        "add": "Add"
+        "add": "Add",
+        "readOnly": "Read-only"
     },
     "tree": {
         "title": "Family tree",
@@ -93,14 +94,30 @@
         "fields": {
             "given_name": "First name",
             "family_name": "Last name",
+            "name_at_birth": "Name at birth",
+            "nickname": "Nickname",
             "birth_date": "Birthday",
+            "birth_place": "Place of birth",
             "gender": "Gender",
             "deceased": "Deceased",
             "death_date": "Date of death",
             "notes": "Notes",
             "parentKind": "Relationship type",
             "partnerKind": "Partnership type",
-            "started_on": "Start date (optional)"
+            "started_on": "Start date (optional)",
+            "ended_on": "End date",
+            "end_reason": "End reason"
+        },
+        "sections": {
+            "profile": "Profile",
+            "parents": "Parents",
+            "partners": "Partners",
+            "children": "Children"
+        },
+        "endReason": {
+            "divorce": "Divorce",
+            "separation": "Separation",
+            "death": "Death"
         },
         "gender": {
             "male": "Male",
@@ -121,7 +138,10 @@
         },
         "actions": {
             "addParent": "Add as child of",
-            "addPartner": "Add partner"
+            "addPartner": "Add partner",
+            "addChild": "Add child",
+            "endPartnership": "End partnership",
+            "deleteRelation": "Delete relation"
         },
         "confirm": {
             "deleteTitle": "Remove this person?",
@@ -141,7 +161,10 @@
         "signin_link_sent": "Sign-in link sent",
         "person_created": "Person added",
         "person_updated": "Person updated",
-        "person_deleted": "Person removed"
+        "person_deleted": "Person removed",
+        "partnership_updated": "Partnership updated",
+        "partnership_deleted": "Partnership removed",
+        "parent_link_updated": "Parent relation updated"
     },
     "errors": {
         "generic": "Something went wrong."

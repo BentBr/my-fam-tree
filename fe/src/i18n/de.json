@@ -74,7 +74,8 @@
         "cancel": "Abbrechen",
         "edit": "Bearbeiten",
         "delete": "Löschen",
-        "add": "Hinzufügen"
+        "add": "Hinzufügen",
+        "readOnly": "Nur Lesen"
     },
     "tree": {
         "title": "Stammbaum",
@@ -110,18 +111,37 @@
         "fields": {
             "given_name": "Vorname",
             "family_name": "Nachname",
+            "name_at_birth": "Geburtsname",
+            "nickname": "Spitzname",
             "birth_date": "Geburtstag",
+            "birth_place": "Geburtsort",
             "gender": "Geschlecht",
             "deceased": "Verstorben",
             "death_date": "Sterbedatum",
             "notes": "Notizen",
             "parentKind": "Verwandtschaftsart",
             "partnerKind": "Partnerschaftsart",
-            "started_on": "Beginn (optional)"
+            "started_on": "Beginn (optional)",
+            "ended_on": "Enddatum",
+            "end_reason": "Endgrund"
+        },
+        "sections": {
+            "profile": "Profil",
+            "parents": "Eltern",
+            "partners": "Partner",
+            "children": "Kinder"
+        },
+        "endReason": {
+            "divorce": "Scheidung",
+            "separation": "Trennung",
+            "death": "Tod"
         },
         "actions": {
             "addParent": "Als Kind von hinzufügen",
-            "addPartner": "Partner hinzufügen"
+            "addPartner": "Partner hinzufügen",
+            "addChild": "Kind hinzufügen",
+            "endPartnership": "Partnerschaft beenden",
+            "deleteRelation": "Verbindung löschen"
         },
         "confirm": {
             "deleteTitle": "Diese Person entfernen?",
@@ -141,7 +161,10 @@
         "signin_link_sent": "Anmeldelink gesendet",
         "person_created": "Person hinzugefügt",
         "person_updated": "Person aktualisiert",
-        "person_deleted": "Person entfernt"
+        "person_deleted": "Person entfernt",
+        "partnership_updated": "Partnerschaft aktualisiert",
+        "partnership_deleted": "Partnerschaft entfernt",
+        "parent_link_updated": "Elternverbindung aktualisiert"
     },
     "errors": {
         "generic": "Etwas ist schiefgegangen."
