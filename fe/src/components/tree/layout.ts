@@ -311,6 +311,35 @@ export function layoutTree(input: TreeInput): LayoutResult {
         }
     }
 
+    // Step 6b: row-spread. The partner pass averages each pair to a
+    // midpoint of its members' pre-pass x. When two pairs share that
+    // midpoint (e.g. Otto+Hannelore vs Werner+Greta after a deep
+    // grandparent subtree shifts Otto leftward), both pairs collapse to
+    // the same (x, y) and one stacks invisibly behind the other. This
+    // post-pass walks each y-row left-to-right and enforces a minimum
+    // NODE_W + COL_GAP between adjacent x positions. Partner adjacency
+    // is preserved by treating each pair as a contiguous block during
+    // the sort (smallest x in the pair wins ordering).
+    {
+        const rowMap = new Map<number, Positioned[]>()
+        for (const p of positioned.values()) {
+            const row = rowMap.get(p.y) ?? []
+            row.push(p)
+            rowMap.set(p.y, row)
+        }
+        const minStep = NODE_W + COL_GAP
+        for (const row of rowMap.values()) {
+            row.sort((a, b) => a.x - b.x)
+            for (let i = 1; i < row.length; i += 1) {
+                const prev = row[i - 1]
+                const curr = row[i]
+                if (prev === undefined || curr === undefined) continue
+                const floor = prev.x + minStep
+                if (curr.x < floor) curr.x = floor
+            }
+        }
+    }
+
     // Step 7: shift so minX = 0; collect bounds.
     let minX = Infinity
     let maxX = -Infinity
