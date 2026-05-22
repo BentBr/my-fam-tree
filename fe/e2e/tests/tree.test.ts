@@ -222,15 +222,19 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
 
     // Build the seeded family graph (Müller + Schmidt) plus peter old as
     // Otto's parent, so the test mirrors the visual layout the user filed
-    // the report against.
+    // the report against. Brigitte + Felix add the half-sibling case (Felix
+    // is Klaus + Brigitte's biological son, half-brother to Lina + Max).
     const otto = await create('Otto', 'Müller', '1935-03-12')
     const hannelore = await create('Hannelore', 'Müller', '1938-07-23')
     const werner = await create('Werner', 'Schmidt', '1936-05-18')
     const greta = await create('Greta', 'Schmidt', '1940-02-09')
     const klaus = await create('Klaus', 'Müller', '1965-04-22')
     const anna = await create('Anna', 'Müller', '1968-08-11')
+    const brigitte = await create('Brigitte', 'Mayer', '1968-11-30')
+    const felix = await create('Felix', 'Müller', '1992-07-08')
     const lina = await create('Lina', 'Müller', '1995-12-03')
     const max = await create('Max', 'Müller', '1998-04-17')
+    const emma = await create('Emma', 'Müller', '2020-05-10')
     const peter = await create('peter', 'old', '1910-05-20')
 
     const link = async (childId: string, parentId: string): Promise<void> => {
@@ -256,20 +260,24 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     }
 
     // Parent links: Otto→peter, Klaus→Otto+Hannelore, Anna→Werner+Greta,
-    // Lina+Max→Klaus+Anna.
+    // Felix→Klaus+Brigitte, Lina+Max→Klaus+Anna, Emma→Lina.
     await link(otto, peter)
     await link(klaus, otto)
     await link(klaus, hannelore)
     await link(anna, werner)
     await link(anna, greta)
+    await link(felix, klaus)
+    await link(felix, brigitte)
     await link(lina, klaus)
     await link(lina, anna)
     await link(max, klaus)
     await link(max, anna)
-    // Partnerships: Otto+Hannelore, Werner+Greta, Klaus+Anna.
+    await link(emma, lina)
+    // Partnerships: Otto+Hannelore, Werner+Greta, Klaus+Anna, Klaus+Brigitte.
     await partner(otto, hannelore)
     await partner(werner, greta)
     await partner(klaus, anna)
+    await partner(klaus, brigitte)
 
     await page.reload()
     await expect(page.getByTestId('tree-canvas')).toBeVisible()
@@ -297,4 +305,45 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
         expect(cls).not.toContain('related')
         expect(cls).toContain('dimmed')
     }
+
+    // Tree layout v3 invariants. Each TreeNode is wrapped in a `<g
+    // transform="translate(x, y)">`, so we read the y component out of
+    // the transform attribute and compare. All of Klaus's children
+    // (Felix, Lina, Max) must sit at the same y even though only Lina
+    // has a descendant (Emma) — pre-v3 bottom-up depth dropped Felix +
+    // Max one row below Lina (Bug 1 in the user's report).
+    const yOf = async (id: string): Promise<number> =>
+        page.getByTestId(`tree-node-${id}`).evaluate((el) => {
+            const transform = el.getAttribute('transform') ?? ''
+            const m = transform.match(/translate\(\s*[^,]+,\s*([-\d.]+)\s*\)/)
+            return m !== null && m[1] !== undefined ? Number.parseFloat(m[1]) : Number.NaN
+        })
+    const yFelix = await yOf(felix)
+    const yLina = await yOf(lina)
+    const yMax = await yOf(max)
+    expect(yFelix).toBe(yLina)
+    expect(yFelix).toBe(yMax)
+    // Klaus's row sits strictly above Felix/Lina/Max's row.
+    const yKlaus = await yOf(klaus)
+    expect(yKlaus).toBeLessThan(yFelix)
+    // Brigitte (a root partner of Klaus) shares Klaus's row — Bug 2.
+    const yBrigitte = await yOf(brigitte)
+    expect(yBrigitte).toBe(yKlaus)
+    // peter old (1910) sits strictly above Otto's row.
+    const yOtto = await yOf(otto)
+    const yPeter = await yOf(peter)
+    expect(yPeter).toBeLessThan(yOtto)
+
+    // Zoom defaults: the SVG inner `<g>` carries the d3-zoom transform.
+    // The mount path either focuses on `currentUserId` at FOCUS_SCALE
+    // (0.75) or clamps fit-to-view at MIN_FIT_SCALE (0.5). Either way
+    // the resulting scale should be ≥ MIN_FIT_SCALE for the seeded 12-
+    // person family — Bug 3 / 4 in the user's report. We read the
+    // transform off the root `<g>` and parse the scale component.
+    const initialScale = await page.locator('[data-testid="tree-canvas"] svg > g').evaluate((el) => {
+        const t = el.getAttribute('transform') ?? ''
+        const m = t.match(/scale\(([-\d.]+)/)
+        return m !== null && m[1] !== undefined ? Number.parseFloat(m[1]) : Number.NaN
+    })
+    expect(initialScale).toBeGreaterThanOrEqual(0.5)
 })
