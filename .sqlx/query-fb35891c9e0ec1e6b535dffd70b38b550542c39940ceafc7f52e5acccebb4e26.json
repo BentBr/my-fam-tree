@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE persons SET\n                 given_name=$3, family_name=$4, name_at_birth=$5, nickname=$6, gender=$7,\n                 birth_date=$8, birth_place=$9, death_date=$10, notes=$11, linked_user_id=$12\n               WHERE family_id = $1 AND id = $2\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes, linked_user_id,\n                         created_at, updated_at",
+  "query": "INSERT INTO persons\n               (family_id, given_name, family_name, name_at_birth, nickname, gender,\n                birth_date, birth_place, death_date, notes,\n                email, phone, street, house_number, zip, city, country,\n                linked_user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,\n                       $11, $12, $13, $14, $15, $16, $17, $18)\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes,\n                         email, phone, street, house_number, zip, city, country,\n                         linked_user_id, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -60,16 +60,51 @@
       },
       {
         "ordinal": 11,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "street",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "house_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "zip",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "country",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
         "name": "linked_user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 12,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -77,7 +112,6 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
         "Text",
         "Text",
         "Text",
@@ -86,6 +120,13 @@
         "Date",
         "Text",
         "Date",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
         "Text",
         "Uuid"
       ]
@@ -102,10 +143,17 @@
       false,
       true,
       false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "d603d01edef5de4e26e5c9aae897f9cb206252942111ef9ee76abb8f3ed9be41"
+  "hash": "fb35891c9e0ec1e6b535dffd70b38b550542c39940ceafc7f52e5acccebb4e26"
 }

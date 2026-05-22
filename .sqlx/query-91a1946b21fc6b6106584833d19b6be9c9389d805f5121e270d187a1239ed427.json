@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes, linked_user_id,\n                              created_at, updated_at\n                         FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes,\n                              email, phone, street, house_number, zip, city, country,\n                              linked_user_id, created_at, updated_at\n                         FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -60,16 +60,51 @@
       },
       {
         "ordinal": 11,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "street",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "house_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "zip",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "country",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
         "name": "linked_user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 12,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -92,10 +127,17 @@
       false,
       true,
       false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "4c89e2580003cc5a42544e0e732b52c04f309fa746179c4ddc441751c03cbe04"
+  "hash": "91a1946b21fc6b6106584833d19b6be9c9389d805f5121e270d187a1239ed427"
 }

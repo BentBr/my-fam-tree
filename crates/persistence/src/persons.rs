@@ -35,6 +35,13 @@ struct PersonRow {
     birth_place: String,
     death_date: Option<NaiveDate>,
     notes: String,
+    email: String,
+    phone: String,
+    street: String,
+    house_number: String,
+    zip: String,
+    city: String,
+    country: String,
     linked_user_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -54,6 +61,13 @@ impl From<PersonRow> for Person {
             birth_place: r.birth_place,
             death_date: r.death_date,
             notes: r.notes,
+            email: r.email,
+            phone: r.phone,
+            street: r.street,
+            house_number: r.house_number,
+            zip: r.zip,
+            city: r.city,
+            country: r.country,
             linked_user_id: r.linked_user_id.map(UserId::from_uuid),
             created_at: r.created_at,
             updated_at: r.updated_at,
@@ -68,11 +82,15 @@ impl PersonRepo for PgPersonRepo {
             PersonRow,
             r#"INSERT INTO persons
                (family_id, given_name, family_name, name_at_birth, nickname, gender,
-                birth_date, birth_place, death_date, notes, linked_user_id)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                birth_date, birth_place, death_date, notes,
+                email, phone, street, house_number, zip, city, country,
+                linked_user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                       $11, $12, $13, $14, $15, $16, $17, $18)
                RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,
-                         gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                         created_at, updated_at"#,
+                         gender, birth_date, birth_place, death_date, notes,
+                         email, phone, street, house_number, zip, city, country,
+                         linked_user_id, created_at, updated_at"#,
             family_id.into_uuid(),
             d.given_name,
             d.family_name,
@@ -83,6 +101,13 @@ impl PersonRepo for PgPersonRepo {
             d.birth_place,
             d.death_date,
             d.notes,
+            d.email,
+            d.phone,
+            d.street,
+            d.house_number,
+            d.zip,
+            d.city,
+            d.country,
             d.linked_user_id.map(UserId::into_uuid),
         )
         .fetch_one(&self.pool)
@@ -106,8 +131,9 @@ impl PersonRepo for PgPersonRepo {
         let row = sqlx::query_as!(
             PersonRow,
             r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
-                      gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                      created_at, updated_at
+                      gender, birth_date, birth_place, death_date, notes,
+                      email, phone, street, house_number, zip, city, country,
+                      linked_user_id, created_at, updated_at
                  FROM persons WHERE family_id = $1 AND id = $2"#,
             family_id.into_uuid(),
             id.into_uuid()
@@ -130,8 +156,9 @@ impl PersonRepo for PgPersonRepo {
                 sqlx::query_as!(
                     PersonRow,
                     r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
-                              gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                              created_at, updated_at
+                              gender, birth_date, birth_place, death_date, notes,
+                              email, phone, street, house_number, zip, city, country,
+                              linked_user_id, created_at, updated_at
                          FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2"#,
                     family_id.into_uuid(),
                     lim
@@ -143,8 +170,9 @@ impl PersonRepo for PgPersonRepo {
                 sqlx::query_as!(
                     PersonRow,
                     r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
-                              gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                              created_at, updated_at
+                              gender, birth_date, birth_place, death_date, notes,
+                              email, phone, street, house_number, zip, city, country,
+                              linked_user_id, created_at, updated_at
                          FROM persons WHERE family_id = $1 AND id > $2 ORDER BY id LIMIT $3"#,
                     family_id.into_uuid(),
                     c.into_uuid(),
@@ -168,11 +196,15 @@ impl PersonRepo for PgPersonRepo {
             PersonRow,
             r#"UPDATE persons SET
                  given_name=$3, family_name=$4, name_at_birth=$5, nickname=$6, gender=$7,
-                 birth_date=$8, birth_place=$9, death_date=$10, notes=$11, linked_user_id=$12
+                 birth_date=$8, birth_place=$9, death_date=$10, notes=$11,
+                 email=$12, phone=$13, street=$14, house_number=$15,
+                 zip=$16, city=$17, country=$18,
+                 linked_user_id=$19
                WHERE family_id = $1 AND id = $2
                RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,
-                         gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                         created_at, updated_at"#,
+                         gender, birth_date, birth_place, death_date, notes,
+                         email, phone, street, house_number, zip, city, country,
+                         linked_user_id, created_at, updated_at"#,
             family_id.into_uuid(),
             id.into_uuid(),
             d.given_name,
@@ -184,6 +216,13 @@ impl PersonRepo for PgPersonRepo {
             d.birth_place,
             d.death_date,
             d.notes,
+            d.email,
+            d.phone,
+            d.street,
+            d.house_number,
+            d.zip,
+            d.city,
+            d.country,
             d.linked_user_id.map(UserId::into_uuid),
         )
         .fetch_optional(&self.pool)
@@ -223,8 +262,9 @@ impl PersonRepo for PgPersonRepo {
         let row = sqlx::query_as!(
             PersonRow,
             r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
-                      gender, birth_date, birth_place, death_date, notes, linked_user_id,
-                      created_at, updated_at
+                      gender, birth_date, birth_place, death_date, notes,
+                      email, phone, street, house_number, zip, city, country,
+                      linked_user_id, created_at, updated_at
                  FROM persons WHERE family_id = $1 AND linked_user_id = $2"#,
             family_id.into_uuid(),
             user_id.into_uuid()

@@ -19,6 +19,7 @@ pub mod invites;
 pub mod parent_links;
 pub mod partnerships;
 pub mod persons;
+pub mod persons_contact;
 pub mod relationships;
 pub mod users;
 

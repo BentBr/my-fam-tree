@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes, linked_user_id,\n                              created_at, updated_at\n                         FROM persons WHERE family_id = $1 AND id > $2 ORDER BY id LIMIT $3",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                      gender, birth_date, birth_place, death_date, notes,\n                      email, phone, street, house_number, zip, city, country,\n                      linked_user_id, created_at, updated_at\n                 FROM persons WHERE family_id = $1 AND linked_user_id = $2",
   "describe": {
     "columns": [
       {
@@ -60,16 +60,51 @@
       },
       {
         "ordinal": 11,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "phone",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "street",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "house_number",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "zip",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "city",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "country",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 18,
         "name": "linked_user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 12,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -77,8 +112,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -93,10 +127,17 @@
       false,
       true,
       false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
       true,
       false,
       false
     ]
   },
-  "hash": "99f5d48b939d72a5fad100c6eec3727af5c36d9423c10a67f506a0e2793dd772"
+  "hash": "95c4e179254d52b88b987260b8ee835deaea45ff16e33ad5f800a1188c77ae18"
 }
