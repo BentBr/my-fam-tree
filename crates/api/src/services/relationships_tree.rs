@@ -35,11 +35,9 @@ pub struct TreeNode {
     pub linked_user_id: Option<Uuid>,
 }
 
-/// A parent → child edge with kind metadata.
-///
-/// `a` is the child, `b` is the parent — matches the historical
-/// `EdgePair` orientation the FE layout code expects. `kind` powers
-/// the drawer's inline "change parent-link kind" affordance.
+/// A parent → child edge with the kind needed by the FE drawer's inline
+/// "change parent-link kind" affordance. `a` is the child, `b` is the parent
+/// — matches the historical `EdgePair` orientation the FE layout code expects.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct EdgePair {
     pub a: Uuid,
@@ -47,9 +45,8 @@ pub struct EdgePair {
     pub kind: String,
 }
 
-/// A partnership edge with id, kind, and lifecycle dates.
-///
-/// The id is what `PATCH /partnerships/{id}` keys on — without it the
+/// A partnership edge with the partnership's `id`, `kind`, and lifecycle
+/// dates. The id is what `PATCH /partnerships/{id}` keys on — without it the
 /// FE has no way to edit or end an existing partnership inline.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct PartnerEdge {
