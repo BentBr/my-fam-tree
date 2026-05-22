@@ -364,3 +364,7 @@ async fn persons_cursor_pagination_walks_full_list() {
     // Shorter than the limit -> last page, no further cursor.
     assert!(body["meta"]["pagination"]["next_cursor"].is_null());
 }
+
+// Coverage for the new contact columns + email-from-linked-user sync
+// lives in `persons_contact_flow.rs` so this file stays inside the
+// 500-line test-binary cap.
