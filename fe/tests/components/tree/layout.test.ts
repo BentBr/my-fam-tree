@@ -72,9 +72,7 @@ describe('layoutTree (regression: grandparent does not drop nodes)', () => {
             ],
         })
         const ids = out.nodes.map((n) => n.id).sort()
-        expect(ids).toEqual(
-            [peter, otto, hannelore, werner, greta, klaus, anna, lina, max].sort(),
-        )
+        expect(ids).toEqual([peter, otto, hannelore, werner, greta, klaus, anna, lina, max].sort())
         // Sanity: Hannelore and Greta land on the same generation row as
         // their partners Otto and Werner (descendant depth 2).
         const yOf = (id: string): number => out.nodes.find((n) => n.id === id)?.y ?? -1
