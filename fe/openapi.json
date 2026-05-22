@@ -1315,7 +1315,7 @@
       },
       "EdgePair": {
         "type": "object",
-        "description": "A parent → child edge with the kind needed by the FE drawer's inline\n\"change parent-link kind\" affordance. `a` is the child, `b` is the parent\n— matches the historical `EdgePair` orientation the FE layout code expects.",
+        "description": "A parent → child edge with kind metadata.\n\n`a` is the child, `b` is the parent — matches the historical\n`EdgePair` orientation the FE layout code expects. `kind` powers\nthe drawer's inline \"change parent-link kind\" affordance.",
         "required": [
           "a",
           "b",
@@ -1839,7 +1839,7 @@
       },
       "PartnerEdge": {
         "type": "object",
-        "description": "A partnership edge with the partnership's `id`, `kind`, and lifecycle\ndates. The id is what `PATCH /partnerships/{id}` keys on — without it the\nFE has no way to edit or end an existing partnership inline.",
+        "description": "A partnership edge with id, kind, and lifecycle dates.\n\nThe id is what `PATCH /partnerships/{id}` keys on — without it the\nFE has no way to edit or end an existing partnership inline.",
         "required": [
           "id",
           "a",
