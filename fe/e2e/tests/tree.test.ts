@@ -243,8 +243,15 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     const partner = async (aId: string, bId: string): Promise<void> => {
         const res = await page.request.post('/api/v1/partnerships', {
             headers: { 'X-Family-Id': familyId },
-            data: { a_id: aId, b_id: bId, kind: 'marriage' },
+            // Field names match `PartnershipCreateReq` in
+            // `crates/api/src/routes/partnerships.rs` — `partner_a_id` /
+            // `partner_b_id`, not `a_id` / `b_id`. The shorter form was a
+            // copy-paste from the relationships tree edge JSON shape.
+            data: { partner_a_id: aId, partner_b_id: bId, kind: 'marriage' },
         })
+        if (!res.ok()) {
+            console.error(`partnership POST failed ${res.status()}:`, await res.text())
+        }
         expect(res.ok()).toBeTruthy()
     }
 
