@@ -124,6 +124,10 @@ async function linkParent(
 ): Promise<void> {
     await clickTreeNode(page, childId)
     await expect(page.getByTestId('person-detail')).toBeVisible()
+    // The "Add parent" v-select sits inside the Parents v-expansion-panel
+    // which is collapsed by default — expand it first so the trigger
+    // becomes pointer-clickable.
+    await page.getByTestId('relations-parents').click()
     await page.getByTestId('person-add-parent').click()
     await page.getByRole('option', { name: parentName }).click()
     if (kind !== 'biological') {
@@ -144,6 +148,8 @@ interface PartnerOpts {
 async function linkPartner(page: Page, personId: string, opts: PartnerOpts): Promise<void> {
     await clickTreeNode(page, personId)
     await expect(page.getByTestId('person-detail')).toBeVisible()
+    // Same expansion-panel gating for the Partners section.
+    await page.getByTestId('relations-partners').click()
     await page.getByTestId('person-add-partner').click()
     await page.getByRole('option', { name: opts.partnerName }).click()
     await page.getByTestId('person-add-partner-kind').click()

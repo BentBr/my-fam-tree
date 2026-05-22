@@ -159,7 +159,10 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
 
     await clickTreeNode(page, annaId)
     await expect(page.getByTestId('person-detail')).toBeVisible()
-    // v-select renders its trigger; click then pick the option by visible text.
+    // The "Add parent" v-select lives inside the Parents v-expansion-panel
+    // which is rendered collapsed by default. Click the panel title to
+    // expand before the v-select trigger becomes pointer-clickable.
+    await page.getByTestId('relations-parents').click()
     await page.getByTestId('person-add-parent').click()
     await page.getByRole('option', { name: 'Otto Müller' }).click()
     await page.getByTestId('person-add-parent-submit').click()
@@ -175,6 +178,8 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
 
     await clickTreeNode(page, annaId)
     await expect(page.getByTestId('person-detail')).toBeVisible()
+    // Same expansion-panel gating for the Partners section.
+    await page.getByTestId('relations-partners').click()
     await page.getByTestId('person-add-partner').click()
     await page.getByRole('option', { name: 'Maria Schmidt' }).click()
     // Partner-kind has no default — must pick one before submit enables.
