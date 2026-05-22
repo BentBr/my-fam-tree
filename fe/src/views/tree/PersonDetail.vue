@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDeletePerson, useListPersons } from '@/api/hooks/persons'
-import { useAddParentLink, useCreatePartnership } from '@/api/hooks/relationships'
+import { useDeletePerson, useGetPerson, useListPersons } from '@/api/hooks/persons'
+import { useActiveFamilyStore } from '@/stores/activeFamily'
 
 import PersonEdit from './PersonEdit.vue'
+import PersonRelations from './PersonRelations.vue'
 
 const props = defineProps<{
     personId: string
@@ -17,55 +18,34 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// `toRef(props, 'personId')` lets the useGetPerson query react to drawer
+// navigation without remounting the component.
+const personId = toRef(props, 'personId')
+
+// Two data sources:
+// - `useGetPerson` is the source of truth for the rendered profile fields —
+//   per the brief, the drawer must always reflect the latest server state.
+// - `useListPersons` is the fallback (also used by tests + while the GET is
+//   in flight) so the header never flashes a blank name.
+const personQ = useGetPerson(personId)
 const list = useListPersons()
 const del = useDeletePerson()
-const addParent = useAddParentLink()
-const createPartner = useCreatePartnership()
+
+const family = useActiveFamilyStore()
+
+// owner+admin can edit; user role is read-only. `null` happens during the
+// brief window after sign-in before the active-family hydrates — render
+// read-only until we know.
+const canEdit = computed(() => {
+    const role = family.activeFamily?.role ?? null
+    return role === 'owner' || role === 'admin'
+})
 
 const editing = ref(false)
-const parentToAdd = ref<string | null>(null)
-const partnerToAdd = ref<string | null>(null)
-// Default: biological — that's the overwhelming majority of family-tree
-// edges and matches what every backend test seeds. The dropdown still
-// lets the user override before submit.
-const parentKind = ref<'biological' | 'legal' | 'adoptive' | 'step' | 'social'>('biological')
-// No default for partnership kind — civil unions vs marriages have
-// different legal/historical weight and we'd rather force a deliberate
-// pick than mis-tag the user's first attempt.
-const partnerKind = ref<'marriage' | 'civil_union' | 'partnership' | null>(null)
-// Optional partnership start date. Backend validation rejects starts
-// before either partner's birth (`validation.partnership_before_birth`);
-// we surface a UI field so users can record real wedding / civil-union
-// dates and so e2e coverage can drive that rule.
-const partnerStartedOn = ref<string | null>(null)
 const confirmDelete = ref(false)
 
-const parentKindOptions = computed(() => [
-    { value: 'biological', title: t('person.parentKind.biological') },
-    { value: 'legal', title: t('person.parentKind.legal') },
-    { value: 'adoptive', title: t('person.parentKind.adoptive') },
-    { value: 'step', title: t('person.parentKind.step') },
-    { value: 'social', title: t('person.parentKind.social') },
-])
-
-const partnerKindOptions = computed(() => [
-    { value: 'marriage', title: t('person.partnerKind.marriage') },
-    { value: 'civil_union', title: t('person.partnerKind.civil_union') },
-    { value: 'partnership', title: t('person.partnerKind.partnership') },
-])
-
-const person = computed(() => list.data.value?.find((p) => p.id === props.personId) ?? null)
-
-// Candidates for "add parent" / "add partner" — everyone in the family except
-// the currently-viewed person. v-select items need `{value, title}` pairs.
-const otherItems = computed(() =>
-    (list.data.value ?? [])
-        .filter((p) => p.id !== props.personId)
-        .map((p) => ({
-            value: p.id,
-            title: `${p.given_name} ${p.family_name}`.trim() || p.given_name,
-        })),
-)
+const person = computed(() => personQ.data.value ?? list.data.value?.find((p) => p.id === props.personId) ?? null)
 
 async function remove(): Promise<void> {
     await del.mutateAsync(props.personId)
@@ -74,47 +54,12 @@ async function remove(): Promise<void> {
     emit('close')
 }
 
-async function linkParent(): Promise<void> {
-    const pid = parentToAdd.value
-    if (pid === null || pid === '') return
-    await addParent.mutateAsync({
-        child_id: props.personId,
-        parent_id: pid,
-        kind: parentKind.value,
-    })
-    parentToAdd.value = null
-    parentKind.value = 'biological'
-    emit('changed')
-}
-
-async function linkPartner(): Promise<void> {
-    const pid = partnerToAdd.value
-    const kind = partnerKind.value
-    if (pid === null || pid === '' || kind === null) return
-    // Only thread `started_on` when the user actually filled it in —
-    // sending an empty string would round-trip through the backend's
-    // serde as `Some("")` and fail the date parser.
-    const started = partnerStartedOn.value
-    const payload: {
-        partner_a_id: string
-        partner_b_id: string
-        kind: typeof kind
-        started_on?: string
-    } = {
-        partner_a_id: props.personId,
-        partner_b_id: pid,
-        kind,
-    }
-    if (started !== null && started !== '') payload.started_on = started
-    await createPartner.mutateAsync(payload)
-    partnerToAdd.value = null
-    partnerKind.value = null
-    partnerStartedOn.value = null
-    emit('changed')
-}
-
 function onSaved(): void {
     editing.value = false
+    emit('changed')
+}
+
+function onRelationsChanged(): void {
     emit('changed')
 }
 </script>
@@ -122,21 +67,66 @@ function onSaved(): void {
 <template>
     <section class="pa-4" data-testid="person-detail">
         <header class="d-flex align-center justify-space-between mb-3">
-            <h3 v-if="person" class="text-h6">{{ person.given_name }} {{ person.family_name }}</h3>
+            <h3 v-if="person" class="text-h6" data-testid="person-detail-title">
+                {{ person.given_name }} {{ person.family_name }}
+            </h3>
             <v-btn icon="x" variant="text" size="small" data-testid="person-detail-close" @click="emit('close')" />
         </header>
 
-        <template v-if="!editing && person !== null">
-            <v-list density="compact" class="mb-2">
-                <v-list-item>
-                    <v-list-item-title>{{ t('person.fields.birth_date') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.birth_date ?? '—' }}</v-list-item-subtitle>
+        <v-skeleton-loader v-if="personQ.isLoading.value && person === null" type="article" />
+
+        <template v-else-if="!editing && person !== null">
+            <div class="d-flex align-center justify-space-between mb-2">
+                <h4 class="text-subtitle-1">{{ t('person.sections.profile') }}</h4>
+                <v-chip
+                    v-if="!canEdit"
+                    size="small"
+                    color="grey-lighten-1"
+                    variant="tonal"
+                    data-testid="person-readonly-badge"
+                >
+                    {{ t('common.readOnly') }}
+                </v-chip>
+            </div>
+
+            <!-- Profile section — every PersonView field rendered as a labelled
+                 read-only row. Editing flips into the existing PersonEdit
+                 component (covers every field via v-text-field/v-combobox);
+                 we deliberately don't duplicate that form here. -->
+            <v-list density="compact" class="mb-2" data-testid="person-profile-list">
+                <v-list-item data-testid="person-field-given-name">
+                    <v-list-item-title>{{ t('person.fields.given_name') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.given_name }}</v-list-item-subtitle>
                 </v-list-item>
-                <v-list-item>
+                <v-list-item data-testid="person-field-family-name">
+                    <v-list-item-title>{{ t('person.fields.family_name') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.family_name || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-name-at-birth">
+                    <v-list-item-title>{{ t('person.fields.name_at_birth') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.name_at_birth || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-nickname">
+                    <v-list-item-title>{{ t('person.fields.nickname') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.nickname || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-gender">
                     <v-list-item-title>{{ t('person.fields.gender') }}</v-list-item-title>
                     <v-list-item-subtitle>{{ person.gender || '—' }}</v-list-item-subtitle>
                 </v-list-item>
-                <v-list-item v-if="person.notes">
+                <v-list-item data-testid="person-field-birth-date">
+                    <v-list-item-title>{{ t('person.fields.birth_date') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.birth_date ?? '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-birth-place">
+                    <v-list-item-title>{{ t('person.fields.birth_place') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.birth_place || '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item data-testid="person-field-death-date">
+                    <v-list-item-title>{{ t('person.fields.death_date') }}</v-list-item-title>
+                    <v-list-item-subtitle>{{ person.death_date ?? '—' }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item v-if="person.notes" data-testid="person-field-notes">
                     <v-list-item-title>{{ t('person.fields.notes') }}</v-list-item-title>
                     <v-list-item-subtitle>{{ person.notes }}</v-list-item-subtitle>
                 </v-list-item>
@@ -144,84 +134,11 @@ function onSaved(): void {
 
             <v-divider class="my-3" />
 
-            <div class="mb-2">
-                <v-select
-                    v-model="parentToAdd"
-                    :items="otherItems"
-                    item-value="value"
-                    item-title="title"
-                    :label="t('person.actions.addParent')"
-                    clearable
-                    density="comfortable"
-                    data-testid="person-add-parent"
-                />
-                <v-select
-                    v-model="parentKind"
-                    :items="parentKindOptions"
-                    item-value="value"
-                    item-title="title"
-                    :label="t('person.fields.parentKind')"
-                    density="comfortable"
-                    data-testid="person-add-parent-kind"
-                />
-                <v-btn
-                    block
-                    color="primary"
-                    variant="tonal"
-                    :disabled="parentToAdd === null || parentToAdd === ''"
-                    :loading="addParent.isPending.value"
-                    data-testid="person-add-parent-submit"
-                    @click="linkParent"
-                >
-                    {{ t('common.add') }}
-                </v-btn>
-            </div>
-
-            <div class="mb-2">
-                <v-select
-                    v-model="partnerToAdd"
-                    :items="otherItems"
-                    item-value="value"
-                    item-title="title"
-                    :label="t('person.actions.addPartner')"
-                    clearable
-                    density="comfortable"
-                    data-testid="person-add-partner"
-                />
-                <v-select
-                    v-model="partnerKind"
-                    :items="partnerKindOptions"
-                    item-value="value"
-                    item-title="title"
-                    :label="t('person.fields.partnerKind')"
-                    density="comfortable"
-                    clearable
-                    data-testid="person-add-partner-kind"
-                />
-                <v-text-field
-                    v-model="partnerStartedOn"
-                    :label="t('person.fields.started_on')"
-                    type="date"
-                    density="comfortable"
-                    clearable
-                    data-testid="person-add-partner-started-on"
-                />
-                <v-btn
-                    block
-                    color="primary"
-                    variant="tonal"
-                    :disabled="partnerToAdd === null || partnerToAdd === '' || partnerKind === null"
-                    :loading="createPartner.isPending.value"
-                    data-testid="person-add-partner-submit"
-                    @click="linkPartner"
-                >
-                    {{ t('common.add') }}
-                </v-btn>
-            </div>
+            <PersonRelations :person-id="props.personId" :can-edit="canEdit" @changed="onRelationsChanged" />
 
             <v-divider class="my-3" />
 
-            <div class="d-flex ga-2">
+            <div v-if="canEdit" class="d-flex ga-2">
                 <v-btn variant="outlined" data-testid="person-edit-button" @click="editing = true">
                     {{ t('common.edit') }}
                 </v-btn>
