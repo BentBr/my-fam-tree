@@ -16,6 +16,7 @@ const open = computed(() => !mobile.value || !ui.sidebarCollapsed)
 // navigation; keep the nav truthful to what actually exists.
 const items = computed(() => [
     { to: '/tree', title: t('nav.tree'), icon: 'network' },
+    { to: '/upcoming', title: t('nav.upcoming'), icon: 'calendar-clock' },
     { to: '/health', title: t('nav.health'), icon: 'activity' },
 ])
 </script>

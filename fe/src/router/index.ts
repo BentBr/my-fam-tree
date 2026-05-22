@@ -66,6 +66,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/tree/TreeView.vue'),
         meta: { layout: 'main', requiresAuth: true },
     },
+    {
+        path: '/upcoming',
+        name: 'upcoming',
+        component: () => import('@/views/upcoming/UpcomingView.vue'),
+        meta: { layout: 'main', requiresAuth: true },
+    },
     // /reminders/* etc. are added in Phase 4b.
 ]
 

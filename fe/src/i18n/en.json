@@ -2,6 +2,7 @@
     "app": { "title": "my-family", "tagline": "Family tree, contacts, reminders." },
     "nav": {
         "tree": "Tree",
+        "upcoming": "Upcoming dates",
         "reminders": "Reminders",
         "health": "Health"
     },
@@ -158,6 +159,27 @@
         "confirm": {
             "deleteTitle": "Remove this person?",
             "deleteText": "This deletes the person row and any links to it. This cannot be undone."
+        }
+    },
+    "upcoming": {
+        "title": "Upcoming dates",
+        "empty": {
+            "title": "Nothing on the horizon",
+            "subtitle": "Add birthdays or partnerships to start seeing upcoming dates here."
+        },
+        "filter": {
+            "birthday": "Birthday",
+            "anniversary": "Jahrestag"
+        },
+        "kinds": {
+            "birthday": "Birthday",
+            "wedding_anniversary": "Wedding anniversary",
+            "death_anniversary": "Memorial"
+        },
+        "relative": {
+            "today": "today",
+            "tomorrow": "tomorrow",
+            "inDays": "in {count} days"
         }
     },
     "language": { "label": "Language", "en": "English", "de": "German" },

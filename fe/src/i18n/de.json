@@ -2,6 +2,7 @@
     "app": { "title": "my-family", "tagline": "Stammbaum, Kontakte, Erinnerungen." },
     "nav": {
         "tree": "Stammbaum",
+        "upcoming": "Anstehende Termine",
         "reminders": "Erinnerungen",
         "health": "Status"
     },
@@ -158,6 +159,27 @@
         "confirm": {
             "deleteTitle": "Diese Person entfernen?",
             "deleteText": "Damit werden die Person und alle Verbindungen gelöscht. Das kann nicht rückgängig gemacht werden."
+        }
+    },
+    "upcoming": {
+        "title": "Anstehende Termine",
+        "empty": {
+            "title": "Nichts in Sicht",
+            "subtitle": "Füge Geburtstage oder Partnerschaften hinzu, um anstehende Termine zu sehen."
+        },
+        "filter": {
+            "birthday": "Geburtstag",
+            "anniversary": "Jahrestag"
+        },
+        "kinds": {
+            "birthday": "Geburtstag",
+            "wedding_anniversary": "Hochzeitstag",
+            "death_anniversary": "Gedenktag"
+        },
+        "relative": {
+            "today": "heute",
+            "tomorrow": "morgen",
+            "inDays": "in {count} Tagen"
         }
     },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
