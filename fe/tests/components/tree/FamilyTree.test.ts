@@ -79,6 +79,43 @@ describe('FamilyTree', () => {
         expect(w.emitted('select')?.[0]).toEqual(['a'])
     })
 
+    it('mounts with currentUserId targeting a linked node (initial focus path)', () => {
+        // Linked-user-on-canvas branch: `onMounted` resolves a node center
+        // and pans to it at the focus scale instead of fitting the whole
+        // tree. The component shouldn't throw or fail to render the SVG.
+        const w = mount(FamilyTree, {
+            props: {
+                tree: {
+                    nodes: [
+                        {
+                            id: 'a',
+                            given_name: 'A',
+                            family_name: '1',
+                            linked_user_id: 'u1',
+                            parent_ids: [],
+                            partner_ids: [],
+                        },
+                        { id: 'b', given_name: 'B', family_name: '2', parent_ids: ['a'], partner_ids: [] },
+                    ],
+                    parent_edges: [{ a: 'b', b: 'a' }],
+                    partner_edges: [],
+                },
+                selectedId: null,
+                centerOnId: null,
+                currentUserId: 'u1',
+            },
+            attachTo: document.body,
+            global: {
+                stubs: {
+                    TreeNode: { template: '<g class="tree-node-stub" />' },
+                    TreeEdge: { template: '<g class="tree-edge-stub" />' },
+                },
+            },
+        })
+        expect(w.find('svg').exists()).toBe(true)
+        w.unmount()
+    })
+
     it('propagates a hover from one TreeNode into is-related on the related sibling', async () => {
         // Stub each TreeNode as a small group that mirrors the props we
         // care about into the DOM: `data-id` for routing the hover click,

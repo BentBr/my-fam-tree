@@ -88,6 +88,22 @@ function nodeCenter(id: string): { x: number; y: number } | null {
     return { x: n.x + NODE_W / 2, y: n.y + NODE_H / 2 }
 }
 
+/**
+ * Lower bound on the "fit to view" scale. A non-trivial seeded tree
+ * (~20 persons spread across 4 generations) makes the pure fit-scale
+ * collapse to ~0.3, which renders the cards as unreadable thumbnails.
+ * Clamping at 0.5 keeps the cards legible at the cost of the viewport
+ * sometimes clipping the outer cousins — the user can pan to them.
+ */
+const MIN_FIT_SCALE = 0.5
+
+/**
+ * Initial focus scale when a `currentUserId` resolves to a node on mount.
+ * 0.75 is "close enough that the user's card and the surrounding 1-2
+ * generations are easily readable" without losing the wider-family context.
+ */
+const FOCUS_SCALE = 0.75
+
 /** Compute the scale that fits the whole layout into the viewport. */
 function fitScale(): number {
     const wrap = wrapEl.value
@@ -100,38 +116,49 @@ function fitScale(): number {
     const scaleX = (w - padding * 2) / contentW
     const scaleY = (h - padding * 2) / contentH
     const raw = Math.min(scaleX, scaleY, 1)
-    return Math.max(raw, 0.25)
+    return Math.max(raw, MIN_FIT_SCALE)
 }
 
-function centerOn(id: string, animate: boolean): void {
-    const c = nodeCenter(id)
-    const svg = svgEl.value
-    const wrap = wrapEl.value
-    if (c === null || svg === null || zoomBehavior === null || wrap === null) return
-    const w = wrap.clientWidth
-    const h = wrap.clientHeight
-    // Re-use the fit scale rather than snapping to 1×. At 1× a non-trivial
-    // tree no longer fits the viewport and the rest of the family slides off
-    // the canvas — which was the prior on-load regression. Same scale ⇒ a
-    // pan, not a zoom-and-clip.
-    const scale = fitScale()
-    const transform = zoomIdentity.translate(w / 2 - c.x * scale, h / 2 - c.y * scale).scale(scale)
-    const sel = select(svg)
+/**
+ * Apply an absolute zoom transform either instantly or via a 600ms ease.
+ * Centralised so all three callers (centerOn, fitToView, refit) share the
+ * same animation curve and don't duplicate the `d3-transition` setup.
+ */
+function applyTransform(
+    sel: ReturnType<typeof select<SVGSVGElement, unknown>>,
+    transform: ReturnType<typeof zoomIdentity.translate>,
+    animate: boolean,
+): void {
+    if (zoomBehavior === null) return
     if (animate) {
-        // Animated centering reads as the canvas easing toward the new focus —
-        // visually similar to "the tree leans toward this person".
         sel.transition().duration(600).ease(easeCubicInOut).call(zoomBehavior.transform, transform)
     } else {
         sel.call(zoomBehavior.transform, transform)
     }
 }
 
+function centerOn(id: string, animate: boolean, scale?: number): void {
+    const c = nodeCenter(id)
+    const svg = svgEl.value
+    const wrap = wrapEl.value
+    if (c === null || svg === null || zoomBehavior === null || wrap === null) return
+    const w = wrap.clientWidth
+    const h = wrap.clientHeight
+    // Default to the fit-scale clamp so a pure pan from the toolbar's
+    // "center on me" path doesn't suddenly change zoom level. Callers that
+    // want the initial-focus zoom (mount) pass `FOCUS_SCALE` explicitly.
+    const s = scale ?? fitScale()
+    const transform = zoomIdentity.translate(w / 2 - c.x * s, h / 2 - c.y * s).scale(s)
+    applyTransform(select(svg), transform, animate)
+}
+
 /**
  * Compute a transform that fits the full layout bounding box into the
- * viewport with a small padding. Used on initial mount so the user
- * sees every person at once instead of an arbitrary corner of the tree.
- * `scaleExtent` clamps the result so very small / very large trees still
- * render at a readable scale rather than a postage stamp / a blur.
+ * viewport with a small padding. Used by the "Fit to view" toolbar button
+ * (and as the mount fallback when there is no `currentUserId` to focus on).
+ * The scale is clamped from below at `MIN_FIT_SCALE` so the result stays
+ * legible even on huge trees — better to clip a few outliers than render
+ * every card as a postage stamp.
  */
 function fitToView(animate: boolean): void {
     const svg = svgEl.value
@@ -145,16 +172,11 @@ function fitToView(animate: boolean): void {
     const scaleX = (w - padding * 2) / contentW
     const scaleY = (h - padding * 2) / contentH
     const scale = Math.min(scaleX, scaleY, 1)
-    const clamped = Math.max(scale, 0.25)
+    const clamped = Math.max(scale, MIN_FIT_SCALE)
     const tx = (w - contentW * clamped) / 2
     const ty = (h - contentH * clamped) / 2
     const transform = zoomIdentity.translate(tx, ty).scale(clamped)
-    const sel = select(svg)
-    if (animate) {
-        sel.transition().duration(600).ease(easeCubicInOut).call(zoomBehavior.transform, transform)
-    } else {
-        sel.call(zoomBehavior.transform, transform)
-    }
+    applyTransform(select(svg), transform, animate)
 }
 
 onMounted(() => {
@@ -162,21 +184,25 @@ onMounted(() => {
     const g = gEl.value
     if (svg === null || g === null) return
     zoomBehavior = d3zoom<SVGSVGElement, unknown>()
-        .scaleExtent([0.25, 3])
+        .scaleExtent([MIN_FIT_SCALE, 3])
         .on('zoom', (event: { transform: ZoomTransform }) => {
             g.setAttribute('transform', event.transform.toString())
         })
     select(svg).call(zoomBehavior)
 
-    // Initial layout: fit-to-view first so the whole tree paints (the
-    // earlier regression was: snap to 1× and shove ancestors off-canvas).
-    // Then, if we have a center target (signed-in user by default), pan to
-    // it — `centerOn` now reuses the fit scale, so this is a pan, not a
-    // zoom. Result: the tree fits AND the user's node lands at viewport
-    // center.
-    fitToView(false)
-    if (props.centerOnId !== null) {
-        centerOn(props.centerOnId, false)
+    // Initial focus. v3 default: if the signed-in user resolves to a node
+    // on the canvas, pan there at `FOCUS_SCALE` so the cards are legible
+    // (the prior fitToView-on-mount path collapsed to ~0.3 on the 20-person
+    // seed and the cards were unreadable thumbnails). When no user-linked
+    // node exists, fall back to a clamped fit-to-view so the whole tree
+    // still paints but at a legible minimum scale.
+    const userNode = props.currentUserId === null ? null : nodeCenter(props.currentUserId)
+    if (userNode !== null && props.currentUserId !== null) {
+        centerOn(props.currentUserId, false, FOCUS_SCALE)
+    } else if (props.centerOnId !== null) {
+        centerOn(props.centerOnId, false, FOCUS_SCALE)
+    } else {
+        fitToView(false)
     }
 })
 
