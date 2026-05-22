@@ -38,6 +38,50 @@ let zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null
 
 const layout = computed(() => layoutTree(props.tree))
 
+// Currently-hovered tree node id (null when the pointer isn't over any node).
+// Driven by the `hover` event each `TreeNode` emits on mouseenter / mouseleave.
+const hoverId = ref<string | null>(null)
+
+/**
+ * Direct-relation id set for the hovered node — union of:
+ *   - the hovered person's `parent_ids` (their parents),
+ *   - the persons whose `parent_ids` include the hovered person (their children),
+ *   - the hovered person's `partner_ids` (their partners).
+ *
+ * Empty when nothing is hovered. The set never includes the hovered node
+ * itself; that one gets the `.hovered` treatment instead of `.related`.
+ */
+const relatedIds = computed<Set<string>>(() => {
+    const id = hoverId.value
+    if (id === null) return new Set<string>()
+    const target = props.tree.nodes.find((n) => n.id === id)
+    if (target === undefined) return new Set<string>()
+    const out = new Set<string>()
+    for (const pid of target.parent_ids) out.add(pid)
+    for (const pid of target.partner_ids) out.add(pid)
+    for (const n of props.tree.nodes) {
+        if (n.parent_ids.includes(id)) out.add(n.id)
+    }
+    out.delete(id)
+    return out
+})
+
+function onNodeHover(id: string | null): void {
+    hoverId.value = id
+}
+
+/**
+ * Whether an edge connects the hovered node to one of its direct relations.
+ * Parent edges: hovered node is either the child or the parent and the
+ * counterpart is the hovered node's parent / child respectively. Partner
+ * edges: hovered node is one of the two members.
+ */
+function isEdgeHighlighted(aId: string, bId: string): boolean {
+    const id = hoverId.value
+    if (id === null) return false
+    return aId === id || bId === id
+}
+
 function nodeCenter(id: string): { x: number; y: number } | null {
     const n = layout.value.nodes.find((p: Positioned) => p.id === id)
     if (n === undefined) return null
@@ -191,6 +235,8 @@ defineExpose({ refit: () => fitToView(true) })
                     :ay="e.childY"
                     :bx="e.parentX"
                     :by="e.parentY"
+                    :is-highlighted="isEdgeHighlighted(e.childId, e.parentId)"
+                    :is-dimmed="hoverId !== null && !isEdgeHighlighted(e.childId, e.parentId)"
                 />
                 <TreeEdge
                     v-for="e in layout.partnerEdges"
@@ -200,6 +246,8 @@ defineExpose({ refit: () => fitToView(true) })
                     :ay="e.ay"
                     :bx="e.bx"
                     :by="e.by"
+                    :is-highlighted="isEdgeHighlighted(e.aId, e.bId)"
+                    :is-dimmed="hoverId !== null && !isEdgeHighlighted(e.aId, e.bId)"
                 />
                 <TreeNode
                     v-for="n in layout.nodes"
@@ -207,7 +255,11 @@ defineExpose({ refit: () => fitToView(true) })
                     :node="n"
                     :selected="n.id === selectedId"
                     :is-current-user="n.linked_user_id !== null && n.linked_user_id === props.currentUserId"
+                    :is-hovered="n.id === hoverId"
+                    :is-related="relatedIds.has(n.id)"
+                    :is-dimmed="hoverId !== null && n.id !== hoverId && !relatedIds.has(n.id)"
                     @select="(id: string) => emit('select', id)"
+                    @hover="(id: string | null) => onNodeHover(id)"
                 />
             </g>
         </svg>

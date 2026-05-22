@@ -85,12 +85,36 @@ describe('TreeNode', () => {
         expect(w.find('.dates').exists()).toBe(false)
     })
 
-    it('hover/leave toggles the hovered class', async () => {
+    it('emits hover events on mouseenter/mouseleave for the parent canvas to track', async () => {
+        // Hover state lives on the canvas (so siblings can react), not on
+        // the TreeNode — so the only contract here is: TreeNode emits.
         const w = mount(TreeNode, { props: { node: node(), selected: false } })
         await w.find('g').trigger('mouseenter')
-        expect(w.find('g').classes()).toContain('hovered')
         await w.find('g').trigger('mouseleave')
+        const events = w.emitted('hover')
+        expect(events).toBeDefined()
+        expect(events?.[0]).toEqual(['n1'])
+        expect(events?.[1]).toEqual([null])
+    })
+
+    it('applies the hovered class when the isHovered prop is true', () => {
+        const w = mount(TreeNode, { props: { node: node(), selected: false, isHovered: true } })
+        expect(w.find('g').classes()).toContain('hovered')
+    })
+
+    it('does NOT apply hovered when isHovered is false / omitted', () => {
+        const w = mount(TreeNode, { props: { node: node(), selected: false } })
         expect(w.find('g').classes()).not.toContain('hovered')
+    })
+
+    it('applies the related class when the isRelated prop is true', () => {
+        const w = mount(TreeNode, { props: { node: node(), selected: false, isRelated: true } })
+        expect(w.find('g').classes()).toContain('related')
+    })
+
+    it('applies the dimmed class when the isDimmed prop is true', () => {
+        const w = mount(TreeNode, { props: { node: node(), selected: false, isDimmed: true } })
+        expect(w.find('g').classes()).toContain('dimmed')
     })
 
     it('applies the selected class when selected', () => {

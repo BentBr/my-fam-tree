@@ -32,4 +32,29 @@ describe('TreeEdge', () => {
         // midX = 100, midY = 50; translated by midX-6, midY-6 → 94, 44.
         expect(heartG?.attributes('transform')).toContain('translate(94')
     })
+
+    it('applies the highlighted class when isHighlighted is true', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'parent', ax: 0, ay: 0, bx: 100, by: 100, isHighlighted: true },
+        })
+        // Outer edge-group <g> carries the class. `findAll('g')[0]` is the
+        // root because the heart group only exists for partner edges.
+        expect(w.find('g').classes()).toContain('highlighted')
+    })
+
+    it('applies the dimmed class when isDimmed is true', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'partner', ax: 0, ay: 0, bx: 100, by: 0, isDimmed: true },
+        })
+        expect(w.find('g').classes()).toContain('dimmed')
+    })
+
+    it('omits highlighted/dimmed classes by default', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'parent', ax: 0, ay: 0, bx: 100, by: 100 },
+        })
+        const cls = w.find('g').classes()
+        expect(cls).not.toContain('highlighted')
+        expect(cls).not.toContain('dimmed')
+    })
 })

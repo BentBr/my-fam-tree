@@ -192,3 +192,102 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
     const partnerCount = await page.locator('[data-testid="tree-edge-partner"]').count()
     expect(partnerCount).toBeGreaterThanOrEqual(1)
 })
+
+// Hover focus pass: when the user hovers Klaus the canvas should mark his
+// direct relations (parents Otto + Hannelore, partner Anna, children Lina +
+// Max) with the `related` class, while non-related members (Werner, Greta,
+// peter old) get `dimmed`. Builds the seeded family graph inline so the
+// test doesn't depend on the seeder having run.
+test('hovering Klaus highlights direct relations and dims the rest', async ({ page }) => {
+    const stamp = Date.now()
+    await signIn(page, `hover-${stamp}@example.com`)
+    await createFamily(page, `Hover-${stamp}`)
+    await page.goto('/tree')
+
+    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    expect(familyId).not.toBe('')
+
+    // Helper: create a person + return its server-assigned UUID. Uses the
+    // page.request context so the cookie jar + X-Family-Id header reach
+    // the API without any UI clicks.
+    const create = async (given: string, family: string, birth: string): Promise<string> => {
+        const res = await page.request.post('/api/v1/persons', {
+            headers: { 'X-Family-Id': familyId },
+            data: { given_name: given, family_name: family, birth_date: birth },
+        })
+        expect(res.ok()).toBeTruthy()
+        const body = (await res.json()) as { data: { id: string } }
+        return body.data.id
+    }
+
+    // Build the seeded family graph (Müller + Schmidt) plus peter old as
+    // Otto's parent, so the test mirrors the visual layout the user filed
+    // the report against.
+    const otto = await create('Otto', 'Müller', '1935-03-12')
+    const hannelore = await create('Hannelore', 'Müller', '1938-07-23')
+    const werner = await create('Werner', 'Schmidt', '1936-05-18')
+    const greta = await create('Greta', 'Schmidt', '1940-02-09')
+    const klaus = await create('Klaus', 'Müller', '1965-04-22')
+    const anna = await create('Anna', 'Müller', '1968-08-11')
+    const lina = await create('Lina', 'Müller', '1995-12-03')
+    const max = await create('Max', 'Müller', '1998-04-17')
+    const peter = await create('peter', 'old', '1910-05-20')
+
+    const link = async (childId: string, parentId: string): Promise<void> => {
+        const res = await page.request.post('/api/v1/parent-links', {
+            headers: { 'X-Family-Id': familyId },
+            data: { child_id: childId, parent_id: parentId, kind: 'biological' },
+        })
+        expect(res.ok()).toBeTruthy()
+    }
+    const partner = async (aId: string, bId: string): Promise<void> => {
+        const res = await page.request.post('/api/v1/partnerships', {
+            headers: { 'X-Family-Id': familyId },
+            data: { a_id: aId, b_id: bId, kind: 'marriage' },
+        })
+        expect(res.ok()).toBeTruthy()
+    }
+
+    // Parent links: Otto→peter, Klaus→Otto+Hannelore, Anna→Werner+Greta,
+    // Lina+Max→Klaus+Anna.
+    await link(otto, peter)
+    await link(klaus, otto)
+    await link(klaus, hannelore)
+    await link(anna, werner)
+    await link(anna, greta)
+    await link(lina, klaus)
+    await link(lina, anna)
+    await link(max, klaus)
+    await link(max, anna)
+    // Partnerships: Otto+Hannelore, Werner+Greta, Klaus+Anna.
+    await partner(otto, hannelore)
+    await partner(werner, greta)
+    await partner(klaus, anna)
+
+    await page.reload()
+    await expect(page.getByTestId('tree-canvas')).toBeVisible()
+    await expect(page.getByTestId(`tree-node-${klaus}`)).toBeVisible()
+
+    // Hover Klaus directly via the SVG node's `mouseenter` (dispatchEvent
+    // bypasses the viewport/visibility check — the canvas pans/zooms so
+    // the absolute position may be outside the CSS viewport rect that
+    // Playwright would otherwise validate against).
+    await page.getByTestId(`tree-node-${klaus}`).dispatchEvent('mouseenter')
+
+    const klassesOf = async (id: string): Promise<string[]> =>
+        page.getByTestId(`tree-node-${id}`).evaluate((el) => Array.from((el as Element).classList))
+
+    // Klaus itself carries the `hovered` class; his direct relations carry
+    // `related`. We poll briefly so the Vue reactivity tick lands.
+    await expect.poll(async () => (await klassesOf(klaus)).includes('hovered')).toBe(true)
+    for (const id of [otto, hannelore, anna, lina, max]) {
+        await expect.poll(async () => (await klassesOf(id)).includes('related')).toBe(true)
+    }
+    // Werner / Greta / peter old are NOT direct relations — they should
+    // land with `dimmed` instead of `related`.
+    for (const id of [werner, greta, peter]) {
+        const cls = await klassesOf(id)
+        expect(cls).not.toContain('related')
+        expect(cls).toContain('dimmed')
+    }
+})

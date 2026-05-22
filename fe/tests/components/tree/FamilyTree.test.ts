@@ -78,4 +78,42 @@ describe('FamilyTree', () => {
         await w.find('.stub').trigger('click')
         expect(w.emitted('select')?.[0]).toEqual(['a'])
     })
+
+    it('propagates a hover from one TreeNode into is-related on the related sibling', async () => {
+        // Stub each TreeNode as a small group that mirrors the props we
+        // care about into the DOM: `data-id` for routing the hover click,
+        // `data-hovered`/`data-related`/`data-dimmed` so we can assert
+        // what FamilyTree decided to pass back down on the next tick.
+        const TreeNodeStub = {
+            props: ['node', 'selected', 'isCurrentUser', 'isHovered', 'isRelated', 'isDimmed'],
+            emits: ['select', 'hover'],
+            template:
+                '<g :data-id="node.id" ' +
+                ':data-hovered="isHovered" ' +
+                ':data-related="isRelated" ' +
+                ':data-dimmed="isDimmed" ' +
+                '@click="$emit(\'hover\', node.id)" />',
+        }
+        const TreeEdgeStub = {
+            props: ['kind', 'ax', 'ay', 'bx', 'by', 'isHighlighted', 'isDimmed'],
+            template: '<g :data-highlighted="isHighlighted" :data-dimmed="isDimmed" />',
+        }
+        const w = mount(FamilyTree, {
+            props: { tree: tree(), selectedId: null, centerOnId: null, currentUserId: null },
+            global: {
+                stubs: { TreeNode: TreeNodeStub, TreeEdge: TreeEdgeStub },
+            },
+        })
+        // Fixture has `b` as child of `a` — they are directly related. Hover
+        // `a` (via the stub's @click), and `b` should land with isRelated.
+        await w.find('[data-id="a"]').trigger('click')
+        const a = w.find('[data-id="a"]')
+        const b = w.find('[data-id="b"]')
+        expect(a.attributes('data-hovered')).toBe('true')
+        expect(b.attributes('data-related')).toBe('true')
+        expect(b.attributes('data-dimmed')).toBe('false')
+        // The parent edge between them should be highlighted, not dimmed.
+        const edge = w.find('[data-highlighted="true"]')
+        expect(edge.exists()).toBe(true)
+    })
 })

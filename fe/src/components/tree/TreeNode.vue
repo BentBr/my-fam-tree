@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { NODE_H, NODE_W, type Positioned } from './layout'
 
@@ -7,15 +7,24 @@ const props = defineProps<{
     node: Positioned
     selected: boolean
     isCurrentUser?: boolean
+    /** Whether the parent canvas currently has this node as the hover target. */
+    isHovered?: boolean
+    /** Whether the parent canvas has a hover target and THIS node is one of
+     * its direct relations (parent / child / partner). Gets the softer
+     * `related` treatment — slightly thicker blue-tinted stroke. */
+    isRelated?: boolean
+    /** Whether the parent canvas has a hover target and THIS node is neither
+     * the target nor a direct relation. Fades to opacity 0.4 so the
+     * highlighted subset reads cleanly. */
+    isDimmed?: boolean
 }>()
 
 const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
 
 const emit = defineEmits<{
     (e: 'select', id: string): void
+    (e: 'hover', id: string | null): void
 }>()
-
-const hovered = ref(false)
 
 // Width budget for the text columns (right of the avatar circle). Used to
 // truncate the full name with ellipsis when it would overflow the card.
@@ -67,6 +76,14 @@ function initials(p: Positioned): string {
 function onSelect(): void {
     emit('select', props.node.id)
 }
+
+function onHoverEnter(): void {
+    emit('hover', props.node.id)
+}
+
+function onHoverLeave(): void {
+    emit('hover', null)
+}
 </script>
 
 <template>
@@ -78,19 +95,21 @@ function onSelect(): void {
             'tree-node',
             {
                 selected: props.selected,
-                hovered,
+                hovered: props.isHovered === true,
+                related: props.isRelated === true,
+                dimmed: props.isDimmed === true,
                 'current-user': props.isCurrentUser === true,
                 deceased: isDeceased(),
             },
         ]"
         :transform="`translate(${props.node.x}, ${props.node.y})`"
         :data-testid="`tree-node-${props.node.id}`"
-        :filter="hovered || props.selected ? 'url(#treeNodeHoverShadow)' : 'url(#treeNodeShadow)'"
+        :filter="props.isHovered === true || props.selected ? 'url(#treeNodeHoverShadow)' : 'url(#treeNodeShadow)'"
         @click="onSelect"
         @keydown.enter="onSelect"
         @keydown.space.prevent="onSelect"
-        @mouseenter="hovered = true"
-        @mouseleave="hovered = false"
+        @mouseenter="onHoverEnter"
+        @mouseleave="onHoverLeave"
     >
         <rect :width="NODE_W" :height="NODE_H" rx="12" />
         <circle :cx="32" :cy="NODE_H / 2" r="22" class="avatar" />
@@ -162,6 +181,23 @@ function onSelect(): void {
 }
 .tree-node.hovered rect {
     stroke: rgb(var(--v-theme-primary) / 0.6);
+}
+
+/* Direct relation of the hovered node: thicker blue-tinted stroke so the
+ * "this person is connected to who you're pointing at" reads without
+ * stealing the hovered card's own emphasis. */
+.tree-node.related rect {
+    stroke: rgb(var(--v-theme-primary) / 0.75);
+    stroke-width: 2;
+}
+
+/* Anything that's not the hovered node + not a direct relation fades
+ * out so the relevant subset visually pops. Transition keeps the swap
+ * from jarring; opacity-only animation avoids the SVG-transform pitfall
+ * documented in the keyframes comment below. */
+.tree-node.dimmed {
+    opacity: 0.4;
+    transition: opacity 150ms ease-in-out;
 }
 
 .avatar {
