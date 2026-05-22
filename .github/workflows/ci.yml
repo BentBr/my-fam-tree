@@ -272,7 +272,7 @@ jobs:
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
@@ -368,7 +368,7 @@ jobs:
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
@@ -731,7 +731,7 @@ jobs:
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "20"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
             VITE_API_BASE_URL: http://localhost:8080
         steps:
             - uses: actions/checkout@v4

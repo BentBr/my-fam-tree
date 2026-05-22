@@ -11,28 +11,42 @@ const { t } = useI18n()
 const mutation = useConsumeMagicLink()
 const status = ref<'pending' | 'ok' | 'error'>('pending')
 
-// Single-use tokens MUST only be consumed once. Vite dev HMR / Vue's
-// dev double-mount semantics can re-trigger `onMounted` for the same
-// route, which fires `mutateAsync` twice — first call burns the token,
-// second sees the token gone and throws. Track the in-flight token to
-// guarantee idempotency.
-const consumed = ref(false)
+// Single-use tokens MUST only be consumed once. A component-scoped ref
+// (`const consumed = ref(false)`) is NOT enough — Vite dev HMR can
+// re-mount the same route in a new component instance, and CI surfaces
+// double-fires that local dev doesn't reproduce. We key the dedup on
+// the token itself in sessionStorage so any subsequent mount with the
+// same token short-circuits before hitting `/auth/consume`. The entry
+// is cleared on `auth.logout()` (it's under `my-family:`); a fresh
+// sign-in mints a new token, so stale-token leakage isn't a concern.
 
 onMounted(async () => {
-    if (consumed.value) {
-        return
-    }
-    consumed.value = true
     const token = String(route.query['token'] ?? '')
     if (token === '') {
         status.value = 'error'
         return
     }
+    const dedupeKey = `my-family:consumed:${token}`
+    if (sessionStorage.getItem(dedupeKey) !== null) {
+        // Already consumed in a previous mount of this same token; the
+        // first mount's success path already redirected. If we got
+        // re-mounted before the navigation settled, finish the redirect
+        // here rather than re-firing the now-invalid POST.
+        status.value = 'ok'
+        await router.replace('/health')
+        return
+    }
+    sessionStorage.setItem(dedupeKey, '1')
     try {
         await mutation.mutateAsync(token)
         status.value = 'ok'
         await router.replace('/health')
     } catch {
+        // Roll back the dedup marker so a manual retry (refresh) can
+        // re-attempt with the same URL. The token is single-use server-
+        // side anyway; the rollback only matters for "page mounted but
+        // network blew up" which won't actually allow re-consume.
+        sessionStorage.removeItem(dedupeKey)
         status.value = 'error'
     }
 })

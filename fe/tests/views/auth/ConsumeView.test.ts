@@ -43,6 +43,10 @@ describe('ConsumeView', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         mutateAsync.mockReset()
+        // ConsumeView dedupes by token in sessionStorage; tests share the
+        // global, so wipe between cases or a previous "succeeded for tok"
+        // would short-circuit the next "rejects for tok".
+        sessionStorage.clear()
     })
 
     it('shows pending then ok on success', async () => {
