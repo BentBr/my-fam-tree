@@ -304,18 +304,28 @@ function layoutMultiCouple(
 
     // Place the block at cursor.x and shift each sub-cluster to align with
     // its couple midpoint. `xR` tracks the rightmost extent including any
-    // children that overshoot the block.
+    // children that overshoot the block. A `runningRight` cursor guards
+    // against sub-cluster overlap: when one couple's children are much
+    // wider than the inter-couple-midpoint spacing the centered placement
+    // would land behind the previous cluster, so we push it right and
+    // accept a slightly off-center sub-cluster (visible drift, not
+    // collision — exactly what we want).
     const blockL = cursor.x
     const pixelWidth = blockPixelWidth(memberOffsets)
     placed.set(block.id, { ...block, x: blockL, memberOffsets, pixelWidth })
     let xL = blockL
     let xR = blockL + pixelWidth
+    let runningRight = Number.NEGATIVE_INFINITY
     for (let i = 0; i < subs.length; i += 1) {
         const sub = subs[i]
         if (sub === undefined) continue
         if (sub.cluster.width === 0) continue
         const mid = midpoints[i] ?? 0
-        const subLeftAbsolute = blockL + mid - sub.cluster.width / 2
+        const desiredLeft = blockL + mid - sub.cluster.width / 2
+        const subLeftAbsolute =
+            runningRight === Number.NEGATIVE_INFINITY
+                ? desiredLeft
+                : Math.max(desiredLeft, runningRight + CLUSTER_GAP)
         for (const childId of sub.cluster.childIds) {
             const child = sub.plan.children.find((c) => c.id === childId)
             if (child === undefined) continue
@@ -324,6 +334,7 @@ function layoutMultiCouple(
         if (subLeftAbsolute < xL) xL = subLeftAbsolute
         const subR = subLeftAbsolute + sub.cluster.width
         if (subR > xR) xR = subR
+        runningRight = subR
     }
     cursor.x = xR
     return { xL, xR }

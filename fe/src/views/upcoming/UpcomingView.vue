@@ -23,7 +23,11 @@ const query = useUpcoming(filter)
 const iconFor: Record<string, string> = {
     birthday: 'cake',
     wedding_anniversary: 'heart',
-    death_anniversary: 'candle',
+    // Latin cross (✝) is rendered by `LucideIcon` from a custom inline
+    // SVG — lucide itself ships only the `+`-shaped medical `cross`,
+    // which reads wrong for a memorial entry in the German Christian
+    // convention the seed family lives in.
+    death_anniversary: 'latin-cross',
 }
 
 const dateFormatter = computed(
