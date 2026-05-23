@@ -27,10 +27,11 @@ use uuid::Uuid;
 use crate::ids::{
     SEED_ADMIN_USER_ID, SEED_ALICE_USER_ID, SEED_BOB_USER_ID, SEED_FAMILY_ID, SEED_PERSON_ANNA_ID,
     SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
-    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KLAUS_ID,
-    SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID, SEED_PERSON_MARKUS_ID,
-    SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
-    SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
+    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
+    SEED_PERSON_KLAUS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID,
+    SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
+    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
+    SEED_PERSON_YUKI_ID,
 };
 
 /// Contact-info bundle. Split out from `PersonSeed` so unenriched rows can
@@ -92,7 +93,7 @@ const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
 /// UPDATE` statements.
 #[allow(clippy::too_many_lines, reason = "static table of 20 persons; splitting hurts readability")]
 pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
-    let rows: [PersonSeed; 20] = [
+    let rows: [PersonSeed; 22] = [
         // -------------------------------------------------------------
         // G1 — Müller line.
         // -------------------------------------------------------------
@@ -257,6 +258,40 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
             birth_place: "Frankfurt",
             death_date: None,
             notes: "Klaus's first wife (married 1990, divorced 2000); mother of Felix.",
+            contact: EMPTY_CONTACT,
+            linked_user_id: None,
+        },
+        // Klaus's earliest partner — separated in 1989 before the Brigitte
+        // marriage. No children together; serves as the "second old" partner
+        // edge case in the multi-spouse chain.
+        PersonSeed {
+            id: SEED_PERSON_KARIN_ID,
+            given: "Karin",
+            family: "Hoffmann",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1966, 5, 7),
+            birth_place: "Bremen",
+            death_date: None,
+            notes: "Klaus's first long-term partner (separated 1989); no children together.",
+            contact: EMPTY_CONTACT,
+            linked_user_id: None,
+        },
+        // Klaus's concurrent open partner alongside Anna — covers the
+        // "polyamorous / multi-active partnership" edge case so the chain
+        // renders as [Karin, Brigitte, Klaus, Anna, Yuki].
+        PersonSeed {
+            id: SEED_PERSON_YUKI_ID,
+            given: "Yuki",
+            family: "Tanaka",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1975, 10, 19),
+            birth_place: "Berlin",
+            death_date: None,
+            notes: "Klaus's second open partner; concurrent civil_union since 2015.",
             contact: EMPTY_CONTACT,
             linked_user_id: None,
         },

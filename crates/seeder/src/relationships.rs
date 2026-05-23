@@ -11,13 +11,15 @@ use uuid::Uuid;
 
 use crate::ids::{
     SEED_FAMILY_ID, SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID, SEED_PARTNERSHIP_KLAUS_ANNA_ID,
-    SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
+    SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID, SEED_PARTNERSHIP_KLAUS_KARIN_ID,
+    SEED_PARTNERSHIP_KLAUS_YUKI_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
     SEED_PARTNERSHIP_SABINE_JULIA_ID, SEED_PARTNERSHIP_WERNER_GRETA_ID, SEED_PERSON_ANNA_ID,
     SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
-    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KLAUS_ID,
-    SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID, SEED_PERSON_MARKUS_ID,
-    SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
-    SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
+    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
+    SEED_PERSON_KLAUS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID,
+    SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
+    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
+    SEED_PERSON_YUKI_ID,
 };
 
 /// One `(child, parent)` row plus the relationship kind.
@@ -217,13 +219,15 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     // `partnerships_unique_open (a, b, kind) WHERE ended_on IS NULL`. The
     // DELETE also nukes any user-added partnerships on a `seeder` re-run
     // — that's deliberate, the seeder is a reset.
-    let seed_ids: [Uuid; 6] = [
+    let seed_ids: [Uuid; 8] = [
         SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
         SEED_PARTNERSHIP_WERNER_GRETA_ID,
         SEED_PARTNERSHIP_KLAUS_ANNA_ID,
         SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID,
         SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID,
         SEED_PARTNERSHIP_SABINE_JULIA_ID,
+        SEED_PARTNERSHIP_KLAUS_KARIN_ID,
+        SEED_PARTNERSHIP_KLAUS_YUKI_ID,
     ];
     sqlx::query("DELETE FROM partnerships WHERE family_id = $1 AND id <> ALL($2)")
         .bind(SEED_FAMILY_ID)
@@ -239,8 +243,10 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     let (friedrich, lotte) = order_pair(SEED_PERSON_FRIEDRICH_ID, SEED_PERSON_LOTTE_ID);
     let (klaus_b, brigitte) = order_pair(SEED_PERSON_KLAUS_ID, SEED_PERSON_BRIGITTE_ID);
     let (sabine, julia) = order_pair(SEED_PERSON_SABINE_ID, SEED_PERSON_JULIA_ID);
+    let (klaus_k, karin) = order_pair(SEED_PERSON_KLAUS_ID, SEED_PERSON_KARIN_ID);
+    let (klaus_y, yuki) = order_pair(SEED_PERSON_KLAUS_ID, SEED_PERSON_YUKI_ID);
 
-    let rows: [PartnershipSeed; 6] = [
+    let rows: [PartnershipSeed; 8] = [
         PartnershipSeed {
             id: SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
             partner_a: otto,
@@ -303,6 +309,31 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
             ended_on: None,
             end_reason: None,
             note: "Civil union in Köln; later adopted Lena together.",
+        },
+        // Klaus's earliest partnership — separated (not divorced) in 1989,
+        // before the Klaus + Brigitte marriage. Adds a second ENDED row on
+        // Klaus so the multi-partner chain renders [Karin, Brigitte, Klaus].
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_KLAUS_KARIN_ID,
+            partner_a: klaus_k,
+            partner_b: karin,
+            kind: "partnership",
+            started_on: Some(ymd(1987, 3, 5)),
+            ended_on: Some(ymd(1989, 11, 20)),
+            end_reason: Some("separation"),
+            note: "Klaus's first long-term partnership; separated after two years.",
+        },
+        // Klaus's concurrent open partner alongside Anna — adds a second
+        // OPEN row on Klaus so the chain extends to […, Klaus, Anna, Yuki].
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_KLAUS_YUKI_ID,
+            partner_a: klaus_y,
+            partner_b: yuki,
+            kind: "civil_union",
+            started_on: Some(ymd(2015, 7, 4)),
+            ended_on: None,
+            end_reason: None,
+            note: "Klaus's concurrent open partner since 2015.",
         },
     ];
     for p in rows {

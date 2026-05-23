@@ -193,7 +193,7 @@ mod tests {
     // numbers whenever the persons / parent_links / partnerships tables in
     // the corresponding seed module grow or shrink.
     const EXPECTED_PARENT_LINKS: i64 = 22;
-    const EXPECTED_PARTNERSHIPS: i64 = 6;
+    const EXPECTED_PARTNERSHIPS: i64 = 8;
 
     struct Harness {
         pool: sqlx::PgPool,

@@ -76,6 +76,11 @@ pub const SEED_PERSON_TOM_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_
 // G4 Lina's children.
 pub const SEED_PERSON_EMMA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0013);
 pub const SEED_PERSON_NOAH_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0014);
+// Two more Klaus partners: one historical (Karin), one current/concurrent
+// (Yuki). Round out the ex-spouse + multi-partner edge cases the FE tree
+// layout exercises.
+pub const SEED_PERSON_KARIN_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0015);
+pub const SEED_PERSON_YUKI_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0016);
 
 // ---------------------------------------------------------------------------
 // Partnerships — hardcoded so the seed can keep `ON CONFLICT (id) DO UPDATE`
@@ -94,7 +99,13 @@ pub const SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0005);
 pub const SEED_PARTNERSHIP_SABINE_JULIA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0006);
+// Klaus's additional partnerships — separation (ended, non-divorce) and a
+// concurrent open civil_union alongside the Klaus + Anna marriage.
+pub const SEED_PARTNERSHIP_KLAUS_KARIN_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0007);
+pub const SEED_PARTNERSHIP_KLAUS_YUKI_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0008);
 
 /// Expected counts for the deterministic seed — surfaced for the test
 /// asserts so they don't drift from the actual data.
-pub const SEED_PERSON_COUNT: usize = 20;
+pub const SEED_PERSON_COUNT: usize = 22;
