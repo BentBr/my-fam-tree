@@ -265,38 +265,28 @@ function layoutMultiCouple(
     //                    right is whatever the equation requires, floored
     //                    at left + NODE_W + COL_GAP so adjacent cards never
     //                    overlap.
+    // v3.2 revision: keep members at fixed `NODE_W + COL_GAP` spacing
+    // regardless of children-cluster width. Earlier passes tried to align
+    // each member directly above its couple's children midpoint, but when
+    // one couple has many more children than the other the math stretches
+    // the SHARED member's adjacent partner far to the right (Klaus + Anna
+    // ended up ~720 px apart because Klaus + Anna had 3 bio kids while
+    // Klaus + Brigitte had 1). Adjacency between partners wins; the
+    // children sub-clusters re-center under whatever midpoint the fixed
+    // member positions produce (Felix may sit slightly off-center under
+    // Klaus + Brigitte, but the visual relationship stays readable).
     const memberOffsets: number[] = new Array<number>(block.members.length).fill(0)
-    const touched = new Set<number>()
+    for (let i = 0; i < memberOffsets.length; i += 1) {
+        memberOffsets[i] = i * (NODE_W + COL_GAP)
+    }
+    // Recompute each couple's midpoint from the fixed member positions so
+    // the sub-cluster shift below targets the new geometry.
     for (let ci = 0; ci < block.couples.length; ci += 1) {
         const couple = block.couples[ci]
         if (couple === undefined) continue
-        const mid = midpoints[ci] ?? 0
-        const lIdx = couple.leftIdx
-        const rIdx = couple.rightIdx
-        if (ci === 0) {
-            memberOffsets[lIdx] = mid - NODE_W - COL_GAP / 2
-            memberOffsets[rIdx] = mid + COL_GAP / 2
-            touched.add(lIdx)
-            touched.add(rIdx)
-            continue
-        }
-        const offL = memberOffsets[lIdx] ?? 0
-        const desiredOffR = 2 * mid - NODE_W - offL
-        const minOffR = offL + NODE_W + COL_GAP
-        memberOffsets[rIdx] = Math.max(desiredOffR, minOffR)
-        touched.add(rIdx)
-    }
-    // Stragglers (members not in any couple — only happens in the
-    // multi-hub safety-net topology blocks.ts emits): tack them onto the
-    // right with the default gap.
-    for (let i = 0; i < memberOffsets.length; i += 1) {
-        if (touched.has(i)) continue
-        if (i === 0) {
-            memberOffsets[i] = 0
-            continue
-        }
-        const prev = memberOffsets[i - 1] ?? 0
-        memberOffsets[i] = prev + NODE_W + COL_GAP
+        const offL = memberOffsets[couple.leftIdx] ?? 0
+        const offR = memberOffsets[couple.rightIdx] ?? 0
+        midpoints[ci] = (offL + offR + NODE_W) / 2
     }
 
     // Normalise to non-negative offsets so the block's leftmost member
