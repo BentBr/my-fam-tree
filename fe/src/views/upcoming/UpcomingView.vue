@@ -82,32 +82,34 @@ function onRowClick(row: UpcomingRow): void {
         <v-toolbar density="comfortable" elevation="0" color="transparent">
             <v-toolbar-title>{{ t('upcoming.title') }}</v-toolbar-title>
             <v-spacer />
-            <v-btn-toggle
-                v-model="filter"
-                color="primary"
-                rounded="lg"
-                density="comfortable"
-                mandatory="force"
-                divided
-                data-testid="upcoming-filter"
-            >
+            <!-- Two plain v-btns rather than a v-btn-toggle: the user
+                 wants "click → on; click again → off (back to all)"
+                 which v-btn-toggle's `mandatory` modes don't model
+                 cleanly. The `variant` prop drives the visual state. -->
+            <div class="filter-buttons" data-testid="upcoming-filter">
                 <v-btn
-                    value="birthday"
+                    :variant="filter === 'birthday' ? 'flat' : 'tonal'"
+                    :color="filter === 'birthday' ? 'primary' : undefined"
                     prepend-icon="cake"
+                    rounded="lg"
+                    density="comfortable"
                     data-testid="upcoming-filter-birthday"
-                    @click.stop="toggle('birthday')"
+                    @click="toggle('birthday')"
                 >
                     {{ t('upcoming.filter.birthday') }}
                 </v-btn>
                 <v-btn
-                    value="anniversary"
+                    :variant="filter === 'anniversary' ? 'flat' : 'tonal'"
+                    :color="filter === 'anniversary' ? 'primary' : undefined"
                     prepend-icon="heart"
+                    rounded="lg"
+                    density="comfortable"
                     data-testid="upcoming-filter-anniversary"
-                    @click.stop="toggle('anniversary')"
+                    @click="toggle('anniversary')"
                 >
                     {{ t('upcoming.filter.anniversary') }}
                 </v-btn>
-            </v-btn-toggle>
+            </div>
         </v-toolbar>
 
         <v-skeleton-loader v-if="query.isLoading.value" type="list-item-three-line" />
@@ -153,5 +155,10 @@ function onRowClick(row: UpcomingRow): void {
     display: flex;
     justify-content: center;
     padding: 2rem 0;
+}
+
+.filter-buttons {
+    display: inline-flex;
+    gap: 0.5rem;
 }
 </style>

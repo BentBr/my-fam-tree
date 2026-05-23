@@ -35,4 +35,3 @@ export function useUpcoming(filter: Ref<UpcomingFilter>) {
         placeholderData: (prev) => prev,
     })
 }
-
