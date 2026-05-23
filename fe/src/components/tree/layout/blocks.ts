@@ -225,26 +225,31 @@ function edgeBetween(a: string, b: string, edgesByPerson: Map<string, RowEdge[]>
 }
 
 /**
- * Choose a canonical parent block for each non-top block. A block hangs from
- * one parent block (the block that contains its canonical parent person);
- * extra parent edges still render as straight lines but don't influence
- * placement. Multi-member blocks inherit the canonical parent of their LEFT
- * member, which keeps the tree shape predictable when both partners have
- * known ancestors.
+ * Choose a canonical parent block for each non-top block.
+ *
+ * A block hangs from one parent block (the block that contains its
+ * canonical parent person); extra parent edges still render as straight
+ * lines but don't influence placement. We walk the block's members in
+ * order and pick the first member whose canonical parent is present in
+ * the family. Using the leftmost member alone misses the common
+ * ex-spouse case: `[Brigitte, Klaus, Anna]` where Brigitte is a root
+ * (no parent_links) but Klaus has Otto + Hannelore — without this
+ * iteration the whole trio becomes an orphan G2 root and drifts away
+ * from Klaus's actual lineage.
  */
 export function chooseParentBlock(
     block: Block,
     blockOfPerson: Map<string, Block>,
     nodeById: Map<string, BackendNode>,
 ): Block | null {
-    const anchorId = block.members[0]
-    if (anchorId === undefined) return null
-    const anchor = nodeById.get(anchorId)
-    if (anchor === undefined) return null
-    const sortedParents = [...anchor.parent_ids].sort()
-    for (const pid of sortedParents) {
-        const pb = blockOfPerson.get(pid)
-        if (pb !== undefined) return pb
+    for (const memberId of block.members) {
+        const member = nodeById.get(memberId)
+        if (member === undefined) continue
+        const sortedParents = [...member.parent_ids].sort()
+        for (const pid of sortedParents) {
+            const pb = blockOfPerson.get(pid)
+            if (pb !== undefined) return pb
+        }
     }
     return null
 }
