@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
-import { computed, type Ref } from 'vue'
+import { type Ref } from 'vue'
 
 import { client } from '../client'
 
@@ -36,7 +36,3 @@ export function useUpcoming(filter: Ref<UpcomingFilter>) {
     })
 }
 
-/** Reactive helper to format an `UpcomingFilter` as the i18n suffix on `upcoming.kinds.*`. */
-export function kindLabelKey(kind: string): string {
-    return computed(() => `upcoming.kinds.${kind}`).value
-}
