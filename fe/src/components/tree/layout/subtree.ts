@@ -322,10 +322,14 @@ function layoutMultiCouple(
         if (sub.cluster.width === 0) continue
         const mid = midpoints[i] ?? 0
         const desiredLeft = blockL + mid - sub.cluster.width / 2
+        // Floor the next sub-cluster at the previous one's right + COL_GAP
+        // (not CLUSTER_GAP) so single-child clusters still settle exactly
+        // on their couple midpoints — the wider CLUSTER_GAP would force a
+        // ~24 px drift even when there's no overlap pressure.
         const subLeftAbsolute =
             runningRight === Number.NEGATIVE_INFINITY
                 ? desiredLeft
-                : Math.max(desiredLeft, runningRight + CLUSTER_GAP)
+                : Math.max(desiredLeft, runningRight + COL_GAP)
         for (const childId of sub.cluster.childIds) {
             const child = sub.plan.children.find((c) => c.id === childId)
             if (child === undefined) continue
