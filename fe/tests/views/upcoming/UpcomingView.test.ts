@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { ref, type Ref } from 'vue'
 
 vi.mock('@/api/hooks/upcoming', () => ({
     useUpcoming: vi.fn(),
@@ -143,18 +143,18 @@ describe('UpcomingView', () => {
 
         // Initial: filter ref starts at 'all'.
         expect(capturedFilter).not.toBeNull()
-        expect((capturedFilter as Ref<string>).value).toBe('all')
+        expect((capturedFilter as unknown as Ref<string>).value).toBe('all')
 
         // First click on Birthday ⇒ filter becomes 'birthday'.
         await w.find('[data-testid="upcoming-filter-birthday"]').trigger('click')
-        expect((capturedFilter as Ref<string>).value).toBe('birthday')
+        expect((capturedFilter as unknown as Ref<string>).value).toBe('birthday')
 
         // Second click on Birthday ⇒ filter reverts to 'all'.
         await w.find('[data-testid="upcoming-filter-birthday"]').trigger('click')
-        expect((capturedFilter as Ref<string>).value).toBe('all')
+        expect((capturedFilter as unknown as Ref<string>).value).toBe('all')
 
         // Click on Anniversary ⇒ filter becomes 'anniversary'.
         await w.find('[data-testid="upcoming-filter-anniversary"]').trigger('click')
-        expect((capturedFilter as Ref<string>).value).toBe('anniversary')
+        expect((capturedFilter as unknown as Ref<string>).value).toBe('anniversary')
     })
 })
