@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -18,28 +18,33 @@ const tree = useTree()
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
 
-// "Family tree of <name>" once a family is active; bare "Family tree"
-// otherwise (e.g. during the brief window between consume + guard auto-
-// select, or if the user has manually cleared activeFamilyId).
 const pageTitle = computed(() => {
     const name = family.activeFamily?.name
     if (name === undefined || name === '') return t('tree.title')
     return t('tree.titleOf', { name })
 })
 
-const selectedId = ref<string | null>(null)
+// `?center=<id>` is a one-shot deep link. We capture it ONCE at setup
+// time into a local const so the URL-strip in onMounted can't yank the
+// value out from under `centerOnId` before <FamilyTree> mounts. The
+// previous implementation read `route.query.center` from inside the
+// computed, so stripping the URL silently demoted the value to `null`
+// and the drawer never opened.
+const initialCenterParam: string | null =
+    typeof route.query['center'] === 'string' && route.query['center'] !== '' ? route.query['center'] : null
+
+const selectedId = ref<string | null>(initialCenterParam)
 const creating = ref(false)
 
 /**
  * Center-on-member resolution order:
- *   1. ?center=<personId> query param (one-shot deep link).
+ *   1. ?center=<personId> at mount time (one-shot deep link).
  *   2. useActiveFamilyStore.focusedPersonId (persisted choice).
  *   3. The TreeNode whose `linked_user_id` equals the signed-in user.id.
  *   4. null — FamilyTree falls back to the layout origin + 40px gutter.
  */
 const centerOnId = computed<string | null>(() => {
-    const fromQuery = typeof route.query['center'] === 'string' ? route.query['center'] : null
-    if (fromQuery !== null && fromQuery !== '') return fromQuery
+    if (initialCenterParam !== null) return initialCenterParam
     if (family.focusedPersonId !== null) return family.focusedPersonId
     const userId = auth.user?.id ?? null
     if (userId === null) return null
@@ -49,7 +54,6 @@ const centerOnId = computed<string | null>(() => {
     return me?.id ?? null
 })
 
-/** Persist the new focal point so the next visit lands on the same node. */
 function onSelect(id: string): void {
     selectedId.value = id
     family.setFocusedPerson(id)
@@ -73,9 +77,6 @@ function onChanged(): void {
     void tree.refetch()
 }
 
-// Imperative ref into FamilyTree; the child uses `defineExpose({ refit })`.
-// `instance & { refit?: () => void }` keeps the typecheck honest under
-// `noUncheckedIndexedAccess` without leaking the d3 internals.
 const treeRef = ref<{ refit: () => void } | null>(null)
 function onFit(): void {
     treeRef.value?.refit()
@@ -87,20 +88,17 @@ function onCreated(id: string): void {
     void tree.refetch()
 }
 
-// One-shot URL param: after the initial centerOnId is resolved we drop the
-// `?center=…` query string so a hard reload doesn't fight against a
-// subsequently-persisted focusedPersonId.
-watch(
-    () => route.query['center'],
-    (val) => {
-        if (typeof val === 'string' && val !== '') {
-            const rest = { ...route.query }
-            delete rest['center']
-            void router.replace({ query: rest })
-        }
-    },
-    { immediate: true },
-)
+// Persist the captured deep-link target so a hard reload re-centers,
+// then strip `?center=…` from the URL. The reactive computed already
+// reads `initialCenterParam`, so the strip doesn't disturb centering.
+onMounted(() => {
+    if (initialCenterParam !== null) {
+        family.setFocusedPerson(initialCenterParam)
+        const rest = { ...route.query }
+        delete rest['center']
+        void router.replace({ query: rest })
+    }
+})
 </script>
 
 <template>
