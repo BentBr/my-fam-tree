@@ -25,7 +25,10 @@ use uuid::Uuid;
 ///
 /// `kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.
 /// `person_id` is set for `birthday` and `death_anniversary`;
-/// `partnership_id` is set for `wedding_anniversary`.
+/// `partnership_id` is set for `wedding_anniversary` with both partner
+/// ids surfaced so the FE can deep-link the row's click to one of them
+/// (it centers on `partner_a_id` and opens that person's drawer; the
+/// tree-edge between the two partners conveys the relationship).
 /// `label` is pre-rendered server-side so the FE doesn't need to
 /// re-translate the "Nth birthday" phrasing per locale (i18n stays
 /// on `upcoming.kinds.*`; the name + N come from the API).
@@ -36,6 +39,8 @@ pub struct UpcomingEvent {
     pub years: u32,
     pub person_id: Option<Uuid>,
     pub partnership_id: Option<Uuid>,
+    pub partner_a_id: Option<Uuid>,
+    pub partner_b_id: Option<Uuid>,
     pub label: String,
 }
 
@@ -162,6 +167,8 @@ fn person_birthday(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
         years,
         person_id: Some(p.id.into_uuid()),
         partnership_id: None,
+        partner_a_id: None,
+        partner_b_id: None,
         label: label_birthday(p, years),
     })
 }
@@ -181,6 +188,8 @@ fn person_death_anniv(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
         years,
         person_id: Some(p.id.into_uuid()),
         partnership_id: None,
+        partner_a_id: None,
+        partner_b_id: None,
         label: label_death_anniv(p, years),
     })
 }
@@ -206,6 +215,8 @@ fn wedding_anniv(
         years,
         person_id: None,
         partnership_id: Some(part.id),
+        partner_a_id: Some(part.partner_a_id.into_uuid()),
+        partner_b_id: Some(part.partner_b_id.into_uuid()),
         label: label_wedding_anniv(a, b, years),
     })
 }

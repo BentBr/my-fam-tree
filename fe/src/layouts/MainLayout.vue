@@ -10,7 +10,13 @@ import NavDrawer from '@/components/layout/NavDrawer.vue'
         <v-container fluid class="fade-router-view">
             <router-view v-slot="{ Component, route }">
                 <transition name="fade" mode="out-in" appear>
-                    <component :is="Component" :key="route.fullPath" />
+                    <!-- Key on `path`, not `fullPath`. Including the query
+                         string here would unmount + remount the route
+                         component on every `router.replace({ query })`
+                         call — which is exactly what TreeView does to
+                         strip a one-shot `?center=` param after capturing
+                         it. Path-only is the standard pattern. -->
+                    <component :is="Component" :key="route.path" />
                 </transition>
             </router-view>
         </v-container>

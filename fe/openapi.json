@@ -2811,7 +2811,7 @@
       },
       "UpcomingEvent": {
         "type": "object",
-        "description": "One enumerated future date.\n\n`kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.\n`person_id` is set for `birthday` and `death_anniversary`;\n`partnership_id` is set for `wedding_anniversary`.\n`label` is pre-rendered server-side so the FE doesn't need to\nre-translate the \"Nth birthday\" phrasing per locale (i18n stays\non `upcoming.kinds.*`; the name + N come from the API).",
+        "description": "One enumerated future date.\n\n`kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.\n`person_id` is set for `birthday` and `death_anniversary`;\n`partnership_id` is set for `wedding_anniversary` with both partner\nids surfaced so the FE can deep-link the row's click to one of them\n(it centers on `partner_a_id` and opens that person's drawer; the\ntree-edge between the two partners conveys the relationship).\n`label` is pre-rendered server-side so the FE doesn't need to\nre-translate the \"Nth birthday\" phrasing per locale (i18n stays\non `upcoming.kinds.*`; the name + N come from the API).",
         "required": [
           "kind",
           "next_date",
@@ -2828,6 +2828,20 @@
           "next_date": {
             "type": "string",
             "format": "date"
+          },
+          "partner_a_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "partner_b_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           },
           "partnership_id": {
             "type": [

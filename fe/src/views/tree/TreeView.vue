@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -33,7 +33,13 @@ const pageTitle = computed(() => {
 const initialCenterParam: string | null =
     typeof route.query['center'] === 'string' && route.query['center'] !== '' ? route.query['center'] : null
 
-const selectedId = ref<string | null>(initialCenterParam)
+// Vuetify's `v-navigation-drawer` (temporary variant) mounts with
+// `isActive=false` when model-value is true at first paint — initial
+// open is treated as a no-op so the user always sees a closed drawer
+// on first load. We mirror the user-click pattern: mount with `null`
+// (drawer mounts closed), then flip to the captured id in `onMounted`
+// so Vuetify sees a `false → true` transition and opens.
+const selectedId = ref<string | null>(null)
 const creating = ref(false)
 
 /**
@@ -88,17 +94,47 @@ function onCreated(id: string): void {
     void tree.refetch()
 }
 
-// Persist the captured deep-link target so a hard reload re-centers,
-// then strip `?center=…` from the URL. The reactive computed already
-// reads `initialCenterParam`, so the strip doesn't disturb centering.
+// Open the drawer on the captured deep-link target post-mount, then
+// strip `?center=…` from the URL. Both operations happen AFTER the
+// drawer's first paint so Vuetify doesn't observe an initial
+// model-value=true mid-mount (that path emits @update:model-value(false)
+// from the scrim handler and slams the drawer shut).
+// Open the drawer post-mount + strip `?center=…` from the URL.
+// v-navigation-drawer's `temporary` variant treats an initial
+// `model-value=true` at mount as a no-op (the internal `isActive`
+// state only tracks transitions). Defer with a microtask so Vuetify
+// sees a clean `false → true` edge after first paint, the same edge
+// the on-click code path produces.
+// Wait until the tree query resolves (FamilyTree mounts) before opening
+// the drawer. Vuetify's `v-navigation-drawer` (temporary) only honours a
+// `false → true` model-value transition when its sibling content tree
+// has had a paint cycle; programmatic opens issued during the load
+// skeleton silently no-op.
 onMounted(() => {
-    if (initialCenterParam !== null) {
-        family.setFocusedPerson(initialCenterParam)
-        const rest = { ...route.query }
-        delete rest['center']
-        void router.replace({ query: rest })
-    }
+    if (initialCenterParam === null) return
+    family.setFocusedPerson(initialCenterParam)
+    // Strip `?center=…` once captured — keeps a hard reload from
+    // re-firing the deep-link open after `focusedPersonId` already
+    // handles the centering.
+    const rest = { ...route.query }
+    delete rest['center']
+    void router.replace({ query: rest })
 })
+
+// Open the drawer once the tree has loaded and the captured deep-link
+// target is real. The watch fires immediately if the query was already
+// hot in cache, and on the next tree-data arrival otherwise. We compare
+// against `selectedId.value` first so user-driven clicks during loading
+// aren't clobbered.
+watch(
+    () => tree.data.value,
+    (data) => {
+        if (initialCenterParam === null || data === undefined) return
+        if (selectedId.value !== null) return
+        selectedId.value = initialCenterParam
+    },
+    { immediate: true },
+)
 </script>
 
 <template>

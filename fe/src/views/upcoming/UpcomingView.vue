@@ -46,6 +46,8 @@ interface UpcomingRow {
     years: number
     person_id?: string | null
     partnership_id?: string | null
+    partner_a_id?: string | null
+    partner_b_id?: string | null
     label: string
 }
 
@@ -72,12 +74,18 @@ function relative(iso: string): string {
 }
 
 function onRowClick(row: UpcomingRow): void {
-    if (row.person_id !== null && row.person_id !== undefined && row.person_id !== '') {
-        void router.push({ path: '/tree', query: { center: row.person_id } })
+    // Birthdays + death anniversaries carry `person_id` directly.
+    // Wedding anniversaries don't, but the BE attaches both partner
+    // ids — we center on partner_a so the user lands on a real
+    // PersonDetail; the tree edge to partner_b shows the relation.
+    const targetId =
+        (row.person_id !== null && row.person_id !== undefined && row.person_id !== '' ? row.person_id : null) ??
+        (row.partner_a_id !== null && row.partner_a_id !== undefined && row.partner_a_id !== ''
+            ? row.partner_a_id
+            : null)
+    if (targetId !== null) {
+        void router.push({ path: '/tree', query: { center: targetId } })
     }
-    // Wedding-anniversary rows have no person_id; clicking is a no-op
-    // for now. A future iteration could route via partnership_id once
-    // /tree understands centering on a partnership edge.
 }
 </script>
 
