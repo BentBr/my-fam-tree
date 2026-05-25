@@ -9,7 +9,9 @@ pub mod role;
 pub use capabilities::{Capability, capabilities_of, has};
 pub use ids::{FamilyId, FamilyMembershipId, PersonId, UserId};
 pub use relationships::{canonicalize_pair, would_create_cycle};
-pub use repos::audit_log::{AuditEntry, AuditLogRepo, AuditRepoError};
+pub use repos::audit_log::{
+    AuditEntry, AuditFilter, AuditLogRepo, AuditPageMeta, AuditRepoError, AuditRow,
+};
 pub use repos::families::{Family, FamilyRepo, FamilyRepoError};
 pub use repos::family_invites::{FamilyInviteRepo, Invite, InviteRepoError};
 pub use repos::family_memberships::{

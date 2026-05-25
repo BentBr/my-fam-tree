@@ -5,6 +5,14 @@
 //! changes (invite acceptance, member removal, role updates). Failures
 //! from `record` are intentionally swallowed by the API layer so an
 //! audit-log hiccup never blocks the user's request.
+//!
+//! [`AuditLogRepo::list_filtered`] is the admin-only read side: it
+//! returns paged rows joined with the actor user (display name + email)
+//! and a resolved `entity_person_id` so the FE can deep-link straight
+//! into `/tree?center=<person>`. The CASE mapping that derives that
+//! person from each row's `entity_kind` + `metadata` lives in the
+//! Postgres implementation — keeping the SQL inside `crates/persistence`
+//! is an architectural rule.
 
 use async_trait::async_trait;
 use serde_json::Value;
@@ -22,6 +30,50 @@ pub struct AuditEntry {
     pub metadata: Value,
 }
 
+/// Filter for [`AuditLogRepo::list_filtered`].
+///
+/// All optional fields mean "do not constrain on this dimension".
+/// `from` / `to` are inclusive on both sides. `page` is 1-based;
+/// `page_size` is clamped by the persistence impl to the supported
+/// set (50 / 100 / 200 / 500) so callers can't blow the query plan.
+#[derive(Debug, Clone)]
+pub struct AuditFilter {
+    pub family_id: FamilyId,
+    pub from: Option<chrono::DateTime<chrono::Utc>>,
+    pub to: Option<chrono::DateTime<chrono::Utc>>,
+    pub action: Option<String>,
+    pub entity_kind: Option<String>,
+    pub actor_user_id: Option<UserId>,
+    pub page: u32,
+    pub page_size: u32,
+}
+
+/// One audit-log row with the actor and entity-person already resolved.
+///
+/// `entity_person_id` is filled when the persistence query can derive a
+/// single person from `entity_kind` + `metadata`. `entity_person_name`
+/// is `given_name + ' ' + family_name` when a name is available.
+#[derive(Debug, Clone)]
+pub struct AuditRow {
+    pub id: Uuid,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub action: String,
+    pub entity_kind: String,
+    pub entity_id: Option<Uuid>,
+    pub metadata: Value,
+    pub actor_user_id: Option<UserId>,
+    pub actor_display_name: Option<String>,
+    pub actor_email: Option<String>,
+    pub entity_person_id: Option<Uuid>,
+    pub entity_person_name: Option<String>,
+}
+
+/// Page meta returned alongside the row batch.
+#[derive(Debug, Clone, Copy)]
+pub struct AuditPageMeta {
+    pub total: i64,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum AuditRepoError {
     #[error("database: {0}")]
@@ -31,4 +83,12 @@ pub enum AuditRepoError {
 #[async_trait]
 pub trait AuditLogRepo: Send + Sync {
     async fn record(&self, entry: AuditEntry) -> Result<(), AuditRepoError>;
+
+    /// Page of audit rows for the given filter, plus the total count
+    /// of matching rows (so the FE paginator knows how many pages
+    /// exist without a second round-trip).
+    async fn list_filtered(
+        &self,
+        filter: AuditFilter,
+    ) -> Result<(Vec<AuditRow>, AuditPageMeta), AuditRepoError>;
 }
