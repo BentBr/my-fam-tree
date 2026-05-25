@@ -31,6 +31,7 @@ use my_family_persistence::PgMagicLinkRepo;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+pub mod contacts;
 pub mod ids;
 pub mod persons;
 pub mod relationships;
@@ -80,6 +81,7 @@ pub async fn run_seed(pool: &PgPool, cfg: &Config) -> anyhow::Result<SeedReport>
     persons::seed_persons(pool).await.context("seed persons")?;
     relationships::seed_parent_links(pool).await.context("seed parent_links")?;
     relationships::seed_partnerships(pool).await.context("seed partnerships")?;
+    contacts::seed_contacts(pool).await.context("seed person_contacts")?;
 
     let magic_links_repo: Arc<dyn MagicLinkRepo> = Arc::new(PgMagicLinkRepo::new(pool.clone()));
     let magic_links = mint_magic_links(&magic_links_repo, cfg).await.context("mint magic links")?;
@@ -194,6 +196,7 @@ mod tests {
     // the corresponding seed module grow or shrink.
     const EXPECTED_PARENT_LINKS: i64 = 22;
     const EXPECTED_PARTNERSHIPS: i64 = 8;
+    const EXPECTED_CONTACTS: i64 = 9;
 
     struct Harness {
         pool: sqlx::PgPool,
@@ -287,6 +290,7 @@ mod tests {
         assert_eq!(count(&h.pool, "persons").await, i64::try_from(SEED_PERSON_COUNT).unwrap());
         assert_eq!(count(&h.pool, "parent_links").await, EXPECTED_PARENT_LINKS);
         assert_eq!(count(&h.pool, "partnerships").await, EXPECTED_PARTNERSHIPS);
+        assert_eq!(count(&h.pool, "person_contacts").await, EXPECTED_CONTACTS);
 
         assert_eq!(report.magic_links.len(), 3);
         for (email, url) in &report.magic_links {
@@ -309,6 +313,7 @@ mod tests {
         assert_eq!(count(&h.pool, "persons").await, i64::try_from(SEED_PERSON_COUNT).unwrap());
         assert_eq!(count(&h.pool, "parent_links").await, EXPECTED_PARENT_LINKS);
         assert_eq!(count(&h.pool, "partnerships").await, EXPECTED_PARTNERSHIPS);
+        assert_eq!(count(&h.pool, "person_contacts").await, EXPECTED_CONTACTS);
 
         // The second invocation still mints fresh magic links (one per user).
         // Magic-link tokens are append-only — count rises across calls.
