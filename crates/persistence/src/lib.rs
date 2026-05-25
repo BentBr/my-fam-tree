@@ -1,6 +1,7 @@
 //! SQLx-backed repositories. No business logic here.
 
 pub mod audit_log;
+pub mod counts;
 pub mod error;
 pub mod families;
 pub mod family_invites;

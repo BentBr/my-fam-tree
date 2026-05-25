@@ -32,8 +32,14 @@ impl Database {
             .max_connections(max_connections)
             .acquire_timeout(acquire_timeout)
             .after_connect(move |conn, _meta| {
+                // `SET statement_timeout = $1` is rejected by the parser — GUC
+                // assignment statements don't take bind params. `set_config()`
+                // is the documented Postgres function for "session SET with a
+                // dynamic value", and it accepts a bind parameter.
+                let timeout = statement_timeout_ms.to_string();
                 Box::pin(async move {
-                    sqlx::query(&format!("SET statement_timeout = {statement_timeout_ms}"))
+                    sqlx::query("SELECT set_config('statement_timeout', $1, false)")
+                        .bind(timeout)
                         .execute(conn)
                         .await?;
                     Ok(())

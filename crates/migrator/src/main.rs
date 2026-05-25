@@ -30,6 +30,11 @@ struct Args {
 
 static MIGRATOR: Migrator = sqlx::migrate!("../../migrations");
 
+// sqlx 0.9 made the migrations table name an explicit parameter on the
+// `Migrate` trait methods (previously hard-coded). Keep the default name
+// so the on-disk schema is identical to the sqlx 0.8 history.
+const MIGRATIONS_TABLE: &str = "_sqlx_migrations";
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -47,10 +52,14 @@ async fn main() -> anyhow::Result<()> {
         .await?;
 
     let mut conn = pool.acquire().await?;
-    conn.ensure_migrations_table().await?;
+    conn.ensure_migrations_table(MIGRATIONS_TABLE).await?;
 
-    let applied: std::collections::HashMap<i64, sqlx::migrate::AppliedMigration> =
-        conn.list_applied_migrations().await?.into_iter().map(|m| (m.version, m)).collect();
+    let applied: std::collections::HashMap<i64, sqlx::migrate::AppliedMigration> = conn
+        .list_applied_migrations(MIGRATIONS_TABLE)
+        .await?
+        .into_iter()
+        .map(|m| (m.version, m))
+        .collect();
 
     let mut total = 0usize;
     let mut pending = 0usize;
@@ -103,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
                 break;
             }
             if !applied.contains_key(&m.version) {
-                conn.apply(m).await?;
+                conn.apply(MIGRATIONS_TABLE, m).await?;
                 tracing::info!(version = m.version, description = %m.description, "applied");
             }
         }

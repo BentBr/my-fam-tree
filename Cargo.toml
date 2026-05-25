@@ -47,8 +47,7 @@ reqwest = { version = "0.13", features = ["json", "rustls"], default-features = 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.11"
-# TODO bump: 0.9; latest stable is 0.8 (0.9 is alpha as of 2026-05-20).
-sqlx = { version = "0.8", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "macros", "migrate", "ipnetwork", "json"] }
+sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "macros", "migrate", "ipnetwork", "json"] }
 thiserror = "2"
 url = "2.5"
 tokio = { version = "1", features = ["full"] }

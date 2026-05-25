@@ -184,7 +184,7 @@ mod tests {
 
     use my_family_api::{AppEnv, LogFormat};
     use my_family_persistence::Database;
-    use sqlx::Row;
+    use my_family_persistence::counts::Table;
     use testcontainers::ContainerAsync;
     use testcontainers::runners::AsyncRunner;
     use testcontainers_modules::postgres::Postgres;
@@ -271,10 +271,10 @@ mod tests {
         Harness { pool, cfg, _pg: pg }
     }
 
-    async fn count(pool: &sqlx::PgPool, table: &str) -> i64 {
-        let q = format!("SELECT count(*) FROM {table}");
-        let row = sqlx::query(&q).fetch_one(pool).await.expect("count");
-        row.get::<i64, _>(0)
+    // Counting rows goes through `persistence::counts::count_rows` so
+    // raw SQL stays inside the persistence crate (architectural rule).
+    async fn count(pool: &sqlx::PgPool, table: my_family_persistence::counts::Table) -> i64 {
+        my_family_persistence::counts::count_rows(pool, table).await.expect("count")
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -284,13 +284,13 @@ mod tests {
 
         assert_eq!(report.users_upserted, 3);
         assert_eq!(report.persons_upserted, SEED_PERSON_COUNT);
-        assert_eq!(count(&h.pool, "users").await, 3);
-        assert_eq!(count(&h.pool, "families").await, 1);
-        assert_eq!(count(&h.pool, "family_memberships").await, 3);
-        assert_eq!(count(&h.pool, "persons").await, i64::try_from(SEED_PERSON_COUNT).unwrap());
-        assert_eq!(count(&h.pool, "parent_links").await, EXPECTED_PARENT_LINKS);
-        assert_eq!(count(&h.pool, "partnerships").await, EXPECTED_PARTNERSHIPS);
-        assert_eq!(count(&h.pool, "person_contacts").await, EXPECTED_CONTACTS);
+        assert_eq!(count(&h.pool, Table::Users).await, 3);
+        assert_eq!(count(&h.pool, Table::Families).await, 1);
+        assert_eq!(count(&h.pool, Table::FamilyMemberships).await, 3);
+        assert_eq!(count(&h.pool, Table::Persons).await, i64::try_from(SEED_PERSON_COUNT).unwrap());
+        assert_eq!(count(&h.pool, Table::ParentLinks).await, EXPECTED_PARENT_LINKS);
+        assert_eq!(count(&h.pool, Table::Partnerships).await, EXPECTED_PARTNERSHIPS);
+        assert_eq!(count(&h.pool, Table::PersonContacts).await, EXPECTED_CONTACTS);
 
         assert_eq!(report.magic_links.len(), 3);
         for (email, url) in &report.magic_links {
@@ -307,17 +307,17 @@ mod tests {
         let r2 = run_seed(&h.pool, &h.cfg).await.expect("second seed");
 
         // Row counts unchanged after a second invocation.
-        assert_eq!(count(&h.pool, "users").await, 3);
-        assert_eq!(count(&h.pool, "families").await, 1);
-        assert_eq!(count(&h.pool, "family_memberships").await, 3);
-        assert_eq!(count(&h.pool, "persons").await, i64::try_from(SEED_PERSON_COUNT).unwrap());
-        assert_eq!(count(&h.pool, "parent_links").await, EXPECTED_PARENT_LINKS);
-        assert_eq!(count(&h.pool, "partnerships").await, EXPECTED_PARTNERSHIPS);
-        assert_eq!(count(&h.pool, "person_contacts").await, EXPECTED_CONTACTS);
+        assert_eq!(count(&h.pool, Table::Users).await, 3);
+        assert_eq!(count(&h.pool, Table::Families).await, 1);
+        assert_eq!(count(&h.pool, Table::FamilyMemberships).await, 3);
+        assert_eq!(count(&h.pool, Table::Persons).await, i64::try_from(SEED_PERSON_COUNT).unwrap());
+        assert_eq!(count(&h.pool, Table::ParentLinks).await, EXPECTED_PARENT_LINKS);
+        assert_eq!(count(&h.pool, Table::Partnerships).await, EXPECTED_PARTNERSHIPS);
+        assert_eq!(count(&h.pool, Table::PersonContacts).await, EXPECTED_CONTACTS);
 
         // The second invocation still mints fresh magic links (one per user).
         // Magic-link tokens are append-only — count rises across calls.
         assert_eq!(r2.magic_links.len(), 3);
-        assert_eq!(count(&h.pool, "magic_link_tokens").await, 6);
+        assert_eq!(count(&h.pool, Table::MagicLinkTokens).await, 6);
     }
 }
