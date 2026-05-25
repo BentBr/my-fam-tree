@@ -12,6 +12,7 @@
 //! through. The nested-empty-scope pattern avoids that footgun while keeping
 //! the auth middleware scoped to exactly the routes that need it.
 
+pub mod audit;
 pub mod auth;
 pub mod contacts;
 pub mod families;
@@ -73,6 +74,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(contacts::update)
                 .service(contacts::delete)
                 .service(relationships::tree)
-                .service(upcoming::list),
+                .service(upcoming::list)
+                .service(audit::list_audit),
         )
 }

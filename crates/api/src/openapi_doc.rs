@@ -19,6 +19,7 @@ use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use crate::auth::{FamilyClaim, JwtClaims};
 use crate::error::{ApiErrorBody, ErrorCode, FieldViolation};
 use crate::response::{NullResponseBody, Pagination, ResponseMeta, Warning};
+use crate::routes::audit::{self, AuditPageResponseBody};
 use crate::routes::auth::{
     self, ConsumeResponseBody, LogoutResponseBody, MagicLinkResponseBody, MeResponseBody,
 };
@@ -82,6 +83,7 @@ use crate::services::upcoming::UpcomingEvent;
         contacts::delete,
         relationships::tree,
         upcoming::list,
+        audit::list_audit,
     ),
     components(
         schemas(
@@ -107,6 +109,7 @@ use crate::services::upcoming::UpcomingEvent;
             ContactViewResponseBody,
             TreePayloadResponseBody,
             UpcomingResponseBody,
+            AuditPageResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -156,6 +159,8 @@ use crate::services::upcoming::UpcomingEvent;
             PartnerEdge,
             UpcomingEvent,
             upcoming::UpcomingQuery,
+            audit::AuditPage,
+            audit::AuditRowDto,
         ),
     ),
     tags(
@@ -168,6 +173,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "relationships", description = "Parent links, partnerships, tree"),
         (name = "contacts", description = "Per-person contact data"),
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
+        (name = "audit", description = "Family audit log (admin / owner only)"),
     ),
 )]
 pub struct ApiDoc;
