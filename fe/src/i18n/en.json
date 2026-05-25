@@ -4,7 +4,8 @@
         "tree": "Tree",
         "upcoming": "Upcoming dates",
         "reminders": "Reminders",
-        "health": "Health"
+        "health": "Health",
+        "admin": "Admin"
     },
     "auth": {
         "signIn": {
@@ -216,6 +217,57 @@
         "contact_created": "Contact added",
         "contact_updated": "Contact updated",
         "contact_deleted": "Contact removed"
+    },
+    "admin": {
+        "nav": {
+            "members": "Members",
+            "invites": "Pending invites",
+            "audit": "Audit log"
+        },
+        "audit": {
+            "title": "Audit log",
+            "filter": {
+                "from": "From",
+                "to": "To",
+                "action": "Action",
+                "entityKind": "Entity kind",
+                "actor": "Actor",
+                "any": "Any",
+                "clear": "Clear filters"
+            },
+            "col": {
+                "when": "When",
+                "actor": "Actor",
+                "action": "Action",
+                "entity": "Entity"
+            },
+            "entityKind": {
+                "person": "Person",
+                "contact": "Contact",
+                "parent_link": "Parent link",
+                "partnership": "Partnership",
+                "family": "Family",
+                "membership": "Membership",
+                "invite": "Invite",
+                "owner_transfer": "Owner transfer"
+            },
+            "action": {
+                "create": "Created",
+                "update": "Updated",
+                "delete": "Deleted",
+                "invite": "Invited",
+                "accept_invite": "Joined",
+                "verify": "Verified",
+                "cancel": "Cancelled",
+                "set_role": "Changed role",
+                "remove": "Revoked",
+                "begin": "Started",
+                "confirm": "Confirmed",
+                "complete": "Completed"
+            },
+            "empty": "No audit entries match the current filters.",
+            "rowsPerPage": "Rows per page"
+        }
     },
     "errors": {
         "generic": "Something went wrong."

@@ -4,7 +4,8 @@
         "tree": "Stammbaum",
         "upcoming": "Anstehende Termine",
         "reminders": "Erinnerungen",
-        "health": "Status"
+        "health": "Status",
+        "admin": "Admin"
     },
     "auth": {
         "signIn": {
@@ -216,6 +217,57 @@
         "contact_created": "Kontakt hinzugefügt",
         "contact_updated": "Kontakt aktualisiert",
         "contact_deleted": "Kontakt entfernt"
+    },
+    "admin": {
+        "nav": {
+            "members": "Mitglieder",
+            "invites": "Offene Einladungen",
+            "audit": "Audit-Log"
+        },
+        "audit": {
+            "title": "Audit-Log",
+            "filter": {
+                "from": "Von",
+                "to": "Bis",
+                "action": "Aktion",
+                "entityKind": "Entität",
+                "actor": "Akteur",
+                "any": "Beliebig",
+                "clear": "Filter zurücksetzen"
+            },
+            "col": {
+                "when": "Wann",
+                "actor": "Akteur",
+                "action": "Aktion",
+                "entity": "Entität"
+            },
+            "entityKind": {
+                "person": "Person",
+                "contact": "Kontakt",
+                "parent_link": "Elternverbindung",
+                "partnership": "Partnerschaft",
+                "family": "Familie",
+                "membership": "Mitgliedschaft",
+                "invite": "Einladung",
+                "owner_transfer": "Eigentumsübertragung"
+            },
+            "action": {
+                "create": "Angelegt",
+                "update": "Aktualisiert",
+                "delete": "Gelöscht",
+                "invite": "Eingeladen",
+                "accept_invite": "Beigetreten",
+                "verify": "Bestätigt",
+                "cancel": "Storniert",
+                "set_role": "Rolle geändert",
+                "remove": "Entfernt",
+                "begin": "Gestartet",
+                "confirm": "Bestätigt",
+                "complete": "Abgeschlossen"
+            },
+            "empty": "Keine Einträge entsprechen den Filtern.",
+            "rowsPerPage": "Einträge pro Seite"
+        }
     },
     "errors": {
         "generic": "Etwas ist schiefgegangen."
