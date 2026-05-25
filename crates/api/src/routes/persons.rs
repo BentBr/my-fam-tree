@@ -9,6 +9,9 @@
 //!
 //! `PATCH /persons/{id}` is a **partial** update — every `PersonUpdateReq`
 //! field is optional and merges with the existing row server-side.
+//!
+//! Contact data (email / phone / address / url) lives in `person_contacts`,
+//! not on this row — see [`crate::routes::contacts`].
 
 use actix_web::{HttpRequest, delete, get, patch, post, web};
 use chrono::NaiveDate;
@@ -19,7 +22,7 @@ use uuid::Uuid;
 
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, Pagination};
-use crate::routes::persons_contact::{sync_email_from_linked_user, validate_contact_fields};
+use crate::services::audit;
 use crate::validation::value_required;
 use crate::{ApiError, AppState, response_body};
 
@@ -43,23 +46,6 @@ pub struct PersonCreateReq {
     pub death_date: Option<NaiveDate>,
     #[serde(default)]
     pub notes: String,
-    /// Contact email. Ignored on the wire when `linked_user_id` is set — the
-    /// API overwrites the column with the linked user's email so the read
-    /// path can stay simple (no JOIN).
-    #[serde(default)]
-    pub email: String,
-    #[serde(default)]
-    pub phone: String,
-    #[serde(default)]
-    pub street: String,
-    #[serde(default)]
-    pub house_number: String,
-    #[serde(default)]
-    pub zip: String,
-    #[serde(default)]
-    pub city: String,
-    #[serde(default)]
-    pub country: String,
     pub linked_user_id: Option<Uuid>,
 }
 
@@ -76,13 +62,6 @@ pub struct PersonUpdateReq {
     pub birth_place: Option<String>,
     pub death_date: Option<NaiveDate>,
     pub notes: Option<String>,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub street: Option<String>,
-    pub house_number: Option<String>,
-    pub zip: Option<String>,
-    pub city: Option<String>,
-    pub country: Option<String>,
     pub linked_user_id: Option<Uuid>,
 }
 
@@ -99,13 +78,6 @@ pub struct PersonView {
     pub birth_place: String,
     pub death_date: Option<NaiveDate>,
     pub notes: String,
-    pub email: String,
-    pub phone: String,
-    pub street: String,
-    pub house_number: String,
-    pub zip: String,
-    pub city: String,
-    pub country: String,
     pub linked_user_id: Option<Uuid>,
 }
 
@@ -135,13 +107,6 @@ fn to_view(p: my_family_domain::Person) -> PersonView {
         birth_place: p.birth_place,
         death_date: p.death_date,
         notes: p.notes,
-        email: p.email,
-        phone: p.phone,
-        street: p.street,
-        house_number: p.house_number,
-        zip: p.zip,
-        city: p.city,
-        country: p.country,
         linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
     }
 }
@@ -157,13 +122,6 @@ fn draft_from_create(req: PersonCreateReq) -> PersonDraft {
         birth_place: req.birth_place,
         death_date: req.death_date,
         notes: req.notes,
-        email: req.email,
-        phone: req.phone,
-        street: req.street,
-        house_number: req.house_number,
-        zip: req.zip,
-        city: req.city,
-        country: req.country,
         linked_user_id: req.linked_user_id.map(my_family_domain::UserId::from_uuid),
     }
 }
@@ -181,13 +139,6 @@ fn merge_update(existing: &my_family_domain::Person, patch: PersonUpdateReq) -> 
         birth_place: patch.birth_place.unwrap_or_else(|| existing.birth_place.clone()),
         death_date: patch.death_date.or(existing.death_date),
         notes: patch.notes.unwrap_or_else(|| existing.notes.clone()),
-        email: patch.email.unwrap_or_else(|| existing.email.clone()),
-        phone: patch.phone.unwrap_or_else(|| existing.phone.clone()),
-        street: patch.street.unwrap_or_else(|| existing.street.clone()),
-        house_number: patch.house_number.unwrap_or_else(|| existing.house_number.clone()),
-        zip: patch.zip.unwrap_or_else(|| existing.zip.clone()),
-        city: patch.city.unwrap_or_else(|| existing.city.clone()),
-        country: patch.country.unwrap_or_else(|| existing.country.clone()),
         linked_user_id: patch
             .linked_user_id
             .map(my_family_domain::UserId::from_uuid)
@@ -281,7 +232,7 @@ pub async fn create(
     req: HttpRequest,
     body: web::Json<PersonCreateReq>,
 ) -> Result<ApiResponse<PersonView>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
 
     let payload = body.into_inner();
@@ -289,12 +240,19 @@ pub async fn create(
         return Err(value_required("/given_name"));
     }
 
-    let mut draft = draft_from_create(payload);
-    let email_overridden = sync_email_from_linked_user(&state, &mut draft).await?;
-    validate_contact_fields(&draft, email_overridden)?;
-
+    let draft = draft_from_create(payload);
     let person =
         state.persons.create(active.id, draft).await.map_err(|e| map_person_repo_err(e, None))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "create",
+        "person",
+        Some(person.id.into_uuid()),
+        serde_json::json!({}),
+    )
+    .await;
     Ok(ApiResponse::ok(to_view(person)))
 }
 
@@ -390,13 +348,6 @@ pub async fn update(
         || payload.birth_place.is_some()
         || payload.death_date.is_some()
         || payload.notes.is_some()
-        || payload.email.is_some()
-        || payload.phone.is_some()
-        || payload.street.is_some()
-        || payload.house_number.is_some()
-        || payload.zip.is_some()
-        || payload.city.is_some()
-        || payload.country.is_some()
         || payload.linked_user_id.is_some();
     if !any_change {
         return Err(value_required("/"));
@@ -405,14 +356,22 @@ pub async fn update(
         return Err(value_required("/given_name"));
     }
 
-    let mut draft = merge_update(&existing, payload);
-    let email_overridden = sync_email_from_linked_user(&state, &mut draft).await?;
-    validate_contact_fields(&draft, email_overridden)?;
+    let draft = merge_update(&existing, payload);
     let person = state
         .persons
         .update(active.id, person_id, draft)
         .await
         .map_err(|e| map_person_repo_err(e, Some(id)))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "update",
+        "person",
+        Some(id),
+        serde_json::json!({}),
+    )
+    .await;
     Ok(ApiResponse::ok(to_view(person)))
 }
 
@@ -442,7 +401,7 @@ pub async fn delete(
     req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
     let id = path.into_inner();
     state
@@ -450,6 +409,16 @@ pub async fn delete(
         .delete(active.id, PersonId::from_uuid(id))
         .await
         .map_err(|e| map_person_repo_err(e, Some(id)))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "delete",
+        "person",
+        Some(id),
+        serde_json::json!({}),
+    )
+    .await;
     // Spec § 5: DELETE returns `{ "data": null }`, not a status string.
     Ok(ApiResponse::ok(serde_json::Value::Null))
 }

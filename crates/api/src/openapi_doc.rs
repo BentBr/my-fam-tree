@@ -22,6 +22,7 @@ use crate::response::{NullResponseBody, Pagination, ResponseMeta, Warning};
 use crate::routes::auth::{
     self, ConsumeResponseBody, LogoutResponseBody, MagicLinkResponseBody, MeResponseBody,
 };
+use crate::routes::contacts::{self, ContactListResponseBody, ContactViewResponseBody};
 use crate::routes::families::{
     self, CreateFamilyResponseBody, FamilyViewResponseBody, InviteResponseBody,
     MyFamiliesResponseBody,
@@ -75,6 +76,10 @@ use crate::services::upcoming::UpcomingEvent;
         partnerships::create,
         partnerships::update,
         partnerships::delete,
+        contacts::list_for_person,
+        contacts::create,
+        contacts::update,
+        contacts::delete,
         relationships::tree,
         upcoming::list,
     ),
@@ -98,6 +103,8 @@ use crate::services::upcoming::UpcomingEvent;
             PersonsListResponseBody,
             PersonViewResponseBody,
             PartnershipViewResponseBody,
+            ContactListResponseBody,
+            ContactViewResponseBody,
             TreePayloadResponseBody,
             UpcomingResponseBody,
             // Shared wrapper for DELETE / void-data responses.
@@ -140,6 +147,9 @@ use crate::services::upcoming::UpcomingEvent;
             partnerships::PartnershipView,
             partnerships::PartnershipCreateReq,
             partnerships::PartnershipUpdateReq,
+            contacts::ContactInput,
+            contacts::ContactView,
+            contacts::ContactListRes,
             TreePayload,
             TreeNode,
             EdgePair,
@@ -156,6 +166,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "users", description = "User profile and email change"),
         (name = "persons", description = "Family members"),
         (name = "relationships", description = "Parent links, partnerships, tree"),
+        (name = "contacts", description = "Per-person contact data"),
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
     ),
 )]

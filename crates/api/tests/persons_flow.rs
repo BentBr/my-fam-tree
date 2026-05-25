@@ -365,6 +365,6 @@ async fn persons_cursor_pagination_walks_full_list() {
     assert!(body["meta"]["pagination"]["next_cursor"].is_null());
 }
 
-// Coverage for the new contact columns + email-from-linked-user sync
-// lives in `persons_contact_flow.rs` so this file stays inside the
-// 500-line test-binary cap.
+// Per-person contact data has been moved out of the persons row into
+// the dedicated `person_contacts` table — see `contacts_flow.rs` for
+// the contact CRUD + role + visibility coverage.

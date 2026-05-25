@@ -161,6 +161,109 @@
         }
       }
     },
+    "/api/v1/contacts/{id}": {
+      "delete": {
+        "tags": [
+          "contacts"
+        ],
+        "operationId": "contacts_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Contact id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contact deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit this contact"
+          },
+          "404": {
+            "description": "Contact not found"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "contacts"
+        ],
+        "operationId": "contacts_update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Contact id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Contact updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit this contact"
+          },
+          "404": {
+            "description": "Contact not found"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/families": {
       "post": {
         "tags": [
@@ -931,6 +1034,106 @@
         ]
       }
     },
+    "/api/v1/persons/{id}/contacts": {
+      "get": {
+        "tags": [
+          "contacts"
+        ],
+        "operationId": "contacts_list_for_person",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Contacts for the person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactListResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "404": {
+            "description": "Person not found in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "contacts"
+        ],
+        "operationId": "contacts_create",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Contact created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit contacts on this person"
+          },
+          "404": {
+            "description": "Person not found in this family"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/relationships": {
       "get": {
         "tags": [
@@ -1303,6 +1506,113 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/ConsumeRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "ContactInput": {
+        "type": "object",
+        "required": [
+          "kind",
+          "value"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "description": "One of `email`, `phone`, `address`, `url`, `other`."
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {},
+          "visibility": {
+            "type": "string"
+          }
+        }
+      },
+      "ContactListRes": {
+        "type": "object",
+        "required": [
+          "contacts"
+        ],
+        "properties": {
+          "contacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContactView"
+            }
+          }
+        }
+      },
+      "ContactListResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ContactListRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "ContactView": {
+        "type": "object",
+        "required": [
+          "id",
+          "person_id",
+          "kind",
+          "label",
+          "value",
+          "visibility"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "person_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "value": {},
+          "visibility": {
+            "type": "string"
+          }
+        }
+      },
+      "ContactViewResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ContactView"
           },
           "meta": {
             "oneOf": [
@@ -2109,22 +2419,12 @@
           "birth_place": {
             "type": "string"
           },
-          "city": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string"
-          },
           "death_date": {
             "type": [
               "string",
               "null"
             ],
             "format": "date"
-          },
-          "email": {
-            "type": "string",
-            "description": "Contact email. Ignored on the wire when `linked_user_id` is set — the\nAPI overwrites the column with the linked user's email so the read\npath can stay simple (no JOIN)."
           },
           "family_name": {
             "type": "string"
@@ -2133,9 +2433,6 @@
             "type": "string"
           },
           "given_name": {
-            "type": "string"
-          },
-          "house_number": {
             "type": "string"
           },
           "linked_user_id": {
@@ -2152,15 +2449,6 @@
             "type": "string"
           },
           "notes": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "street": {
-            "type": "string"
-          },
-          "zip": {
             "type": "string"
           }
         }
@@ -2182,30 +2470,12 @@
               "null"
             ]
           },
-          "city": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "country": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "death_date": {
             "type": [
               "string",
               "null"
             ],
             "format": "date"
-          },
-          "email": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "family_name": {
             "type": [
@@ -2220,12 +2490,6 @@
             ]
           },
           "given_name": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "house_number": {
             "type": [
               "string",
               "null"
@@ -2255,24 +2519,6 @@
               "string",
               "null"
             ]
-          },
-          "phone": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "street": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "zip": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -2287,14 +2533,7 @@
           "nickname",
           "gender",
           "birth_place",
-          "notes",
-          "email",
-          "phone",
-          "street",
-          "house_number",
-          "zip",
-          "city",
-          "country"
+          "notes"
         ],
         "properties": {
           "birth_date": {
@@ -2307,21 +2546,12 @@
           "birth_place": {
             "type": "string"
           },
-          "city": {
-            "type": "string"
-          },
-          "country": {
-            "type": "string"
-          },
           "death_date": {
             "type": [
               "string",
               "null"
             ],
             "format": "date"
-          },
-          "email": {
-            "type": "string"
           },
           "family_id": {
             "type": "string",
@@ -2334,9 +2564,6 @@
             "type": "string"
           },
           "given_name": {
-            "type": "string"
-          },
-          "house_number": {
             "type": "string"
           },
           "id": {
@@ -2357,15 +2584,6 @@
             "type": "string"
           },
           "notes": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "street": {
-            "type": "string"
-          },
-          "zip": {
             "type": "string"
           }
         }
@@ -2814,6 +3032,10 @@
     {
       "name": "relationships",
       "description": "Parent links, partnerships, tree"
+    },
+    {
+      "name": "contacts",
+      "description": "Per-person contact data"
     },
     {
       "name": "upcoming",

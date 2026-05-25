@@ -31,6 +31,7 @@ use uuid::Uuid;
 use crate::auth::{ActiveFamily, FamilyClaim, generate_opaque_token};
 use crate::cookies::access_cookie;
 use crate::response::NullResponseBody;
+use crate::services::audit;
 use crate::services::auth_service::issue_access_token_for;
 use crate::validation::{email_invalid, looks_like_email, role_invalid, value_required};
 use crate::{ApiError, ApiResponse, AppState, response_body};
@@ -169,6 +170,19 @@ pub async fn create(
 
     let family = state.families.create(name, claims.user_id).await.map_err(internal)?;
     state.memberships.insert(family.id, claims.user_id, Role::Owner).await.map_err(internal)?;
+    audit::record(
+        &state.audit,
+        family.id,
+        claims.user_id,
+        "create",
+        "membership",
+        None,
+        serde_json::json!({
+            "user_id": claims.user_id.into_uuid(),
+            "role": "owner",
+        }),
+    )
+    .await;
 
     // Reissue access JWT so the new membership is visible immediately.
     let user = state
@@ -328,7 +342,7 @@ pub async fn invite(
     state
         .email
         .send(OutboundEmail {
-            to_addr: email,
+            to_addr: email.clone(),
             to_name: None,
             subject,
             text_body: body_text,
@@ -337,6 +351,19 @@ pub async fn invite(
         .await
         .map_err(internal)?;
 
+    audit::record(
+        &state.audit,
+        FamilyId::from_uuid(family_id),
+        claims.user_id,
+        "invite",
+        "membership",
+        None,
+        serde_json::json!({
+            "email": email,
+            "role": body.role,
+        }),
+    )
+    .await;
     Ok(ApiResponse::ok(InviteRes { status: "sent" }))
 }
 

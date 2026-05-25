@@ -13,13 +13,13 @@
 //! the auth middleware scoped to exactly the routes that need it.
 
 pub mod auth;
+pub mod contacts;
 pub mod families;
 pub mod health;
 pub mod invites;
 pub mod parent_links;
 pub mod partnerships;
 pub mod persons;
-pub mod persons_contact;
 pub mod relationships;
 pub mod upcoming;
 pub mod users;
@@ -68,6 +68,10 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(partnerships::create)
                 .service(partnerships::update)
                 .service(partnerships::delete)
+                .service(contacts::list_for_person)
+                .service(contacts::create)
+                .service(contacts::update)
+                .service(contacts::delete)
                 .service(relationships::tree)
                 .service(upcoming::list),
         )

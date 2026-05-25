@@ -4,6 +4,7 @@
 //! and return domain types or anyhow errors; handlers translate those into
 //! `ApiError` and `ApiResponse`.
 
+pub mod audit;
 pub mod auth_service;
 pub mod relationships_tree;
 pub mod upcoming;

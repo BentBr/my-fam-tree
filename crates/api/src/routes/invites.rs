@@ -19,6 +19,7 @@ use utoipa::ToSchema;
 use crate::auth::hash_token;
 use crate::cookies::access_cookie;
 use crate::routes::families::{FamilyView, family_view_from_claims};
+use crate::services::audit;
 use crate::services::auth_service::issue_access_token_for;
 use crate::validation::invite_email_mismatch;
 use crate::{ApiError, ApiResponse, AppState, response_body};
@@ -82,6 +83,19 @@ pub async fn accept(
         .insert(invite.family_id, claims.user_id, invite.invited_role)
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    audit::record(
+        &state.audit,
+        invite.family_id,
+        claims.user_id,
+        "accept_invite",
+        "membership",
+        None,
+        serde_json::json!({
+            "user_id": claims.user_id.into_uuid(),
+            "role": invite.invited_role,
+        }),
+    )
+    .await;
 
     let user = state
         .users

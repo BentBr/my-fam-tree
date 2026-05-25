@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, NullResponseBody};
+use crate::services::audit;
 use crate::validation::relationships::check_parent_link;
 use crate::validation::value_required;
 use crate::{ApiError, AppState};
@@ -71,7 +72,7 @@ pub async fn create(
     req: HttpRequest,
     body: web::Json<ParentLinkReq>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
 
     let payload = body.into_inner();
@@ -112,6 +113,20 @@ pub async fn create(
         .insert(active.id, child, parent, kind, &payload.note)
         .await
         .map_err(internal_link_err)?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "create",
+        "parent_link",
+        None,
+        serde_json::json!({
+            "child_id": child.into_uuid(),
+            "parent_id": parent.into_uuid(),
+            "kind": payload.kind,
+        }),
+    )
+    .await;
     Ok(ApiResponse::ok(serde_json::Value::Null).with_warnings(warnings))
 }
 
@@ -144,7 +159,7 @@ pub async fn delete(
     req: HttpRequest,
     path: web::Path<(Uuid, Uuid)>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
     let (child, parent) = path.into_inner();
     state
@@ -155,6 +170,19 @@ pub async fn delete(
             ParentLinkRepoError::NotFound => ApiError::PersonNotFound { id: Some(child) },
             other => internal(other),
         })?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "delete",
+        "parent_link",
+        None,
+        serde_json::json!({
+            "child_id": child,
+            "parent_id": parent,
+        }),
+    )
+    .await;
     Ok(ApiResponse::ok(serde_json::Value::Null))
 }
 

@@ -19,6 +19,7 @@ use uuid::Uuid;
 
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, NullResponseBody};
+use crate::services::audit;
 use crate::validation::relationships::check_partnership;
 use crate::validation::value_required;
 use crate::{ApiError, AppState, response_body};
@@ -143,7 +144,7 @@ pub async fn create(
     req: HttpRequest,
     body: web::Json<PartnershipCreateReq>,
 ) -> Result<ApiResponse<PartnershipView>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
 
     let payload = body.into_inner();
@@ -193,6 +194,20 @@ pub async fn create(
         .create(active.id, a, b, draft)
         .await
         .map_err(|e| map_repo_err(e, None))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "create",
+        "partnership",
+        Some(partnership.id),
+        serde_json::json!({
+            "partner_a_id": a.into_uuid(),
+            "partner_b_id": b.into_uuid(),
+            "kind": partnership.kind.as_db(),
+        }),
+    )
+    .await;
     Ok(ApiResponse::ok(to_view(partnership)).with_warnings(warnings))
 }
 
@@ -225,7 +240,7 @@ pub async fn update(
     path: web::Path<Uuid>,
     body: web::Json<PartnershipUpdateReq>,
 ) -> Result<ApiResponse<PartnershipView>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
     let id = path.into_inner();
 
@@ -272,6 +287,16 @@ pub async fn update(
         .update(active.id, id, draft)
         .await
         .map_err(|e| map_repo_err(e, Some(id)))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "update",
+        "partnership",
+        Some(id),
+        serde_json::json!({}),
+    )
+    .await;
     Ok(ApiResponse::ok(to_view(updated)))
 }
 
@@ -301,9 +326,19 @@ pub async fn delete(
     req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     require_role(&active, Role::Admin)?;
     let id = path.into_inner();
     state.partnerships.delete(active.id, id).await.map_err(|e| map_repo_err(e, Some(id)))?;
+    audit::record(
+        &state.audit,
+        active.id,
+        claims.user_id,
+        "delete",
+        "partnership",
+        Some(id),
+        serde_json::json!({}),
+    )
+    .await;
     Ok(ApiResponse::ok(serde_json::Value::Null))
 }
