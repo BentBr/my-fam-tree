@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes,\n                              email, phone, street, house_number, zip, city, country,\n                              linked_user_id, created_at, updated_at\n                         FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2",
+  "query": "INSERT INTO persons\n               (family_id, given_name, family_name, name_at_birth, nickname, gender,\n                birth_date, birth_place, death_date, notes,\n                linked_user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes,\n                         linked_user_id, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -60,51 +60,16 @@
       },
       {
         "ordinal": 11,
-        "name": "email",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 12,
-        "name": "phone",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 13,
-        "name": "street",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 14,
-        "name": "house_number",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 15,
-        "name": "zip",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 16,
-        "name": "city",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 17,
-        "name": "country",
-        "type_info": "Text"
-      },
-      {
-        "ordinal": 18,
         "name": "linked_user_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 19,
+        "ordinal": 12,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 20,
+        "ordinal": 13,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -112,7 +77,16 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Int8"
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Date",
+        "Text",
+        "Date",
+        "Text",
+        "Uuid"
       ]
     },
     "nullable": [
@@ -127,17 +101,10 @@
       false,
       true,
       false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
       true,
       false,
       false
     ]
   },
-  "hash": "91a1946b21fc6b6106584833d19b6be9c9389d805f5121e270d187a1239ed427"
+  "hash": "7c17b16c2343917f282b55c73d3c03965d6451422cbbdec59a51eeda886a8c32"
 }

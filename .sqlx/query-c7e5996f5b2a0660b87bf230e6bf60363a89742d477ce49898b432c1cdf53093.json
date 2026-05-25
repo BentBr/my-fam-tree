@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes,\n                              linked_user_id, created_at, updated_at\n                         FROM persons WHERE family_id = $1 AND id > $2 ORDER BY id LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "given_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "family_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "name_at_birth",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "nickname",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "gender",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "birth_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "birth_place",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "death_date",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 10,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "linked_user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "c7e5996f5b2a0660b87bf230e6bf60363a89742d477ce49898b432c1cdf53093"
+}

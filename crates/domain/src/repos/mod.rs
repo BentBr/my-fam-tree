@@ -1,9 +1,11 @@
+pub mod audit_log;
 pub mod families;
 pub mod family_invites;
 pub mod family_memberships;
 pub mod magic_link_tokens;
 pub mod parent_links;
 pub mod partnerships;
+pub mod person_contacts;
 pub mod persons;
 pub mod refresh_tokens;
 pub mod users;

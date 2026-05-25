@@ -5,6 +5,11 @@
 //! affordance when a member's email matches an existing user). The
 //! `(family_id, linked_user_id)` uniqueness guarantees a user is linked to at
 //! most one person per family.
+//!
+//! Contact data (email / phone / address / url) used to live as flat columns
+//! on this row but was migrated to the dedicated `person_contacts` table in
+//! Phase 3 — each contact is now its own row with a structured value, label,
+//! and visibility enum. See [`crate::repos::person_contacts`].
 
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
@@ -24,13 +29,6 @@ pub struct Person {
     pub birth_place: String,
     pub death_date: Option<NaiveDate>,
     pub notes: String,
-    pub email: String,
-    pub phone: String,
-    pub street: String,
-    pub house_number: String,
-    pub zip: String,
-    pub city: String,
-    pub country: String,
     pub linked_user_id: Option<UserId>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -49,13 +47,6 @@ pub struct PersonDraft {
     pub birth_place: String,
     pub death_date: Option<NaiveDate>,
     pub notes: String,
-    pub email: String,
-    pub phone: String,
-    pub street: String,
-    pub house_number: String,
-    pub zip: String,
-    pub city: String,
-    pub country: String,
     pub linked_user_id: Option<UserId>,
 }
 

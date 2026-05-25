@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO person_contacts (person_id, kind, label, value, visibility)\n               VALUES ($1, ($2::text)::contact_kind, $3, $4, ($5::text)::contact_visibility)\n               RETURNING id, person_id,\n                         kind::text AS \"kind!\",\n                         label,\n                         value AS \"value!: serde_json::Value\",\n                         visibility::text AS \"vis!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "person_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "kind!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "label",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "value!: serde_json::Value",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "vis!",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "c94014e38c907635292cc97f4be0f4db0cfd535673ab3ad704e2b8a95d731b13"
+}
