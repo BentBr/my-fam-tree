@@ -61,9 +61,14 @@ test('upcoming dates page filters by birthday + anniversary toggles', async ({ p
     await page.goto('/upcoming')
     await expect(page.getByTestId('upcoming-page')).toBeVisible()
 
-    // 2 birthdays + 1 wedding = 3 rows by default (filter=all).
-    const allCount = await page.locator('[data-testid^="upcoming-row-"]').count()
-    expect(allCount).toBe(3)
+    // 2 birthdays + 1 wedding = 3 rows by default (filter=all). Poll
+    // because the useUpcoming query is in flight when page.goto resolves
+    // — the page shell appears first, the rows trail by one fetch tick.
+    await expect
+        .poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), {
+            timeout: 5_000,
+        })
+        .toBe(3)
 
     // Click "Birthday" — only birthdays should remain (2).
     await page.getByTestId('upcoming-filter-birthday').click()
