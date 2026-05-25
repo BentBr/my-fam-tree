@@ -76,7 +76,33 @@
         "edit": "Edit",
         "delete": "Delete",
         "add": "Add",
+        "loading": "Loading…",
         "readOnly": "Read-only"
+    },
+    "contact": {
+        "heading": "Contacts",
+        "empty": "No contacts yet.",
+        "add": "Add contact",
+        "kind": "Kind",
+        "label": "Label",
+        "value": "Value",
+        "visibility": "Visibility",
+        "visFamily": "Family",
+        "visAdmins": "Admins only",
+        "kinds": {
+            "email": "Email",
+            "phone": "Phone",
+            "address": "Address",
+            "url": "URL",
+            "other": "Other"
+        },
+        "address": {
+            "street": "Street",
+            "house_number": "Number",
+            "zip": "ZIP",
+            "city": "City",
+            "country": "Country"
+        }
     },
     "tree": {
         "title": "Family tree",
@@ -103,13 +129,6 @@
             "deceased": "Deceased",
             "death_date": "Date of death",
             "notes": "Notes",
-            "email": "Email",
-            "phone": "Phone",
-            "street": "Street",
-            "house_number": "Number",
-            "zip": "ZIP",
-            "city": "City",
-            "country": "Country",
             "parentKind": "Relationship type",
             "partnerKind": "Partnership type",
             "started_on": "Start date (optional)",
@@ -118,14 +137,9 @@
         },
         "sections": {
             "profile": "Profile",
-            "contact": "Contact",
-            "address": "Address",
             "parents": "Parents",
             "partners": "Partners",
             "children": "Children"
-        },
-        "hints": {
-            "emailFromLinkedUser": "Synced from the linked user's account"
         },
         "endReason": {
             "divorce": "Divorce",
@@ -198,7 +212,10 @@
         "person_deleted": "Person removed",
         "partnership_updated": "Partnership updated",
         "partnership_deleted": "Partnership removed",
-        "parent_link_updated": "Parent relation updated"
+        "parent_link_updated": "Parent relation updated",
+        "contact_created": "Contact added",
+        "contact_updated": "Contact updated",
+        "contact_deleted": "Contact removed"
     },
     "errors": {
         "generic": "Something went wrong."
@@ -229,6 +246,8 @@
         "parent_link_duplicate": "That parent-child link already exists.",
         "person_not_found": "We couldn't find that person.",
         "person_not_editable": "You don't have permission to edit this person.",
+        "contact_not_found": "We couldn't find that contact.",
+        "contact_not_editable": "You don't have permission to edit this contact.",
         "family_not_member": "You're not a member of this family.",
         "family_insufficient_role": "You need admin or owner rights to do this.",
         "family_invite_expired": "This invite has expired.",

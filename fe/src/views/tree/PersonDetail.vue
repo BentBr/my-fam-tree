@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useDeletePerson, useGetPerson, useListPersons } from '@/api/hooks/persons'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 
+import ContactsSection from './ContactsSection.vue'
 import PersonEdit from './PersonEdit.vue'
 import PersonRelations from './PersonRelations.vue'
 
@@ -134,35 +135,10 @@ function onRelationsChanged(): void {
 
             <v-divider class="my-3" />
 
-            <!-- Contact section. Renders empty fields as em-dash, matching
-                 the profile section above so the drawer stays scannable. -->
-            <h4 class="text-subtitle-1 mb-2">{{ t('person.sections.contact') }}</h4>
-            <v-list density="compact" class="mb-2" data-testid="person-contact-list">
-                <v-list-item data-testid="person-field-email">
-                    <v-list-item-title>{{ t('person.fields.email') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.email || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-phone">
-                    <v-list-item-title>{{ t('person.fields.phone') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.phone || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-street">
-                    <v-list-item-title>{{ t('person.fields.street') }}</v-list-item-title>
-                    <v-list-item-subtitle>
-                        {{ [person.street, person.house_number].filter(Boolean).join(' ') || '—' }}
-                    </v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-city">
-                    <v-list-item-title>{{ t('person.fields.city') }}</v-list-item-title>
-                    <v-list-item-subtitle>
-                        {{ [person.zip, person.city].filter(Boolean).join(' ') || '—' }}
-                    </v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-country">
-                    <v-list-item-title>{{ t('person.fields.country') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.country || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-            </v-list>
+            <!-- Contacts section. Replaces the flat email/phone/address
+                 fields with per-row entries from `person_contacts`. The
+                 backend filters `admins_only` rows out for `user` role. -->
+            <ContactsSection :person-id="props.personId" :linked-user-id="person.linked_user_id ?? null" />
 
             <v-divider class="my-3" />
 
@@ -220,13 +196,6 @@ function onRelationsChanged(): void {
                 birth_place: person.birth_place,
                 death_date: person.death_date ?? null,
                 notes: person.notes,
-                email: person.email,
-                phone: person.phone,
-                street: person.street,
-                house_number: person.house_number,
-                zip: person.zip,
-                city: person.city,
-                country: person.country,
                 linked_user_id: person.linked_user_id ?? null,
             }"
             @saved="onSaved"

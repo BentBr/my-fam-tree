@@ -14,13 +14,6 @@ interface Person {
     birth_place?: string
     death_date?: string | null
     nickname?: string
-    email?: string
-    phone?: string
-    street?: string
-    house_number?: string
-    zip?: string
-    city?: string
-    country?: string
     linked_user_id?: string | null
 }
 
@@ -155,6 +148,13 @@ function stubs() {
             emits: ['saved', 'cancel'],
             props: ['mode', 'initial'],
         },
+        ContactsSection: {
+            // Stub: we just need the testid to exist on the rendered tree so
+            // the parent-render assertions can check the section mounts.
+            // Dedicated tests cover the ContactsSection internals.
+            template: '<section data-testid="contacts-section" />',
+            props: ['personId', 'linkedUserId'],
+        },
     }
 }
 
@@ -225,13 +225,6 @@ describe('PersonDetail', () => {
             birth_place: 'Berlin',
             death_date: '2020-12-31',
             notes: 'Get notes',
-            email: 'g@example.de',
-            phone: '+49 30 1234',
-            street: 'Hauptstr.',
-            house_number: '12',
-            zip: '10115',
-            city: 'Berlin',
-            country: 'Deutschland',
         }
         const w = mountDetail('p1')
         expect(w.find('[data-testid="person-field-given-name"]').text()).toContain('GivenFromGet')
@@ -240,12 +233,9 @@ describe('PersonDetail', () => {
         expect(w.find('[data-testid="person-field-birth-place"]').text()).toContain('Berlin')
         expect(w.find('[data-testid="person-field-death-date"]').text()).toContain('2020-12-31')
         expect(w.find('[data-testid="person-field-notes"]').text()).toContain('Get notes')
-        // Contact section — every field renders.
-        expect(w.find('[data-testid="person-field-email"]').text()).toContain('g@example.de')
-        expect(w.find('[data-testid="person-field-phone"]').text()).toContain('+49 30 1234')
-        expect(w.find('[data-testid="person-field-street"]').text()).toContain('Hauptstr. 12')
-        expect(w.find('[data-testid="person-field-city"]').text()).toContain('10115 Berlin')
-        expect(w.find('[data-testid="person-field-country"]').text()).toContain('Deutschland')
+        // Phase 3 moved contact data into its own section component — the
+        // dedicated ContactsSection tests cover the render path.
+        expect(w.find('[data-testid="contacts-section"]').exists()).toBe(true)
     })
 
     it('owner sees the Edit + Delete actions and no Read-only badge', () => {

@@ -76,7 +76,33 @@
         "edit": "Bearbeiten",
         "delete": "Löschen",
         "add": "Hinzufügen",
+        "loading": "Lädt…",
         "readOnly": "Nur Lesen"
+    },
+    "contact": {
+        "heading": "Kontakte",
+        "empty": "Noch keine Kontakte.",
+        "add": "Kontakt hinzufügen",
+        "kind": "Art",
+        "label": "Bezeichnung",
+        "value": "Wert",
+        "visibility": "Sichtbarkeit",
+        "visFamily": "Familie",
+        "visAdmins": "Nur Admins",
+        "kinds": {
+            "email": "E-Mail",
+            "phone": "Telefon",
+            "address": "Adresse",
+            "url": "URL",
+            "other": "Sonstiges"
+        },
+        "address": {
+            "street": "Straße",
+            "house_number": "Nr.",
+            "zip": "PLZ",
+            "city": "Ort",
+            "country": "Land"
+        }
     },
     "tree": {
         "title": "Stammbaum",
@@ -120,13 +146,6 @@
             "deceased": "Verstorben",
             "death_date": "Sterbedatum",
             "notes": "Notizen",
-            "email": "E-Mail",
-            "phone": "Telefon",
-            "street": "Straße",
-            "house_number": "Nr.",
-            "zip": "PLZ",
-            "city": "Ort",
-            "country": "Land",
             "parentKind": "Verwandtschaftsart",
             "partnerKind": "Partnerschaftsart",
             "started_on": "Beginn (optional)",
@@ -135,14 +154,9 @@
         },
         "sections": {
             "profile": "Profil",
-            "contact": "Kontakt",
-            "address": "Adresse",
             "parents": "Eltern",
             "partners": "Partner",
             "children": "Kinder"
-        },
-        "hints": {
-            "emailFromLinkedUser": "Wird vom verknüpften Benutzerkonto übernommen"
         },
         "endReason": {
             "divorce": "Scheidung",
@@ -198,7 +212,10 @@
         "person_deleted": "Person entfernt",
         "partnership_updated": "Partnerschaft aktualisiert",
         "partnership_deleted": "Partnerschaft entfernt",
-        "parent_link_updated": "Elternverbindung aktualisiert"
+        "parent_link_updated": "Elternverbindung aktualisiert",
+        "contact_created": "Kontakt hinzugefügt",
+        "contact_updated": "Kontakt aktualisiert",
+        "contact_deleted": "Kontakt entfernt"
     },
     "errors": {
         "generic": "Etwas ist schiefgegangen."
@@ -229,6 +246,8 @@
         "parent_link_duplicate": "Diese Eltern-Kind-Verbindung existiert bereits.",
         "person_not_found": "Diese Person konnten wir nicht finden.",
         "person_not_editable": "Du hast keine Berechtigung, diese Person zu bearbeiten.",
+        "contact_not_found": "Diesen Kontakt konnten wir nicht finden.",
+        "contact_not_editable": "Du hast keine Berechtigung, diesen Kontakt zu bearbeiten.",
         "family_not_member": "Du bist kein Mitglied dieser Familie.",
         "family_insufficient_role": "Dafür brauchst du Admin- oder Inhaberrechte.",
         "family_invite_expired": "Diese Einladung ist abgelaufen.",

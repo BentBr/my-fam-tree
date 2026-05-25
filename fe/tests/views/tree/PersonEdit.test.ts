@@ -37,10 +37,9 @@ interface MountProps {
     }
 }
 
-// All 14 user-editable fields covered by the form, with the data-testid
-// of the input each one renders into. The "all 14 fields" assertion below
-// walks this list to make the test resilient to ordering / layout tweaks
-// inside the v-form template.
+// User-editable profile fields covered by the form. Phase 3 moved
+// every contact field (email/phone/address/url/other) out of this view
+// into the dedicated ContactsSection — those have their own test files.
 const ALL_FIELDS: ReadonlyArray<{ testid: string; key: string; value: string }> = [
     { testid: 'person-given-name', key: 'given_name', value: 'Greta' },
     { testid: 'person-family-name', key: 'family_name', value: 'Schmidt' },
@@ -50,13 +49,6 @@ const ALL_FIELDS: ReadonlyArray<{ testid: string; key: string; value: string }> 
     { testid: 'person-birth-place', key: 'birth_place', value: 'Augsburg' },
     { testid: 'person-gender', key: 'gender', value: 'female' },
     { testid: 'person-notes', key: 'notes', value: 'family historian' },
-    { testid: 'person-email', key: 'email', value: 'g@example.de' },
-    { testid: 'person-phone', key: 'phone', value: '+49 30 1234' },
-    { testid: 'person-street', key: 'street', value: 'Hauptstr.' },
-    { testid: 'person-house-number', key: 'house_number', value: '12' },
-    { testid: 'person-zip', key: 'zip', value: '10115' },
-    { testid: 'person-city', key: 'city', value: 'Berlin' },
-    { testid: 'person-country', key: 'country', value: 'Deutschland' },
 ]
 
 function mountView(props: MountProps) {
@@ -183,29 +175,5 @@ describe('PersonEdit', () => {
             expect(input[f.key], `payload should carry ${f.key}`).toBe(f.value)
         }
         expect(input['death_date']).toBe('2020-12-31')
-    })
-
-    it('email field is read-only when person is linked to a user', () => {
-        const w = mountView({
-            mode: 'edit',
-            initial: { id: 'p-1', given_name: 'Klaus', email: 'admin@example.com', linked_user_id: 'u-1' },
-        })
-        const email = w.find('[data-testid="person-email"]')
-        expect(email.exists()).toBe(true)
-        expect(email.attributes('readonly')).toBeDefined()
-    })
-
-    it('email field is editable when person is not linked to a user', () => {
-        const w = mountView({
-            mode: 'edit',
-            initial: { id: 'p-1', given_name: 'Greta', email: 'g@example.de', linked_user_id: null },
-        })
-        const email = w.find('[data-testid="person-email"]')
-        expect(email.exists()).toBe(true)
-        // jsdom serializes readonly=false as the attribute being absent or
-        // explicitly "false"; either way it shouldn't read as a present-empty
-        // string (which is how readonly=true serializes).
-        const ro = email.attributes('readonly')
-        expect(ro === undefined || ro === 'false').toBe(true)
     })
 })
