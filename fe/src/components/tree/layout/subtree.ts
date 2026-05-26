@@ -327,9 +327,7 @@ function layoutMultiCouple(
         // on their couple midpoints — the wider CLUSTER_GAP would force a
         // ~24 px drift even when there's no overlap pressure.
         const subLeftAbsolute =
-            runningRight === Number.NEGATIVE_INFINITY
-                ? desiredLeft
-                : Math.max(desiredLeft, runningRight + COL_GAP)
+            runningRight === Number.NEGATIVE_INFINITY ? desiredLeft : Math.max(desiredLeft, runningRight + COL_GAP)
         for (const childId of sub.cluster.childIds) {
             const child = sub.plan.children.find((c) => c.id === childId)
             if (child === undefined) continue

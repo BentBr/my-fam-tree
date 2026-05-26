@@ -122,7 +122,11 @@ test('second upcoming click reopens the drawer (cached tree.data path)', async (
     await page.goto('/upcoming')
     await expect(page.getByTestId('upcoming-page')).toBeVisible()
     // Click the row whose label mentions "Second" — order may vary.
-    await page.locator('[data-testid="upcoming-row-birthday"]').filter({ hasText: /Second Multi/ }).first().click()
+    await page
+        .locator('[data-testid="upcoming-row-birthday"]')
+        .filter({ hasText: /Second Multi/ })
+        .first()
+        .click()
 
     await expect(page).toHaveURL(/\/tree\?center=[0-9a-f-]+/)
     await expect(page.getByTestId('person-detail')).toBeVisible({ timeout: 10_000 })

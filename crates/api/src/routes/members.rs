@@ -146,8 +146,7 @@ pub async fn list_members(
         return Err(ApiError::Unauthenticated);
     }
 
-    let members =
-        state.memberships.list_with_users(family_id).await.map_err(map_db_err(None))?;
+    let members = state.memberships.list_with_users(family_id).await.map_err(map_db_err(None))?;
     let dtos: Vec<MemberDto> = members
         .into_iter()
         .map(|m| MemberDto {
@@ -314,8 +313,9 @@ pub async fn revoke_member(
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
-    use super::{Role, UserId, gate_mutation};
     use uuid::Uuid;
+
+    use super::{Role, UserId, gate_mutation};
 
     fn uid() -> UserId {
         UserId::from_uuid(Uuid::new_v4())
@@ -325,9 +325,7 @@ mod tests {
     fn gate_admin_can_promote_user_to_admin() {
         let actor = uid();
         let target = uid();
-        assert!(
-            gate_mutation(Role::Admin, actor, target, Role::User, Some(Role::Admin)).is_ok(),
-        );
+        assert!(gate_mutation(Role::Admin, actor, target, Role::User, Some(Role::Admin)).is_ok(),);
     }
 
     #[test]
@@ -341,9 +339,7 @@ mod tests {
     fn gate_admin_cannot_demote_admin() {
         let actor = uid();
         let target = uid();
-        assert!(
-            gate_mutation(Role::Admin, actor, target, Role::Admin, Some(Role::User)).is_err(),
-        );
+        assert!(gate_mutation(Role::Admin, actor, target, Role::Admin, Some(Role::User)).is_err(),);
     }
 
     #[test]
@@ -356,9 +352,7 @@ mod tests {
     #[test]
     fn gate_blocks_self_mutation_even_for_owner() {
         let actor = uid();
-        assert!(
-            gate_mutation(Role::Owner, actor, actor, Role::Owner, Some(Role::Admin)).is_err(),
-        );
+        assert!(gate_mutation(Role::Owner, actor, actor, Role::Owner, Some(Role::Admin)).is_err(),);
         assert!(gate_mutation(Role::Owner, actor, actor, Role::Owner, None).is_err());
     }
 
@@ -367,30 +361,22 @@ mod tests {
         let actor = uid();
         let target = uid();
         assert!(gate_mutation(Role::Owner, actor, target, Role::Owner, None).is_err());
-        assert!(
-            gate_mutation(Role::Owner, actor, target, Role::Owner, Some(Role::User)).is_err(),
-        );
+        assert!(gate_mutation(Role::Owner, actor, target, Role::Owner, Some(Role::User)).is_err(),);
     }
 
     #[test]
     fn gate_blocks_promotion_to_owner_via_patch() {
         let actor = uid();
         let target = uid();
-        assert!(
-            gate_mutation(Role::Owner, actor, target, Role::Admin, Some(Role::Owner)).is_err(),
-        );
-        assert!(
-            gate_mutation(Role::Owner, actor, target, Role::User, Some(Role::Owner)).is_err(),
-        );
+        assert!(gate_mutation(Role::Owner, actor, target, Role::Admin, Some(Role::Owner)).is_err(),);
+        assert!(gate_mutation(Role::Owner, actor, target, Role::User, Some(Role::Owner)).is_err(),);
     }
 
     #[test]
     fn gate_owner_can_demote_admin() {
         let actor = uid();
         let target = uid();
-        assert!(
-            gate_mutation(Role::Owner, actor, target, Role::Admin, Some(Role::User)).is_ok(),
-        );
+        assert!(gate_mutation(Role::Owner, actor, target, Role::Admin, Some(Role::User)).is_ok(),);
     }
 
     #[test]

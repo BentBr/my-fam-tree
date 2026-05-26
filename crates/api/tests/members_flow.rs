@@ -32,11 +32,7 @@ use uuid::Uuid;
 /// session) and return the resulting `UserId`. The returned cookies
 /// are discarded — the caller signs in again after memberships are
 /// inserted so the fresh JWT carries the right `families` claim.
-async fn provision_user<S, B>(
-    stack: &common::TestStack,
-    app: &S,
-    email: &str,
-) -> UserId
+async fn provision_user<S, B>(stack: &common::TestStack, app: &S, email: &str) -> UserId
 where
     S: actix_web::dev::Service<
             actix_http::Request,
@@ -46,14 +42,7 @@ where
     B: actix_web::body::MessageBody,
 {
     let _ = sign_in(stack, app, email).await;
-    stack
-        .state
-        .users
-        .find_by_email(email)
-        .await
-        .expect("user lookup")
-        .expect("user exists")
-        .id
+    stack.state.users.find_by_email(email).await.expect("user lookup").expect("user exists").id
 }
 
 /// Insert a membership row directly via the repo. Uses `set_role` if
@@ -249,13 +238,7 @@ async fn owner_revoking_user_removes_membership_and_audits() {
 
     // Row is gone.
     assert!(
-        stack
-            .state
-            .memberships
-            .find(fam.family_id, fam.user_id)
-            .await
-            .expect("find")
-            .is_none(),
+        stack.state.memberships.find(fam.family_id, fam.user_id).await.expect("find").is_none(),
         "membership row should have been removed"
     );
 
@@ -306,13 +289,8 @@ async fn nobody_can_target_self_even_with_owner_role() {
     let stamp = u128::from(rand::random::<u32>());
     let fam = seed_three_role_family(&stack, &app, stamp).await;
 
-    let owner_user = stack
-        .state
-        .users
-        .find_by_email(&fam.owner_email)
-        .await
-        .expect("lookup")
-        .expect("user");
+    let owner_user =
+        stack.state.users.find_by_email(&fam.owner_email).await.expect("lookup").expect("user");
 
     let access = fresh_access(&stack, &app, &fam.owner_email).await;
     let req = test::TestRequest::patch()

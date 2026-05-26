@@ -28,9 +28,7 @@ async function createFamily(page: Page, name: string): Promise<string> {
     await page.getByTestId('family-name').locator('input').fill(name)
     await page.getByTestId('family-create-submit').click()
     await expect(page).toHaveURL(/\/tree$/)
-    const familyId = await page.evaluate(
-        () => localStorage.getItem('my-family:activeFamily') ?? '',
-    )
+    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
     if (familyId === '') throw new Error('active family id missing from localStorage')
     return familyId
 }
@@ -53,9 +51,7 @@ async function inviteAndAccept(
         data: { email: inviteeEmail, role },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const inviteMail = await waitForEmail((s) =>
-        /Join the .+ family on my-family|Einladung zur Familie/.test(s),
-    )
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-family|Einladung zur Familie/.test(s))
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
@@ -98,9 +94,7 @@ test('admin can promote a user → admin from /admin/members', async ({ browser 
     await promoteBtn.click()
 
     // The role chip flips to Admin and the promote button disappears.
-    await expect(owner.getByTestId(`admin-members-row-${userId}`)).toContainText(
-        /Admin|admin/i,
-    )
+    await expect(owner.getByTestId(`admin-members-row-${userId}`)).toContainText(/Admin|admin/i)
     await expect(owner.getByTestId(`admin-members-promote-${userId}`)).toHaveCount(0)
 
     await ownerCtx.close()
@@ -200,9 +194,7 @@ test('owner can demote an admin → user via confirm dialog', async ({ browser }
     // After confirming, the row's chip should now read "User" (or
     // "Mitglied" in German). The demote button is gone; the promote
     // button reappears since the row is now `user`.
-    await expect(owner.getByTestId(`admin-members-row-${adminUserId}`)).toContainText(
-        /User|Mitglied/i,
-    )
+    await expect(owner.getByTestId(`admin-members-row-${adminUserId}`)).toContainText(/User|Mitglied/i)
     await expect(owner.getByTestId(`admin-members-demote-${adminUserId}`)).toHaveCount(0)
 
     await ownerCtx.close()

@@ -30,9 +30,7 @@ use crate::routes::families::{
 };
 use crate::routes::health::{self, HealthResponseBody};
 use crate::routes::invites::{self, AcceptResponseBody};
-use crate::routes::members::{
-    self, MemberResponseBody, MembersListResponseBody,
-};
+use crate::routes::members::{self, MemberResponseBody, MembersListResponseBody};
 use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
