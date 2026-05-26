@@ -52,9 +52,7 @@ onMounted(async () => {
         // check both the top-level code and the field-violation code so
         // a future BE refactor that promotes mismatch to a dedicated
         // variant still works without a FE change.
-        const e = err as
-            | { code?: string; body?: { fields?: { code?: string }[] | null } }
-            | undefined
+        const e = err as { code?: string; body?: { fields?: { code?: string }[] | null } } | undefined
         const topCode = e?.code
         const fieldCodes = e?.body?.fields ?? []
         const mismatched =

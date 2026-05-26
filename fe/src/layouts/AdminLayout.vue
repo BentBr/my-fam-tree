@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppBar from '@/components/layout/AppBar.vue'
-import NavDrawer from '@/components/layout/NavDrawer.vue'
 
 const { t } = useI18n()
 
@@ -27,9 +26,15 @@ const items = computed<AdminNavItem[]>(() => [
 ])
 </script>
 
+<!--
+    AdminLayout intentionally omits the main NavDrawer. Admin pages are
+    a focused, role-gated surface (members / invites / audit) with their
+    own side-rail; surfacing the global nav alongside it produced two
+    competing nav columns. The dedicated `admin-rail-back` link is the
+    canonical escape hatch back to /tree.
+-->
 <template>
     <AppBar />
-    <NavDrawer />
     <v-main>
         <v-container fluid class="admin-shell">
             <aside class="rail" data-testid="admin-rail">

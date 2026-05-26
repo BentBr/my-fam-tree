@@ -92,7 +92,7 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await expect(page.getByTestId('person-detail-title')).toContainText('AuditTarget', { timeout: 10_000 })
 })
 
-test('admin layout keeps the main nav drawer + a back-to-tree affordance', async ({ page }) => {
+test('admin layout drops the main nav drawer and exposes only the back-to-tree link', async ({ page }) => {
     const stamp = Date.now()
     await signIn(page, `admin-nav-owner-${stamp}@example.com`)
     await createFamily(page, `AdminNav-${stamp}`)
@@ -100,13 +100,11 @@ test('admin layout keeps the main nav drawer + a back-to-tree affordance', async
     await page.goto('/admin/audit')
     await expect(page.getByTestId('admin-audit-page')).toBeVisible()
 
-    // The main nav drawer renders here too so Tree/Upcoming/Health stay
-    // one click away. The drawer carries the `nav-drawer` testid and
-    // `nav-admin` is the admin entry; both should be in the DOM.
-    await expect(page.getByTestId('nav-drawer')).toBeVisible()
-    await expect(page.getByTestId('nav-admin')).toBeVisible()
+    // The admin surface deliberately omits the global nav drawer — two
+    // competing nav columns confused users. The dedicated rail
+    // back-to-tree link is the canonical escape hatch.
+    await expect(page.getByTestId('nav-drawer')).toHaveCount(0)
 
-    // The admin rail also has a dedicated back-to-tree link.
     const back = page.getByTestId('admin-rail-back')
     await expect(back).toBeVisible()
     await back.click()

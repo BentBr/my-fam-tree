@@ -8,9 +8,11 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 import { i18n } from '@/i18n'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 
-// AdminLayout's rail must:
-// 1. Mount the regular `NavDrawer` so the top-level Tree/Upcoming/Health
-//    nav stays one click away from /admin/*.
+// AdminLayout's rail:
+// 1. Does NOT mount the main NavDrawer. Admin pages are a focused,
+//    role-gated surface with their own side-rail; surfacing the global
+//    nav alongside it produced two competing nav columns. The
+//    `admin-rail-back` link is the canonical escape hatch back to /tree.
 // 2. Render each rail entry as a Vuetify `v-list-item` (not a raw <a>)
 //    so the visual treatment matches the main nav drawer.
 // 3. Carry a "Back to tree" affordance at the top.
@@ -50,9 +52,9 @@ describe('AdminLayout', () => {
         })
     }
 
-    it('mounts the main NavDrawer alongside the admin rail', async () => {
+    it('does NOT mount the main NavDrawer on admin pages', async () => {
         const w = await mountLayout()
-        expect(w.find('[data-testid="nav-drawer-stub"]').exists()).toBe(true)
+        expect(w.find('[data-testid="nav-drawer-stub"]').exists()).toBe(false)
         expect(w.find('[data-testid="admin-rail"]').exists()).toBe(true)
     })
 
