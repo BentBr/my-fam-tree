@@ -35,6 +35,12 @@ pub use repos::person_contacts::{
 pub use repos::person_favourites::{PersonFavouriteRepo, PersonFavouriteRepoError};
 pub use repos::persons::{Person, PersonDraft, PersonRepo, PersonRepoError};
 pub use repos::refresh_tokens::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo};
+pub use repos::reminder_digests::{
+    DigestRepoError, DigestStatus, ReminderDigest, ReminderDigestRepo,
+};
+pub use repos::reminder_prefs::{
+    ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError,
+};
 pub use repos::users::{Locale, User, UserRepo, UserRepoError};
 pub use role::Role;
 pub use upcoming::{

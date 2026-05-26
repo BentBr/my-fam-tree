@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE reminder_digests SET status = 'sent'::reminder_status, dispatched_at = now(), error = '' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f3e158badf977fba5c27ac0a25b8e9ee12633a25a3a22fb8dbc61b56066479e"
+}

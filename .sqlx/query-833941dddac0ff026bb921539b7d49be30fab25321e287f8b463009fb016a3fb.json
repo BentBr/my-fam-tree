@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT emails_enabled, remind_birthdays, remind_anniversaries,\n                      favourites_only, lead_days\n                 FROM reminder_preferences WHERE user_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "emails_enabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "emails_enabled"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "remind_birthdays",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "remind_birthdays"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "remind_anniversaries",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "remind_anniversaries"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "favourites_only",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "favourites_only"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "lead_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "lead_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "833941dddac0ff026bb921539b7d49be30fab25321e287f8b463009fb016a3fb"
+}

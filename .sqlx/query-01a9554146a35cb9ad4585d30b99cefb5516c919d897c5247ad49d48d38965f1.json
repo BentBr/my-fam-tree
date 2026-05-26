@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE reminder_digests SET error = $2, attempt_count = attempt_count + 1, next_attempt_at = $3 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "01a9554146a35cb9ad4585d30b99cefb5516c919d897c5247ad49d48d38965f1"
+}

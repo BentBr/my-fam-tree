@@ -1,0 +1,119 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, user_id, send_date, event_count, status::text as \"status!\",\n                      error, attempt_count, next_attempt_at, dispatched_at\n                 FROM reminder_digests WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "send_date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "send_date"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "event_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "event_count"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "error"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "attempt_count",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "attempt_count"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "next_attempt_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "next_attempt_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "dispatched_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "reminder_digests",
+            "name": "dispatched_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "bc751b8265feeb1677a778ea9fb6ff8304f449c7f7f1f7c10f2327f8e38a7b09"
+}

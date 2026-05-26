@@ -15,6 +15,8 @@ pub mod person_favourites;
 pub mod persons;
 pub mod pool;
 pub mod refresh_tokens;
+pub mod reminder_digests;
+pub mod reminder_prefs;
 pub mod users;
 
 pub use audit_log::PgAuditLogRepo;
@@ -31,4 +33,6 @@ pub use person_favourites::PgPersonFavouriteRepo;
 pub use persons::PgPersonRepo;
 pub use pool::Database;
 pub use refresh_tokens::PgRefreshTokenRepo;
+pub use reminder_digests::PgReminderDigestRepo;
+pub use reminder_prefs::PgReminderPrefsRepo;
 pub use users::PgUserRepo;
