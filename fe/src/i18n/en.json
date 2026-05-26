@@ -280,7 +280,8 @@
                 "complete": "Completed"
             },
             "empty": "No audit entries match the current filters.",
-            "rowsPerPage": "Rows per page"
+            "rowsPerPage": "Rows per page",
+            "inviteDetails": "Invited {email} as {role}"
         },
         "members": {
             "title": "Members",

@@ -115,6 +115,27 @@ function actionLabel(slug: string): string {
 function entityKindLabel(slug: string): string {
     return t(`admin.audit.entityKind.${slug}`)
 }
+
+// Pull the invitee email + role out of the audit row's metadata blob so
+// `(invite, membership)` rows can render a "Invited {email} as {role}"
+// secondary line. The BE writes both fields (families::invite) but
+// metadata is `serde_json::Value` so we defensively coerce.
+interface InviteMetadata {
+    email?: string
+    role?: string
+}
+
+function inviteMetadata(metadata: unknown): InviteMetadata | null {
+    if (metadata === null || typeof metadata !== 'object') return null
+    const m = metadata as Record<string, unknown>
+    const email = typeof m['email'] === 'string' ? m['email'] : undefined
+    const role = typeof m['role'] === 'string' ? m['role'] : undefined
+    if (email === undefined && role === undefined) return null
+    const out: InviteMetadata = {}
+    if (email !== undefined) out.email = email
+    if (role !== undefined) out.role = role
+    return out
+}
 </script>
 
 <template>
@@ -203,6 +224,23 @@ function entityKindLabel(slug: string): string {
                             <span v-else class="text-medium-emphasis">
                                 {{ entityKindLabel(row.entity_kind) }}
                             </span>
+                            <!-- For (invite, membership) rows the row already
+                                 shows the linked person via entity_person_id;
+                                 the secondary line surfaces the invitee email
+                                 + role from metadata so admins can see who was
+                                 invited to be without opening the row. -->
+                            <div
+                                v-if="row.action === 'invite' && inviteMetadata(row.metadata) !== null"
+                                class="text-caption text-medium-emphasis"
+                                :data-testid="`admin-audit-invite-details-${row.id}`"
+                            >
+                                {{
+                                    t('admin.audit.inviteDetails', {
+                                        email: inviteMetadata(row.metadata)?.email ?? '—',
+                                        role: inviteMetadata(row.metadata)?.role ?? '—',
+                                    })
+                                }}
+                            </div>
                         </td>
                     </tr>
                 </tbody>

@@ -92,6 +92,35 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await expect(page.getByTestId('person-detail-title')).toContainText('AuditTarget', { timeout: 10_000 })
 })
 
+test('invite audit row shows invitee email + role as a secondary line', async ({ page }) => {
+    const stamp = Date.now()
+    await signIn(page, `audit-invite-owner-${stamp}@example.com`)
+    const familyId = await createFamily(page, `AuditInvite-${stamp}`)
+
+    // Trigger an invite — writes the `(invite, membership)` audit row whose
+    // metadata carries `email` + `role`.
+    const inviteeEmail = `audit-invite-target-${stamp}@example.com`
+    const inviteRes = await page.request.post(`/api/v1/families/${familyId}/invites`, {
+        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
+        data: { email: inviteeEmail, role: 'admin' },
+    })
+    expect(inviteRes.ok()).toBeTruthy()
+
+    await page.goto('/admin/audit')
+    await expect(page.getByTestId('admin-audit-page')).toBeVisible()
+
+    // Filter to (invite, membership) so we isolate the row we just produced.
+    await page.getByTestId('admin-audit-filter-action').click()
+    await page.getByRole('option', { name: 'Invited' }).click()
+    await page.getByTestId('admin-audit-filter-kind').click()
+    await page.getByRole('option', { name: 'Membership' }).click()
+
+    const detailsLine = page.locator('[data-testid^="admin-audit-invite-details-"]').first()
+    await expect(detailsLine).toBeVisible()
+    await expect(detailsLine).toContainText(inviteeEmail)
+    await expect(detailsLine).toContainText(/admin/)
+})
+
 test('user role cannot reach /admin/audit (redirects to /tree)', async ({ browser }) => {
     const stamp = Date.now()
     // Owner sets up the family.

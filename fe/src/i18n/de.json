@@ -280,7 +280,8 @@
                 "complete": "Abgeschlossen"
             },
             "empty": "Keine Einträge entsprechen den Filtern.",
-            "rowsPerPage": "Einträge pro Seite"
+            "rowsPerPage": "Einträge pro Seite",
+            "inviteDetails": "Eingeladen: {email} als {role}"
         },
         "members": {
             "title": "Mitglieder",
