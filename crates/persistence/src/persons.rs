@@ -236,4 +236,35 @@ impl PersonRepo for PgPersonRepo {
         .map_err(|e| PersonRepoError::Db(e.to_string()))?;
         Ok(row.map(Into::into))
     }
+
+    async fn set_linked_user_id(
+        &self,
+        family_id: FamilyId,
+        id: PersonId,
+        user_id: Option<UserId>,
+    ) -> Result<(), PersonRepoError> {
+        let res = sqlx::query!(
+            r#"UPDATE persons SET linked_user_id = $3
+                WHERE family_id = $1 AND id = $2"#,
+            family_id.into_uuid(),
+            id.into_uuid(),
+            user_id.map(UserId::into_uuid),
+        )
+        .execute(&self.pool)
+        .await;
+        match res {
+            Ok(out) => {
+                if out.rows_affected() == 0 {
+                    return Err(PersonRepoError::NotFound);
+                }
+                Ok(())
+            }
+            Err(sqlx::Error::Database(db))
+                if db.constraint() == Some("persons_family_id_linked_user_id_key") =>
+            {
+                Err(PersonRepoError::LinkedUserConflict)
+            }
+            Err(e) => Err(PersonRepoError::Db(e.to_string())),
+        }
+    }
 }

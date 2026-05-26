@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE persons SET linked_user_id = $3\n                WHERE family_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "63f4bdc2d4149db5a4a61abc1b78fdb12e9dcd79afba276e3947918cf81d79ed"
+}
