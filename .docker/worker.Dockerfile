@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY . .
 ENV SQLX_OFFLINE=true
+# PRODUCTION build: no extra cargo features. A later change (Phase 4b) will add
+# an optional `test-fixtures` feature behind a `CARGO_FEATURES` build arg for
+# dev/CI use only — the published image must NEVER enable it, so this default
+# build line stays feature-free.
 RUN cargo build --release --bin reminder-worker
 
 FROM debian:bookworm-slim

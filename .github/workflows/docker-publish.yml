@@ -22,13 +22,14 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
+                # Exactly three published images. The migrator (`run_migrations`)
+                # and seeder (`seed`) binaries are bundled into the api image, so
+                # they are NOT published as separate images.
                 include:
                     - image: api
                       file: .docker/api.Dockerfile
                     - image: worker
                       file: .docker/worker.Dockerfile
-                    - image: migrator
-                      file: .docker/migrator.Dockerfile
                     - image: fe
                       file: .docker/fe/Dockerfile
         steps:

@@ -836,7 +836,10 @@ jobs:
                   retention-days: 7
 
     # ============================================================================
-    # Docker build verification - confirm all 4 Dockerfiles still build. We
+    # Docker build verification - confirm the three published Dockerfiles
+    # (api, worker, fe) still build. The migrator + seeder binaries are bundled
+    # into the api image (so building api exercises them) and their standalone
+    # dev-only Dockerfiles are covered by the compose dev stack, not here. We
     # `load: true` (don't push) so this is a pure build smoke test.
     # ============================================================================
     docker-build:
@@ -866,16 +869,6 @@ jobs:
                   tags: my-family/worker:ci
                   cache-from: type=gha,scope=worker
                   cache-to: type=gha,mode=max,scope=worker
-            - name: Build migrator image
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  file: .docker/migrator.Dockerfile
-                  push: false
-                  load: true
-                  tags: my-family/migrator:ci
-                  cache-from: type=gha,scope=migrator
-                  cache-to: type=gha,mode=max,scope=migrator
             - name: Build fe image
               uses: docker/build-push-action@v6
               with:

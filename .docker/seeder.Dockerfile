@@ -1,5 +1,9 @@
 # syntax=docker/dockerfile:1.7
 # Pinned via rust-toolchain.toml; the image just needs to be a recent nightly.
+#
+# DEV/CI ONLY — NOT published to the registry. The seeder (`seed`) binary is
+# bundled into the published api image (.docker/api.Dockerfile) for operator
+# use. This standalone file exists solely for the compose `seeder` service.
 
 # OCI image metadata (overridden by CI via --build-arg).
 ARG OCI_SOURCE="https://github.com/BentBr/my-family"

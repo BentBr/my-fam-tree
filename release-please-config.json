@@ -19,6 +19,7 @@
                 "crates/openapi/Cargo.toml",
                 "crates/persistence/Cargo.toml",
                 "crates/reminder-worker/Cargo.toml",
+                "crates/seeder/Cargo.toml",
                 "fe/package.json"
             ]
         }
