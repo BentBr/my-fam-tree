@@ -1,0 +1,12 @@
+You've been offered ownership of "{{ family_name }}"
+
+Hi {{ to_user_display_name }},
+
+{{ from_user_display_name }} would like to transfer ownership of "{{ family_name }}" to you.
+To accept this transfer, click the link below within the next hour. Both you AND the current owner must click to complete the transfer.
+
+{{ link }}
+
+If you don't want this, simply ignore this email — the transfer expires automatically.
+
+— my-family

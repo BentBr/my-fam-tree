@@ -1,0 +1,12 @@
+Confirm ownership transfer
+
+Hi,
+
+You started an ownership transfer of "{{ family_name }}" to {{ to_user_display_name }}.
+To confirm this from your side, click the link below within the next hour:
+
+{{ link }}
+
+If you didn't request this, ignore this email.
+
+— my-family

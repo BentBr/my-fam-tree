@@ -1,0 +1,12 @@
+Eigentumsübertragung bestätigen
+
+Hallo,
+
+Du hast eine Eigentumsübertragung von „{{ family_name }}" an {{ to_user_display_name }} gestartet.
+Klicke innerhalb der nächsten Stunde auf den folgenden Link, um diese zu bestätigen:
+
+{{ link }}
+
+Falls Du das nicht beantragt hast, ignoriere diese E-Mail.
+
+— my-family

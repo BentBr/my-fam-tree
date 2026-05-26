@@ -1,0 +1,12 @@
+Eigentumsübertragung für „{{ family_name }}" angeboten
+
+Hallo {{ to_user_display_name }},
+
+{{ from_user_display_name }} möchte Dir das Eigentum an „{{ family_name }}" übertragen.
+Klicke innerhalb der nächsten Stunde auf den folgenden Link, um die Übertragung anzunehmen. Damit sie wirksam wird, müssen BEIDE — Du und die aktuelle Inhaberin / der aktuelle Inhaber — den Link klicken.
+
+{{ link }}
+
+Falls Du das nicht möchtest, ignoriere diese E-Mail — die Übertragung läuft automatisch ab.
+
+— my-family

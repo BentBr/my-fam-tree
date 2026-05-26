@@ -55,6 +55,40 @@ struct EmailChangeDe<'a> {
     new_email: &'a str,
 }
 
+#[derive(Template, Debug)]
+#[template(path = "owner_transfer_owner_en.txt", escape = "none")]
+struct OwnerTransferOwnerEn<'a> {
+    family_name: &'a str,
+    to_user_display_name: &'a str,
+    link: &'a str,
+}
+
+#[derive(Template, Debug)]
+#[template(path = "owner_transfer_owner_de.txt", escape = "none")]
+struct OwnerTransferOwnerDe<'a> {
+    family_name: &'a str,
+    to_user_display_name: &'a str,
+    link: &'a str,
+}
+
+#[derive(Template, Debug)]
+#[template(path = "owner_transfer_admin_en.txt", escape = "none")]
+struct OwnerTransferAdminEn<'a> {
+    family_name: &'a str,
+    from_user_display_name: &'a str,
+    to_user_display_name: &'a str,
+    link: &'a str,
+}
+
+#[derive(Template, Debug)]
+#[template(path = "owner_transfer_admin_de.txt", escape = "none")]
+struct OwnerTransferAdminDe<'a> {
+    family_name: &'a str,
+    from_user_display_name: &'a str,
+    to_user_display_name: &'a str,
+    link: &'a str,
+}
+
 /// Render the magic-link sign-in email for `locale`.
 ///
 /// Returns `(subject, body)`. Errors propagate from askama (template logic
@@ -117,6 +151,61 @@ pub fn render_email_change(
         Locale::De => (
             "Bestätige deine E-Mail-Änderung bei my-family".to_string(),
             EmailChangeDe { link, new_email }.render()?,
+        ),
+    };
+    Ok((subject, body))
+}
+
+/// Render the owner-side confirmation email for an ownership transfer.
+///
+/// Returns `(subject, body)`. Sent to the **current** owner's address so the
+/// recipient confirms they really initiated the handoff.
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
+pub fn render_owner_transfer_owner(
+    locale: Locale,
+    family_name: &str,
+    to_user_display_name: &str,
+    link: &str,
+) -> Result<(String, String), askama::Error> {
+    let (subject, body) = match locale {
+        Locale::En => (
+            "Confirm ownership transfer".to_string(),
+            OwnerTransferOwnerEn { family_name, to_user_display_name, link }.render()?,
+        ),
+        Locale::De => (
+            "Eigentumsübertragung bestätigen".to_string(),
+            OwnerTransferOwnerDe { family_name, to_user_display_name, link }.render()?,
+        ),
+    };
+    Ok((subject, body))
+}
+
+/// Render the target-admin-side acceptance email for an ownership transfer.
+///
+/// Returns `(subject, body)`. Sent to the prospective new owner so they
+/// confirm they accept the role swap.
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
+pub fn render_owner_transfer_admin(
+    locale: Locale,
+    family_name: &str,
+    from_user_display_name: &str,
+    to_user_display_name: &str,
+    link: &str,
+) -> Result<(String, String), askama::Error> {
+    let (subject, body) = match locale {
+        Locale::En => (
+            format!("You've been offered ownership of \"{family_name}\""),
+            OwnerTransferAdminEn { family_name, from_user_display_name, to_user_display_name, link }
+                .render()?,
+        ),
+        Locale::De => (
+            format!("Eigentumsübertragung für „{family_name}\" angeboten"),
+            OwnerTransferAdminDe { family_name, from_user_display_name, to_user_display_name, link }
+                .render()?,
         ),
     };
     Ok((subject, body))
