@@ -3,6 +3,7 @@ pub mod families;
 pub mod family_invites;
 pub mod family_memberships;
 pub mod magic_link_tokens;
+pub mod owner_transfers;
 pub mod parent_links;
 pub mod partnerships;
 pub mod person_contacts;

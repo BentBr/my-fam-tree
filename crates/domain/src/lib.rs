@@ -20,6 +20,9 @@ pub use repos::family_memberships::{
 pub use repos::magic_link_tokens::{
     MagicLinkPurpose, MagicLinkRecord, MagicLinkRepo, MagicLinkRepoError,
 };
+pub use repos::owner_transfers::{
+    OwnerTransfer, OwnerTransferRepo, OwnerTransferRepoError, TransferSide,
+};
 pub use repos::parent_links::{ParentKind, ParentLink, ParentLinkRepo, ParentLinkRepoError};
 pub use repos::partnerships::{
     Partnership, PartnershipDraft, PartnershipEndReason, PartnershipKind, PartnershipRepo,
