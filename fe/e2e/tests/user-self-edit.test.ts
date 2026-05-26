@@ -77,10 +77,18 @@ test('user role can edit their own linked person row', async ({ browser }) => {
     await invitee.goto(rewriteEmailLink(inviteLink))
     await expect(invitee).toHaveURL(/\/tree$/)
 
+    // Wait for the tree query to actually render a node before asserting
+    // on `.current-user`. The URL flips to /tree the moment InviteAccept
+    // navigates, but the tree GET is still in flight — selecting
+    // `.current-user` before the canvas paints is the race that made
+    // this test flaky. The linked_user_id is written server-side during
+    // accept, so once ANY node is visible the current-user class is too.
+    await expect(invitee.locator('[data-testid^="tree-node-"]').first()).toBeVisible({ timeout: 15_000 })
+
     // Open the recipient's own person row — `.current-user` is set by
     // FamilyTree on the node whose linked_user_id matches the JWT user.
     const myNode = invitee.locator('.tree-node.current-user').first()
-    await expect(myNode).toBeVisible()
+    await expect(myNode).toBeVisible({ timeout: 15_000 })
     await myNode.click()
     await expect(invitee.getByTestId('person-detail')).toBeVisible()
     await expect(invitee.getByTestId('person-edit-button')).toBeVisible()
@@ -93,18 +101,20 @@ test('user role can edit their own linked person row', async ({ browser }) => {
     await nicknameField.fill(`SelfNick-${stamp}`)
     await invitee.getByTestId('person-submit').click()
 
-    // Drawer flips back to view mode + the nickname is shown.
-    await expect(invitee.getByTestId('person-field-nickname')).toContainText(`SelfNick-${stamp}`)
+    // Drawer flips back to view mode + the nickname is shown. The flip
+    // waits on the PATCH + the drawer's re-render, so give it headroom.
+    await expect(invitee.getByTestId('person-field-nickname')).toContainText(`SelfNick-${stamp}`, { timeout: 15_000 })
 
     // Reload to confirm the value persisted server-side. Re-navigate
     // directly rather than `reload()` — a fresh route lands without the
     // detail drawer scrim that can intercept the click on mobile-shaped
     // viewports.
     await invitee.goto('/tree')
+    await expect(invitee.locator('[data-testid^="tree-node-"]').first()).toBeVisible({ timeout: 15_000 })
     const myNodeAfter = invitee.locator('.tree-node.current-user').first()
-    await expect(myNodeAfter).toBeVisible()
+    await expect(myNodeAfter).toBeVisible({ timeout: 15_000 })
     await myNodeAfter.click()
-    await expect(invitee.getByTestId('person-field-nickname')).toContainText(`SelfNick-${stamp}`)
+    await expect(invitee.getByTestId('person-field-nickname')).toContainText(`SelfNick-${stamp}`, { timeout: 15_000 })
 
     await inviteeCtx.close()
     await ownerCtx.close()
