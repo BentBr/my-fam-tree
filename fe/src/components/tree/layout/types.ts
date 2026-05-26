@@ -14,6 +14,10 @@ export interface BackendNode {
     birth_date?: string | null
     death_date?: string | null
     linked_user_id?: string | null
+    /** Per-user favourite mark for the signed-in caller. Optional in the
+     * type so test fixtures (which build trees ad-hoc) don't have to
+     * supply it; the BE always sends a bool. */
+    is_favourite_for_me?: boolean
     parent_ids: string[]
     partner_ids: string[]
 }
@@ -61,6 +65,7 @@ export interface Positioned {
     birth_date: string | null
     death_date: string | null
     linked_user_id: string | null
+    is_favourite_for_me: boolean
     x: number
     y: number
 }

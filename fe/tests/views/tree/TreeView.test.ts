@@ -1,3 +1,4 @@
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -40,9 +41,12 @@ async function mountTree(query = '') {
     const router = makeRouter()
     await router.push(`/tree${query}`)
     await router.isReady()
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
     return mount(TreeView, {
         global: {
-            plugins: [i18n, router],
+            plugins: [i18n, router, [VueQueryPlugin, { queryClient }]],
             stubs: {
                 'v-toolbar': { template: '<div><slot /></div>' },
                 'v-toolbar-title': { template: '<div><slot /></div>' },

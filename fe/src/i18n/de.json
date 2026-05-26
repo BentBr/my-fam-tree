@@ -183,7 +183,11 @@
             "roleLabel": "Rolle",
             "submit": "Einladung senden"
         },
-        "linkedAccount": "Hat Konto"
+        "linkedAccount": "Hat Konto",
+        "favourite": {
+            "markTooltip": "Als Favorit markieren",
+            "unmarkTooltip": "Favorit entfernen"
+        }
     },
     "upcoming": {
         "title": "Anstehende Termine",
@@ -193,7 +197,8 @@
         },
         "filter": {
             "birthday": "Geburtstag",
-            "anniversary": "Jahrestag"
+            "anniversary": "Jahrestag",
+            "favourites": "Favoriten"
         },
         "kinds": {
             "birthday": "Geburtstag",
@@ -232,7 +237,9 @@
         "invite_cancelled": "Einladung storniert",
         "transfer_started": "Übertragung gestartet — bitte beide Postfächer prüfen",
         "transfer_confirmed": "Seite bestätigt",
-        "transfer_cancelled": "Übertragung abgebrochen"
+        "transfer_cancelled": "Übertragung abgebrochen",
+        "favourite_marked": "Als Favorit markiert",
+        "favourite_unmarked": "Favorit entfernt"
     },
     "admin": {
         "nav": {

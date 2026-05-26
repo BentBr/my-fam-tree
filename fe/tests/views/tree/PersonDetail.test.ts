@@ -86,6 +86,7 @@ vi.mock('@/api/hooks/persons', () => ({
     useListPersons: () => ({ data: listData, isLoading: ref(false), error: ref(null) }),
     useGetPerson: () => ({ data: personGetData, isLoading: personGetIsLoading, error: ref(null) }),
     useDeletePerson: () => ({ mutateAsync: delMutate, isPending: ref(false) }),
+    useSetFavourite: () => ({ mutate: vi.fn(), isPending: ref(false) }),
 }))
 
 const inviteMutate = vi.fn()

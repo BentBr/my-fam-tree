@@ -158,3 +158,88 @@ export function useDeletePerson() {
         },
     })
 }
+
+/**
+ * Shape of a tree node as it lives in the `['tree']` query cache. Mirrors
+ * the BE's `TreeNode` schema; declared inline (instead of imported from
+ * `schema.d.ts`) so the optimistic-update path stays self-contained and
+ * doesn't drag the full generated type tree into this file.
+ */
+interface CachedTreeNode {
+    id: string
+    is_favourite_for_me: boolean
+    [k: string]: unknown
+}
+interface CachedTreePayload {
+    nodes: CachedTreeNode[]
+    [k: string]: unknown
+}
+
+/**
+ * Per-user favourite toggle. The mark is private — two members of the
+ * same family see independent state on the same person row — so this
+ * mutation never invalidates the family-wide caches the way person CRUD
+ * does. We optimistically flip `is_favourite_for_me` on the cached
+ * `['tree']` payload + the cached `['person', id]` GET so the UI feels
+ * instant; on rejection both writes roll back via the snapshot taken
+ * inside `onMutate`.
+ *
+ * Toasts: a brief `favourite_marked` / `favourite_unmarked` so the
+ * action is acknowledged. The error toast pipeline in `queryClient.ts`
+ * still surfaces server failures.
+ */
+export function useSetFavourite() {
+    const qc = useQueryClient()
+    const ui = useUiStore()
+    return useMutation({
+        mutationFn: async (vars: { id: string; isFavourite: boolean }) => {
+            const { data, error } = await client.PATCH('/api/v1/persons/{id}/favourite', {
+                params: { path: { id: vars.id } },
+                body: { is_favourite: vars.isFavourite },
+            })
+            if (error !== undefined) throw error
+            if (data === undefined) throw new Error('empty response from PATCH /persons/{id}/favourite')
+            return data.data
+        },
+        onMutate: async (vars) => {
+            await qc.cancelQueries({ queryKey: ['tree'] })
+            await qc.cancelQueries({ queryKey: ['person', vars.id] })
+            const prevTree = qc.getQueryData<CachedTreePayload>(['tree'])
+            // The per-person GET uses a reactive id ref as part of its key —
+            // tanstack-query keys are compared structurally, so we use the
+            // broad prefix here and roll back the same way.
+            const prevPerson = qc.getQueriesData<{ is_favourite_for_me?: boolean }>({
+                queryKey: ['person', vars.id],
+            })
+            if (prevTree !== undefined) {
+                qc.setQueryData<CachedTreePayload>(['tree'], {
+                    ...prevTree,
+                    nodes: prevTree.nodes.map((n) =>
+                        n.id === vars.id ? { ...n, is_favourite_for_me: vars.isFavourite } : n,
+                    ),
+                })
+            }
+            for (const [key, value] of prevPerson) {
+                if (value !== undefined && value !== null) {
+                    qc.setQueryData(key, { ...value, is_favourite_for_me: vars.isFavourite })
+                }
+            }
+            return { prevTree, prevPerson }
+        },
+        onError: (_err, _vars, ctx) => {
+            if (ctx === undefined) return
+            if (ctx.prevTree !== undefined) {
+                qc.setQueryData(['tree'], ctx.prevTree)
+            }
+            for (const [key, value] of ctx.prevPerson) {
+                qc.setQueryData(key, value)
+            }
+        },
+        onSuccess: (_data, vars) => {
+            ui.pushToast({
+                kind: 'success',
+                message: i18n.global.t(vars.isFavourite ? 'toasts.favourite_marked' : 'toasts.favourite_unmarked'),
+            })
+        },
+    })
+}

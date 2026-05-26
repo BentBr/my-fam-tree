@@ -29,6 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     (e: 'select', id: string): void
+    (e: 'toggle-favourite', id: string, next: boolean): void
 }>()
 
 const svgEl = ref<SVGSVGElement | null>(null)
@@ -280,6 +281,7 @@ defineExpose({ refit: () => fitToView(true) })
                     :is-dimmed="hoverId !== null && n.id !== hoverId && !relatedIds.has(n.id)"
                     @select="(id: string) => emit('select', id)"
                     @hover="(id: string | null) => onNodeHover(id)"
+                    @toggle-favourite="(id: string, next: boolean) => emit('toggle-favourite', id, next)"
                 />
             </g>
         </svg>

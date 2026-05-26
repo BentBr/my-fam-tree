@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { NODE_H, NODE_W, type Positioned } from './layout'
 
@@ -19,11 +20,17 @@ const props = defineProps<{
     isDimmed?: boolean
 }>()
 
+const { t } = useI18n()
+
 const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
 
 const emit = defineEmits<{
     (e: 'select', id: string): void
     (e: 'hover', id: string | null): void
+    /** Toggle the per-user favourite mark. Parent decides whether to
+     * call into `useSetFavourite` — TreeNode stays presentational and
+     * never touches the network directly. */
+    (e: 'toggle-favourite', id: string, next: boolean): void
 }>()
 
 // Width budget for the text columns (right of the avatar circle). Used to
@@ -138,6 +145,41 @@ function onHoverEnter(): void {
 function onHoverLeave(): void {
     emit('hover', null)
 }
+
+/**
+ * Click on the star: flip the favourite mark. `stopPropagation` is
+ * critical — without it the click bubbles to the surrounding `<g>` and
+ * also fires `select`, which would open the drawer every time the user
+ * stars a card.
+ */
+function onStarClick(evt: Event): void {
+    evt.stopPropagation()
+    emit('toggle-favourite', props.node.id, !props.node.is_favourite_for_me)
+}
+
+const favouriteTooltip = computed(() =>
+    t(props.node.is_favourite_for_me ? 'person.favourite.unmarkTooltip' : 'person.favourite.markTooltip'),
+)
+
+// Star geometry. We hand-build the SVG `points` attribute for a 5-point
+// star so the icon stays scoped to TreeNode (no extra lucide icon, no
+// runtime path lookups). The star sits in the top-right of the card; we
+// centre at (cx, cy) with outer radius `R` and inner radius ~R*0.45.
+const STAR_CX = NODE_W - 18
+const STAR_CY = 16
+const STAR_R = 9
+const STAR_POINTS = (() => {
+    const pts: string[] = []
+    for (let i = 0; i < 10; i += 1) {
+        const radius = i % 2 === 0 ? STAR_R : STAR_R * 0.45
+        // Start at the top (angle = -90°), step 36° between alternating outer/inner vertices.
+        const angle = ((i * 36 - 90) * Math.PI) / 180
+        const x = STAR_CX + radius * Math.cos(angle)
+        const y = STAR_CY + radius * Math.sin(angle)
+        pts.push(`${x.toFixed(2)},${y.toFixed(2)}`)
+    }
+    return pts.join(' ')
+})()
 </script>
 
 <template>
@@ -166,6 +208,33 @@ function onHoverLeave(): void {
         @mouseleave="onHoverLeave"
     >
         <rect :width="NODE_W" :height="NODE_H" rx="12" />
+        <!--
+            Per-user favourite toggle. Outline-only when unset; filled
+            gold when marked. The hit target is a transparent square
+            around the star so taps on tablets land reliably. Click
+            bubbling is stopped in the handler so the card's onSelect
+            doesn't ALSO fire on the same gesture.
+        -->
+        <g
+            class="favourite"
+            :class="{ filled: props.node.is_favourite_for_me }"
+            role="button"
+            tabindex="0"
+            :aria-label="favouriteTooltip"
+            :data-testid="`tree-node-favourite-${props.node.id}`"
+            @click="onStarClick"
+            @keydown.enter.stop="onStarClick"
+            @keydown.space.stop.prevent="onStarClick"
+        >
+            <rect
+                :x="STAR_CX - STAR_R - 3"
+                :y="STAR_CY - STAR_R - 3"
+                :width="(STAR_R + 3) * 2"
+                :height="(STAR_R + 3) * 2"
+                fill="transparent"
+            />
+            <polygon :points="STAR_POINTS" />
+        </g>
         <circle :cx="32" :cy="NODE_H / 2" r="22" class="avatar" />
         <text :x="32" :y="NODE_H / 2 + 6" text-anchor="middle" class="initials">
             {{ initials(props.node) }}
@@ -235,27 +304,35 @@ function onHoverLeave(): void {
     }
 }
 
-.tree-node rect {
+/* Outer card rect. The first <rect> child is the card itself — the
+ * later <rect> inside `.favourite` is the transparent hit target for
+ * the star and must NOT inherit these styles. We scope via the
+ * direct-child selector. */
+.tree-node > rect {
     fill: rgb(var(--v-theme-surface));
-    stroke: rgb(var(--v-theme-on-surface) / 0.18);
-    stroke-width: 1;
+    /* Stronger border + heavier shadow so the cards pop on the grey
+     * canvas. Was: 1px @ 0.18 alpha + a soft 0.08 shadow. Replaced
+     * with a 1.5px @ 0.20 stroke; shadow strength is controlled by
+     * the SVG filter defs in FamilyTree.vue. */
+    stroke: rgb(var(--v-theme-on-surface) / 0.2);
+    stroke-width: 1.5;
     transition:
         stroke 150ms ease-in-out,
         stroke-width 150ms ease-in-out;
 }
-.tree-node.selected rect,
-.tree-node:focus-visible rect {
+.tree-node.selected > rect,
+.tree-node:focus-visible > rect {
     stroke: rgb(var(--v-theme-primary));
     stroke-width: 2;
 }
-.tree-node.hovered rect {
+.tree-node.hovered > rect {
     stroke: rgb(var(--v-theme-primary) / 0.6);
 }
 
 /* Direct relation of the hovered node: thicker blue-tinted stroke so the
  * "this person is connected to who you're pointing at" reads without
  * stealing the hovered card's own emphasis. */
-.tree-node.related rect {
+.tree-node.related > rect {
     stroke: rgb(var(--v-theme-primary) / 0.75);
     stroke-width: 2;
 }
@@ -318,13 +395,13 @@ function onHoverLeave(): void {
  * distinct from the primary-blue used for selected/hovered cards so the
  * user marker doesn't read as a transient state. The final design will
  * iterate; this only needs to be unmistakable at a glance. */
-.tree-node.current-user rect {
+.tree-node.current-user > rect {
     stroke: #f59e0b;
     stroke-width: 2.5;
     fill: #fffbeb;
 }
-.tree-node.current-user.selected rect,
-.tree-node.current-user:focus-visible rect {
+.tree-node.current-user.selected > rect,
+.tree-node.current-user:focus-visible > rect {
     stroke-width: 3;
 }
 
@@ -332,7 +409,7 @@ function onHoverLeave(): void {
  * glance. The avatar+text inside the SVG can't use `filter: grayscale` —
  * SVG filters require a <filter> def — so we tint the rect fill and the
  * stroke instead, and lighten the text/initials. */
-.tree-node.deceased rect {
+.tree-node.deceased > rect {
     fill: #f1f5f9;
     stroke: #cbd5e1;
 }
@@ -346,5 +423,30 @@ function onHoverLeave(): void {
 .tree-node.deceased .name,
 .tree-node.deceased .dates {
     fill: #64748b;
+}
+
+/* Favourite star — outline-only when unset (subtle dark stroke so it
+ * reads as "available action" without dominating the card), filled
+ * gold once marked. The hit-rect intercepts pointer events so the
+ * polygon doesn't need to grow to be tappable. */
+.favourite {
+    cursor: pointer;
+}
+.favourite polygon {
+    fill: none;
+    stroke: rgb(var(--v-theme-on-surface) / 0.45);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    transition:
+        fill 150ms ease-in-out,
+        stroke 150ms ease-in-out;
+}
+.favourite:hover polygon,
+.favourite:focus-visible polygon {
+    stroke: #f59e0b;
+}
+.favourite.filled polygon {
+    fill: #f59e0b;
+    stroke: #d97706;
 }
 </style>

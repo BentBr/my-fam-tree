@@ -18,7 +18,15 @@ function toggle(target: 'birthday' | 'anniversary'): void {
     filter.value = filter.value === target ? 'all' : target
 }
 
-const query = useUpcoming(filter)
+// Third pill: "Favourites only". Per-user; the BE resolves the mark set
+// against the signed-in caller. AND-composes with the kind filter — you
+// can ask for "favourite + birthday" simultaneously.
+const favouritesOnly = ref(false)
+function toggleFavourites(): void {
+    favouritesOnly.value = !favouritesOnly.value
+}
+
+const query = useUpcoming(filter, favouritesOnly)
 
 const iconFor: Record<string, string> = {
     birthday: 'cake',
@@ -120,6 +128,17 @@ function onRowClick(row: UpcomingRow): void {
                     @click="toggle('anniversary')"
                 >
                     {{ t('upcoming.filter.anniversary') }}
+                </v-btn>
+                <v-btn
+                    :variant="favouritesOnly ? 'flat' : 'tonal'"
+                    :color="favouritesOnly ? 'primary' : undefined"
+                    prepend-icon="star"
+                    rounded="lg"
+                    density="comfortable"
+                    data-testid="upcoming-filter-favourites"
+                    @click="toggleFavourites"
+                >
+                    {{ t('upcoming.filter.favourites') }}
                 </v-btn>
             </div>
         </v-toolbar>

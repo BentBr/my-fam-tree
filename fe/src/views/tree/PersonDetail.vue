@@ -3,7 +3,7 @@ import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreateInvite } from '@/api/hooks/invites'
-import { useDeletePerson, useGetPerson, useListPersons } from '@/api/hooks/persons'
+import { useDeletePerson, useGetPerson, useListPersons, useSetFavourite } from '@/api/hooks/persons'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 
@@ -107,12 +107,29 @@ function onSaved(): void {
 function onRelationsChanged(): void {
     emit('changed')
 }
+
+const fav = useSetFavourite()
+const isFavourite = computed(() => person.value?.is_favourite_for_me === true)
+function toggleFavourite(): void {
+    if (person.value === null) return
+    fav.mutate({ id: person.value.id, isFavourite: !isFavourite.value })
+}
 </script>
 
 <template>
     <section class="pa-4" data-testid="person-detail">
         <header class="d-flex align-center justify-space-between mb-3">
             <div class="d-flex align-center ga-2">
+                <v-btn
+                    v-if="person !== null"
+                    variant="text"
+                    size="small"
+                    :color="isFavourite ? 'warning' : undefined"
+                    :icon="isFavourite ? 'mdi-star' : 'mdi-star-outline'"
+                    :aria-label="t(isFavourite ? 'person.favourite.unmarkTooltip' : 'person.favourite.markTooltip')"
+                    :data-testid="`person-detail-favourite-${person.id}`"
+                    @click="toggleFavourite"
+                />
                 <h3 v-if="person" class="text-h6" data-testid="person-detail-title">
                     {{ person.given_name }} {{ person.family_name }}
                 </h3>

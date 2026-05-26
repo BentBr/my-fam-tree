@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useSetFavourite } from '@/api/hooks/persons'
 import { useTree } from '@/api/hooks/relationships'
 import FamilyTree from '@/components/tree/FamilyTree.vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
@@ -109,6 +110,12 @@ function onCreated(id: string): void {
     void tree.refetch()
 }
 
+const setFavourite = useSetFavourite()
+function onToggleFavourite(id: string, next: boolean): void {
+    // The hook itself owns optimistic update + rollback; we just kick it.
+    setFavourite.mutate({ id, isFavourite: next })
+}
+
 // Mirror `?center=` into `selectedId` reactively. Two-phase so Vuetify's
 // `v-navigation-drawer` (temporary) sees a clean `false → true` edge:
 // the drawer mounts with `selectedId=null` (model-value=false), then
@@ -195,6 +202,7 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
                     :center-on-id="centerOnId"
                     :current-user-id="auth.user?.id ?? null"
                     @select="onSelect"
+                    @toggle-favourite="onToggleFavourite"
                 />
             </div>
 

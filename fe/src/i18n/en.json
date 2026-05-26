@@ -183,7 +183,11 @@
             "roleLabel": "Role",
             "submit": "Send invite"
         },
-        "linkedAccount": "Has account"
+        "linkedAccount": "Has account",
+        "favourite": {
+            "markTooltip": "Mark as favourite",
+            "unmarkTooltip": "Remove favourite"
+        }
     },
     "upcoming": {
         "title": "Upcoming dates",
@@ -193,7 +197,8 @@
         },
         "filter": {
             "birthday": "Birthday",
-            "anniversary": "Jahrestag"
+            "anniversary": "Jahrestag",
+            "favourites": "Favourites"
         },
         "kinds": {
             "birthday": "Birthday",
@@ -232,7 +237,9 @@
         "invite_cancelled": "Invite cancelled",
         "transfer_started": "Transfer started — check both inboxes",
         "transfer_confirmed": "Side confirmed",
-        "transfer_cancelled": "Pending transfer cancelled"
+        "transfer_cancelled": "Pending transfer cancelled",
+        "favourite_marked": "Marked as favourite",
+        "favourite_unmarked": "Favourite removed"
     },
     "admin": {
         "nav": {
