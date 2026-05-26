@@ -102,6 +102,7 @@ pub enum ErrorCode {
     ConflictStale,
     EmailTaken,
     InviteDuplicate,
+    OwnerTransferPending,
     RateLimited,
     Upstream,
     Internal,
@@ -130,7 +131,8 @@ impl ErrorCode {
             | Self::ParentLinkDuplicate
             | Self::ConflictStale
             | Self::EmailTaken
-            | Self::InviteDuplicate => StatusCode::CONFLICT,
+            | Self::InviteDuplicate
+            | Self::OwnerTransferPending => StatusCode::CONFLICT,
             Self::ValidationFailed => StatusCode::UNPROCESSABLE_ENTITY,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::Upstream => StatusCode::BAD_GATEWAY,
@@ -162,6 +164,7 @@ impl ErrorCode {
             Self::ConflictStale => "Stale state",
             Self::EmailTaken => "Email already in use",
             Self::InviteDuplicate => "Invite already pending for this email",
+            Self::OwnerTransferPending => "An owner transfer is already pending for this family",
             Self::RateLimited => "Rate limited",
             Self::Upstream => "Upstream service error",
             Self::Internal => "Internal server error",
@@ -192,6 +195,7 @@ impl ErrorCode {
             Self::ConflictStale => "conflict.stale",
             Self::EmailTaken => "email.taken",
             Self::InviteDuplicate => "invite.duplicate",
+            Self::OwnerTransferPending => "owner_transfer.pending",
             Self::RateLimited => "rate_limited",
             Self::Upstream => "upstream",
             Self::Internal => "internal",
@@ -220,6 +224,7 @@ impl ErrorCode {
         Self::ConflictStale,
         Self::EmailTaken,
         Self::InviteDuplicate,
+        Self::OwnerTransferPending,
         Self::RateLimited,
         Self::Upstream,
         Self::Internal,
@@ -270,6 +275,8 @@ pub enum ApiError {
     EmailTaken { email: String },
     #[error("invite already pending for this email")]
     InviteDuplicate,
+    #[error("an owner transfer is already pending for this family")]
+    OwnerTransferPending,
     #[error("rate limited; retry after {retry_after_secs}s")]
     RateLimited { retry_after_secs: u32 },
     #[error("upstream {service}: {detail}")]
@@ -303,6 +310,7 @@ impl ApiError {
             Self::ConflictStale => ErrorCode::ConflictStale,
             Self::EmailTaken { .. } => ErrorCode::EmailTaken,
             Self::InviteDuplicate => ErrorCode::InviteDuplicate,
+            Self::OwnerTransferPending => ErrorCode::OwnerTransferPending,
             Self::RateLimited { .. } => ErrorCode::RateLimited,
             Self::Upstream { .. } => ErrorCode::Upstream,
             Self::Internal(_) => ErrorCode::Internal,
