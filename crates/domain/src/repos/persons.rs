@@ -90,4 +90,14 @@ pub trait PersonRepo: Send + Sync {
         family_id: FamilyId,
         user_id: UserId,
     ) -> Result<Option<Person>, PersonRepoError>;
+
+    /// Set (or clear) the `linked_user_id` for a single person row. Used by
+    /// the invite-accept flow to atomically wire the newly-joined user to
+    /// the person they were invited as. Passing `None` clears the link.
+    async fn set_linked_user_id(
+        &self,
+        family_id: FamilyId,
+        id: PersonId,
+        user_id: Option<UserId>,
+    ) -> Result<(), PersonRepoError>;
 }
