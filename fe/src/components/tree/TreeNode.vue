@@ -434,19 +434,29 @@ const STAR_POINTS = (() => {
 }
 .favourite polygon {
     fill: none;
-    stroke: rgb(var(--v-theme-on-surface) / 0.45);
-    stroke-width: 1.5;
+    /* Vuetify theme RGB vars are comma-separated triplets, so the
+     * `rgb(... / a)` slash syntax is INVALID and silently drops the
+     * declaration — which left the idle star with the SVG default
+     * `stroke: none` (invisible until hover). Use the `rgba(var, a)`
+     * comma form so the unmarked star is always faintly visible. */
+    stroke: rgba(var(--v-theme-on-surface), 0.55);
+    stroke-width: 1.75;
     stroke-linejoin: round;
     transition:
         fill 150ms ease-in-out,
-        stroke 150ms ease-in-out;
+        stroke 150ms ease-in-out,
+        opacity 150ms ease-in-out;
+    /* Always present, just muted; hover/marked states lift it. */
+    opacity: 0.55;
 }
 .favourite:hover polygon,
 .favourite:focus-visible polygon {
     stroke: #f59e0b;
+    opacity: 1;
 }
 .favourite.filled polygon {
     fill: #f59e0b;
     stroke: #d97706;
+    opacity: 1;
 }
 </style>
