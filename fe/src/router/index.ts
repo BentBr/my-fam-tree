@@ -89,6 +89,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/AdminMembers.vue'),
         meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
     },
+    {
+        path: '/admin/invites',
+        name: 'admin-invites',
+        component: () => import('@/views/admin/AdminInvites.vue'),
+        meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
+    },
     // /reminders/* etc. are added in Phase 4b.
 ]
 

@@ -8,10 +8,9 @@ import AppBar from '@/components/layout/AppBar.vue'
 const { t } = useI18n()
 const route = useRoute()
 
-// Members and Pending invites land in Phases C / D. We list them now so
-// the side-rail's shape is final; the items are routed to placeholder
-// paths that don't exist yet, so disable them visually until the views
-// ship. Disabling keeps the IA discoverable without producing 404s.
+// Side-rail items. The `enabled` flag remains on the type so future
+// surfaces (reminders, settings) can ship disabled until their view
+// lands without producing 404s.
 interface AdminNavItem {
     key: string
     to: string
@@ -21,7 +20,7 @@ interface AdminNavItem {
 
 const items = computed<AdminNavItem[]>(() => [
     { key: 'members', to: '/admin/members', label: t('admin.nav.members'), enabled: true },
-    { key: 'invites', to: '/admin/invites', label: t('admin.nav.invites'), enabled: false },
+    { key: 'invites', to: '/admin/invites', label: t('admin.nav.invites'), enabled: true },
     { key: 'audit', to: '/admin/audit', label: t('admin.nav.audit'), enabled: true },
 ])
 </script>
