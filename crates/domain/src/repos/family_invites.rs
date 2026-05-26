@@ -11,6 +11,7 @@ pub struct Invite {
     pub email: String,
     pub invited_role: Role,
     pub invited_by: UserId,
+    pub person_id: Option<Uuid>,
     pub expires_at: DateTime<Utc>,
     pub accepted_at: Option<DateTime<Utc>>,
 }
@@ -27,12 +28,14 @@ pub enum InviteRepoError {
 
 #[async_trait]
 pub trait FamilyInviteRepo: Send + Sync {
+    #[allow(clippy::too_many_arguments)]
     async fn create(
         &self,
         family_id: FamilyId,
         email: &str,
         invited_role: Role,
         invited_by: UserId,
+        person_id: Option<Uuid>,
         token_hash: &[u8],
         expires_at: DateTime<Utc>,
     ) -> Result<Uuid, InviteRepoError>;
@@ -49,5 +52,15 @@ pub trait FamilyInviteRepo: Send + Sync {
         &self,
         family_id: FamilyId,
     ) -> Result<Vec<Invite>, InviteRepoError>;
+
+    /// Lookup a pending (not-accepted, not-expired) invite by email within
+    /// the given family. Returns `None` when no such row exists, so the API
+    /// layer can return `ApiError::InviteDuplicate` only when truthful.
+    async fn find_pending_by_email(
+        &self,
+        family_id: FamilyId,
+        email: &str,
+    ) -> Result<Option<Invite>, InviteRepoError>;
+
     async fn cancel(&self, id: Uuid, family_id: FamilyId) -> Result<(), InviteRepoError>;
 }
