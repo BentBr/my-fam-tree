@@ -6,6 +6,7 @@ license.workspace = true
 publish = false
 
 [dependencies]
+anyhow.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 serde.workspace = true

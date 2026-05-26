@@ -1,41 +1,24 @@
-//! Upcoming-dates orchestration for `GET /api/v1/upcoming`.
+//! Wire DTO + label rendering for `GET /api/v1/upcoming`.
 //!
-//! Pulls all persons + partnerships for a family, projects each
-//! source into a list of `UpcomingEvent` rows (birthday, wedding
-//! anniversary, death anniversary), then filters / sorts / limits.
-//!
-//! "Next occurrence" maps a `NaiveDate` (the month-day of birth /
-//! death / marriage) to the upcoming anniversary relative to `today`:
-//! - if this year's anniversary is today or later → use this year.
-//! - else → use next year.
-//!
-//! `years` is `next_date.year() - source_date.year()`. For a birthday
-//! it reads as "they will turn N"; for an anniversary it reads as
-//! "Nth anniversary".
+//! The projection itself lives in [`my_family_domain::upcoming`] so the
+//! reminder worker can reuse it. This module maps the domain event to the
+//! API's `ToSchema` shape and renders the English `label` server-side (the FE
+//! shows it verbatim; i18n stays on `upcoming.kinds.*` for the chips).
 
-use std::collections::HashSet;
-use std::sync::Arc;
-
-use chrono::{Datelike, NaiveDate};
-use my_family_domain::{
-    FamilyId, Partnership, PartnershipRepo, Person, PersonFavouriteRepo, PersonId, PersonRepo,
-    UserId,
-};
+use chrono::NaiveDate;
+use my_family_domain::{UpcomingEvent as DomainEvent, UpcomingKind};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// One enumerated future date.
+pub use my_family_domain::{build_upcoming, UpcomingFilter, DEFAULT_LIMIT, MAX_LIMIT};
+
+/// One enumerated future date as sent on the wire.
 ///
 /// `kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.
-/// `person_id` is set for `birthday` and `death_anniversary`;
-/// `partnership_id` is set for `wedding_anniversary` with both partner
-/// ids surfaced so the FE can deep-link the row's click to one of them
-/// (it centers on `partner_a_id` and opens that person's drawer; the
-/// tree-edge between the two partners conveys the relationship).
-/// `label` is pre-rendered server-side so the FE doesn't need to
-/// re-translate the "Nth birthday" phrasing per locale (i18n stays
-/// on `upcoming.kinds.*`; the name + N come from the API).
+/// `person_id` is set for `birthday`/`death_anniversary`; `partnership_id`
+/// (+ both partner ids) for `wedding_anniversary`. `label` is pre-rendered
+/// server-side so the FE doesn't re-derive the "Nth birthday" phrasing.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct UpcomingEvent {
     pub kind: String,
@@ -48,103 +31,7 @@ pub struct UpcomingEvent {
     pub label: String,
 }
 
-/// Cap on rows the FE list ever displays. Matches the default the
-/// route's `limit` query parameter advertises.
-pub const DEFAULT_LIMIT: u32 = 20;
-/// Hard cap so a misbehaving client can't ask for a million rows.
-pub const MAX_LIMIT: u32 = 200;
-/// Cap on persons we materialize per family. The same bound the
-/// relationships-tree service uses; larger families fall outside the
-/// MVP scope.
-const MAX_PERSONS: u32 = 1_000;
-
-/// Filter discriminator. `All` keeps everything, `Birthday` keeps
-/// only `birthday` events, `Anniversary` keeps both wedding and
-/// death anniversaries (the German "Jahrestag" idiom).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UpcomingFilter {
-    All,
-    Birthday,
-    Anniversary,
-}
-
-impl UpcomingFilter {
-    /// Parse the `?filter=` query parameter.
-    ///
-    /// Accepts `all`, `birthday`, `anniversary`; defaults to `All` for
-    /// an empty/missing input. Unknown values fall back to `All` so
-    /// the endpoint stays forgiving — invalid filter strings already
-    /// produce 422 in the route layer via `value_required` if we want
-    /// stricter behaviour later.
-    #[must_use]
-    pub fn parse(raw: Option<&str>) -> Self {
-        match raw {
-            Some("birthday") => Self::Birthday,
-            Some("anniversary") => Self::Anniversary,
-            _ => Self::All,
-        }
-    }
-
-    const fn keeps_birthday(self) -> bool {
-        matches!(self, Self::All | Self::Birthday)
-    }
-
-    const fn keeps_anniversary(self) -> bool {
-        matches!(self, Self::All | Self::Anniversary)
-    }
-}
-
-/// Project a source `NaiveDate` (someone's birthday, the wedding
-/// date, etc.) to the next occurrence on or after `today`.
-///
-/// Returns `None` if `source` falls in a year where `feb-29` is not
-/// representable in the candidate year — chrono returns `None` from
-/// `with_year(_)` and we propagate that. The caller treats the event
-/// as "no next occurrence this cycle" and skips it.
-#[must_use]
-fn next_occurrence(source: NaiveDate, today: NaiveDate) -> Option<NaiveDate> {
-    let this_year = source.with_year(today.year())?;
-    if this_year >= today {
-        Some(this_year)
-    } else {
-        source.with_year(today.year().saturating_add(1))
-    }
-}
-
-fn full_name(p: &Person) -> String {
-    let g = p.given_name.trim();
-    let f = p.family_name.trim();
-    if f.is_empty() {
-        g.to_owned()
-    } else if g.is_empty() {
-        f.to_owned()
-    } else {
-        format!("{g} {f}")
-    }
-}
-
-fn label_birthday(p: &Person, years: u32) -> String {
-    format!("{} — {years}{} birthday", full_name(p), ordinal_suffix(years))
-}
-
-fn label_death_anniv(p: &Person, years: u32) -> String {
-    format!("{} — {years}{} memorial", full_name(p), ordinal_suffix(years))
-}
-
-fn label_wedding_anniv(a: Option<&Person>, b: Option<&Person>, years: u32) -> String {
-    let a_name = a.map_or_else(String::new, full_name);
-    let b_name = b.map_or_else(String::new, full_name);
-    let pair = match (a_name.is_empty(), b_name.is_empty()) {
-        (false, false) => format!("{a_name} & {b_name}"),
-        (false, true) => a_name,
-        (true, false) => b_name,
-        (true, true) => String::from("Partnership"),
-    };
-    format!("{pair} — {years}{} anniversary", ordinal_suffix(years))
-}
-
-/// English ordinal suffix for the count. Numbers ending in 11/12/13
-/// always get `th`; 1/2/3 (any other position) get `st`/`nd`/`rd`.
+/// English ordinal suffix; 11/12/13 always `th`, otherwise by last digit.
 fn ordinal_suffix(n: u32) -> &'static str {
     let last_two = n % 100;
     if (11..=13).contains(&last_two) {
@@ -158,151 +45,49 @@ fn ordinal_suffix(n: u32) -> &'static str {
     }
 }
 
-/// Build a single person's birthday event when the row carries a
-/// `birth_date`. Returns `None` when there's no `birth_date` or when
-/// the next-occurrence projection fails (feb-29 in a non-leap year).
-fn person_birthday(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
-    let birth = p.birth_date?;
-    let next = next_occurrence(birth, today)?;
-    let years = u32::try_from(next.year().saturating_sub(birth.year())).ok()?;
-    Some(UpcomingEvent {
-        kind: "birthday".to_owned(),
-        next_date: next,
-        years,
-        person_id: Some(p.id.into_uuid()),
-        partnership_id: None,
-        partner_a_id: None,
-        partner_b_id: None,
-        label: label_birthday(p, years),
-    })
+const fn kind_str(k: UpcomingKind) -> &'static str {
+    match k {
+        UpcomingKind::Birthday => "birthday",
+        UpcomingKind::WeddingAnniversary => "wedding_anniversary",
+        UpcomingKind::DeathAnniversary => "death_anniversary",
+    }
 }
 
-/// Death anniversary. Skipped in the year of death itself so the FE
-/// doesn't show a "0th memorial" the same year someone passes away.
-fn person_death_anniv(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
-    let death = p.death_date?;
-    if death.year() == today.year() {
-        return None;
-    }
-    let next = next_occurrence(death, today)?;
-    let years = u32::try_from(next.year().saturating_sub(death.year())).ok()?;
-    Some(UpcomingEvent {
-        kind: "death_anniversary".to_owned(),
-        next_date: next,
-        years,
-        person_id: Some(p.id.into_uuid()),
-        partnership_id: None,
-        partner_a_id: None,
-        partner_b_id: None,
-        label: label_death_anniv(p, years),
-    })
-}
-
-/// Wedding anniversary for an open partnership with a `started_on`.
-/// Closed partnerships (`ended_on IS NOT NULL`) never emit an event.
-fn wedding_anniv(
-    part: &Partnership,
-    persons: &[Person],
-    today: NaiveDate,
-) -> Option<UpcomingEvent> {
-    if part.ended_on.is_some() {
-        return None;
-    }
-    let started = part.started_on?;
-    let next = next_occurrence(started, today)?;
-    let years = u32::try_from(next.year().saturating_sub(started.year())).ok()?;
-    let a = persons.iter().find(|p| p.id == part.partner_a_id);
-    let b = persons.iter().find(|p| p.id == part.partner_b_id);
-    Some(UpcomingEvent {
-        kind: "wedding_anniversary".to_owned(),
-        next_date: next,
-        years,
-        person_id: None,
-        partnership_id: Some(part.id),
-        partner_a_id: Some(part.partner_a_id.into_uuid()),
-        partner_b_id: Some(part.partner_b_id.into_uuid()),
-        label: label_wedding_anniv(a, b, years),
-    })
-}
-
-/// Build the upcoming-events list for `family_id`, filter it, sort
-/// ascending by `next_date`, then truncate to `limit`.
-///
-/// # Errors
-/// Returns any error surfaced by the underlying repos (DB
-/// connectivity, query failure).
-#[allow(
-    clippy::too_many_arguments,
-    reason = "service orchestrator: explicit repo+scope+filter args keep call sites self-documenting"
-)]
-pub async fn build_upcoming(
-    persons: &Arc<dyn PersonRepo>,
-    partnerships: &Arc<dyn PartnershipRepo>,
-    favourites: &Arc<dyn PersonFavouriteRepo>,
-    family_id: FamilyId,
-    user_id: UserId,
-    today: NaiveDate,
-    filter: UpcomingFilter,
-    favourites_only: bool,
-    limit: u32,
-) -> anyhow::Result<Vec<UpcomingEvent>> {
-    let people = persons.list_for_family(family_id, None, MAX_PERSONS).await?;
-    let parts = partnerships.list_for_family(family_id).await?;
-    // Resolve the favourite set up front so the per-event check is O(1).
-    // A pure-cost optimization: when the filter is disabled we never read
-    // the value, so skipping the round trip keeps the default path quiet.
-    let fav_set: HashSet<PersonId> = if favourites_only {
-        favourites.list_for_user(user_id, family_id).await?
-    } else {
-        HashSet::new()
-    };
-
-    // For wedding anniversaries we keep the event iff *either* partner
-    // is a favourite — matches the "Anna's birthday hides; but I want
-    // Anna+Klaus's wedding because Klaus is my favourite" model from
-    // the brief.
-    let keep_person = |id: PersonId| !favourites_only || fav_set.contains(&id);
-    let keep_partnership =
-        |a: PersonId, b: PersonId| !favourites_only || fav_set.contains(&a) || fav_set.contains(&b);
-
-    let mut events: Vec<UpcomingEvent> = Vec::new();
-    if filter.keeps_birthday() {
-        for p in &people {
-            if !keep_person(p.id) {
-                continue;
+impl From<DomainEvent> for UpcomingEvent {
+    fn from(e: DomainEvent) -> Self {
+        let label = match e.kind {
+            UpcomingKind::Birthday => {
+                format!("{} — {}{} birthday", e.primary_name, e.years, ordinal_suffix(e.years))
             }
-            if let Some(ev) = person_birthday(p, today) {
-                events.push(ev);
+            UpcomingKind::DeathAnniversary => {
+                format!("{} — {}{} memorial", e.primary_name, e.years, ordinal_suffix(e.years))
             }
+            UpcomingKind::WeddingAnniversary => {
+                let pair = match e.secondary_name.as_deref() {
+                    Some(b) if !b.is_empty() && !e.primary_name.is_empty() => {
+                        format!("{} & {}", e.primary_name, b)
+                    }
+                    Some(b) if e.primary_name.is_empty() => b.to_owned(),
+                    _ if !e.primary_name.is_empty() => e.primary_name.clone(),
+                    _ => "Partnership".to_owned(),
+                };
+                format!("{pair} — {}{} anniversary", e.years, ordinal_suffix(e.years))
+            }
+        };
+        Self {
+            kind: kind_str(e.kind).to_owned(),
+            next_date: e.next_date,
+            years: e.years,
+            person_id: e.person_id,
+            partnership_id: e.partnership_id,
+            partner_a_id: e.partner_a_id,
+            partner_b_id: e.partner_b_id,
+            label,
         }
     }
-    if filter.keeps_anniversary() {
-        for p in &people {
-            if !keep_person(p.id) {
-                continue;
-            }
-            if let Some(ev) = person_death_anniv(p, today) {
-                events.push(ev);
-            }
-        }
-        for part in &parts {
-            if !keep_partnership(part.partner_a_id, part.partner_b_id) {
-                continue;
-            }
-            if let Some(ev) = wedding_anniv(part, &people, today) {
-                events.push(ev);
-            }
-        }
-    }
-
-    events.sort_by_key(|e| e.next_date);
-    let cap = usize::try_from(limit.min(MAX_LIMIT)).unwrap_or(usize::MAX);
-    events.truncate(cap);
-    Ok(events)
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
@@ -317,29 +102,5 @@ mod tests {
         assert_eq!(ordinal_suffix(13), "th");
         assert_eq!(ordinal_suffix(21), "st");
         assert_eq!(ordinal_suffix(112), "th");
-    }
-
-    #[test]
-    fn next_occurrence_uses_this_year_when_still_ahead() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1980, 7, 4).unwrap();
-        let got = next_occurrence(source, today).unwrap();
-        assert_eq!(got, NaiveDate::from_ymd_opt(2026, 7, 4).unwrap());
-    }
-
-    #[test]
-    fn next_occurrence_rolls_to_next_year_when_passed() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1980, 4, 15).unwrap();
-        let got = next_occurrence(source, today).unwrap();
-        assert_eq!(got, NaiveDate::from_ymd_opt(2027, 4, 15).unwrap());
-    }
-
-    #[test]
-    fn next_occurrence_keeps_today_itself() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1990, 5, 23).unwrap();
-        let got = next_occurrence(source, today).unwrap();
-        assert_eq!(got, today);
     }
 }

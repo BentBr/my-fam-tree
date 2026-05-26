@@ -80,5 +80,6 @@ pub async fn list(
     )
     .await
     .map_err(ApiError::Internal)?;
-    Ok(ApiResponse::ok(events))
+    let dto: Vec<UpcomingEvent> = events.into_iter().map(UpcomingEvent::from).collect();
+    Ok(ApiResponse::ok(dto))
 }

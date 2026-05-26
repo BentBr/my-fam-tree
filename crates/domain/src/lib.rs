@@ -5,6 +5,7 @@ pub mod ids;
 pub mod relationships;
 pub mod repos;
 pub mod role;
+pub mod upcoming;
 
 pub use capabilities::{Capability, capabilities_of, has};
 pub use ids::{FamilyId, FamilyMembershipId, PersonId, UserId};
@@ -36,3 +37,6 @@ pub use repos::persons::{Person, PersonDraft, PersonRepo, PersonRepoError};
 pub use repos::refresh_tokens::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo};
 pub use repos::users::{Locale, User, UserRepo, UserRepoError};
 pub use role::Role;
+pub use upcoming::{
+    build_upcoming, UpcomingEvent, UpcomingFilter, UpcomingKind, DEFAULT_LIMIT, MAX_LIMIT,
+};
