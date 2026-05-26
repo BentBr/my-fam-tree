@@ -2,6 +2,7 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useCreateInvite } from '@/api/hooks/invites'
 import { useDeletePerson, useGetPerson, useListPersons } from '@/api/hooks/persons'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 
@@ -47,6 +48,35 @@ const editing = ref(false)
 const confirmDelete = ref(false)
 
 const person = computed(() => personQ.data.value ?? list.data.value?.find((p) => p.id === props.personId) ?? null)
+
+// Invite-to-family modal. Visible to admin+owner only; gated on the
+// active family's role (read from the same store as `canEdit` above so
+// the two checks share their loading-window semantics).
+const inviteMutation = useCreateInvite()
+const inviteOpen = ref(false)
+const inviteEmail = ref('')
+const inviteRole = ref<'user' | 'admin'>('user')
+
+const canInvite = computed(() => {
+    const role = family.activeFamily?.role ?? null
+    return role === 'admin' || role === 'owner'
+})
+
+function openInvite(): void {
+    inviteEmail.value = ''
+    inviteRole.value = 'user'
+    inviteOpen.value = true
+}
+
+async function submitInvite(): Promise<void> {
+    if (person.value === null) return
+    await inviteMutation.mutateAsync({
+        email: inviteEmail.value.trim(),
+        role: inviteRole.value,
+        personId: person.value.id,
+    })
+    inviteOpen.value = false
+}
 
 async function remove(): Promise<void> {
     await del.mutateAsync(props.personId)
@@ -146,9 +176,19 @@ function onRelationsChanged(): void {
 
             <v-divider class="my-3" />
 
-            <div v-if="canEdit" class="d-flex ga-2">
+            <div v-if="canEdit" class="d-flex ga-2 flex-wrap">
                 <v-btn variant="outlined" data-testid="person-edit-button" @click="editing = true">
                     {{ t('common.edit') }}
+                </v-btn>
+                <v-btn
+                    v-if="canInvite"
+                    variant="outlined"
+                    color="primary"
+                    prepend-icon="mdi-account-plus"
+                    data-testid="person-invite-cta"
+                    @click="openInvite"
+                >
+                    {{ t('person.invite.cta') }}
                 </v-btn>
                 <v-btn
                     color="error"
@@ -159,6 +199,54 @@ function onRelationsChanged(): void {
                     {{ t('common.delete') }}
                 </v-btn>
             </div>
+
+            <v-dialog v-model="inviteOpen" max-width="480">
+                <v-card v-if="person !== null" data-testid="person-invite-modal">
+                    <v-card-title>
+                        {{
+                            t('person.invite.modalTitle', {
+                                name: `${person.given_name} ${person.family_name}`.trim(),
+                            })
+                        }}
+                    </v-card-title>
+                    <v-card-text>
+                        <v-text-field
+                            v-model="inviteEmail"
+                            :label="t('person.invite.emailLabel')"
+                            type="email"
+                            density="compact"
+                            data-testid="person-invite-email"
+                        />
+                        <v-select
+                            v-model="inviteRole"
+                            :label="t('person.invite.roleLabel')"
+                            :items="[
+                                { title: t('admin.members.role.user'), value: 'user' },
+                                { title: t('admin.members.role.admin'), value: 'admin' },
+                            ]"
+                            density="compact"
+                            hide-details
+                            data-testid="person-invite-role"
+                        />
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" @click="inviteOpen = false">
+                            {{ t('common.cancel') }}
+                        </v-btn>
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            :disabled="inviteEmail.trim().length === 0"
+                            :loading="inviteMutation.isPending.value"
+                            data-testid="person-invite-submit"
+                            @click="submitInvite"
+                        >
+                            {{ t('person.invite.submit') }}
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
 
             <v-dialog v-model="confirmDelete" max-width="420">
                 <v-card>
