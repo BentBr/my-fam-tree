@@ -726,6 +726,47 @@
       }
     },
     "/api/v1/families/{id}/invites": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "operationId": "invites_list_pending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Family id (must be a family the caller belongs to)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending invites for this family",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitesListResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Insufficient role (admin / owner required)"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "families"
@@ -771,6 +812,62 @@
           },
           "422": {
             "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/families/{id}/invites/{invite_id}": {
+      "delete": {
+        "tags": [
+          "families"
+        ],
+        "operationId": "invites_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Family id (must be a family the caller belongs to)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "invite_id",
+            "in": "path",
+            "description": "Pending invite id to cancel",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "404": {
+            "description": "Invite not pending or already accepted"
           }
         },
         "security": [
@@ -2187,6 +2284,7 @@
           "validation_failed",
           "conflict_stale",
           "email_taken",
+          "invite_duplicate",
           "rate_limited",
           "upstream",
           "internal"
@@ -2316,6 +2414,44 @@
           }
         }
       },
+      "InviteDto": {
+        "type": "object",
+        "description": "Wire DTO returned by `GET /families/{id}/invites`. Mirrors the persisted\n`Invite` minus the token hash (which never leaves the database).",
+        "required": [
+          "id",
+          "email",
+          "role",
+          "expires_at",
+          "invited_by"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invited_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "person_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        }
+      },
       "InviteReq": {
         "type": "object",
         "required": [
@@ -2325,6 +2461,14 @@
         "properties": {
           "email": {
             "type": "string"
+          },
+          "person_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Optional person row this invite is bound to. On accept, the API\natomically sets `persons.linked_user_id = new_user.id` so the\nrecipient becomes the person they were invited as. Nullable: an\nadmin may invite without binding to a specific person."
           },
           "role": {
             "$ref": "#/components/schemas/Role"
@@ -2350,6 +2494,41 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/InviteRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "InvitesList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InviteDto"
+            }
+          }
+        }
+      },
+      "InvitesListResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/InvitesList"
           },
           "meta": {
             "oneOf": [
