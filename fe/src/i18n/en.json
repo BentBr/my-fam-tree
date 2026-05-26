@@ -236,7 +236,8 @@
         "nav": {
             "members": "Members",
             "invites": "Pending invites",
-            "audit": "Audit log"
+            "audit": "Audit log",
+            "back": "Back to tree"
         },
         "audit": {
             "title": "Audit log",

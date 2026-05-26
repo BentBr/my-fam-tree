@@ -92,6 +92,27 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await expect(page.getByTestId('person-detail-title')).toContainText('AuditTarget', { timeout: 10_000 })
 })
 
+test('admin layout keeps the main nav drawer + a back-to-tree affordance', async ({ page }) => {
+    const stamp = Date.now()
+    await signIn(page, `admin-nav-owner-${stamp}@example.com`)
+    await createFamily(page, `AdminNav-${stamp}`)
+
+    await page.goto('/admin/audit')
+    await expect(page.getByTestId('admin-audit-page')).toBeVisible()
+
+    // The main nav drawer renders here too so Tree/Upcoming/Health stay
+    // one click away. The drawer carries the `nav-drawer` testid and
+    // `nav-admin` is the admin entry; both should be in the DOM.
+    await expect(page.getByTestId('nav-drawer')).toBeVisible()
+    await expect(page.getByTestId('nav-admin')).toBeVisible()
+
+    // The admin rail also has a dedicated back-to-tree link.
+    const back = page.getByTestId('admin-rail-back')
+    await expect(back).toBeVisible()
+    await back.click()
+    await expect(page).toHaveURL(/\/tree$/)
+})
+
 test('invite audit row shows invitee email + role as a secondary line', async ({ page }) => {
     const stamp = Date.now()
     await signIn(page, `audit-invite-owner-${stamp}@example.com`)

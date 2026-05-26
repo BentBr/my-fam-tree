@@ -236,7 +236,8 @@
         "nav": {
             "members": "Mitglieder",
             "invites": "Offene Einladungen",
-            "audit": "Audit-Log"
+            "audit": "Audit-Log",
+            "back": "Zurück zum Stammbaum"
         },
         "audit": {
             "title": "Audit-Log",
