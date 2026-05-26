@@ -12,9 +12,26 @@ permissions:
 jobs:
     release-please:
         runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+            version: ${{ steps.release.outputs['.--version'] }}
         steps:
-            - uses: googleapis/release-please-action@v4
-              id: release
-              with:
-                  config-file: release-please-config.json
-                  manifest-file: .release-please-manifest.json
+            -   uses: googleapis/release-please-action@v4
+                id: release
+                with:
+                    config-file: release-please-config.json
+                    manifest-file: .release-please-manifest.json
+
+    # When release-please cuts a release (on merge of its PR), build + push the
+    # api/worker/fe images to GHCR tagged with the new version. This runs inline
+    # in the same workflow run — a `release`-triggered workflow would never fire
+    # because release-please publishes the release via GITHUB_TOKEN.
+    publish-images:
+        needs: release-please
+        if: ${{ needs.release-please.outputs.release_created == 'true' }}
+        permissions:
+            contents: read
+            packages: write
+        uses: ./.github/workflows/docker-publish.yml
+        with:
+            version: ${{ needs.release-please.outputs.version }}
