@@ -174,6 +174,13 @@
         "confirm": {
             "deleteTitle": "Remove this person?",
             "deleteText": "This deletes the person row and any links to it. This cannot be undone."
+        },
+        "invite": {
+            "cta": "Invite to family",
+            "modalTitle": "Invite {name}",
+            "emailLabel": "Email address",
+            "roleLabel": "Role",
+            "submit": "Send invite"
         }
     },
     "upcoming": {
@@ -218,7 +225,9 @@
         "contact_updated": "Contact updated",
         "contact_deleted": "Contact removed",
         "member_updated": "Role updated",
-        "member_revoked": "Access revoked"
+        "member_revoked": "Access revoked",
+        "invite_sent": "Invite sent",
+        "invite_cancelled": "Invite cancelled"
     },
     "admin": {
         "nav": {
@@ -296,6 +305,22 @@
                 "demoteText": "{name} will lose admin permissions."
             },
             "empty": "Only you for now."
+        },
+        "invites": {
+            "title": "Pending invites",
+            "col": {
+                "email": "Email",
+                "role": "Role",
+                "person": "Linked person",
+                "expires": "Expires",
+                "actions": "Actions"
+            },
+            "cancel": "Cancel invite",
+            "empty": "No pending invites.",
+            "confirm": {
+                "cancelTitle": "Cancel this invite?",
+                "cancelText": "The recipient will no longer be able to join the family with this invite."
+            }
         }
     },
     "errors": {

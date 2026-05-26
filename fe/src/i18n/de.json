@@ -174,6 +174,13 @@
         "confirm": {
             "deleteTitle": "Diese Person entfernen?",
             "deleteText": "Damit werden die Person und alle Verbindungen gelöscht. Das kann nicht rückgängig gemacht werden."
+        },
+        "invite": {
+            "cta": "Zur Familie einladen",
+            "modalTitle": "{name} einladen",
+            "emailLabel": "E-Mail-Adresse",
+            "roleLabel": "Rolle",
+            "submit": "Einladung senden"
         }
     },
     "upcoming": {
@@ -218,7 +225,9 @@
         "contact_updated": "Kontakt aktualisiert",
         "contact_deleted": "Kontakt entfernt",
         "member_updated": "Rolle aktualisiert",
-        "member_revoked": "Zugriff entzogen"
+        "member_revoked": "Zugriff entzogen",
+        "invite_sent": "Einladung gesendet",
+        "invite_cancelled": "Einladung storniert"
     },
     "admin": {
         "nav": {
@@ -296,6 +305,22 @@
                 "demoteText": "{name} verliert Admin-Rechte."
             },
             "empty": "Nur du, bisher."
+        },
+        "invites": {
+            "title": "Offene Einladungen",
+            "col": {
+                "email": "E-Mail",
+                "role": "Rolle",
+                "person": "Verknüpfte Person",
+                "expires": "Läuft ab",
+                "actions": "Aktionen"
+            },
+            "cancel": "Einladung stornieren",
+            "empty": "Keine offenen Einladungen.",
+            "confirm": {
+                "cancelTitle": "Diese Einladung stornieren?",
+                "cancelText": "Mit dieser Einladung kann die Empfängerin oder der Empfänger der Familie nicht mehr beitreten."
+            }
         }
     },
     "errors": {
