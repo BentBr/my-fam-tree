@@ -4,13 +4,13 @@
 //! them into a single `TreePayload` the FE can render without further round
 //! trips. Pure orchestration over repo traits — no SQL here.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use chrono::NaiveDate;
 use my_family_domain::{
-    FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, Person, PersonId,
-    PersonRepo,
+    FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, Person,
+    PersonFavouriteRepo, PersonId, PersonRepo, UserId,
 };
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -33,6 +33,10 @@ pub struct TreeNode {
     /// resolve "the signed-in user's own node" so the tree can auto-center
     /// on them on first load.
     pub linked_user_id: Option<Uuid>,
+    /// Per-user mark for the signed-in caller. Two users seeing the same
+    /// tree see independent values — favouriting is private. Resolved
+    /// against `person_favourites` at request time.
+    pub is_favourite_for_me: bool,
 }
 
 /// A parent → child edge with kind metadata.
@@ -83,11 +87,14 @@ pub async fn build_tree(
     persons: &Arc<dyn PersonRepo>,
     parent_links: &Arc<dyn ParentLinkRepo>,
     partnerships: &Arc<dyn PartnershipRepo>,
+    favourites: &Arc<dyn PersonFavouriteRepo>,
     family_id: FamilyId,
+    user_id: UserId,
 ) -> anyhow::Result<TreePayload> {
     let people = persons.list_for_family(family_id, None, MAX_NODES).await?;
     let parents = parent_links.list_for_family(family_id).await?;
     let parts = partnerships.list_for_family(family_id).await?;
+    let fav_set: HashSet<PersonId> = favourites.list_for_user(user_id, family_id).await?;
 
     let mut parents_by_child: HashMap<PersonId, Vec<PersonId>> = HashMap::new();
     let mut partners_of: HashMap<PersonId, Vec<PersonId>> = HashMap::new();
@@ -122,6 +129,7 @@ pub async fn build_tree(
                 .map(PersonId::into_uuid)
                 .collect(),
             linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+            is_favourite_for_me: fav_set.contains(&p.id),
         })
         .collect();
 

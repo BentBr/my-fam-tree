@@ -29,6 +29,11 @@ pub struct UpcomingQuery {
     /// 1..=200, default 20. Clamped to the cap so callers can't
     /// exhaust memory by passing `limit=999999`.
     pub limit: Option<u32>,
+    /// When `true`, filter the projection to events for persons the
+    /// signed-in caller has favourited. Wedding anniversaries are kept
+    /// iff EITHER partner is a favourite. Composes with `filter` — both
+    /// gates apply simultaneously.
+    pub favourites_only: Option<bool>,
 }
 
 response_body!(pub UpcomingResponseBody, Vec<UpcomingEvent>);
@@ -40,6 +45,7 @@ response_body!(pub UpcomingResponseBody, Vec<UpcomingEvent>);
     params(
         ("filter" = Option<String>, Query, description = "all | birthday | anniversary"),
         ("limit" = Option<u32>, Query, description = "Cap on rows, 1..=200, default 20"),
+        ("favourites_only" = Option<bool>, Query, description = "Restrict to favourites of the signed-in caller"),
     ),
     responses(
         (status = 200, description = "Upcoming events", body = UpcomingResponseBody),
@@ -56,13 +62,23 @@ pub async fn list(
     req: HttpRequest,
     query: web::Query<UpcomingQuery>,
 ) -> Result<ApiResponse<Vec<UpcomingEvent>>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     let filter = UpcomingFilter::parse(query.filter.as_deref());
     let limit = query.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
+    let favourites_only = query.favourites_only.unwrap_or(false);
     let today = Utc::now().date_naive();
-    let events =
-        build_upcoming(&state.persons, &state.partnerships, active.id, today, filter, limit)
-            .await
-            .map_err(ApiError::Internal)?;
+    let events = build_upcoming(
+        &state.persons,
+        &state.partnerships,
+        &state.favourites,
+        active.id,
+        claims.user_id,
+        today,
+        filter,
+        favourites_only,
+        limit,
+    )
+    .await
+    .map_err(ApiError::Internal)?;
     Ok(ApiResponse::ok(events))
 }

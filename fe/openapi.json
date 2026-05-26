@@ -1726,6 +1726,59 @@
         ]
       }
     },
+    "/api/v1/persons/{id}/favourite": {
+      "patch": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "persons_set_favourite",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FavouriteReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "New favourite state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonFavouriteResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "404": {
+            "description": "Not found in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/relationships": {
       "get": {
         "tags": [
@@ -1779,6 +1832,15 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
+            }
+          },
+          {
+            "name": "favourites_only",
+            "in": "query",
+            "description": "Restrict to favourites of the signed-in caller",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -2573,6 +2635,28 @@
           }
         }
       },
+      "FavouriteReq": {
+        "type": "object",
+        "required": [
+          "is_favourite"
+        ],
+        "properties": {
+          "is_favourite": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FavouriteRes": {
+        "type": "object",
+        "required": [
+          "is_favourite"
+        ],
+        "properties": {
+          "is_favourite": {
+            "type": "boolean"
+          }
+        }
+      },
       "FieldViolation": {
         "type": "object",
         "description": "A single field validation failure on the wire.\n\n- `path`: JSON Pointer or query/header path to the offending field (e.g.\n  `/email`, `/body/family_name`, `/headers/x-family-id`).\n- `code`: stable i18n key (e.g. `validation.email_invalid`,\n  `validation.string_too_long`). FE looks this up in en/de catalogs.\n- `message`: English fallback so non-FE clients still get a readable\n  error.\n- `params`: named placeholders FE substitutes into the localized\n  message. Always serialized (even when empty) so FE clients don't have\n  to guard `params?.max`. Use e.g. `{\"max\": 100, \"actual\": 105}`.",
@@ -3355,6 +3439,27 @@
           }
         }
       },
+      "PersonFavouriteResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FavouriteRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
       "PersonUpdateReq": {
         "type": "object",
         "description": "Partial update. Every field is optional; only `Some(_)` fields overwrite\nthe corresponding column. An empty body is rejected as `validation.value_required`.",
@@ -3471,6 +3576,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "is_favourite_for_me": {
+            "type": "boolean",
+            "description": "Per-user favourite mark for the signed-in caller. Always set on the\nsingle-person GET; the list endpoint leaves it `false` to avoid\nfanning N+1 favourite lookups across the page (the FE re-fetches the\nper-person GET when it opens the drawer)."
           },
           "linked_user_id": {
             "type": [
@@ -3704,7 +3813,8 @@
           "given_name",
           "family_name",
           "parent_ids",
-          "partner_ids"
+          "partner_ids",
+          "is_favourite_for_me"
         ],
         "properties": {
           "birth_date": {
@@ -3730,6 +3840,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "is_favourite_for_me": {
+            "type": "boolean",
+            "description": "Per-user mark for the signed-in caller. Two users seeing the same\ntree see independent values — favouriting is private. Resolved\nagainst `person_favourites` at request time."
           },
           "linked_user_id": {
             "type": [
@@ -3862,6 +3976,13 @@
       "UpcomingQuery": {
         "type": "object",
         "properties": {
+          "favourites_only": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "When `true`, filter the projection to events for persons the\nsigned-in caller has favourited. Wedding anniversaries are kept\niff EITHER partner is a favourite. Composes with `filter` — both\ngates apply simultaneously."
+          },
           "filter": {
             "type": [
               "string",

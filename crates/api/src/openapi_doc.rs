@@ -36,6 +36,7 @@ use crate::routes::owner_transfer::{
 };
 use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
+use crate::routes::person_favourites::{self, PersonFavouriteResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
 use crate::routes::relationships::{self, TreePayloadResponseBody};
 use crate::routes::upcoming::{self, UpcomingResponseBody};
@@ -78,6 +79,7 @@ use crate::services::upcoming::UpcomingEvent;
         persons::get_one,
         persons::update,
         persons::delete,
+        person_favourites::set_favourite,
         parent_links::create,
         parent_links::delete,
         partnerships::create,
@@ -118,6 +120,7 @@ use crate::services::upcoming::UpcomingEvent;
             EmailChangeResponseBody,
             PersonsListResponseBody,
             PersonViewResponseBody,
+            PersonFavouriteResponseBody,
             PartnershipViewResponseBody,
             ContactListResponseBody,
             ContactViewResponseBody,
@@ -166,6 +169,8 @@ use crate::services::upcoming::UpcomingEvent;
             persons::PersonCreateReq,
             persons::PersonUpdateReq,
             persons::PersonsQuery,
+            person_favourites::FavouriteReq,
+            person_favourites::FavouriteRes,
             parent_links::ParentLinkReq,
             partnerships::PartnershipView,
             partnerships::PartnershipCreateReq,

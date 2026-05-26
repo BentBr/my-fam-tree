@@ -22,6 +22,7 @@ pub mod members;
 pub mod owner_transfer;
 pub mod parent_links;
 pub mod partnerships;
+pub mod person_favourites;
 pub mod persons;
 pub mod relationships;
 pub mod upcoming;
@@ -74,6 +75,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(persons::get_one)
                 .service(persons::update)
                 .service(persons::delete)
+                .service(person_favourites::set_favourite)
                 .service(parent_links::create)
                 .service(parent_links::delete)
                 .service(partnerships::create)

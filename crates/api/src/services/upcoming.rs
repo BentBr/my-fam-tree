@@ -13,10 +13,14 @@
 //! it reads as "they will turn N"; for an anniversary it reads as
 //! "Nth anniversary".
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use chrono::{Datelike, NaiveDate};
-use my_family_domain::{FamilyId, Partnership, PartnershipRepo, Person, PersonRepo};
+use my_family_domain::{
+    FamilyId, Partnership, PartnershipRepo, Person, PersonFavouriteRepo, PersonId, PersonRepo,
+    UserId,
+};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -227,20 +231,46 @@ fn wedding_anniv(
 /// # Errors
 /// Returns any error surfaced by the underlying repos (DB
 /// connectivity, query failure).
+#[allow(
+    clippy::too_many_arguments,
+    reason = "service orchestrator: explicit repo+scope+filter args keep call sites self-documenting"
+)]
 pub async fn build_upcoming(
     persons: &Arc<dyn PersonRepo>,
     partnerships: &Arc<dyn PartnershipRepo>,
+    favourites: &Arc<dyn PersonFavouriteRepo>,
     family_id: FamilyId,
+    user_id: UserId,
     today: NaiveDate,
     filter: UpcomingFilter,
+    favourites_only: bool,
     limit: u32,
 ) -> anyhow::Result<Vec<UpcomingEvent>> {
     let people = persons.list_for_family(family_id, None, MAX_PERSONS).await?;
     let parts = partnerships.list_for_family(family_id).await?;
+    // Resolve the favourite set up front so the per-event check is O(1).
+    // A pure-cost optimization: when the filter is disabled we never read
+    // the value, so skipping the round trip keeps the default path quiet.
+    let fav_set: HashSet<PersonId> = if favourites_only {
+        favourites.list_for_user(user_id, family_id).await?
+    } else {
+        HashSet::new()
+    };
+
+    // For wedding anniversaries we keep the event iff *either* partner
+    // is a favourite — matches the "Anna's birthday hides; but I want
+    // Anna+Klaus's wedding because Klaus is my favourite" model from
+    // the brief.
+    let keep_person = |id: PersonId| !favourites_only || fav_set.contains(&id);
+    let keep_partnership =
+        |a: PersonId, b: PersonId| !favourites_only || fav_set.contains(&a) || fav_set.contains(&b);
 
     let mut events: Vec<UpcomingEvent> = Vec::new();
     if filter.keeps_birthday() {
         for p in &people {
+            if !keep_person(p.id) {
+                continue;
+            }
             if let Some(ev) = person_birthday(p, today) {
                 events.push(ev);
             }
@@ -248,11 +278,17 @@ pub async fn build_upcoming(
     }
     if filter.keeps_anniversary() {
         for p in &people {
+            if !keep_person(p.id) {
+                continue;
+            }
             if let Some(ev) = person_death_anniv(p, today) {
                 events.push(ev);
             }
         }
         for part in &parts {
+            if !keep_partnership(part.partner_a_id, part.partner_b_id) {
+                continue;
+            }
             if let Some(ev) = wedding_anniv(part, &people, today) {
                 events.push(ev);
             }

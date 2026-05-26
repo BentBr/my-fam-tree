@@ -26,9 +26,16 @@ pub async fn tree(
     state: web::Data<AppState>,
     req: HttpRequest,
 ) -> Result<ApiResponse<TreePayload>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
-    let payload = build_tree(&state.persons, &state.parent_links, &state.partnerships, active.id)
-        .await
-        .map_err(ApiError::Internal)?;
+    let (claims, active) = user_claims_with_family(&req)?;
+    let payload = build_tree(
+        &state.persons,
+        &state.parent_links,
+        &state.partnerships,
+        &state.favourites,
+        active.id,
+        claims.user_id,
+    )
+    .await
+    .map_err(ApiError::Internal)?;
     Ok(ApiResponse::ok(payload))
 }

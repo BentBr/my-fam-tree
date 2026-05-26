@@ -20,6 +20,10 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+fn favourite_internal<E: std::fmt::Display>(e: E) -> ApiError {
+    ApiError::Internal(anyhow::anyhow!(e.to_string()))
+}
+
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, Pagination};
 use crate::services::audit;
@@ -79,6 +83,12 @@ pub struct PersonView {
     pub death_date: Option<NaiveDate>,
     pub notes: String,
     pub linked_user_id: Option<Uuid>,
+    /// Per-user favourite mark for the signed-in caller. Always set on the
+    /// single-person GET; the list endpoint leaves it `false` to avoid
+    /// fanning N+1 favourite lookups across the page (the FE re-fetches the
+    /// per-person GET when it opens the drawer).
+    #[serde(default)]
+    pub is_favourite_for_me: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -95,6 +105,10 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 }
 
 fn to_view(p: my_family_domain::Person) -> PersonView {
+    to_view_with_favourite(p, false)
+}
+
+fn to_view_with_favourite(p: my_family_domain::Person, is_favourite_for_me: bool) -> PersonView {
     PersonView {
         id: p.id.into_uuid(),
         family_id: p.family_id.into_uuid(),
@@ -108,6 +122,7 @@ fn to_view(p: my_family_domain::Person) -> PersonView {
         death_date: p.death_date,
         notes: p.notes,
         linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+        is_favourite_for_me,
     }
 }
 
@@ -281,15 +296,21 @@ pub async fn get_one(
     req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<PersonView>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
+    let (claims, active) = user_claims_with_family(&req)?;
     let id = path.into_inner();
+    let person_id = PersonId::from_uuid(id);
     let person = state
         .persons
-        .find_in_family(active.id, PersonId::from_uuid(id))
+        .find_in_family(active.id, person_id)
         .await
         .map_err(|e| map_person_repo_err(e, Some(id)))?
         .ok_or(ApiError::PersonNotFound { id: Some(id) })?;
-    Ok(ApiResponse::ok(to_view(person)))
+    let fav = state
+        .favourites
+        .is_favourite_for_user(claims.user_id, person_id)
+        .await
+        .map_err(favourite_internal)?;
+    Ok(ApiResponse::ok(to_view_with_favourite(person, fav)))
 }
 
 // ---------------------------------------------------------------------------
