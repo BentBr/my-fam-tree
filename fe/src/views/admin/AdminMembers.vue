@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { type MemberRow, useMembers, useRevokeMember, useSetRole } from '@/api/hooks/members'
+import { useBeginOwnerTransfer, useCancelOwnerTransfer, useOwnerTransfer } from '@/api/hooks/owner_transfer'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 
@@ -12,10 +13,44 @@ const auth = useAuthStore()
 const q = useMembers()
 const setRole = useSetRole()
 const revoke = useRevokeMember()
+const transferQ = useOwnerTransfer()
+const beginTransfer = useBeginOwnerTransfer()
+const cancelTransfer = useCancelOwnerTransfer()
 
 const rows = computed<MemberRow[]>(() => q.data.value ?? [])
 const myUserId = computed<string | null>(() => auth.user?.id ?? null)
 const myRole = computed(() => family.activeFamily?.role ?? null)
+
+const pendingTransfer = computed(() => transferQ.data.value ?? null)
+
+function canTransferTo(r: MemberRow): boolean {
+    if (myRole.value !== 'owner') return false
+    if (r.role !== 'admin') return false
+    return r.user_id !== myUserId.value
+}
+
+function nameOf(userId: string): string {
+    return rows.value.find((r) => r.user_id === userId)?.display_name ?? userId
+}
+
+const transferTarget = ref<MemberRow | null>(null)
+const transferDialogOpen = computed<boolean>({
+    get: () => transferTarget.value !== null,
+    set: (v) => {
+        if (!v) transferTarget.value = null
+    },
+})
+
+function openTransferDialog(r: MemberRow): void {
+    transferTarget.value = r
+}
+
+async function submitTransfer(): Promise<void> {
+    const target = transferTarget.value
+    if (target === null) return
+    await beginTransfer.mutateAsync(target.user_id)
+    transferTarget.value = null
+}
 
 // Role matrix gates. The BE is the source of truth and will reject any
 // disallowed mutation; these checks only decide which buttons render.
@@ -92,6 +127,40 @@ function roleColor(role: MemberRow['role']): string | undefined {
             <h2 class="text-h6">{{ t('admin.members.title') }}</h2>
         </header>
 
+        <v-alert
+            v-if="pendingTransfer !== null"
+            type="info"
+            variant="tonal"
+            class="mb-3"
+            data-testid="admin-members-transfer-banner"
+        >
+            <div class="d-flex align-center" style="gap: 8px">
+                <div class="flex-grow-1">
+                    {{
+                        t('admin.transfer.pendingBanner', {
+                            name: nameOf(pendingTransfer.to_user_id),
+                            from: pendingTransfer.from_confirmed
+                                ? t('admin.transfer.stateConfirmed')
+                                : t('admin.transfer.stateWaiting'),
+                            to: pendingTransfer.to_confirmed
+                                ? t('admin.transfer.stateConfirmed')
+                                : t('admin.transfer.stateWaiting'),
+                        })
+                    }}
+                </div>
+                <v-btn
+                    v-if="myRole === 'owner'"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    data-testid="admin-members-transfer-cancel"
+                    @click="cancelTransfer.mutate()"
+                >
+                    {{ t('admin.transfer.cancel') }}
+                </v-btn>
+            </div>
+        </v-alert>
+
         <v-skeleton-loader v-if="q.isLoading.value" type="table" />
         <v-alert v-else-if="q.error.value !== null" type="error">{{ t('errors.generic') }}</v-alert>
         <v-card v-else variant="outlined">
@@ -149,11 +218,45 @@ function roleColor(role: MemberRow['role']): string | undefined {
                             >
                                 {{ t('admin.members.action.revoke') }}
                             </v-btn>
+                            <v-btn
+                                v-if="canTransferTo(r) && pendingTransfer === null"
+                                size="small"
+                                variant="text"
+                                :data-testid="`admin-members-transfer-${r.user_id}`"
+                                @click="openTransferDialog(r)"
+                            >
+                                {{ t('admin.transfer.cta') }}
+                            </v-btn>
                         </td>
                     </tr>
                 </tbody>
             </v-table>
         </v-card>
+
+        <v-dialog v-model="transferDialogOpen" max-width="480">
+            <v-card v-if="transferTarget !== null" data-testid="admin-members-transfer-dialog">
+                <v-card-title>
+                    {{ t('admin.transfer.modalTitle', { name: transferTarget.display_name }) }}
+                </v-card-title>
+                <v-card-text>
+                    {{ t('admin.transfer.modalText', { name: transferTarget.display_name }) }}
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn variant="text" @click="transferTarget = null">
+                        {{ t('common.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        data-testid="admin-members-transfer-submit"
+                        @click="submitTransfer"
+                    >
+                        {{ t('admin.transfer.submit') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
 
         <v-dialog v-model="dialogOpen" max-width="420">
             <v-card v-if="confirmTarget !== null" data-testid="admin-members-confirm-dialog">
