@@ -467,6 +467,169 @@
         ]
       }
     },
+    "/api/v1/families/{family_id}/members": {
+      "get": {
+        "tags": [
+          "members"
+        ],
+        "operationId": "members_list",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Members list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembersListResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Insufficient role (admin / owner required)"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/families/{family_id}/members/{user_id}": {
+      "delete": {
+        "tags": [
+          "members"
+        ],
+        "operationId": "members_revoke",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target member's user id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Member revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Role-matrix violation"
+          },
+          "404": {
+            "description": "Target is not a member"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "members"
+        ],
+        "operationId": "members_set_role",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target member's user id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRoleReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Role-matrix violation"
+          },
+          "404": {
+            "description": "Target is not a member"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/families/{id}": {
       "delete": {
         "tags": [
@@ -2014,6 +2177,7 @@
           "family_invite_expired",
           "person_not_found",
           "person_not_editable",
+          "membership_not_found",
           "contact_not_found",
           "contact_not_editable",
           "reminder_not_found",
@@ -2331,6 +2495,91 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/ConsumeRes"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "MemberDto": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "display_name",
+          "role",
+          "joined_at"
+        ],
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "MemberResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MemberDto"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "MembersList": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberDto"
+            }
+          }
+        }
+      },
+      "MembersListResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MembersList"
           },
           "meta": {
             "oneOf": [
@@ -2953,6 +3202,17 @@
           "owner"
         ]
       },
+      "SetRoleReq": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        }
+      },
       "TreeNode": {
         "type": "object",
         "description": "One person plus their relationship adjacency lists.\n\n`parent_ids` and `partner_ids` are denormalized so the FE's SVG layout\ndoesn't have to join `parent_edges` / `partner_edges` itself.",
@@ -3310,6 +3570,10 @@
     {
       "name": "audit",
       "description": "Family audit log (admin / owner only)"
+    },
+    {
+      "name": "members",
+      "description": "Family membership management (admin / owner only)"
     }
   ]
 }
