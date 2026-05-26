@@ -154,11 +154,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         Ok((updated, side))
     }
 
-    async fn complete(
-        &self,
-        id: Uuid,
-        now: DateTime<Utc>,
-    ) -> Result<(), OwnerTransferRepoError> {
+    async fn complete(&self, id: Uuid, now: DateTime<Utc>) -> Result<(), OwnerTransferRepoError> {
         sqlx::query!(
             "UPDATE family_owner_transfers SET completed_at = $2
              WHERE id = $1 AND completed_at IS NULL AND cancelled_at IS NULL",

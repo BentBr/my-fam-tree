@@ -201,10 +201,7 @@ async fn both_sides_confirm_completes_transfer_and_swaps_roles() {
     let resp = test::call_service(
         &app,
         test::TestRequest::post()
-            .uri(&format!(
-                "/api/v1/families/{}/transfer-owner/confirm",
-                fam.family_id.into_uuid()
-            ))
+            .uri(&format!("/api/v1/families/{}/transfer-owner/confirm", fam.family_id.into_uuid()))
             .cookie(Cookie::new("access", owner_access))
             .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
             .set_json(serde_json::json!({ "token": from_token }))
@@ -218,10 +215,7 @@ async fn both_sides_confirm_completes_transfer_and_swaps_roles() {
     let resp = test::call_service(
         &app,
         test::TestRequest::post()
-            .uri(&format!(
-                "/api/v1/families/{}/transfer-owner/confirm",
-                fam.family_id.into_uuid()
-            ))
+            .uri(&format!("/api/v1/families/{}/transfer-owner/confirm", fam.family_id.into_uuid()))
             .cookie(Cookie::new("access", admin_access))
             .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
             .set_json(serde_json::json!({ "token": to_token }))
@@ -295,10 +289,7 @@ async fn confirming_only_one_side_does_not_swap_roles() {
     let resp = test::call_service(
         &app,
         test::TestRequest::post()
-            .uri(&format!(
-                "/api/v1/families/{}/transfer-owner/confirm",
-                fam.family_id.into_uuid()
-            ))
+            .uri(&format!("/api/v1/families/{}/transfer-owner/confirm", fam.family_id.into_uuid()))
             .cookie(Cookie::new("access", owner_access))
             .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
             .set_json(serde_json::json!({ "token": from_token }))

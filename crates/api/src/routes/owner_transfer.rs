@@ -32,7 +32,9 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::auth::{generate_opaque_token, hash_token, require_role, user_claims, user_claims_with_family};
+use crate::auth::{
+    generate_opaque_token, hash_token, require_role, user_claims, user_claims_with_family,
+};
 use crate::services::audit;
 use crate::validation::role_invalid;
 use crate::{ApiError, ApiResponse, AppState, response_body};
@@ -318,8 +320,7 @@ pub async fn confirm(
     // Order: demote the previous owner -> admin BEFORE promoting the target
     // -> owner. A future invariant could add a partial unique index on
     // `(family_id, role = owner)`; this order is safe under either.
-    let both_confirmed =
-        transfer.from_confirmed_at.is_some() && transfer.to_confirmed_at.is_some();
+    let both_confirmed = transfer.from_confirmed_at.is_some() && transfer.to_confirmed_at.is_some();
     if both_confirmed && transfer.completed_at.is_none() {
         state
             .memberships

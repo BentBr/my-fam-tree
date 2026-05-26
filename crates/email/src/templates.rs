@@ -199,13 +199,23 @@ pub fn render_owner_transfer_admin(
     let (subject, body) = match locale {
         Locale::En => (
             format!("You've been offered ownership of \"{family_name}\""),
-            OwnerTransferAdminEn { family_name, from_user_display_name, to_user_display_name, link }
-                .render()?,
+            OwnerTransferAdminEn {
+                family_name,
+                from_user_display_name,
+                to_user_display_name,
+                link,
+            }
+            .render()?,
         ),
         Locale::De => (
             format!("Eigentumsübertragung für „{family_name}\" angeboten"),
-            OwnerTransferAdminDe { family_name, from_user_display_name, to_user_display_name, link }
-                .render()?,
+            OwnerTransferAdminDe {
+                family_name,
+                from_user_display_name,
+                to_user_display_name,
+                link,
+            }
+            .render()?,
         ),
     };
     Ok((subject, body))

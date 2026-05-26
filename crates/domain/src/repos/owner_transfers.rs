@@ -92,11 +92,7 @@ pub trait OwnerTransferRepo: Send + Sync {
 
     /// Mark a transfer completed; meant to be called by the API after
     /// the role swap has been committed. Idempotent.
-    async fn complete(
-        &self,
-        id: Uuid,
-        now: DateTime<Utc>,
-    ) -> Result<(), OwnerTransferRepoError>;
+    async fn complete(&self, id: Uuid, now: DateTime<Utc>) -> Result<(), OwnerTransferRepoError>;
 
     /// Cancel the active pending transfer for a family (owner-only).
     async fn cancel(
