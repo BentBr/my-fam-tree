@@ -1113,7 +1113,7 @@
         },
         "responses": {
           "200": {
-            "description": "Invite accepted, membership inserted, session refreshed",
+            "description": "Invite accepted, membership inserted, session issued",
             "content": {
               "application/json": {
                 "schema": {
@@ -1123,13 +1123,13 @@
             }
           },
           "401": {
-            "description": "No session or invite token invalid"
+            "description": "Invite token invalid"
           },
           "410": {
             "description": "Invite expired"
           },
           "422": {
-            "description": "Invite belongs to a different email"
+            "description": "Existing session belongs to a different email"
           }
         },
         "security": [

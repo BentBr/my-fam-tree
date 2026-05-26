@@ -40,7 +40,8 @@
     },
     "invite": {
         "pending": "Familie wird beigetreten…",
-        "error": "Die Einladung konnte nicht angenommen werden. Sie ist möglicherweise abgelaufen oder gilt für eine andere E-Mail-Adresse."
+        "error": "Die Einladung konnte nicht angenommen werden. Sie ist möglicherweise abgelaufen oder wurde bereits verwendet.",
+        "mismatch": "Diese Einladung gilt für eine andere E-Mail-Adresse als deine aktuelle Sitzung. Bitte erst abmelden und den Link erneut klicken."
     },
     "health": {
         "title": "Service-Status",

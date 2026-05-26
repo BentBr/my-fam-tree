@@ -1,31 +1,29 @@
 //! `/invites/accept` + `/families/{id}/invites` GET/DELETE endpoints.
 //!
-//! `accept` lives here for historical reasons (it pre-dates Phase D's
-//! list / cancel endpoints). The caller MUST already be authenticated —
-//! every route in this file lives under [`AuthMiddleware::required`]. We
-//! atomically claim the invite, verify the signed-in email matches the
-//! address the invite was sent to, insert a membership row at the
-//! invited role, and reissue the access cookie so the new family is
-//! immediately reflected in the JWT.
+//! `accept` is intentionally reachable by *anonymous* callers — the
+//! invite token (a 32-byte URL-safe blob, hashed and single-use server-
+//! side) is treated as the authentication factor. If the request
+//! arrives without a session, we find-or-create the user keyed on
+//! `invite.email`, issue an access cookie, and proceed. If a session
+//! IS present, we keep the existing behaviour: validate the session
+//! email matches `invite.email`, surface a 422 `invite_email_mismatch`
+//! otherwise (the FE renders an actionable "sign out first" hint).
 //!
-//! The "email mismatch" check is intentionally surfaced as a `Validation`
-//! error (not `InviteExpired`/`MagicLinkInvalid`) so the FE can render an
-//! actionable hint: the user signed in with the wrong account.
-//!
-//! `list_invites` + `cancel_invite` are Phase-D admin-only surfaces. Both
-//! live in this module (next to `accept`) to keep all invite handlers in
-//! one place; `families.rs` only owns the `POST` half because the existing
+//! `list_invites` + `cancel_invite` are Phase-D admin-only surfaces;
+//! both still live under [`AuthMiddleware::required`]. They live in
+//! this module (next to `accept`) to keep all invite handlers in one
+//! place; `families.rs` only owns the `POST` half because the existing
 //! `families::invite` handler ships from there.
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
 use chrono::{DateTime, Utc};
-use my_family_domain::{FamilyId, InviteRepoError, PersonId, Role};
+use my_family_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::{FamilyClaim, hash_token};
-use crate::cookies::access_cookie;
+use crate::cookies::{ACCESS_COOKIE, access_cookie};
 use crate::response::NullResponseBody;
 use crate::routes::families::FamilyView;
 use crate::services::audit;
@@ -98,10 +96,10 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     path = "/api/v1/invites/accept",
     request_body = AcceptReq,
     responses(
-        (status = 200, description = "Invite accepted, membership inserted, session refreshed", body = AcceptResponseBody),
-        (status = 401, description = "No session or invite token invalid"),
+        (status = 200, description = "Invite accepted, membership inserted, session issued", body = AcceptResponseBody),
+        (status = 401, description = "Invite token invalid"),
         (status = 410, description = "Invite expired"),
-        (status = 422, description = "Invite belongs to a different email"),
+        (status = 422, description = "Existing session belongs to a different email"),
     ),
     security(("cookie_access" = [])),
     tag = "invites",
@@ -114,7 +112,21 @@ pub async fn accept(
     req: HttpRequest,
     body: web::Json<AcceptReq>,
 ) -> Result<HttpResponse, ApiError> {
-    let claims = crate::auth::user_claims(&req)?;
+    // The session (if any) is optional. If an active session is bound
+    // to a different email than the invite, we reject with 422 so the
+    // user can sign out first. If no session, the invite token itself
+    // is the auth factor — we resolve the user by `invite.email`.
+    //
+    // We extract claims manually (rather than through `user_claims(&req)`)
+    // because this route is mounted OUTSIDE the AuthMiddleware-wrapped
+    // scope: actix's empty-path sibling-scope resolution stops at the
+    // first scope and would 404 anonymous callers if the middleware were
+    // applied.
+    let existing_claims_email_and_id: Option<(String, my_family_domain::UserId)> = req
+        .cookie(ACCESS_COOKIE)
+        .and_then(|c| state.jwt_issuer.verify(c.value()).ok())
+        .map(|jwt| (jwt.email.clone(), my_family_domain::UserId::from_uuid(jwt.sub)));
+
     let hash = hash_token(body.token.trim());
     let invite = state.invites.accept(&hash, Utc::now()).await.map_err(|e| match e {
         InviteRepoError::Expired => ApiError::InviteExpired,
@@ -122,18 +134,28 @@ pub async fn accept(
         InviteRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
     })?;
 
-    if !invite.email.eq_ignore_ascii_case(&claims.email) {
-        return Err(invite_email_mismatch("/token"));
-    }
+    // Resolve the acting user: either the active session's user (if the
+    // email matches the invite) or — when anonymous — the user keyed on
+    // `invite.email`, creating the row if it doesn't exist yet.
+    let user_id: UserId = if let Some((email, uid)) = existing_claims_email_and_id.as_ref() {
+        if !invite.email.eq_ignore_ascii_case(email) {
+            return Err(invite_email_mismatch("/token"));
+        }
+        *uid
+    } else {
+        match state.users.find_by_email(&invite.email).await.map_err(internal)? {
+            Some(u) => u.id,
+            None => state.users.create(&invite.email, Locale::En).await.map_err(internal)?.id,
+        }
+    };
 
-    // Audit the email-match verification BEFORE writing membership so the
-    // log keeps an event even if the membership insert below races against
-    // a concurrent admin revoke. metadata.person_id (if set) lets the audit
-    // table link the row back to the person via the existing CASE.
+    // Audit the verification BEFORE writing membership so the log keeps
+    // an event even if the membership insert below races. metadata.person_id
+    // (if set) lets the audit table link back to the person via the CASE.
     audit::record(
         &state.audit,
         invite.family_id,
-        claims.user_id,
+        user_id,
         "verify",
         "invite",
         Some(invite.id),
@@ -146,18 +168,18 @@ pub async fn accept(
 
     state
         .memberships
-        .insert(invite.family_id, claims.user_id, invite.invited_role)
+        .insert(invite.family_id, user_id, invite.invited_role)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+        .map_err(internal)?;
     audit::record(
         &state.audit,
         invite.family_id,
-        claims.user_id,
+        user_id,
         "accept_invite",
         "membership",
         None,
         serde_json::json!({
-            "user_id": claims.user_id.into_uuid(),
+            "user_id": user_id.into_uuid(),
             "role": invite.invited_role,
         }),
     )
@@ -172,20 +194,16 @@ pub async fn accept(
     if let Some(person_id) = invite.person_id {
         state
             .persons
-            .set_linked_user_id(
-                invite.family_id,
-                PersonId::from_uuid(person_id),
-                Some(claims.user_id),
-            )
+            .set_linked_user_id(invite.family_id, PersonId::from_uuid(person_id), Some(user_id))
             .await
-            .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+            .map_err(internal)?;
     }
 
     let user = state
         .users
-        .find_by_id(claims.user_id)
+        .find_by_id(user_id)
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?
+        .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
     let (access, fams) = issue_access_token_for(&state.jwt_issuer, &state.memberships, &user)
         .await

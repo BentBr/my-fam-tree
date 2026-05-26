@@ -160,6 +160,14 @@ pub fn user_claims(req: &HttpRequest) -> Result<UserClaims, ApiError> {
     req.extensions().get::<UserClaims>().cloned().ok_or(ApiError::Unauthenticated)
 }
 
+/// Extract `UserClaims` if present without erroring. Used by routes
+/// that accept anonymous callers (e.g. `/invites/accept` where the
+/// invite token itself is the auth factor).
+#[must_use]
+pub fn try_user_claims(req: &HttpRequest) -> Option<UserClaims> {
+    req.extensions().get::<UserClaims>().cloned()
+}
+
 /// Extract `UserClaims` and require an active family (a valid `X-Family-Id`
 /// header that resolved against the JWT memberships).
 ///

@@ -351,7 +351,11 @@ async fn protected_endpoints_require_authentication() {
             "/api/v1/families/00000000-0000-0000-0000-000000000000/invites",
             serde_json::json!({ "email": "a@b.co", "role": "user" }),
         ),
-        ("POST", "/api/v1/invites/accept", serde_json::json!({ "token": "x" })),
+        // `/api/v1/invites/accept` is intentionally NOT protected: the
+        // invite token itself is the auth factor. See
+        // `crates/api/tests/invites_flow.rs::anonymous_accept_creates_user_and_signs_in`
+        // for the positive coverage; the bad-token arm is covered by
+        // `invite_accept_happy_path_and_email_mismatch` further up.
     ];
 
     for (method, path, body) in endpoints {

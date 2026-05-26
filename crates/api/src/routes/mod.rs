@@ -46,6 +46,13 @@ pub fn api_scope() -> actix_web::Scope<
         .service(auth::magic_link)
         .service(auth::consume)
         .service(auth::refresh)
+        // `invites::accept` is mounted OUTSIDE the required-auth scope:
+        // the invite token itself is the auth factor. The handler
+        // extracts JWT claims manually from the access cookie (if
+        // present) so anonymous callers reach the find-or-create user
+        // path while signed-in callers still get email-mismatch
+        // validation.
+        .service(invites::accept)
         .service(
             web::scope("")
                 .wrap(AuthMiddleware::required())
@@ -60,7 +67,6 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(families::rename)
                 .service(families::delete_family)
                 .service(families::invite)
-                .service(invites::accept)
                 .service(invites::list_invites)
                 .service(invites::cancel_invite)
                 .service(persons::list)

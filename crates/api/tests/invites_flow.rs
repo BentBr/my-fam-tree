@@ -290,3 +290,112 @@ async fn duplicate_invite_returns_409_invite_duplicate() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["code"], "invite_duplicate");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn anonymous_accept_creates_user_and_signs_in() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let stamp = u128::from(rand::random::<u32>());
+    let (access, family_id_str, klaus_id) =
+        seed_admin_family_with_person(&stack, &app, stamp).await;
+
+    let invitee_email = format!("anon-accept-{stamp}@example.com");
+    let req = test::TestRequest::post()
+        .uri(&format!("/api/v1/families/{family_id_str}/invites"))
+        .cookie(Cookie::new("access", access))
+        .set_json(serde_json::json!({
+            "email": invitee_email,
+            "role": "user",
+            "person_id": klaus_id.into_uuid(),
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200);
+
+    let captured = stack.fake_email.drain();
+    let mail = captured.iter().find(|m| m.to_addr == invitee_email).expect("invite email");
+    let invite_token = extract_token_from_link(&mail.text_body);
+
+    // Pre-condition: the invitee does not exist yet.
+    assert!(
+        stack.state.users.find_by_email(&invitee_email).await.expect("lookup").is_none(),
+        "invitee should not exist before the accept call"
+    );
+
+    // POST /invites/accept WITHOUT a session cookie. The BE creates the
+    // user, accepts the invite, and issues an access cookie inline.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/invites/accept")
+        .set_json(serde_json::json!({ "token": invite_token }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200, "anonymous accept should succeed");
+
+    // The access cookie is set in the response so the browser is signed in.
+    let cookies = res.response().cookies().collect::<Vec<_>>();
+    assert!(
+        cookies.iter().any(|c| c.name() == "access" && !c.value().is_empty()),
+        "anonymous accept response must include an access cookie"
+    );
+
+    // The user now exists; Klaus is linked to them.
+    let invitee = stack
+        .state
+        .users
+        .find_by_email(&invitee_email)
+        .await
+        .expect("lookup")
+        .expect("user was created by accept");
+    let family_id = FamilyId::from_uuid(family_id_str.parse::<Uuid>().unwrap());
+    let klaus = stack
+        .state
+        .persons
+        .find_in_family(family_id, klaus_id)
+        .await
+        .expect("find klaus")
+        .expect("klaus row");
+    assert_eq!(klaus.linked_user_id, Some(invitee.id), "linked_user_id wired to new user");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn signed_in_mismatched_email_returns_invite_email_mismatch() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let stamp = u128::from(rand::random::<u32>());
+    let (access, family_id_str, _klaus_id) =
+        seed_admin_family_with_person(&stack, &app, stamp).await;
+
+    let invitee_email = format!("mismatch-target-{stamp}@example.com");
+    let req = test::TestRequest::post()
+        .uri(&format!("/api/v1/families/{family_id_str}/invites"))
+        .cookie(Cookie::new("access", access))
+        .set_json(serde_json::json!({ "email": invitee_email, "role": "user" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200);
+
+    let captured = stack.fake_email.drain();
+    let mail = captured.iter().find(|m| m.to_addr == invitee_email).expect("invite email");
+    let invite_token = extract_token_from_link(&mail.text_body);
+
+    // A third party signs in (NOT the invitee, NOT the inviting admin)
+    // and tries to claim the invite.
+    let other_email = format!("not-the-invitee-{stamp}@example.com");
+    let (other_access, _r) = sign_in(&stack, &app, &other_email).await;
+
+    let req = test::TestRequest::post()
+        .uri("/api/v1/invites/accept")
+        .cookie(Cookie::new("access", other_access))
+        .set_json(serde_json::json!({ "token": invite_token }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 422, "mismatched email must 422");
+
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["code"], "validation_failed");
+    let fields = body["fields"].as_array().expect("fields array present");
+    assert!(
+        fields.iter().any(|f| f["code"] == "validation.invite_email_mismatch"),
+        "expected validation.invite_email_mismatch violation in the 422 body"
+    );
+}

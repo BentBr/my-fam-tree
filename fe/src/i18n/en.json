@@ -40,7 +40,8 @@
     },
     "invite": {
         "pending": "Joining the family…",
-        "error": "We couldn't accept this invite. It may have expired or be linked to a different email."
+        "error": "We couldn't accept this invite. It may have expired or already been used.",
+        "mismatch": "This invite is for a different email than your current session. Sign out first, then click the link again."
     },
     "health": {
         "title": "Service health",

@@ -78,10 +78,17 @@ describe('InviteAccept', () => {
         expect(mutateAsync).not.toHaveBeenCalled()
     })
 
-    it('anonymous user gets bounced to sign-in with token stashed', async () => {
+    it('anonymous user posts the token directly (no sessionStorage stash)', async () => {
+        // The invite token IS the auth factor on the BE — anonymous
+        // callers go through the same `mutateAsync` path; the BE
+        // find-or-creates the user and issues a cookie inline.
+        mutateAsync.mockResolvedValueOnce({ data: { family: { id: 'f-1', name: 'F' } } })
         await mountInvite('token=tok-1')
         await flushPromises()
-        expect(sessionStorage.getItem('my-family:inviteToken')).toBe('tok-1')
+        expect(mutateAsync).toHaveBeenCalledWith('tok-1')
+        // Critically: no token is stashed in sessionStorage (avoiding the
+        // earlier security-smell pattern).
+        expect(sessionStorage.getItem('my-family:inviteToken')).toBeNull()
     })
 
     it('authenticated user calls accept and sets active family', async () => {
