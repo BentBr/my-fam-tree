@@ -18,6 +18,21 @@ pub struct MembershipWithFamilyName {
     pub role: Role,
 }
 
+/// Member row enriched with the joined user's display fields.
+///
+/// Used by the admin Members page so the FE can render name + email
+/// next to the role chip without a second round-trip. The bare
+/// [`Membership`] value still drives auth — no user fields leak into
+/// JWT-shaped paths.
+#[derive(Debug, Clone)]
+pub struct MemberWithUser {
+    pub user_id: UserId,
+    pub email: String,
+    pub display_name: String,
+    pub role: Role,
+    pub joined_at: DateTime<Utc>,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum MembershipRepoError {
     #[error("database: {0}")]
@@ -53,4 +68,11 @@ pub trait FamilyMembershipRepo: Send + Sync {
     ) -> Result<(), MembershipRepoError>;
     async fn remove(&self, family_id: FamilyId, user_id: UserId)
     -> Result<(), MembershipRepoError>;
+    /// List every member of `family_id` joined to `users` for the
+    /// display name and email, ordered owner → admin → user, then by
+    /// display name. Used by the admin `/admin/members` view.
+    async fn list_with_users(
+        &self,
+        family_id: FamilyId,
+    ) -> Result<Vec<MemberWithUser>, MembershipRepoError>;
 }

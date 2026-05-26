@@ -15,7 +15,8 @@ pub use repos::audit_log::{
 pub use repos::families::{Family, FamilyRepo, FamilyRepoError};
 pub use repos::family_invites::{FamilyInviteRepo, Invite, InviteRepoError};
 pub use repos::family_memberships::{
-    FamilyMembershipRepo, Membership, MembershipRepoError, MembershipWithFamilyName,
+    FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError,
+    MembershipWithFamilyName,
 };
 pub use repos::magic_link_tokens::{
     MagicLinkPurpose, MagicLinkRecord, MagicLinkRepo, MagicLinkRepoError,
