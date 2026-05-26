@@ -62,6 +62,12 @@ const routes: RouteRecordRaw[] = [
         meta: { layout: 'main', requiresAuth: true },
     },
     {
+        path: '/account/owner-transfer/confirm',
+        name: 'owner-transfer-confirm',
+        component: () => import('@/views/account/OwnerTransferConfirm.vue'),
+        meta: { layout: 'main', requiresAuth: true },
+    },
+    {
         path: '/tree',
         name: 'tree',
         component: () => import('@/views/tree/TreeView.vue'),
