@@ -87,7 +87,7 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await expect(entityLink).toBeVisible()
     await entityLink.click()
 
-    await expect(page).toHaveURL(/\/tree$/)
+    await expect(page).toHaveURL(/\/tree\?center=[0-9a-f-]+/)
     await expect(page.getByTestId('person-detail')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByTestId('person-detail-title')).toContainText('AuditTarget', { timeout: 10_000 })
 })

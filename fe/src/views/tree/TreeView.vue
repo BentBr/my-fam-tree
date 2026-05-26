@@ -24,33 +24,31 @@ const pageTitle = computed(() => {
     return t('tree.titleOf', { name })
 })
 
-// `?center=<id>` is a one-shot deep link. We capture it ONCE at setup
-// time into a local const so the URL-strip in onMounted can't yank the
-// value out from under `centerOnId` before <FamilyTree> mounts. The
-// previous implementation read `route.query.center` from inside the
-// computed, so stripping the URL silently demoted the value to `null`
-// and the drawer never opened.
-const initialCenterParam: string | null =
-    typeof route.query['center'] === 'string' && route.query['center'] !== '' ? route.query['center'] : null
+// URL `?center=<personId>` is the SOURCE OF TRUTH for both the tree's
+// center and the drawer's open state. We don't strip the param after
+// reading it — the URL stays in sync with the current selection, which
+// makes hard-reloads and back/forward survive, and (critically) frees
+// us from the timing acrobatics required to flip selectedId at exactly
+// the right tick. TreeNode clicks update the URL via `router.replace`
+// instead of mutating selectedId directly; the watcher below feeds the
+// URL change back into selectedId.
+const centerFromUrl = computed<string | null>(() => {
+    const val = route.query['center']
+    return typeof val === 'string' && val !== '' ? val : null
+})
 
-// Vuetify's `v-navigation-drawer` (temporary variant) mounts with
-// `isActive=false` when model-value is true at first paint — initial
-// open is treated as a no-op so the user always sees a closed drawer
-// on first load. We mirror the user-click pattern: mount with `null`
-// (drawer mounts closed), then flip to the captured id in `onMounted`
-// so Vuetify sees a `false → true` transition and opens.
 const selectedId = ref<string | null>(null)
 const creating = ref(false)
 
 /**
  * Center-on-member resolution order:
- *   1. ?center=<personId> at mount time (one-shot deep link).
- *   2. useActiveFamilyStore.focusedPersonId (persisted choice).
+ *   1. ?center=<personId> in the URL (deep link or persisted selection).
+ *   2. useActiveFamilyStore.focusedPersonId (legacy persisted choice).
  *   3. The TreeNode whose `linked_user_id` equals the signed-in user.id.
  *   4. null — FamilyTree falls back to the layout origin + 40px gutter.
  */
 const centerOnId = computed<string | null>(() => {
-    if (initialCenterParam !== null) return initialCenterParam
+    if (centerFromUrl.value !== null) return centerFromUrl.value
     if (family.focusedPersonId !== null) return family.focusedPersonId
     const userId = auth.user?.id ?? null
     if (userId === null) return null
@@ -60,14 +58,30 @@ const centerOnId = computed<string | null>(() => {
     return me?.id ?? null
 })
 
+function selectInUrl(id: string | null): void {
+    const rest = { ...route.query }
+    if (id === null) {
+        delete rest['center']
+    } else {
+        rest['center'] = id
+    }
+    void router.replace({ query: rest })
+}
+
 function onSelect(id: string): void {
+    // Set selectedId synchronously so the drawer responds in the same
+    // tick — same edge Vuetify has always honored for the on-click
+    // path. The URL update is async (router.replace) and the watcher
+    // will see no diff afterwards (target === selectedId.value).
     selectedId.value = id
     family.setFocusedPerson(id)
+    selectInUrl(id)
 }
 
 function closeDrawer(): void {
     selectedId.value = null
     creating.value = false
+    selectInUrl(null)
 }
 
 function onDrawerUpdate(open: boolean): void {
@@ -77,6 +91,7 @@ function onDrawerUpdate(open: boolean): void {
 function onCreateClick(): void {
     creating.value = true
     selectedId.value = null
+    selectInUrl(null)
 }
 
 function onChanged(): void {
@@ -94,33 +109,23 @@ function onCreated(id: string): void {
     void tree.refetch()
 }
 
-// `v-navigation-drawer` (temporary variant) silently no-ops if it
-// mounts with `model-value=true` — its internal `isActive` only tracks
-// false → true transitions that happen *after* mount. We therefore:
-//   1. Keep `selectedId` null at setup so the drawer mounts closed.
-//   2. Flip it post-mount in a watcher gated on BOTH `isMounted` AND
-//      `tree.data` being defined.
-// `immediate: true` is intentionally NOT used — the cached case
-// (second visit, tree query hot) would otherwise fire the watcher
-// synchronously during setup, which puts us right back in the
-// "drawer mounts already open" trap. Watching `isMounted` ensures
-// the cached path still fires (the false → true edge from
-// `onMounted` is its trigger), just safely post-paint.
+// Mirror `?center=` into `selectedId` reactively. Two-phase so Vuetify's
+// `v-navigation-drawer` (temporary) sees a clean `false → true` edge:
+// the drawer mounts with `selectedId=null` (model-value=false), then
+// the watcher flips it post-mount. The `isMounted` gate prevents the
+// flip from happening during setup, which is the case the previous
+// implementations kept tripping over — Vuetify silently no-ops a
+// model-value already true at first paint.
 const isMounted = ref(false)
 onMounted(() => {
     isMounted.value = true
-    if (initialCenterParam === null) return
-    family.setFocusedPerson(initialCenterParam)
-    const rest = { ...route.query }
-    delete rest['center']
-    void router.replace({ query: rest })
 })
 
-watch([isMounted, () => tree.data.value] as const, ([mounted, data]) => {
-    if (initialCenterParam === null) return
-    if (!mounted || data === undefined) return
-    if (selectedId.value !== null) return
-    selectedId.value = initialCenterParam
+watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
+    if (!mounted) return
+    if (target === selectedId.value) return
+    selectedId.value = target
+    if (target !== null) family.setFocusedPerson(target)
 })
 </script>
 
@@ -198,6 +203,7 @@ watch([isMounted, () => tree.data.value] as const, ([mounted, data]) => {
                 location="right"
                 :width="380"
                 temporary
+                disable-route-watcher
                 data-testid="person-drawer"
                 @update:model-value="onDrawerUpdate"
             >

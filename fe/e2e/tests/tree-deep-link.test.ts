@@ -68,8 +68,9 @@ test('upcoming row click centers the person and opens the drawer', async ({ page
     await expect(row).toBeVisible()
     await row.click()
 
-    // 1. URL ends at /tree (the `?center=` was stripped).
-    await expect(page).toHaveURL(/\/tree$/)
+    // 1. URL is on /tree with the `?center=` preserved (it's the source
+    //    of truth for the selection; we no longer strip it).
+    await expect(page).toHaveURL(/\/tree\?center=[0-9a-f-]+/)
 
     // 2. The right-hand drawer shows the clicked person. The drawer
     //    transition + the GET person query both have to settle, so wait
@@ -123,7 +124,7 @@ test('second upcoming click reopens the drawer (cached tree.data path)', async (
     // Click the row whose label mentions "Second" — order may vary.
     await page.locator('[data-testid="upcoming-row-birthday"]').filter({ hasText: /Second Multi/ }).first().click()
 
-    await expect(page).toHaveURL(/\/tree$/)
+    await expect(page).toHaveURL(/\/tree\?center=[0-9a-f-]+/)
     await expect(page.getByTestId('person-detail')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByTestId('person-detail-title')).toHaveText(/Second Multi/, { timeout: 10_000 })
     await expect(page.locator(`[data-testid="tree-node-${secondId}"]`)).toBeVisible()
