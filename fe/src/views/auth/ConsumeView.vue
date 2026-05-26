@@ -40,16 +40,6 @@ onMounted(async () => {
     try {
         await mutation.mutateAsync(token)
         status.value = 'ok'
-        // Anonymous users who arrived via an invite link had their invite
-        // token stashed by InviteAccept before being bounced here. After a
-        // successful sign-in, resume that flow automatically — without this
-        // hop the user would have to click the email link a second time.
-        const stashed = sessionStorage.getItem('my-family:inviteToken')
-        if (stashed !== null && stashed !== '') {
-            sessionStorage.removeItem('my-family:inviteToken')
-            await router.replace(`/invite/accept?token=${encodeURIComponent(stashed)}`)
-            return
-        }
         await router.replace('/tree')
     } catch {
         // Roll back the dedup marker so a manual retry (refresh) can
