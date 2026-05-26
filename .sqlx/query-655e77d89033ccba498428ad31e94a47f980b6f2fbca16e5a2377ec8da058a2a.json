@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE family_invites SET accepted_at = now()\n                WHERE token_hash = $1 AND accepted_at IS NULL\n                RETURNING id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                          invited_by, expires_at, accepted_at",
+  "query": "SELECT id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                      invited_by, person_id, expires_at, accepted_at\n                 FROM family_invites\n                WHERE family_id = $1\n                  AND lower(email::text) = lower($2)\n                  AND accepted_at IS NULL\n                  AND expires_at > now()\n                LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -50,6 +50,17 @@
       },
       {
         "ordinal": 5,
+        "name": "person_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_invites",
+            "name": "person_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -60,7 +71,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "accepted_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -73,7 +84,8 @@
     ],
     "parameters": {
       "Left": [
-        "Bytea"
+        "Uuid",
+        "Text"
       ]
     },
     "nullable": [
@@ -82,9 +94,10 @@
       null,
       null,
       false,
+      true,
       false,
       true
     ]
   },
-  "hash": "88c319a2300e97cac4c33d1be8aadc76f08953f9b2d29e8b7356e5e089e26e0e"
+  "hash": "655e77d89033ccba498428ad31e94a47f980b6f2fbca16e5a2377ec8da058a2a"
 }

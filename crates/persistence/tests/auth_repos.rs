@@ -188,9 +188,17 @@ async fn invite_accept_is_idempotent() {
     let fam = fams.create("Schmidt", owner.id).await.unwrap();
     mems.insert(fam.id, owner.id, Role::Owner).await.unwrap();
     let hash = [7_u8; 32];
-    invs.create(fam.id, "new@x.y", Role::User, owner.id, &hash, Utc::now() + Duration::days(14))
-        .await
-        .unwrap();
+    invs.create(
+        fam.id,
+        "new@x.y",
+        Role::User,
+        owner.id,
+        None,
+        &hash,
+        Utc::now() + Duration::days(14),
+    )
+    .await
+    .unwrap();
     let inv = invs.accept(&hash, Utc::now()).await.expect("accept");
     assert_eq!(inv.email, "new@x.y");
     let second = invs.accept(&hash, Utc::now()).await;

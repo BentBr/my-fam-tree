@@ -45,6 +45,7 @@ struct InviteRow {
     #[sqlx(rename = "role!")]
     role: String,
     invited_by: Uuid,
+    person_id: Option<Uuid>,
     expires_at: DateTime<Utc>,
     accepted_at: Option<DateTime<Utc>>,
 }
@@ -57,6 +58,7 @@ impl From<InviteRow> for Invite {
             email: r.email,
             invited_role: role_from_db(&r.role),
             invited_by: UserId::from_uuid(r.invited_by),
+            person_id: r.person_id,
             expires_at: r.expires_at,
             accepted_at: r.accepted_at,
         }
@@ -71,18 +73,20 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
         email: &str,
         invited_role: Role,
         invited_by: UserId,
+        person_id: Option<Uuid>,
         token_hash: &[u8],
         expires_at: DateTime<Utc>,
     ) -> Result<Uuid, InviteRepoError> {
         let row = sqlx::query!(
             r#"INSERT INTO family_invites
-               (family_id, email, invited_role, invited_by, token_hash, expires_at)
-               VALUES ($1, $2, ($3::text)::family_role, $4, $5, $6)
+               (family_id, email, invited_role, invited_by, person_id, token_hash, expires_at)
+               VALUES ($1, $2, ($3::text)::family_role, $4, $5, $6, $7)
                RETURNING id"#,
             family_id.into_uuid(),
             email,
             role_db(invited_role),
             invited_by.into_uuid(),
+            person_id,
             token_hash,
             expires_at,
         )
@@ -102,7 +106,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
             r#"UPDATE family_invites SET accepted_at = now()
                 WHERE token_hash = $1 AND accepted_at IS NULL
                 RETURNING id, family_id, email::text AS "email!", invited_role::text AS "role!",
-                          invited_by, expires_at, accepted_at"#,
+                          invited_by, person_id, expires_at, accepted_at"#,
             token_hash
         )
         .fetch_optional(&self.pool)
@@ -123,7 +127,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
         let rows = sqlx::query_as!(
             InviteRow,
             r#"SELECT id, family_id, email::text AS "email!", invited_role::text AS "role!",
-                      invited_by, expires_at, accepted_at
+                      invited_by, person_id, expires_at, accepted_at
                  FROM family_invites
                 WHERE family_id = $1 AND accepted_at IS NULL AND expires_at > now()
                 ORDER BY created_at DESC"#,
@@ -133,6 +137,30 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
         .await
         .map_err(|e| InviteRepoError::Db(e.to_string()))?;
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    async fn find_pending_by_email(
+        &self,
+        family_id: FamilyId,
+        email: &str,
+    ) -> Result<Option<Invite>, InviteRepoError> {
+        let row = sqlx::query_as!(
+            InviteRow,
+            r#"SELECT id, family_id, email::text AS "email!", invited_role::text AS "role!",
+                      invited_by, person_id, expires_at, accepted_at
+                 FROM family_invites
+                WHERE family_id = $1
+                  AND lower(email::text) = lower($2)
+                  AND accepted_at IS NULL
+                  AND expires_at > now()
+                LIMIT 1"#,
+            family_id.into_uuid(),
+            email,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| InviteRepoError::Db(e.to_string()))?;
+        Ok(row.map(Into::into))
     }
 
     async fn cancel(&self, id: Uuid, family_id: FamilyId) -> Result<(), InviteRepoError> {

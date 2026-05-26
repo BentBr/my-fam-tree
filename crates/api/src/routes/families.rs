@@ -322,13 +322,15 @@ pub async fn invite(
     }
 
     let (token, hash) = generate_opaque_token();
+    let fid = FamilyId::from_uuid(family_id);
     state
         .invites
         .create(
-            FamilyId::from_uuid(family_id),
+            fid,
             &email,
             body.role,
             claims.user_id,
+            None,
             &hash,
             Utc::now() + Duration::seconds(seconds_i64(state.cfg.invite_ttl_seconds)),
         )

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO family_invites\n               (family_id, email, invited_role, invited_by, token_hash, expires_at)\n               VALUES ($1, $2, ($3::text)::family_role, $4, $5, $6)\n               RETURNING id",
+  "query": "INSERT INTO family_invites\n               (family_id, email, invited_role, invited_by, person_id, token_hash, expires_at)\n               VALUES ($1, $2, ($3::text)::family_role, $4, $5, $6, $7)\n               RETURNING id",
   "describe": {
     "columns": [
       {
@@ -26,6 +26,7 @@
         },
         "Text",
         "Uuid",
+        "Uuid",
         "Bytea",
         "Timestamptz"
       ]
@@ -34,5 +35,5 @@
       false
     ]
   },
-  "hash": "3b822eb23ec8ef5e29deea96bdc25f9897033173ef9a3b2444b36841beb37a22"
+  "hash": "a47530c11bc98b1a178c0e464b5c59b2cbd112b42dff6d6b3562528fe0e8d25d"
 }
