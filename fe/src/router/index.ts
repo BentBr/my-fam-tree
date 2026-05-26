@@ -5,8 +5,9 @@ import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
     interface RouteMeta {
-        layout?: 'login' | 'main'
+        layout?: 'login' | 'main' | 'admin'
         requiresAuth?: boolean
+        requiresAdmin?: boolean
     }
 }
 
@@ -71,6 +72,16 @@ const routes: RouteRecordRaw[] = [
         name: 'upcoming',
         component: () => import('@/views/upcoming/UpcomingView.vue'),
         meta: { layout: 'main', requiresAuth: true },
+    },
+    {
+        path: '/admin',
+        redirect: '/admin/audit',
+    },
+    {
+        path: '/admin/audit',
+        name: 'admin-audit',
+        component: () => import('@/views/admin/AdminAudit.vue'),
+        meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
     },
     // /reminders/* etc. are added in Phase 4b.
 ]
@@ -138,4 +149,17 @@ router.beforeEach((to) => {
         }
     }
     return auth.families.length === 0 ? '/families/create' : '/families/pick'
+})
+
+// Admin-only role gate. Runs after the auth + active-family guards so by
+// the time we reach it we know there's a session and an active family.
+// Non-admin / non-owner roles are bounced to /tree; this matches the
+// pattern Vue Router expects for a "redirect when condition fails"
+// guard (return a path).
+router.beforeEach((to) => {
+    if (to.meta.requiresAdmin !== true) return true
+    const family = useActiveFamilyStore()
+    const role = family.activeFamily?.role ?? null
+    if (role === 'admin' || role === 'owner') return true
+    return '/tree'
 })
