@@ -59,6 +59,8 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(families::rename)
                 .service(families::delete_family)
                 .service(families::invite)
+                .service(families::list_invites)
+                .service(families::cancel_invite)
                 .service(invites::accept)
                 .service(persons::list)
                 .service(persons::create)
