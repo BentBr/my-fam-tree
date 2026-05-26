@@ -72,6 +72,12 @@ pub struct RenameFamilyReq {
 pub struct InviteReq {
     pub email: String,
     pub role: Role,
+    /// Optional person row this invite is bound to. On accept, the API
+    /// atomically sets `persons.linked_user_id = new_user.id` so the
+    /// recipient becomes the person they were invited as. Nullable: an
+    /// admin may invite without binding to a specific person.
+    #[serde(default)]
+    pub person_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -321,16 +327,24 @@ pub async fn invite(
         return Err(email_invalid("/email"));
     }
 
-    let (token, hash) = generate_opaque_token();
+    // Reject duplicates BEFORE generating a token / sending email. Two
+    // pending invites for the same email in the same family would race on
+    // accept (only one can match the freshly-signed-in JWT email) and
+    // pollute the admin pending-list with stale rows.
     let fid = FamilyId::from_uuid(family_id);
-    state
+    if state.invites.find_pending_by_email(fid, &email).await.map_err(internal)?.is_some() {
+        return Err(ApiError::InviteDuplicate);
+    }
+
+    let (token, hash) = generate_opaque_token();
+    let invite_id = state
         .invites
         .create(
             fid,
             &email,
             body.role,
             claims.user_id,
-            None,
+            body.person_id,
             &hash,
             Utc::now() + Duration::seconds(seconds_i64(state.cfg.invite_ttl_seconds)),
         )
@@ -355,14 +369,15 @@ pub async fn invite(
 
     audit::record(
         &state.audit,
-        FamilyId::from_uuid(family_id),
+        fid,
         claims.user_id,
         "invite",
         "membership",
-        None,
+        Some(invite_id),
         serde_json::json!({
             "email": email,
             "role": body.role,
+            "person_id": body.person_id,
         }),
     )
     .await;
@@ -490,6 +505,17 @@ mod tests {
                 .unwrap();
         assert_eq!(r.email, "a@b.co");
         assert_eq!(r.role, Role::Admin);
+        assert!(r.person_id.is_none());
+    }
+
+    #[test]
+    fn invite_req_deserialises_with_person_id() {
+        let pid = Uuid::new_v4();
+        let r: InviteReq = serde_json::from_value(
+            serde_json::json!({"email": "a@b.co", "role": "user", "person_id": pid}),
+        )
+        .unwrap();
+        assert_eq!(r.person_id, Some(pid));
     }
 
     #[test]
