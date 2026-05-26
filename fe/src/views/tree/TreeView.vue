@@ -94,47 +94,34 @@ function onCreated(id: string): void {
     void tree.refetch()
 }
 
-// Open the drawer on the captured deep-link target post-mount, then
-// strip `?center=…` from the URL. Both operations happen AFTER the
-// drawer's first paint so Vuetify doesn't observe an initial
-// model-value=true mid-mount (that path emits @update:model-value(false)
-// from the scrim handler and slams the drawer shut).
-// Open the drawer post-mount + strip `?center=…` from the URL.
-// v-navigation-drawer's `temporary` variant treats an initial
-// `model-value=true` at mount as a no-op (the internal `isActive`
-// state only tracks transitions). Defer with a microtask so Vuetify
-// sees a clean `false → true` edge after first paint, the same edge
-// the on-click code path produces.
-// Wait until the tree query resolves (FamilyTree mounts) before opening
-// the drawer. Vuetify's `v-navigation-drawer` (temporary) only honours a
-// `false → true` model-value transition when its sibling content tree
-// has had a paint cycle; programmatic opens issued during the load
-// skeleton silently no-op.
+// `v-navigation-drawer` (temporary variant) silently no-ops if it
+// mounts with `model-value=true` — its internal `isActive` only tracks
+// false → true transitions that happen *after* mount. We therefore:
+//   1. Keep `selectedId` null at setup so the drawer mounts closed.
+//   2. Flip it post-mount in a watcher gated on BOTH `isMounted` AND
+//      `tree.data` being defined.
+// `immediate: true` is intentionally NOT used — the cached case
+// (second visit, tree query hot) would otherwise fire the watcher
+// synchronously during setup, which puts us right back in the
+// "drawer mounts already open" trap. Watching `isMounted` ensures
+// the cached path still fires (the false → true edge from
+// `onMounted` is its trigger), just safely post-paint.
+const isMounted = ref(false)
 onMounted(() => {
+    isMounted.value = true
     if (initialCenterParam === null) return
     family.setFocusedPerson(initialCenterParam)
-    // Strip `?center=…` once captured — keeps a hard reload from
-    // re-firing the deep-link open after `focusedPersonId` already
-    // handles the centering.
     const rest = { ...route.query }
     delete rest['center']
     void router.replace({ query: rest })
 })
 
-// Open the drawer once the tree has loaded and the captured deep-link
-// target is real. The watch fires immediately if the query was already
-// hot in cache, and on the next tree-data arrival otherwise. We compare
-// against `selectedId.value` first so user-driven clicks during loading
-// aren't clobbered.
-watch(
-    () => tree.data.value,
-    (data) => {
-        if (initialCenterParam === null || data === undefined) return
-        if (selectedId.value !== null) return
-        selectedId.value = initialCenterParam
-    },
-    { immediate: true },
-)
+watch([isMounted, () => tree.data.value] as const, ([mounted, data]) => {
+    if (initialCenterParam === null) return
+    if (!mounted || data === undefined) return
+    if (selectedId.value !== null) return
+    selectedId.value = initialCenterParam
+})
 </script>
 
 <template>

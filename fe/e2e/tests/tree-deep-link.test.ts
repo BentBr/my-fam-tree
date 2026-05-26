@@ -84,3 +84,50 @@ test('upcoming row click centers the person and opens the drawer', async ({ page
     //    internals into the test; the data-testid embeds the person id.
     await expect(page.locator(`[data-testid="tree-node-${personId}"]`)).toBeVisible()
 })
+
+test('second upcoming click reopens the drawer (cached tree.data path)', async ({ page }) => {
+    // Regression: after the first /tree visit the tree query is hot
+    // in cache. A naive "open drawer on tree.data immediate" watcher
+    // fires synchronously during setup on the second visit, which
+    // puts the drawer through Vuetify's "mounted already open" no-op
+    // trap. The fix gates the watcher on a post-mount isMounted ref
+    // so the open always happens after first paint, cached or not.
+    const stamp = Date.now()
+    await signIn(page, `tree-deep-multi-${stamp}@example.com`)
+    await createFamily(page, `DeepLinkMulti-${stamp}`)
+
+    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    expect(familyId).not.toBe('')
+
+    const create = async (given: string, days: number): Promise<string> => {
+        const res = await page.request.post('/api/v1/persons', {
+            headers: { 'X-Family-Id': familyId },
+            data: { given_name: given, family_name: 'Multi', birth_date: birthdayInDays(days) },
+        })
+        const body = (await res.json()) as { data: { id: string } }
+        return body.data.id
+    }
+    const firstId = await create('First', 3)
+    const secondId = await create('Second', 7)
+
+    // First click — proves the fresh path works.
+    await page.goto('/upcoming')
+    await page.getByTestId(`upcoming-row-birthday`).first().click()
+    await expect(page.getByTestId('person-detail')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('person-detail-title')).toHaveText(/First Multi/, { timeout: 10_000 })
+
+    // Back to /upcoming and click the SECOND row. Tree data is now
+    // cached; without the post-mount gate the drawer stays closed.
+    await page.goto('/upcoming')
+    await expect(page.getByTestId('upcoming-page')).toBeVisible()
+    // Click the row whose label mentions "Second" — order may vary.
+    await page.locator('[data-testid="upcoming-row-birthday"]').filter({ hasText: /Second Multi/ }).first().click()
+
+    await expect(page).toHaveURL(/\/tree$/)
+    await expect(page.getByTestId('person-detail')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('person-detail-title')).toHaveText(/Second Multi/, { timeout: 10_000 })
+    await expect(page.locator(`[data-testid="tree-node-${secondId}"]`)).toBeVisible()
+
+    // Avoid unused-var noise.
+    expect(firstId).toBeTruthy()
+})
