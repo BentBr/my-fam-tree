@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO family_owner_transfers\n               (family_id, from_user_id, to_user_id, from_token_hash, to_token_hash, expires_at)\n               VALUES ($1, $2, $3, $4, $5, $6)\n               RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0acc790eea10e4dba0838aa124afa39e813910affdbc76e93f0bdb16bd7141e4"
+}

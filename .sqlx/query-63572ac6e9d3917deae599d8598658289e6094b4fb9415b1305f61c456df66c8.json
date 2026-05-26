@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE family_owner_transfers SET cancelled_at = $2\n             WHERE family_id = $1 AND completed_at IS NULL AND cancelled_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "63572ac6e9d3917deae599d8598658289e6094b4fb9415b1305f61c456df66c8"
+}

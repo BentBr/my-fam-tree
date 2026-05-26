@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, family_id, from_user_id, to_user_id,\n                      from_confirmed_at, to_confirmed_at,\n                      expires_at, completed_at, cancelled_at\n               FROM family_owner_transfers\n               WHERE family_id = $1 AND completed_at IS NULL AND cancelled_at IS NULL\n               LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "family_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "family_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "from_user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "from_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "to_user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "to_user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "from_confirmed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "from_confirmed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "to_confirmed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "to_confirmed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "completed_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "completed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "cancelled_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_owner_transfers",
+            "name": "cancelled_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "4da2313ac9a1ee324b8b849fc1f60719e616900bfd951af977bd5177104131a3"
+}
