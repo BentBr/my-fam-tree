@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -31,5 +31,31 @@ describe('MainLayout', () => {
         })
         expect(wrapper.find('.appbar-stub').exists()).toBe(true)
         expect(wrapper.find('.nav-stub').exists()).toBe(true)
+    })
+
+    it('renders the routed component inside the router-view default slot', async () => {
+        // Without stubbing router-view we exercise the v-slot binding that
+        // keys the inner component on `route.path` (covers MainLayout.vue
+        // template lines 11-19).
+        const Routed = { template: '<div class="routed-stub">hello</div>' }
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [{ path: '/', component: Routed }],
+        })
+        await router.push('/')
+        await router.isReady()
+        const wrapper = mount(MainLayout, {
+            global: {
+                plugins: [createPinia(), i18n, router],
+                stubs: {
+                    AppBar: { template: '<div class="appbar-stub" />' },
+                    NavDrawer: { template: '<div class="nav-stub" />' },
+                    'v-main': { template: '<main><slot /></main>' },
+                    'v-container': { template: '<div><slot /></div>' },
+                },
+            },
+        })
+        await flushPromises()
+        expect(wrapper.find('.routed-stub').exists()).toBe(true)
     })
 })

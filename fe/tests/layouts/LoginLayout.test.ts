@@ -37,4 +37,28 @@ describe('LoginLayout', () => {
         expect(wrapper.find('h1').exists()).toBe(true)
         expect(wrapper.find('.lang-stub').exists()).toBe(true)
     })
+
+    it('renders the routed component inside the router-view default slot', async () => {
+        // Without stubbing router-view we exercise the v-slot binding that
+        // keys the inner component on `route.fullPath` (covers LoginLayout.vue
+        // template lines 18-20).
+        const Routed = { template: '<div class="routed-stub">hello</div>' }
+        const router = createRouter({
+            history: createMemoryHistory(),
+            routes: [{ path: '/', component: Routed }],
+        })
+        await router.push('/')
+        await router.isReady()
+        const wrapper = mount(LoginLayout, {
+            global: {
+                plugins: [createPinia(), i18n, router],
+                stubs: {
+                    'v-main': { template: '<main><slot /></main>' },
+                    'v-container': { template: '<div><slot /></div>' },
+                    LangSwitcher: { template: '<div class="lang-stub" />' },
+                },
+            },
+        })
+        expect(wrapper.find('.routed-stub').exists()).toBe(true)
+    })
 })
