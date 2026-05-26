@@ -298,6 +298,7 @@
         "parent_link_duplicate": "Diese Eltern-Kind-Verbindung existiert bereits.",
         "person_not_found": "Diese Person konnten wir nicht finden.",
         "person_not_editable": "Du hast keine Berechtigung, diese Person zu bearbeiten.",
+        "membership_not_found": "Diese Person ist kein Mitglied dieser Familie mehr.",
         "contact_not_found": "Diesen Kontakt konnten wir nicht finden.",
         "contact_not_editable": "Du hast keine Berechtigung, diesen Kontakt zu bearbeiten.",
         "family_not_member": "Du bist kein Mitglied dieser Familie.",

@@ -91,6 +91,7 @@ pub enum ErrorCode {
     FamilyInviteExpired,
     PersonNotFound,
     PersonNotEditable,
+    MembershipNotFound,
     ContactNotFound,
     ContactNotEditable,
     ReminderNotFound,
@@ -119,9 +120,10 @@ impl ErrorCode {
             | Self::PersonNotEditable
             | Self::ContactNotEditable => StatusCode::FORBIDDEN,
             Self::FamilyInviteExpired => StatusCode::GONE,
-            Self::PersonNotFound | Self::ContactNotFound | Self::ReminderNotFound => {
-                StatusCode::NOT_FOUND
-            }
+            Self::PersonNotFound
+            | Self::ContactNotFound
+            | Self::ReminderNotFound
+            | Self::MembershipNotFound => StatusCode::NOT_FOUND,
             Self::RelationshipCycle
             | Self::PartnershipDuplicate
             | Self::ParentLinkDuplicate
@@ -147,6 +149,7 @@ impl ErrorCode {
             Self::FamilyInviteExpired => "Invite expired",
             Self::PersonNotFound => "Person not found",
             Self::PersonNotEditable => "You may only edit your own profile",
+            Self::MembershipNotFound => "Membership not found",
             Self::ContactNotFound => "Contact not found",
             Self::ContactNotEditable => "You may only edit contacts on your own profile",
             Self::ReminderNotFound => "Reminder not found",
@@ -175,6 +178,7 @@ impl ErrorCode {
             Self::FamilyInviteExpired => "family.invite_expired",
             Self::PersonNotFound => "person.not_found",
             Self::PersonNotEditable => "person.not_editable",
+            Self::MembershipNotFound => "membership.not_found",
             Self::ContactNotFound => "contact.not_found",
             Self::ContactNotEditable => "contact.not_editable",
             Self::ReminderNotFound => "reminder.not_found",
@@ -201,6 +205,7 @@ impl ErrorCode {
         Self::FamilyInviteExpired,
         Self::PersonNotFound,
         Self::PersonNotEditable,
+        Self::MembershipNotFound,
         Self::ContactNotFound,
         Self::ContactNotEditable,
         Self::ReminderNotFound,
@@ -238,6 +243,8 @@ pub enum ApiError {
     PersonNotFound { id: Option<Uuid> },
     #[error("you may only edit your own profile")]
     PersonNotEditable,
+    #[error("membership not found")]
+    MembershipNotFound { user_id: Option<Uuid> },
     #[error("contact not found")]
     ContactNotFound { id: Option<Uuid> },
     #[error("you may only edit contacts on your own profile")]
@@ -278,6 +285,7 @@ impl ApiError {
             Self::InviteExpired => ErrorCode::FamilyInviteExpired,
             Self::PersonNotFound { .. } => ErrorCode::PersonNotFound,
             Self::PersonNotEditable => ErrorCode::PersonNotEditable,
+            Self::MembershipNotFound { .. } => ErrorCode::MembershipNotFound,
             Self::ContactNotFound { .. } => ErrorCode::ContactNotFound,
             Self::ContactNotEditable => ErrorCode::ContactNotEditable,
             Self::ReminderNotFound => ErrorCode::ReminderNotFound,
@@ -346,7 +354,10 @@ impl ResponseError for ApiError {
             Self::RateLimited { retry_after_secs } => {
                 tracing::warn!(retry_after_secs = retry_after_secs, code = ?self.code(), "rate limited");
             }
-            Self::Validation(_) | Self::PersonNotFound { .. } | Self::ContactNotFound { .. } => {
+            Self::Validation(_)
+            | Self::PersonNotFound { .. }
+            | Self::ContactNotFound { .. }
+            | Self::MembershipNotFound { .. } => {
                 tracing::info!(code = ?self.code(), "client error");
             }
             _ => {

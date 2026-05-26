@@ -298,6 +298,7 @@
         "parent_link_duplicate": "That parent-child link already exists.",
         "person_not_found": "We couldn't find that person.",
         "person_not_editable": "You don't have permission to edit this person.",
+        "membership_not_found": "That member is no longer part of this family.",
         "contact_not_found": "We couldn't find that contact.",
         "contact_not_editable": "You don't have permission to edit this contact.",
         "family_not_member": "You're not a member of this family.",
