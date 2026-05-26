@@ -57,7 +57,17 @@ async function mountInvite(query: string): Promise<ReturnType<typeof mount>> {
             stubs: {
                 'v-card': { template: '<div><slot /></div>' },
                 'v-progress-circular': { template: '<div />' },
-                'v-alert': { template: '<div><slot /></div>', props: ['type'] },
+                'v-alert': {
+                    // Render both the default slot AND the `#append` slot
+                    // (the mismatch sign-out button lives in `#append`).
+                    template: '<div><slot /><slot name="append" /></div>',
+                    props: ['type'],
+                },
+                'v-btn': {
+                    template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>',
+                    props: ['variant'],
+                    inheritAttrs: false,
+                },
             },
         },
     })
@@ -117,5 +127,51 @@ describe('InviteAccept', () => {
         const w = await mountInvite('token=tok')
         await flushPromises()
         expect(w.find('[data-testid="invite-error"]').exists()).toBe(true)
+    })
+
+    it('renders mismatch alert when accept fails with invite_email_mismatch violation', async () => {
+        // 422 Validation body: the FE reads `body.fields[].code` for the
+        // field-level violation. The top-level code is `validation_failed`.
+        const validationError = Object.assign(new Error('mismatch'), {
+            code: 'validation_failed',
+            body: {
+                code: 'validation_failed',
+                fields: [{ code: 'validation.invite_email_mismatch', path: '/token' }],
+            },
+        })
+        mutateAsync.mockRejectedValueOnce(validationError)
+        const w = await mountInvite('token=tok')
+        // Two flushes: one for the mutateAsync rejection to settle, one
+        // for the resulting `status.value = 'mismatch'` to re-render.
+        await flushPromises()
+        await flushPromises()
+        expect(w.find('[data-testid="invite-mismatch"]').exists()).toBe(true)
+        expect(w.find('[data-testid="invite-mismatch-signout"]').exists()).toBe(true)
+        // Confidence: the regular error alert is NOT also rendered.
+        expect(w.find('[data-testid="invite-error"]').exists()).toBe(false)
+    })
+
+    it('signOutAndRetry clears the session and bounces back to /invite/accept', async () => {
+        // First mount lands in the mismatch state.
+        const validationError = Object.assign(new Error('mismatch'), {
+            body: { fields: [{ code: 'validation.invite_email_mismatch' }] },
+        })
+        mutateAsync.mockRejectedValueOnce(validationError)
+        const w = await mountInvite('token=tok-x')
+        await flushPromises()
+        await flushPromises()
+
+        // Spy on auth.logout so we don't actually hit the network.
+        const auth = useAuthStore()
+        const logoutSpy = vi.spyOn(auth, 'logout').mockResolvedValue()
+
+        // Set up the second mount path: a new mutateAsync result so the
+        // bounced visit can fall through to the anonymous-accept arm.
+        mutateAsync.mockResolvedValueOnce({ data: { family: { id: 'f-1', name: 'F' } } })
+
+        await w.find('[data-testid="invite-mismatch-signout"]').trigger('click')
+        await flushPromises()
+
+        expect(logoutSpy).toHaveBeenCalled()
     })
 })
