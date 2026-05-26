@@ -1,28 +1,53 @@
-//! `/invites/accept` endpoint.
+//! `/invites/accept` + `/families/{id}/invites` GET/DELETE endpoints.
 //!
-//! The caller MUST already be authenticated (the route lives under
-//! [`AuthMiddleware::required`]). We atomically claim the invite, verify the
-//! signed-in email matches the address the invite was sent to, insert a
-//! membership row at the invited role, and reissue the access cookie so the
-//! new family is immediately reflected in the JWT.
+//! `accept` lives here for historical reasons (it pre-dates Phase D's
+//! list / cancel endpoints). The caller MUST already be authenticated —
+//! every route in this file lives under [`AuthMiddleware::required`]. We
+//! atomically claim the invite, verify the signed-in email matches the
+//! address the invite was sent to, insert a membership row at the
+//! invited role, and reissue the access cookie so the new family is
+//! immediately reflected in the JWT.
 //!
 //! The "email mismatch" check is intentionally surfaced as a `Validation`
 //! error (not `InviteExpired`/`MagicLinkInvalid`) so the FE can render an
 //! actionable hint: the user signed in with the wrong account.
+//!
+//! `list_invites` + `cancel_invite` are Phase-D admin-only surfaces. Both
+//! live in this module (next to `accept`) to keep all invite handlers in
+//! one place; `families.rs` only owns the `POST` half because the existing
+//! `families::invite` handler ships from there.
 
-use actix_web::{HttpRequest, HttpResponse, post, web};
-use chrono::Utc;
-use my_family_domain::{InviteRepoError, PersonId};
+use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
+use chrono::{DateTime, Utc};
+use my_family_domain::{FamilyId, InviteRepoError, PersonId, Role};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use uuid::Uuid;
 
-use crate::auth::hash_token;
+use crate::auth::{FamilyClaim, hash_token};
 use crate::cookies::access_cookie;
-use crate::routes::families::{FamilyView, family_view_from_claims};
+use crate::response::NullResponseBody;
+use crate::routes::families::FamilyView;
 use crate::services::audit;
 use crate::services::auth_service::issue_access_token_for;
 use crate::validation::invite_email_mismatch;
 use crate::{ApiError, ApiResponse, AppState, response_body};
+
+/// Build a `FamilyView` from a list of `FamilyClaim`s (the JWT-mirrored
+/// memberships returned by `issue_access_token_for`). Used by the accept
+/// route to project the newly-joined family without an extra DB round-trip.
+#[must_use]
+fn family_view_from_claims(
+    family_id: Uuid,
+    fams: &[FamilyClaim],
+    fallback_role: Role,
+) -> FamilyView {
+    let (name, role) = fams
+        .iter()
+        .find(|f| f.id == family_id)
+        .map_or_else(|| (String::new(), fallback_role), |f| (f.name.clone(), f.role));
+    FamilyView { id: family_id, name, role }
+}
 
 // ---------------------------------------------------------------------------
 // Request / response DTOs.
@@ -39,7 +64,30 @@ pub struct AcceptRes {
     pub claims: super::auth::ConsumeRes,
 }
 
+/// Wire DTO returned by `GET /families/{id}/invites`. Mirrors the
+/// persisted `Invite` minus the token hash (which never leaves the
+/// database).
+#[derive(Debug, Serialize, ToSchema)]
+pub struct InviteDto {
+    pub id: Uuid,
+    pub email: String,
+    pub role: Role,
+    pub person_id: Option<Uuid>,
+    pub expires_at: DateTime<Utc>,
+    pub invited_by: Uuid,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct InvitesList {
+    pub data: Vec<InviteDto>,
+}
+
 response_body!(pub AcceptResponseBody, AcceptRes);
+response_body!(pub InvitesListResponseBody, InvitesList);
+
+fn internal<E: std::fmt::Display>(e: E) -> ApiError {
+    ApiError::Internal(anyhow::anyhow!(e.to_string()))
+}
 
 // ---------------------------------------------------------------------------
 // POST /invites/accept
@@ -157,6 +205,109 @@ pub async fn accept(
     let mut resp = HttpResponse::Ok().json(ApiResponse::ok(payload));
     let _ = resp.add_cookie(&access_cookie(&state.cfg, access));
     Ok(resp)
+}
+
+// ---------------------------------------------------------------------------
+// GET /families/{id}/invites — admin/owner only.
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/families/{id}/invites",
+    operation_id = "invites_list_pending",
+    params(
+        ("id" = Uuid, Path, description = "Family id (must be a family the caller belongs to)"),
+    ),
+    responses(
+        (status = 200, description = "Pending invites for this family", body = InvitesListResponseBody),
+        (status = 401, description = "No session"),
+        (status = 403, description = "Insufficient role (admin / owner required)"),
+    ),
+    security(("cookie_access" = [])),
+    tag = "invites",
+)]
+#[allow(clippy::future_not_send)]
+#[allow(unreachable_pub)]
+#[get("/families/{id}/invites")]
+pub async fn list_invites(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    path: web::Path<Uuid>,
+) -> Result<ApiResponse<InvitesList>, ApiError> {
+    let claims = crate::auth::user_claims(&req)?;
+    let family_id = path.into_inner();
+    let active = super::families::resolve_membership(&claims, family_id)?;
+    crate::auth::require_role(&active, Role::Admin)?;
+
+    let invites = state
+        .invites
+        .list_pending_for_family(FamilyId::from_uuid(family_id))
+        .await
+        .map_err(internal)?;
+    let data = invites
+        .into_iter()
+        .map(|i| InviteDto {
+            id: i.id,
+            email: i.email,
+            role: i.invited_role,
+            person_id: i.person_id,
+            expires_at: i.expires_at,
+            invited_by: i.invited_by.into_uuid(),
+        })
+        .collect();
+    Ok(ApiResponse::ok(InvitesList { data }))
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /families/{id}/invites/{invite_id} — admin/owner only.
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(
+    delete,
+    path = "/api/v1/families/{id}/invites/{invite_id}",
+    operation_id = "invites_cancel",
+    params(
+        ("id" = Uuid, Path, description = "Family id (must be a family the caller belongs to)"),
+        ("invite_id" = Uuid, Path, description = "Pending invite id to cancel"),
+    ),
+    responses(
+        (status = 200, description = "Invite cancelled", body = NullResponseBody, content_type = "application/json"),
+        (status = 401, description = "No session"),
+        (status = 403, description = "Insufficient role"),
+        (status = 404, description = "Invite not pending or already accepted"),
+    ),
+    security(("cookie_access" = [])),
+    tag = "invites",
+)]
+#[allow(clippy::future_not_send)]
+#[allow(unreachable_pub)]
+#[delete("/families/{id}/invites/{invite_id}")]
+pub async fn cancel_invite(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+    path: web::Path<(Uuid, Uuid)>,
+) -> Result<ApiResponse<serde_json::Value>, ApiError> {
+    let claims = crate::auth::user_claims(&req)?;
+    let (family_uuid, invite_id) = path.into_inner();
+    let active = super::families::resolve_membership(&claims, family_uuid)?;
+    crate::auth::require_role(&active, Role::Admin)?;
+
+    let family_id = FamilyId::from_uuid(family_uuid);
+    state.invites.cancel(invite_id, family_id).await.map_err(|e| match e {
+        InviteRepoError::NotFoundOrAccepted => ApiError::PersonNotFound { id: Some(invite_id) },
+        other => ApiError::Internal(anyhow::anyhow!(other.to_string())),
+    })?;
+    audit::record(
+        &state.audit,
+        family_id,
+        claims.user_id,
+        "cancel",
+        "invite",
+        Some(invite_id),
+        serde_json::json!({}),
+    )
+    .await;
+    Ok(ApiResponse::ok(serde_json::Value::Null))
 }
 
 // ---------------------------------------------------------------------------

@@ -26,10 +26,10 @@ use crate::routes::auth::{
 use crate::routes::contacts::{self, ContactListResponseBody, ContactViewResponseBody};
 use crate::routes::families::{
     self, CreateFamilyResponseBody, FamilyViewResponseBody, InviteResponseBody,
-    InvitesListResponseBody, MyFamiliesResponseBody,
+    MyFamiliesResponseBody,
 };
 use crate::routes::health::{self, HealthResponseBody};
-use crate::routes::invites::{self, AcceptResponseBody};
+use crate::routes::invites::{self, AcceptResponseBody, InvitesListResponseBody};
 use crate::routes::members::{self, MemberResponseBody, MembersListResponseBody};
 use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
@@ -63,9 +63,9 @@ use crate::services::upcoming::UpcomingEvent;
         families::rename,
         families::delete_family,
         families::invite,
-        families::list_invites,
-        families::cancel_invite,
         invites::accept,
+        invites::list_invites,
+        invites::cancel_invite,
         users::me,
         users::update,
         users::email_change_request,
@@ -144,8 +144,8 @@ use crate::services::upcoming::UpcomingEvent;
             families::RenameFamilyReq,
             families::InviteReq,
             families::InviteRes,
-            families::InviteDto,
-            families::InvitesList,
+            invites::InviteDto,
+            invites::InvitesList,
             invites::AcceptReq,
             invites::AcceptRes,
             users::UserProfile,
