@@ -19,6 +19,7 @@ pub mod families;
 pub mod health;
 pub mod invites;
 pub mod members;
+pub mod owner_transfer;
 pub mod parent_links;
 pub mod partnerships;
 pub mod persons;
@@ -81,6 +82,10 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(audit::list_audit)
                 .service(members::list_members)
                 .service(members::set_member_role)
-                .service(members::revoke_member),
+                .service(members::revoke_member)
+                .service(owner_transfer::begin)
+                .service(owner_transfer::confirm)
+                .service(owner_transfer::cancel)
+                .service(owner_transfer::status),
         )
 }

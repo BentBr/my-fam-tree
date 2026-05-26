@@ -31,6 +31,9 @@ use crate::routes::families::{
 use crate::routes::health::{self, HealthResponseBody};
 use crate::routes::invites::{self, AcceptResponseBody, InvitesListResponseBody};
 use crate::routes::members::{self, MemberResponseBody, MembersListResponseBody};
+use crate::routes::owner_transfer::{
+    self, TransferStatusOptionalResponseBody, TransferStatusResponseBody,
+};
 use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
@@ -90,6 +93,10 @@ use crate::services::upcoming::UpcomingEvent;
         members::list_members,
         members::set_member_role,
         members::revoke_member,
+        owner_transfer::begin,
+        owner_transfer::confirm,
+        owner_transfer::cancel,
+        owner_transfer::status,
     ),
     components(
         schemas(
@@ -119,6 +126,8 @@ use crate::services::upcoming::UpcomingEvent;
             AuditPageResponseBody,
             MembersListResponseBody,
             MemberResponseBody,
+            TransferStatusResponseBody,
+            TransferStatusOptionalResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -175,6 +184,9 @@ use crate::services::upcoming::UpcomingEvent;
             members::MembersList,
             members::MemberDto,
             members::SetRoleReq,
+            owner_transfer::BeginReq,
+            owner_transfer::ConfirmReq,
+            owner_transfer::TransferStatus,
         ),
     ),
     tags(
@@ -189,6 +201,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
         (name = "audit", description = "Family audit log (admin / owner only)"),
         (name = "members", description = "Family membership management (admin / owner only)"),
+        (name = "owner-transfer", description = "Double-verification ownership handoff (owner-initiated)"),
     ),
 )]
 pub struct ApiDoc;

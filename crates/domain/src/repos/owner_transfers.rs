@@ -4,15 +4,14 @@
 //! pending transfer at any time (enforced by the partial unique index on
 //! `family_owner_transfers`). The state machine is:
 //!
-//! - `begin`     -> row inserted with both token hashes, both `*_confirmed_at`
-//!                  NULL, `expires_at = now + 1h`, `completed_at` /
-//!                  `cancelled_at` NULL.
-//! - `confirm`   -> looks up the row by either token hash and sets the
-//!                  matching side's `*_confirmed_at`. Returns the row +
-//!                  which side was confirmed.
-//! - `complete`  -> writes `completed_at`; called by the API after the
-//!                  role swap commits.
-//! - `cancel`    -> writes `cancelled_at`; owner-only.
+//! - `begin` -> row inserted with both token hashes, both `*_confirmed_at`
+//!   NULL, `expires_at = now + 1h`, `completed_at` / `cancelled_at` NULL.
+//! - `confirm` -> looks up the row by either token hash and sets the
+//!   matching side's `*_confirmed_at`. Returns the row + which side was
+//!   confirmed.
+//! - `complete` -> writes `completed_at`; called by the API after the role
+//!   swap commits.
+//! - `cancel` -> writes `cancelled_at`; owner-only.
 //! - `find_active` -> read the current pending transfer (if any).
 
 use async_trait::async_trait;
