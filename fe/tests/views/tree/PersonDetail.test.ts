@@ -65,10 +65,20 @@ const treeData = ref({
 
 // Pinia store state — flipped between tests via `activeRole`.
 const activeRole = ref<'owner' | 'admin' | 'user' | null>('owner')
+// Signed-in user id — drives the user-role self-edit gate. Defaults to a
+// value distinct from the persons in `listData` so tests that don't care
+// about self-edit don't accidentally grant edit rights to user role.
+const currentUserId = ref<string>('u-self')
 
 vi.mock('@/stores/activeFamily', () => ({
     useActiveFamilyStore: () => ({
         activeFamily: { id: 'fam', name: 'Müller', role: activeRole.value },
+    }),
+}))
+
+vi.mock('@/stores/auth', () => ({
+    useAuthStore: () => ({
+        user: { id: currentUserId.value, email: 'a@b.c', locale: 'en', displayName: '' },
     }),
 }))
 
@@ -183,6 +193,7 @@ describe('PersonDetail', () => {
         deletePartnerMutate.mockReset()
         deleteParentMutate.mockReset()
         activeRole.value = 'owner'
+        currentUserId.value = 'u-self'
         personGetData.value = undefined
         personGetIsLoading.value = false
         listData.value = [
@@ -342,6 +353,35 @@ describe('PersonDetail', () => {
         expect(delMutate).toHaveBeenCalledWith('p1')
         expect(w.emitted('changed')).toBeDefined()
         expect(w.emitted('close')).toBeDefined()
+    })
+
+    it('user role can edit their own linked person row', () => {
+        activeRole.value = 'user'
+        currentUserId.value = 'u-self'
+        personGetData.value = {
+            id: 'p1',
+            given_name: 'A',
+            family_name: 'X',
+            linked_user_id: 'u-self',
+        }
+        const w = mountDetail('p1')
+        // Edit button is visible; read-only badge is not.
+        expect(w.find('[data-testid="person-edit-button"]').exists()).toBe(true)
+        expect(w.find('[data-testid="person-readonly-badge"]').exists()).toBe(false)
+    })
+
+    it('user role cannot edit someone else’s person row', () => {
+        activeRole.value = 'user'
+        currentUserId.value = 'u-self'
+        personGetData.value = {
+            id: 'p1',
+            given_name: 'A',
+            family_name: 'X',
+            linked_user_id: 'u-other',
+        }
+        const w = mountDetail('p1')
+        expect(w.find('[data-testid="person-edit-button"]').exists()).toBe(false)
+        expect(w.find('[data-testid="person-readonly-badge"]').exists()).toBe(true)
     })
 
     it('shows the "Has account" chip when person.linked_user_id is set', () => {

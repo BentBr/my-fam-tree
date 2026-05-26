@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useCreateInvite } from '@/api/hooks/invites'
 import { useDeletePerson, useGetPerson, useListPersons } from '@/api/hooks/persons'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
+import { useAuthStore } from '@/stores/auth'
 
 import ContactsSection from './ContactsSection.vue'
 import PersonEdit from './PersonEdit.vue'
@@ -35,19 +36,25 @@ const list = useListPersons()
 const del = useDeletePerson()
 
 const family = useActiveFamilyStore()
-
-// owner+admin can edit; user role is read-only. `null` happens during the
-// brief window after sign-in before the active-family hydrates — render
-// read-only until we know.
-const canEdit = computed(() => {
-    const role = family.activeFamily?.role ?? null
-    return role === 'owner' || role === 'admin'
-})
+const auth = useAuthStore()
 
 const editing = ref(false)
 const confirmDelete = ref(false)
 
 const person = computed(() => personQ.data.value ?? list.data.value?.find((p) => p.id === props.personId) ?? null)
+
+// owner+admin can edit any row. A `user`-role member can only edit the
+// person row that maps to their own user (linked_user_id matches the
+// signed-in user). `null` role happens during the brief window after
+// sign-in before the active-family hydrates — render read-only then.
+const canEdit = computed(() => {
+    const role = family.activeFamily?.role ?? null
+    if (role === 'owner' || role === 'admin') return true
+    if (role === 'user' && person.value?.linked_user_id !== null && person.value?.linked_user_id !== undefined) {
+        return person.value.linked_user_id === auth.user?.id
+    }
+    return false
+})
 
 // Invite-to-family modal. Visible to admin+owner only; gated on the
 // active family's role (read from the same store as `canEdit` above so
