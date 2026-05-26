@@ -3,16 +3,20 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ToastContainer from '@/components/common/ToastContainer.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import LoginLayout from '@/layouts/LoginLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 
 const route = useRoute()
-const layout = computed<'login' | 'main'>(() => (route.meta.layout as 'login' | 'main' | undefined) ?? 'main')
+const layout = computed<'login' | 'main' | 'admin'>(
+    () => (route.meta.layout as 'login' | 'main' | 'admin' | undefined) ?? 'main',
+)
 </script>
 
 <template>
     <v-app>
         <LoginLayout v-if="layout === 'login'" />
+        <AdminLayout v-else-if="layout === 'admin'" />
         <MainLayout v-else />
         <!-- ToastContainer lives outside the layout switch so toasts persist
              across login/main transitions. -->
