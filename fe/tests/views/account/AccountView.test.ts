@@ -6,7 +6,8 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 const updateMutate = vi.fn()
 const requestEmailMutate = vi.fn()
-const meData = ref<{ data: { display_name: string; email: string; locale: string } } | undefined>(undefined)
+// useMe now unwraps the envelope, so the mock returns the profile directly.
+const meData = ref<{ display_name: string; email: string; locale: string } | undefined>(undefined)
 const meRefs = {
     data: meData,
     isLoading: ref(false),
@@ -92,7 +93,7 @@ describe('AccountView', () => {
 
     it('mounts and syncs form fields when /me arrives', async () => {
         const w = await mountView()
-        meData.value = { data: { display_name: 'Alice', email: 'a@b', locale: 'de' } }
+        meData.value = { display_name: 'Alice', email: 'a@b', locale: 'de' }
         await flushPromises()
         const nameInput = w.find('[data-testid="account-display-name"]')
         expect(nameInput.attributes('value')).toBe('Alice')
@@ -100,7 +101,7 @@ describe('AccountView', () => {
 
     it('saveProfile dispatches mutateAsync with trimmed name', async () => {
         const w = await mountView()
-        meData.value = { data: { display_name: 'Alice', email: 'a@b', locale: 'en' } }
+        meData.value = { display_name: 'Alice', email: 'a@b', locale: 'en' }
         await flushPromises()
         updateMutate.mockResolvedValueOnce(undefined)
         await w.findAll('form')[0]?.trigger('submit')

@@ -1,11 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 
-import { i18n } from '@/i18n'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
-import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
+import { expectOk, unwrap, useApiMutation } from '../request'
 
 /**
  * Member row as returned by `GET /families/{id}/members`. Mirrors the
@@ -34,15 +33,12 @@ export function useMembers() {
         queryFn: async (): Promise<MemberRow[]> => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useMembers: no active family')
-            const { data, error } = await client.GET('/api/v1/families/{family_id}/members', {
-                params: { path: { family_id: familyId } },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) {
-                throw new Error('empty response from GET /families/{id}/members')
-            }
-            // Unwrap `{ data: { data: MemberDto[] } }` → `MemberRow[]`.
-            return data.data.data as unknown as MemberRow[]
+            // `MembersList` is `{ data: MemberDto[] }`; the envelope wraps it
+            // again, so `unwrap` peels one layer and `.data` peels the inner.
+            const list = await unwrap(
+                client.GET('/api/v1/families/{family_id}/members', { params: { path: { family_id: familyId } } }),
+            )
+            return list.data as unknown as MemberRow[]
         },
     })
 }
@@ -51,54 +47,43 @@ export function useMembers() {
  * `useSetRole` — PATCH a single member's role. The matrix gate lives
  * on the backend; the FE filters which buttons render based on the
  * same matrix to keep the UX honest, but the BE re-validates every
- * call. Invalidates the `members` cache on success so the table
- * re-renders with the fresh role chip.
+ * call. Invalidates the `members` cache on success.
  */
 export function useSetRole() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
     const family = useActiveFamilyStore()
-    return useMutation({
-        mutationFn: async (vars: { userId: string; role: 'user' | 'admin' }) => {
+    return useApiMutation({
+        mutationFn: (vars: { userId: string; role: 'user' | 'admin' }) => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useSetRole: no active family')
-            const { data, error } = await client.PATCH('/api/v1/families/{family_id}/members/{user_id}', {
-                params: { path: { family_id: familyId, user_id: vars.userId } },
-                body: { role: vars.role },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) {
-                throw new Error('empty response from PATCH /families/{id}/members/{user_id}')
-            }
-            return data.data
+            return unwrap(
+                client.PATCH('/api/v1/families/{family_id}/members/{user_id}', {
+                    params: { path: { family_id: familyId, user_id: vars.userId } },
+                    body: { role: vars.role },
+                }),
+            )
         },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['members'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.member_updated') })
-        },
+        success: 'toasts.member_updated',
+        invalidate: () => [['members']],
     })
 }
 
 /**
  * `useRevokeMember` — DELETE a member's row. Same matrix gating as
- * `useSetRole`. Returns `void` on success.
+ * `useSetRole`.
  */
 export function useRevokeMember() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
     const family = useActiveFamilyStore()
-    return useMutation({
-        mutationFn: async (userId: string): Promise<void> => {
+    return useApiMutation({
+        mutationFn: (userId: string) => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useRevokeMember: no active family')
-            const { error } = await client.DELETE('/api/v1/families/{family_id}/members/{user_id}', {
-                params: { path: { family_id: familyId, user_id: userId } },
-            })
-            if (error !== undefined) throw error
+            return expectOk(
+                client.DELETE('/api/v1/families/{family_id}/members/{user_id}', {
+                    params: { path: { family_id: familyId, user_id: userId } },
+                }),
+            )
         },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['members'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.member_revoked') })
-        },
+        success: 'toasts.member_revoked',
+        invalidate: () => [['members']],
     })
 }

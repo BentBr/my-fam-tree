@@ -41,7 +41,7 @@ onMounted(async () => {
             // CRITICAL: select the newly-joined family before navigating,
             // otherwise the family guard sees activeFamilyId === null and
             // bounces /health → /families/pick.
-            family.setActive(res.data.family.id as FamilyId)
+            family.setActive(res.family.id as FamilyId)
         }
         status.value = 'ok'
         await nextTick()

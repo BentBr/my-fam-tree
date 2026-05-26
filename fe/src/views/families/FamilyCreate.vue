@@ -19,7 +19,7 @@ async function submit(): Promise<void> {
     try {
         const res = await create.mutateAsync(name.value.trim())
         if (res !== undefined) {
-            family.setActive(res.data.family.id as FamilyId)
+            family.setActive(res.family.id as FamilyId)
             // Flush reactivity so the family guard reads activeFamilyId
             // BEFORE evaluating /health — otherwise it can bounce back.
             await nextTick()

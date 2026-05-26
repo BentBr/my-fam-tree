@@ -15,12 +15,28 @@ import { useUiStore } from '@/stores/ui'
  * instead of repeating the throw/empty checks themselves.
  */
 export async function unwrap<T>(
-    call: Promise<{ data?: { data: T } | undefined; error?: unknown }>,
+    // The inner `data` is typed optional/nullable to match endpoints whose
+    // success payload can be `null` (e.g. owner-transfer status). The outer
+    // envelope being `undefined` is the only true "empty response" — that's
+    // what we guard against; a present envelope with `data: null` is a valid
+    // result the caller handles (`?? null`).
+    call: Promise<{ data?: { data?: T | null } | undefined; error?: unknown }>,
 ): Promise<T> {
     const { data, error } = await call
     if (error !== undefined) throw error
     if (data === undefined) throw new Error('empty response from API')
-    return data.data
+    return data.data as T
+}
+
+/**
+ * Like {@link unwrap} but for calls whose response body the caller ignores
+ * (DELETEs, and POST/PATCH writes where the new row appears via a refetch
+ * rather than the response). Throws on error, resolves to void otherwise —
+ * the same single error-throw path as `unwrap`, without the data guard.
+ */
+export async function expectOk(call: Promise<{ error?: unknown }>): Promise<void> {
+    const { error } = await call
+    if (error !== undefined) throw error
 }
 
 type SuccessMessage<TVars, TData> = string | ((vars: TVars, data: TData) => string)

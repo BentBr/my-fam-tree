@@ -5,6 +5,7 @@ import { i18n } from '@/i18n'
 import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
+import { expectOk, unwrap, useApiMutation } from '../request'
 
 export interface PersonInput {
     given_name: string
@@ -46,23 +47,15 @@ export interface PersonUpdateInput {
     linked_user_id?: string | null
 }
 
-// `PersonsListResponseBody` on the wire is `{ data: PersonView[], meta? }` — we
-// return `data.data` (the `PersonView[]` array) directly so call sites don't
-// have to peel an extra wrapping layer that exists purely for response metadata.
-//
-// openapi-fetch types `data` as `T | undefined` (it's defined when `error` is),
-// so we re-check after the `error` guard. The `Error('empty response')` paths
-// only fire on protocol-level surprises like an empty 204 — they keep the
-// types honest under `noUncheckedIndexedAccess`.
+// `PersonsListResponseBody` on the wire is `{ data: PersonView[], meta? }` — the
+// shared `unwrap()` returns `data.data` (the `PersonView[]` array) directly so
+// call sites don't have to peel an extra wrapping layer that exists purely for
+// response metadata. `unwrap` also handles the `error` re-throw and the
+// empty-body guard (a protocol-level surprise like an empty 204).
 export function useListPersons() {
     return useQuery({
         queryKey: ['persons'],
-        queryFn: async () => {
-            const { data, error } = await client.GET('/api/v1/persons')
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from /persons')
-            return data.data
-        },
+        queryFn: () => unwrap(client.GET('/api/v1/persons')),
     })
 }
 
@@ -81,81 +74,42 @@ export function useGetPerson(id: Ref<string | null>) {
         // `enabled` short-circuits the fetch while id is null — react-query
         // still returns a usable result object, just `data === undefined`.
         enabled: computed(() => id.value !== null && id.value !== ''),
-        queryFn: async () => {
+        queryFn: () => {
             const pid = id.value
             // `enabled` guards against this, but the queryFn type still needs
             // to refuse a null id at runtime so the URL builder doesn't see
             // the literal string `null`.
             if (pid === null || pid === '') throw new Error('useGetPerson: id is null')
-            const { data, error } = await client.GET('/api/v1/persons/{id}', {
-                params: { path: { id: pid } },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from GET /persons/{id}')
-            return data.data
+            return unwrap(client.GET('/api/v1/persons/{id}', { params: { path: { id: pid } } }))
         },
     })
 }
 
 export function useCreatePerson() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
-    return useMutation({
-        mutationFn: async (input: PersonInput) => {
-            const { data, error } = await client.POST('/api/v1/persons', { body: input })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from POST /persons')
-            return data.data
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['persons'] })
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.person_created') })
-        },
+    return useApiMutation({
+        mutationFn: (input: PersonInput) => unwrap(client.POST('/api/v1/persons', { body: input })),
+        success: 'toasts.person_created',
+        invalidate: () => [['persons'], ['tree']],
     })
 }
 
 export function useUpdatePerson() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
-    return useMutation({
-        mutationFn: async (vars: { id: string; input: PersonUpdateInput }) => {
-            const { data, error } = await client.PATCH('/api/v1/persons/{id}', {
-                params: { path: { id: vars.id } },
-                body: vars.input,
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from PATCH /persons/{id}')
-            return data.data
-        },
-        onSuccess: (_data, vars) => {
-            void qc.invalidateQueries({ queryKey: ['persons'] })
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-            // Refresh the per-person GET so the drawer sees the new fields
-            // without waiting for a manual refetch. The query key includes a
-            // ref-wrapping id, so we invalidate the broad list of keys with
-            // the same root tag — tanstack-query treats the prefix as a match.
-            void qc.invalidateQueries({ queryKey: ['person', vars.id] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.person_updated') })
-        },
+    return useApiMutation({
+        mutationFn: (vars: { id: string; input: PersonUpdateInput }) =>
+            unwrap(client.PATCH('/api/v1/persons/{id}', { params: { path: { id: vars.id } }, body: vars.input })),
+        success: 'toasts.person_updated',
+        // Also refresh the per-person GET so the drawer sees the new fields
+        // without a manual refetch. The query key includes a ref-wrapping id,
+        // so the broad `['person', id]` prefix matches it structurally.
+        invalidate: (vars) => [['persons'], ['tree'], ['person', vars.id]],
     })
 }
 
 export function useDeletePerson() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
-    return useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await client.DELETE('/api/v1/persons/{id}', {
-                params: { path: { id } },
-            })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['persons'] })
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.person_deleted') })
-        },
+    return useApiMutation({
+        mutationFn: (id: string) => expectOk(client.DELETE('/api/v1/persons/{id}', { params: { path: { id } } })),
+        success: 'toasts.person_deleted',
+        invalidate: () => [['persons'], ['tree']],
     })
 }
 
@@ -192,15 +146,17 @@ export function useSetFavourite() {
     const qc = useQueryClient()
     const ui = useUiStore()
     return useMutation({
-        mutationFn: async (vars: { id: string; isFavourite: boolean }) => {
-            const { data, error } = await client.PATCH('/api/v1/persons/{id}/favourite', {
-                params: { path: { id: vars.id } },
-                body: { is_favourite: vars.isFavourite },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from PATCH /persons/{id}/favourite')
-            return data.data
-        },
+        // Kept on raw `useMutation` (not `useApiMutation`) because it owns
+        // an optimistic onMutate + rollback onError that the wrapper doesn't
+        // expose. The network call still routes through `unwrap()` so the
+        // error/empty handling stays consistent with every other hook.
+        mutationFn: (vars: { id: string; isFavourite: boolean }) =>
+            unwrap(
+                client.PATCH('/api/v1/persons/{id}/favourite', {
+                    params: { path: { id: vars.id } },
+                    body: { is_favourite: vars.isFavourite },
+                }),
+            ),
         onMutate: async (vars) => {
             await qc.cancelQueries({ queryKey: ['tree'] })
             await qc.cancelQueries({ queryKey: ['person', vars.id] })

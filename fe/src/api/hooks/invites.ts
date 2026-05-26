@@ -1,11 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery } from '@tanstack/vue-query'
 import { computed } from 'vue'
 
-import { i18n } from '@/i18n'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
-import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
+import { expectOk, unwrap, useApiMutation } from '../request'
 
 /**
  * Pending invite row as returned by `GET /families/{id}/invites`. Mirrors
@@ -34,14 +33,10 @@ export function useInvites() {
         queryFn: async (): Promise<InviteRow[]> => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useInvites: no active family')
-            const { data, error } = await client.GET('/api/v1/families/{id}/invites', {
-                params: { path: { id: familyId } },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) {
-                throw new Error('empty response from GET /families/{id}/invites')
-            }
-            return data.data.data as unknown as InviteRow[]
+            const list = await unwrap(
+                client.GET('/api/v1/families/{id}/invites', { params: { path: { id: familyId } } }),
+            )
+            return list.data as unknown as InviteRow[]
         },
     })
 }
@@ -49,58 +44,43 @@ export function useInvites() {
 /**
  * `useCreateInvite` — POST a new invite. Used by the PersonDetail CTA and
  * (potentially) the bare admin invite form. Invalidates the `invites`
- * cache on success so the admin pending-list refreshes. Toast string
- * lives in `toasts.invite_sent`.
+ * cache on success so the admin pending-list refreshes.
  */
 export function useCreateInvite() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
     const family = useActiveFamilyStore()
-    return useMutation({
-        mutationFn: async (vars: { email: string; role: 'user' | 'admin'; personId?: string | null }) => {
+    return useApiMutation({
+        mutationFn: (vars: { email: string; role: 'user' | 'admin'; personId?: string | null }) => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useCreateInvite: no active family')
-            const { data, error } = await client.POST('/api/v1/families/{id}/invites', {
-                params: { path: { id: familyId } },
-                body: {
-                    email: vars.email,
-                    role: vars.role,
-                    person_id: vars.personId ?? null,
-                },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) {
-                throw new Error('empty response from POST /families/{id}/invites')
-            }
-            return data.data
+            return unwrap(
+                client.POST('/api/v1/families/{id}/invites', {
+                    params: { path: { id: familyId } },
+                    body: { email: vars.email, role: vars.role, person_id: vars.personId ?? null },
+                }),
+            )
         },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['invites'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.invite_sent') })
-        },
+        success: 'toasts.invite_sent',
+        invalidate: () => [['invites']],
     })
 }
 
 /**
  * `useCancelInvite` — DELETE a pending invite. Same admin/owner gate as
- * `useCreateInvite`. Returns `void` on success.
+ * `useCreateInvite`.
  */
 export function useCancelInvite() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
     const family = useActiveFamilyStore()
-    return useMutation({
-        mutationFn: async (inviteId: string): Promise<void> => {
+    return useApiMutation({
+        mutationFn: (inviteId: string) => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useCancelInvite: no active family')
-            const { error } = await client.DELETE('/api/v1/families/{id}/invites/{invite_id}', {
-                params: { path: { id: familyId, invite_id: inviteId } },
-            })
-            if (error !== undefined) throw error
+            return expectOk(
+                client.DELETE('/api/v1/families/{id}/invites/{invite_id}', {
+                    params: { path: { id: familyId, invite_id: inviteId } },
+                }),
+            )
         },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['invites'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.invite_cancelled') })
-        },
+        success: 'toasts.invite_cancelled',
+        invalidate: () => [['invites']],
     })
 }

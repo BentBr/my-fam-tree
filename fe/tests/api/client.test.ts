@@ -175,8 +175,51 @@ describe('@/api/client middlewares', () => {
             thrown = e
         }
         // The middleware throws ApiClientError regardless of whether
-        // endSessionAndRedirect mutates the (anonymous) store. The
-        // auth-side mutation is covered directly in tests/stores/auth.test.ts.
+        // endSession mutates the (anonymous) store. The auth-side
+        // mutation is covered directly in tests/stores/auth.test.ts.
         expect(thrown).toBeInstanceOf(ApiClientError)
+    })
+
+    it('refreshes on auth_token_expired then retries the original request', async () => {
+        const { client } = await import('@/api/client')
+        fetchSpy
+            // 1) original GET → 401 expired (plain json so errorTranslator
+            //    passes it through to authRefresh)
+            .mockResolvedValueOnce(
+                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
+            )
+            // 2) the refresh POST issued by auth.refresh() → success
+            .mockResolvedValueOnce(jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }))
+            // 3) the retried original GET → success
+            .mockResolvedValueOnce(jsonResponse(200, { data: { ok: true } }))
+
+        const { data } = await client.GET('/api/v1/relationships' as never)
+        expect(data).toEqual({ data: { ok: true } })
+        expect(routerReplace).not.toHaveBeenCalled()
+        // original + refresh + retry = 3 fetches
+        expect(fetchSpy).toHaveBeenCalledTimes(3)
+    })
+
+    it('ends the session when the retried request is still 401', async () => {
+        const { client } = await import('@/api/client')
+        const { ApiClientError } = await import('@/api/errors')
+        fetchSpy
+            .mockResolvedValueOnce(
+                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
+            )
+            .mockResolvedValueOnce(jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }))
+            // retry STILL 401 — refresh didn't actually recover the session
+            .mockResolvedValueOnce(
+                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
+            )
+
+        let thrown: unknown
+        try {
+            await client.GET('/api/v1/relationships' as never)
+        } catch (e) {
+            thrown = e
+        }
+        expect(thrown).toBeInstanceOf(ApiClientError)
+        expect(routerReplace).toHaveBeenCalledWith('/auth/sign-in')
     })
 })

@@ -22,7 +22,7 @@ const changeRequested = ref(false)
 // Sync form fields when /users/me arrives. Without `immediate`, the form would
 // stay empty until the first cache update post-mount.
 watch(
-    () => me.data.value?.data,
+    () => me.data.value,
     (profile) => {
         if (profile === undefined) return
         displayName.value = profile.display_name
@@ -38,7 +38,7 @@ const localeItems = computed(() => [
     { value: 'de', title: t('language.de') },
 ])
 
-const currentEmail = computed(() => me.data.value?.data.email ?? '')
+const currentEmail = computed(() => me.data.value?.email ?? '')
 
 async function saveProfile(): Promise<void> {
     errorMsg.value = null

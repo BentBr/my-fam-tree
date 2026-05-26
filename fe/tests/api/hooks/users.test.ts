@@ -30,7 +30,8 @@ describe('useMe', () => {
         const { result } = makeHookWrapper(() => useMe())
         await new Promise<void>((r) => setTimeout(r, 5))
         expect(mocked.GET).toHaveBeenCalledWith('/api/v1/users/me')
-        expect(result.data.value).toEqual({ data: { display_name: 'A' } })
+        // useMe now unwraps the envelope — call sites get the profile directly.
+        expect(result.data.value).toEqual({ display_name: 'A' })
     })
 
     it('errors on response error', async () => {

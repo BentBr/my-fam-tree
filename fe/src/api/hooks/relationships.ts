@@ -1,9 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-
-import { i18n } from '@/i18n'
-import { useUiStore } from '@/stores/ui'
+import { useQuery } from '@tanstack/vue-query'
 
 import { client } from '../client'
+import { expectOk, unwrap, useApiMutation } from '../request'
 
 // `TreePayloadResponseBody` is `{ data: TreePayload, meta? }`. We unwrap to the
 // `TreePayload` (nodes + parent_edges + partner_edges) so the FE layout code
@@ -11,12 +9,7 @@ import { client } from '../client'
 export function useTree() {
     return useQuery({
         queryKey: ['tree'],
-        queryFn: async () => {
-            const { data, error } = await client.GET('/api/v1/relationships')
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from /relationships')
-            return data.data
-        },
+        queryFn: () => unwrap(client.GET('/api/v1/relationships')),
     })
 }
 
@@ -31,15 +24,9 @@ export interface ParentLinkInput {
 // the confirmation; the global error toast (queryClient.ts) still surfaces
 // validation/conflict failures.
 export function useAddParentLink() {
-    const qc = useQueryClient()
-    return useMutation({
-        mutationFn: async (vars: ParentLinkInput) => {
-            const { error } = await client.POST('/api/v1/parent-links', { body: vars })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-        },
+    return useApiMutation({
+        mutationFn: (vars: ParentLinkInput) => expectOk(client.POST('/api/v1/parent-links', { body: vars })),
+        invalidate: () => [['tree']],
     })
 }
 
@@ -54,15 +41,9 @@ export interface PartnershipInput {
 }
 
 export function useCreatePartnership() {
-    const qc = useQueryClient()
-    return useMutation({
-        mutationFn: async (vars: PartnershipInput) => {
-            const { error } = await client.POST('/api/v1/partnerships', { body: vars })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-        },
+    return useApiMutation({
+        mutationFn: (vars: PartnershipInput) => expectOk(client.POST('/api/v1/partnerships', { body: vars })),
+        invalidate: () => [['tree']],
     })
 }
 
@@ -82,37 +63,21 @@ export interface PartnershipUpdateInput {
 }
 
 export function useUpdatePartnership() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
-    return useMutation({
-        mutationFn: async (vars: { id: string; input: PartnershipUpdateInput }) => {
-            const { error } = await client.PATCH('/api/v1/partnerships/{id}', {
-                params: { path: { id: vars.id } },
-                body: vars.input,
-            })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.partnership_updated') })
-        },
+    return useApiMutation({
+        mutationFn: (vars: { id: string; input: PartnershipUpdateInput }) =>
+            expectOk(
+                client.PATCH('/api/v1/partnerships/{id}', { params: { path: { id: vars.id } }, body: vars.input }),
+            ),
+        success: 'toasts.partnership_updated',
+        invalidate: () => [['tree']],
     })
 }
 
 export function useDeletePartnership() {
-    const qc = useQueryClient()
-    const ui = useUiStore()
-    return useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await client.DELETE('/api/v1/partnerships/{id}', {
-                params: { path: { id } },
-            })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.partnership_deleted') })
-        },
+    return useApiMutation({
+        mutationFn: (id: string) => expectOk(client.DELETE('/api/v1/partnerships/{id}', { params: { path: { id } } })),
+        success: 'toasts.partnership_deleted',
+        invalidate: () => [['tree']],
     })
 }
 
@@ -124,16 +89,13 @@ export function useDeletePartnership() {
  * toast at the end to avoid double notifications.
  */
 export function useDeleteParentLink() {
-    const qc = useQueryClient()
-    return useMutation({
-        mutationFn: async (vars: { child_id: string; parent_id: string }) => {
-            const { error } = await client.DELETE('/api/v1/parent-links/{child}/{parent}', {
-                params: { path: { child: vars.child_id, parent: vars.parent_id } },
-            })
-            if (error !== undefined) throw error
-        },
-        onSuccess: () => {
-            void qc.invalidateQueries({ queryKey: ['tree'] })
-        },
+    return useApiMutation({
+        mutationFn: (vars: { child_id: string; parent_id: string }) =>
+            expectOk(
+                client.DELETE('/api/v1/parent-links/{child}/{parent}', {
+                    params: { path: { child: vars.child_id, parent: vars.parent_id } },
+                }),
+            ),
+        invalidate: () => [['tree']],
     })
 }
