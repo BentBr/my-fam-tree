@@ -4,6 +4,7 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 
 import { client } from '../client'
+import { unwrap } from '../request'
 
 /**
  * Filter shape for `useAuditList` — mirrors the backend's `AuditQuery`
@@ -51,15 +52,14 @@ export function useAuditList(filter: MaybeRefOrGetter<AuditFilter>) {
             if (f.action !== undefined) query['action'] = f.action
             if (f.entityKind !== undefined) query['entity_kind'] = f.entityKind
             if (f.actorUserId !== undefined) query['actor_user_id'] = f.actorUserId
-            const { data, error } = await client.GET('/api/v1/families/{family_id}/audit', {
-                params: {
-                    path: { family_id: familyId },
-                    query,
-                },
-            })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from GET /families/{id}/audit')
-            return data.data
+            return unwrap(
+                client.GET('/api/v1/families/{family_id}/audit', {
+                    params: {
+                        path: { family_id: familyId },
+                        query,
+                    },
+                }),
+            )
         },
         // Keep previous data visible while filters change so the table
         // doesn't flash between "empty" and the new page.

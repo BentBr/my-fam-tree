@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { ref, type Ref } from 'vue'
 
 import { client } from '../client'
+import { unwrap } from '../request'
 
 /** One of `all`, `birthday`, `anniversary` (the route is forgiving on unknown). */
 export type UpcomingFilter = 'all' | 'birthday' | 'anniversary'
@@ -37,13 +38,11 @@ export function useUpcoming(filter: Ref<UpcomingFilter>, favouritesOnly: Ref<boo
             const query: { filter?: 'birthday' | 'anniversary'; favourites_only?: boolean } = {}
             if (f !== 'all') query.filter = f
             if (fav) query.favourites_only = true
-            const { data, error } =
+            return unwrap(
                 Object.keys(query).length === 0
-                    ? await client.GET('/api/v1/upcoming')
-                    : await client.GET('/api/v1/upcoming', { params: { query } })
-            if (error !== undefined) throw error
-            if (data === undefined) throw new Error('empty response from /upcoming')
-            return data.data
+                    ? client.GET('/api/v1/upcoming')
+                    : client.GET('/api/v1/upcoming', { params: { query } }),
+            )
         },
         // Keep previous data visible while a filter toggle re-fetches so the
         // toolbar doesn't flicker between an empty list and the new one.
