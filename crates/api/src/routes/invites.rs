@@ -12,7 +12,7 @@
 
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use chrono::Utc;
-use my_family_domain::InviteRepoError;
+use my_family_domain::{InviteRepoError, PersonId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -78,6 +78,24 @@ pub async fn accept(
         return Err(invite_email_mismatch("/token"));
     }
 
+    // Audit the email-match verification BEFORE writing membership so the
+    // log keeps an event even if the membership insert below races against
+    // a concurrent admin revoke. metadata.person_id (if set) lets the audit
+    // table link the row back to the person via the existing CASE.
+    audit::record(
+        &state.audit,
+        invite.family_id,
+        claims.user_id,
+        "verify",
+        "invite",
+        Some(invite.id),
+        serde_json::json!({
+            "email": invite.email,
+            "person_id": invite.person_id,
+        }),
+    )
+    .await;
+
     state
         .memberships
         .insert(invite.family_id, claims.user_id, invite.invited_role)
@@ -96,6 +114,24 @@ pub async fn accept(
         }),
     )
     .await;
+
+    // Wire `persons.linked_user_id` so the recipient becomes the person
+    // they were invited as. Best-effort: if the persons row was deleted
+    // between invite-issue and accept (ON DELETE SET NULL kept the invite
+    // alive), we surface the resulting `NotFound` as `Internal` — the
+    // membership already exists, so the worst case is an unlinked-but-
+    // joined user that the admin can fix afterwards.
+    if let Some(person_id) = invite.person_id {
+        state
+            .persons
+            .set_linked_user_id(
+                invite.family_id,
+                PersonId::from_uuid(person_id),
+                Some(claims.user_id),
+            )
+            .await
+            .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    }
 
     let user = state
         .users
