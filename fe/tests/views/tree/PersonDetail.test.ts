@@ -78,6 +78,11 @@ vi.mock('@/api/hooks/persons', () => ({
     useDeletePerson: () => ({ mutateAsync: delMutate, isPending: ref(false) }),
 }))
 
+const inviteMutate = vi.fn()
+vi.mock('@/api/hooks/invites', () => ({
+    useCreateInvite: () => ({ mutateAsync: inviteMutate, isPending: ref(false) }),
+}))
+
 vi.mock('@/api/hooks/relationships', () => ({
     useTree: () => ({ data: treeData, isLoading: ref(false), error: ref(null) }),
     useAddParentLink: () => ({ mutateAsync: addParentMutate, isPending: ref(false) }),

@@ -143,10 +143,8 @@ async fn accept_links_user_to_person_when_invite_carries_person_id() {
     // Pull the invite token out of the captured email. There may be other
     // emails in the queue, so we match by recipient address.
     let captured = stack.fake_email.drain();
-    let invite_mail = captured
-        .iter()
-        .find(|m| m.to_addr == invitee_email)
-        .expect("invite email captured");
+    let invite_mail =
+        captured.iter().find(|m| m.to_addr == invitee_email).expect("invite email captured");
     let invite_token = extract_token_from_link(&invite_mail.text_body);
 
     // Invitee signs in via magic link.
@@ -230,8 +228,7 @@ async fn cancel_invite_removes_row_and_audits() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status().as_u16(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let invite_id =
-        body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_string();
+    let invite_id = body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_string();
 
     // DELETE it.
     let req = test::TestRequest::delete()

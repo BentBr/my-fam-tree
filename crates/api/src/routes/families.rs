@@ -434,8 +434,11 @@ pub async fn list_invites(
     let active = resolve_membership(&claims, family_id)?;
     crate::auth::require_role(&active, Role::Admin)?;
 
-    let invites =
-        state.invites.list_pending_for_family(FamilyId::from_uuid(family_id)).await.map_err(internal)?;
+    let invites = state
+        .invites
+        .list_pending_for_family(FamilyId::from_uuid(family_id))
+        .await
+        .map_err(internal)?;
     let data = invites
         .into_iter()
         .map(|i| InviteDto {
