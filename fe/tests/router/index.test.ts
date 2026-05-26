@@ -148,4 +148,53 @@ describe('router guards', () => {
         // both prove the redirect target is /tree.
         expect(router.currentRoute.value.path === '/auth/sign-in').toBe(true)
     })
+
+    it('clears a stale activeFamilyId that is no longer in the membership list', async () => {
+        // Seed the auth payload with one family, then forcibly set a DIFFERENT
+        // family id active — mimicking localStorage carrying a stale id from a
+        // previous identity. The guard should detect the mismatch, clear the
+        // active id, and (with only one available family) auto-select it.
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
+        } as never)
+        const family = useActiveFamilyStore()
+        // Bypass setActive's membership check by writing the ref directly.
+        family.activeFamilyId = 'f-stale' as FamilyId
+        await router.push('/health')
+        // Stale id was cleared then the sole-family auto-select kicked in.
+        expect(family.activeFamilyId).toBe('f-1')
+        expect(router.currentRoute.value.path).toBe('/health')
+    })
+
+    it('admin role gate lets owners through to /admin/audit', async () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
+        } as never)
+        const family = useActiveFamilyStore()
+        family.setActive('f-1' as FamilyId)
+        await router.push('/admin/audit')
+        expect(router.currentRoute.value.path).toBe('/admin/audit')
+    })
+
+    it('admin role gate bounces plain users away from /admin/* to /tree', async () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-1', name: 'F1', role: 'user' }],
+        } as never)
+        const family = useActiveFamilyStore()
+        family.setActive('f-1' as FamilyId)
+        await router.push('/admin/audit')
+        expect(router.currentRoute.value.path).toBe('/tree')
+    })
 })
