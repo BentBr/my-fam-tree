@@ -31,6 +31,7 @@ pub use repos::partnerships::{
 pub use repos::person_contacts::{
     Contact, ContactDraft, ContactKind, ContactRepoError, ContactVisibility, PersonContactRepo,
 };
+pub use repos::person_favourites::{PersonFavouriteRepo, PersonFavouriteRepoError};
 pub use repos::persons::{Person, PersonDraft, PersonRepo, PersonRepoError};
 pub use repos::refresh_tokens::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo};
 pub use repos::users::{Locale, User, UserRepo, UserRepoError};

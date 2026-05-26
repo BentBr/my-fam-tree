@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pf.person_id\n                 FROM person_favourites pf\n                 JOIN persons p ON p.id = pf.person_id\n                WHERE pf.user_id = $1 AND p.family_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "person_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "person_favourites",
+            "name": "person_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "01ef97704869c89e1c53dab9541f8edca5c0779842f462d3b27e6a7e41cfb13c"
+}

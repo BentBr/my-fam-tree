@@ -7,6 +7,7 @@ pub mod owner_transfers;
 pub mod parent_links;
 pub mod partnerships;
 pub mod person_contacts;
+pub mod person_favourites;
 pub mod persons;
 pub mod refresh_tokens;
 pub mod users;
