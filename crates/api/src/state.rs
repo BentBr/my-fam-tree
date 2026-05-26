@@ -14,7 +14,7 @@ use my_family_cache::{RateLimiter, RedisPool};
 use my_family_domain::{
     AuditLogRepo, FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, MagicLinkRepo,
     OwnerTransferRepo, ParentLinkRepo, PartnershipRepo, PersonContactRepo, PersonFavouriteRepo,
-    PersonRepo, RefreshTokenRepo, UserRepo,
+    PersonRepo, RefreshTokenRepo, ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
 };
 use my_family_email::EmailSender;
 
@@ -37,6 +37,8 @@ pub struct AppState {
     pub favourites: Arc<dyn PersonFavouriteRepo>,
     pub owner_transfers: Arc<dyn OwnerTransferRepo>,
     pub audit: Arc<dyn AuditLogRepo>,
+    pub reminder_prefs: Arc<dyn ReminderPreferencesRepo>,
+    pub reminder_digests: Arc<dyn ReminderDigestRepo>,
     pub email: Arc<dyn EmailSender>,
     pub rate_limiter: Arc<dyn RateLimiter>,
     pub redis: RedisPool,

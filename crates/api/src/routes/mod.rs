@@ -25,6 +25,7 @@ pub mod partnerships;
 pub mod person_favourites;
 pub mod persons;
 pub mod relationships;
+pub mod reminder_prefs;
 pub mod upcoming;
 pub mod users;
 
@@ -87,6 +88,8 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(contacts::delete)
                 .service(relationships::tree)
                 .service(upcoming::list)
+                .service(reminder_prefs::get_prefs)
+                .service(reminder_prefs::put_prefs)
                 .service(audit::list_audit)
                 .service(members::list_members)
                 .service(members::set_member_role)

@@ -1807,6 +1807,73 @@
         ]
       }
     },
+    "/api/v1/reminder-preferences": {
+      "get": {
+        "tags": [
+          "reminders"
+        ],
+        "operationId": "reminder_prefs_get",
+        "responses": {
+          "200": {
+            "description": "Caller's reminder settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderPrefsResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "reminders"
+        ],
+        "operationId": "reminder_prefs_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderPrefsView"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Settings saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderPrefsResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/upcoming": {
       "get": {
         "tags": [
@@ -3664,6 +3731,56 @@
           }
         }
       },
+      "ReminderPrefsResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReminderPrefsView"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "ReminderPrefsView": {
+        "type": "object",
+        "description": "Wire shape for the caller's reminder settings (request + response).",
+        "required": [
+          "emails_enabled",
+          "remind_birthdays",
+          "remind_anniversaries",
+          "favourites_only",
+          "lead_days"
+        ],
+        "properties": {
+          "emails_enabled": {
+            "type": "boolean"
+          },
+          "favourites_only": {
+            "type": "boolean"
+          },
+          "lead_days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remind_anniversaries": {
+            "type": "boolean"
+          },
+          "remind_birthdays": {
+            "type": "boolean"
+          }
+        }
+      },
       "RenameFamilyReq": {
         "type": "object",
         "required": [
@@ -3920,7 +4037,7 @@
       },
       "UpcomingEvent": {
         "type": "object",
-        "description": "One enumerated future date.\n\n`kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.\n`person_id` is set for `birthday` and `death_anniversary`;\n`partnership_id` is set for `wedding_anniversary` with both partner\nids surfaced so the FE can deep-link the row's click to one of them\n(it centers on `partner_a_id` and opens that person's drawer; the\ntree-edge between the two partners conveys the relationship).\n`label` is pre-rendered server-side so the FE doesn't need to\nre-translate the \"Nth birthday\" phrasing per locale (i18n stays\non `upcoming.kinds.*`; the name + N come from the API).",
+        "description": "One enumerated future date as sent on the wire.\n\n`kind` is one of `birthday`, `wedding_anniversary`, `death_anniversary`.\n`person_id` is set for `birthday`/`death_anniversary`; `partnership_id`\n(+ both partner ids) for `wedding_anniversary`. `label` is pre-rendered\nserver-side so the FE doesn't re-derive the \"Nth birthday\" phrasing.",
         "required": [
           "kind",
           "next_date",
@@ -4170,6 +4287,10 @@
     {
       "name": "upcoming",
       "description": "Upcoming birthdays + anniversaries"
+    },
+    {
+      "name": "reminders",
+      "description": "Per-user reminder email preferences"
     },
     {
       "name": "audit",

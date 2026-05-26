@@ -39,6 +39,7 @@ use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::person_favourites::{self, PersonFavouriteResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
 use crate::routes::relationships::{self, TreePayloadResponseBody};
+use crate::routes::reminder_prefs::{self, ReminderPrefsResponseBody};
 use crate::routes::upcoming::{self, UpcomingResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
 use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreePayload};
@@ -91,6 +92,8 @@ use crate::services::upcoming::UpcomingEvent;
         contacts::delete,
         relationships::tree,
         upcoming::list,
+        reminder_prefs::get_prefs,
+        reminder_prefs::put_prefs,
         audit::list_audit,
         members::list_members,
         members::set_member_role,
@@ -126,6 +129,7 @@ use crate::services::upcoming::UpcomingEvent;
             ContactViewResponseBody,
             TreePayloadResponseBody,
             UpcomingResponseBody,
+            ReminderPrefsResponseBody,
             AuditPageResponseBody,
             MembersListResponseBody,
             MemberResponseBody,
@@ -184,6 +188,7 @@ use crate::services::upcoming::UpcomingEvent;
             PartnerEdge,
             UpcomingEvent,
             upcoming::UpcomingQuery,
+            reminder_prefs::ReminderPrefsView,
             audit::AuditPage,
             audit::AuditRowDto,
             members::MembersList,
@@ -204,6 +209,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "relationships", description = "Parent links, partnerships, tree"),
         (name = "contacts", description = "Per-person contact data"),
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
+        (name = "reminders", description = "Per-user reminder email preferences"),
         (name = "audit", description = "Family audit log (admin / owner only)"),
         (name = "members", description = "Family membership management (admin / owner only)"),
         (name = "owner-transfer", description = "Double-verification ownership handoff (owner-initiated)"),
