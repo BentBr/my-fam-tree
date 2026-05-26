@@ -3,8 +3,8 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use my_family_domain::{
-    FamilyId, FamilyMembershipRepo, Membership, MembershipRepoError, MembershipWithFamilyName,
-    Role, UserId,
+    FamilyId, FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError,
+    MembershipWithFamilyName, Role, UserId,
 };
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -186,5 +186,51 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
             return Err(MembershipRepoError::NotMember);
         }
         Ok(())
+    }
+
+    async fn list_with_users(
+        &self,
+        family_id: FamilyId,
+    ) -> Result<Vec<MemberWithUser>, MembershipRepoError> {
+        // Sort order is owner → admin → user via the CASE; ties (e.g.
+        // multiple admins) break on display name so the FE table is
+        // stable across reloads. `users.email` is a CITEXT domain — the
+        // explicit `::text` cast keeps SQLx's prepare step happy and
+        // produces a plain `String` instead of an opaque type.
+        let rows = sqlx::query!(
+            r#"
+            SELECT
+                fm.user_id,
+                fm.role::text  AS "role!",
+                fm.joined_at,
+                u.email::text  AS "email!",
+                u.display_name AS "display_name!"
+            FROM family_memberships fm
+            JOIN users u ON u.id = fm.user_id
+            WHERE fm.family_id = $1
+            ORDER BY
+                CASE fm.role
+                    WHEN 'owner' THEN 0
+                    WHEN 'admin' THEN 1
+                    ELSE 2
+                END,
+                u.display_name
+            "#,
+            family_id.into_uuid(),
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| MembershipRepoError::Db(e.to_string()))?;
+
+        Ok(rows
+            .into_iter()
+            .map(|r| MemberWithUser {
+                user_id: UserId::from_uuid(r.user_id),
+                email: r.email,
+                display_name: r.display_name,
+                role: role_from_db(&r.role),
+                joined_at: r.joined_at,
+            })
+            .collect())
     }
 }

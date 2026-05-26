@@ -6,6 +6,9 @@ Cargo.lock.bak
 # SQLx
 .sqlx-staging/
 
+# Locally-installed cargo binaries used by the docker wrapper (sqlx-cli etc.)
+.tools/
+
 # Frontend
 fe/node_modules/
 fe/.pnpm-store/
