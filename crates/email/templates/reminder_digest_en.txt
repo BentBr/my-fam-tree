@@ -1,0 +1,8 @@
+{% if lead_days == 0 %}Today's family dates{% else %}Family dates coming up in {{ lead_days }} day{% if lead_days != 1 %}s{% endif %}{% endif %} ({{ count }}):
+
+{% for line in lines %}- {{ line }}
+{% endfor %}
+See your tree: {{ tree_link }}
+Manage reminders: {{ manage_link }}
+
+— my-family

@@ -89,6 +89,39 @@ struct OwnerTransferAdminDe<'a> {
     link: &'a str,
 }
 
+#[derive(Template, Debug)]
+#[template(path = "reminder_digest_en.txt", escape = "none")]
+struct ReminderDigestEn<'a> {
+    lead_days: i32,
+    count: usize,
+    lines: &'a [String],
+    tree_link: &'a str,
+    manage_link: &'a str,
+}
+
+#[derive(Template, Debug)]
+#[template(path = "reminder_digest_de.txt", escape = "none")]
+struct ReminderDigestDe<'a> {
+    lead_days: i32,
+    count: usize,
+    lines: &'a [String],
+    tree_link: &'a str,
+    manage_link: &'a str,
+}
+
+/// Inputs for the daily reminder digest.
+///
+/// `lines` are pre-rendered, localized one-liners (e.g. `"Anna — 40th
+/// birthday"`); the worker builds them from the domain `UpcomingEvent`s so the
+/// email crate stays free of projection logic.
+#[derive(Debug)]
+pub struct ReminderDigestArgs<'a> {
+    pub lead_days: i32,
+    pub lines: &'a [String],
+    pub tree_link: &'a str,
+    pub manage_link: &'a str,
+}
+
 /// Render the magic-link sign-in email for `locale`.
 ///
 /// Returns `(subject, body)`. Errors propagate from askama (template logic
@@ -221,6 +254,54 @@ pub fn render_owner_transfer_admin(
     Ok((subject, body))
 }
 
+/// Render the daily reminder digest for `locale`.
+///
+/// Returns `(subject, body)`. `args.lines` are the localized event lines; the
+/// subject summarizes the count + lead time. An empty `lines` slice still
+/// renders, but callers should skip sending when there are no events.
+///
+/// # Errors
+/// Returns [`askama::Error`] if template rendering fails.
+pub fn render_reminder_digest(
+    locale: Locale,
+    args: &ReminderDigestArgs<'_>,
+) -> Result<(String, String), askama::Error> {
+    let count = args.lines.len();
+    let subject = match (locale, args.lead_days) {
+        (Locale::De, 0) => {
+            format!("🎂 Heute: {count} Familien-Termin{}", if count == 1 { "" } else { "e" })
+        }
+        (Locale::De, n) => {
+            format!("🎂 In {n} Tagen: {count} Familien-Termin{}", if count == 1 { "" } else { "e" })
+        }
+        (Locale::En, 0) => {
+            format!("🎂 Today: {count} family date{}", if count == 1 { "" } else { "s" })
+        }
+        (Locale::En, n) => {
+            format!("🎂 In {n} days: {count} family date{}", if count == 1 { "" } else { "s" })
+        }
+    };
+    let body = match locale {
+        Locale::En => ReminderDigestEn {
+            lead_days: args.lead_days,
+            count,
+            lines: args.lines,
+            tree_link: args.tree_link,
+            manage_link: args.manage_link,
+        }
+        .render()?,
+        Locale::De => ReminderDigestDe {
+            lead_days: args.lead_days,
+            count,
+            lines: args.lines,
+            tree_link: args.tree_link,
+            manage_link: args.manage_link,
+        }
+        .render()?,
+    };
+    Ok((subject, body))
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -276,5 +357,46 @@ mod tests {
         assert_eq!(subject, "Confirm your email change on my-family");
         assert!(body.contains("new@example.com"));
         assert!(body.contains("https://app/ec/xyz"));
+    }
+
+    #[test]
+    fn renders_de_digest_with_two_lines() {
+        let lines =
+            vec!["Anna — 40. Geburtstag".to_string(), "Klaus & Maria — 10. Jahrestag".to_string()];
+        let (subject, body) = render_reminder_digest(
+            Locale::De,
+            &ReminderDigestArgs {
+                lead_days: 7,
+                lines: &lines,
+                tree_link: "https://app/tree",
+                manage_link: "https://app/account",
+            },
+        )
+        .unwrap();
+        assert!(subject.contains("In 7 Tagen"));
+        assert!(subject.contains('2'));
+        assert!(body.contains("Anna — 40. Geburtstag"));
+        assert!(body.contains("Klaus & Maria — 10. Jahrestag"));
+        assert!(body.contains("https://app/tree"));
+    }
+
+    #[test]
+    fn renders_en_digest_day_of_singular() {
+        let lines = vec!["Bob — 30th birthday".to_string()];
+        let (subject, body) = render_reminder_digest(
+            Locale::En,
+            &ReminderDigestArgs {
+                lead_days: 0,
+                lines: &lines,
+                tree_link: "https://app/tree",
+                manage_link: "https://app/account",
+            },
+        )
+        .unwrap();
+        assert!(subject.contains("Today"));
+        assert!(subject.contains("family date"));
+        assert!(!subject.contains("dates"), "singular count uses 'date' not 'dates'");
+        assert!(body.contains("Today's family dates"));
+        assert!(body.contains("Bob — 30th birthday"));
     }
 }

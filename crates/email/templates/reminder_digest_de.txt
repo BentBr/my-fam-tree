@@ -1,0 +1,8 @@
+{% if lead_days == 0 %}Heutige Familien-Termine{% else %}Familien-Termine in {{ lead_days }} Tag{% if lead_days != 1 %}en{% endif %}{% endif %} ({{ count }}):
+
+{% for line in lines %}- {{ line }}
+{% endfor %}
+Zum Stammbaum: {{ tree_link }}
+Erinnerungen verwalten: {{ manage_link }}
+
+— my-family
