@@ -30,6 +30,9 @@ use crate::routes::families::{
 };
 use crate::routes::health::{self, HealthResponseBody};
 use crate::routes::invites::{self, AcceptResponseBody};
+use crate::routes::members::{
+    self, MemberResponseBody, MembersListResponseBody,
+};
 use crate::routes::parent_links;
 use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
@@ -84,6 +87,9 @@ use crate::services::upcoming::UpcomingEvent;
         relationships::tree,
         upcoming::list,
         audit::list_audit,
+        members::list_members,
+        members::set_member_role,
+        members::revoke_member,
     ),
     components(
         schemas(
@@ -110,6 +116,8 @@ use crate::services::upcoming::UpcomingEvent;
             TreePayloadResponseBody,
             UpcomingResponseBody,
             AuditPageResponseBody,
+            MembersListResponseBody,
+            MemberResponseBody,
             // Shared wrapper for DELETE / void-data responses.
             NullResponseBody,
             // Envelope + error scalars (shared across every response).
@@ -161,6 +169,9 @@ use crate::services::upcoming::UpcomingEvent;
             upcoming::UpcomingQuery,
             audit::AuditPage,
             audit::AuditRowDto,
+            members::MembersList,
+            members::MemberDto,
+            members::SetRoleReq,
         ),
     ),
     tags(
@@ -174,6 +185,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "contacts", description = "Per-person contact data"),
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
         (name = "audit", description = "Family audit log (admin / owner only)"),
+        (name = "members", description = "Family membership management (admin / owner only)"),
     ),
 )]
 pub struct ApiDoc;

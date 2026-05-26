@@ -18,6 +18,7 @@ pub mod contacts;
 pub mod families;
 pub mod health;
 pub mod invites;
+pub mod members;
 pub mod parent_links;
 pub mod partnerships;
 pub mod persons;
@@ -75,6 +76,9 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(contacts::delete)
                 .service(relationships::tree)
                 .service(upcoming::list)
-                .service(audit::list_audit),
+                .service(audit::list_audit)
+                .service(members::list_members)
+                .service(members::set_member_role)
+                .service(members::revoke_member),
         )
 }
