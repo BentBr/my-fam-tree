@@ -227,7 +227,10 @@
         "member_updated": "Role updated",
         "member_revoked": "Access revoked",
         "invite_sent": "Invite sent",
-        "invite_cancelled": "Invite cancelled"
+        "invite_cancelled": "Invite cancelled",
+        "transfer_started": "Transfer started — check both inboxes",
+        "transfer_confirmed": "Side confirmed",
+        "transfer_cancelled": "Pending transfer cancelled"
     },
     "admin": {
         "nav": {
@@ -320,6 +323,22 @@
             "confirm": {
                 "cancelTitle": "Cancel this invite?",
                 "cancelText": "The recipient will no longer be able to join the family with this invite."
+            }
+        },
+        "transfer": {
+            "cta": "Transfer ownership",
+            "modalTitle": "Transfer ownership to {name}",
+            "modalText": "Both you and {name} will receive an email. The transfer completes once both of you click the link.",
+            "submit": "Send confirmation emails",
+            "cancel": "Cancel pending transfer",
+            "pendingBanner": "Ownership transfer to {name} is pending. From-side: {from}, To-side: {to}.",
+            "stateConfirmed": "confirmed",
+            "stateWaiting": "waiting",
+            "confirmPage": {
+                "title": "Confirming ownership transfer…",
+                "successOne": "Your side is confirmed. The other party still needs to click their link.",
+                "successBoth": "Ownership transferred. The role swap has taken effect.",
+                "error": "Confirmation failed. The link may have expired."
             }
         }
     },

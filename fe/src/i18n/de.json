@@ -227,7 +227,10 @@
         "member_updated": "Rolle aktualisiert",
         "member_revoked": "Zugriff entzogen",
         "invite_sent": "Einladung gesendet",
-        "invite_cancelled": "Einladung storniert"
+        "invite_cancelled": "Einladung storniert",
+        "transfer_started": "Übertragung gestartet — bitte beide Postfächer prüfen",
+        "transfer_confirmed": "Seite bestätigt",
+        "transfer_cancelled": "Übertragung abgebrochen"
     },
     "admin": {
         "nav": {
@@ -320,6 +323,22 @@
             "confirm": {
                 "cancelTitle": "Diese Einladung stornieren?",
                 "cancelText": "Mit dieser Einladung kann die Empfängerin oder der Empfänger der Familie nicht mehr beitreten."
+            }
+        },
+        "transfer": {
+            "cta": "Eigentum übertragen",
+            "modalTitle": "Eigentum an {name} übertragen",
+            "modalText": "Du und {name} erhalten je eine E-Mail. Die Übertragung ist erst abgeschlossen, wenn beide den Link geklickt haben.",
+            "submit": "Bestätigungs-E-Mails senden",
+            "cancel": "Übertragung abbrechen",
+            "pendingBanner": "Eigentumsübertragung an {name} läuft. Aktuell: {from}, Ziel: {to}.",
+            "stateConfirmed": "bestätigt",
+            "stateWaiting": "ausstehend",
+            "confirmPage": {
+                "title": "Eigentumsübertragung wird bestätigt…",
+                "successOne": "Deine Seite ist bestätigt. Die andere Person muss ihren Link noch klicken.",
+                "successBoth": "Eigentum übertragen. Der Rollenwechsel ist wirksam.",
+                "error": "Bestätigung fehlgeschlagen. Der Link ist möglicherweise abgelaufen."
             }
         }
     },
