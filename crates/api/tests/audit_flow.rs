@@ -111,13 +111,8 @@ async fn user_role_audit_listing_returns_403() {
     // Add a regular `user`-role member.
     let guest_email = "audit-user@example.com";
     let _ = sign_in(&stack, &app, guest_email).await;
-    let guest = stack
-        .state
-        .users
-        .find_by_email(guest_email)
-        .await
-        .expect("lookup")
-        .expect("user exists");
+    let guest =
+        stack.state.users.find_by_email(guest_email).await.expect("lookup").expect("user exists");
     stack
         .state
         .memberships
@@ -259,4 +254,3 @@ async fn audit_invalid_page_size_falls_back_to_50() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["data"]["page_size"], 50);
 }
-
