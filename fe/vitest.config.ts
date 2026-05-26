@@ -22,8 +22,19 @@ export default defineConfig({
             // Generated / framework-wiring files: schema is openapi-typescript
             // output; main.ts is the app bootstrap (untestable as a unit);
             // vite-env.d.ts and other ambient .d.ts files contain only types.
-            // Tests themselves are excluded so they don't count toward coverage.
-            exclude: ['src/api/schema.d.ts', 'src/main.ts', 'src/vite-env.d.ts', 'src/**/*.d.ts', 'src/**/*.test.ts'],
+            // `src/api/types.ts` and `src/design-system/index.ts` are pure
+            // type re-exports / barrel files with no runtime — equivalent to
+            // .d.ts for coverage purposes. Tests themselves are excluded so
+            // they don't count toward coverage.
+            exclude: [
+                'src/api/schema.d.ts',
+                'src/api/types.ts',
+                'src/design-system/index.ts',
+                'src/main.ts',
+                'src/vite-env.d.ts',
+                'src/**/*.d.ts',
+                'src/**/*.test.ts',
+            ],
             thresholds: {
                 // Lines only, matching backend's `--fail-under-lines` gate.
                 // Branch / statement / function coverage are reported but not
