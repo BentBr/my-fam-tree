@@ -20,7 +20,7 @@ interface AdminNavItem {
 }
 
 const items = computed<AdminNavItem[]>(() => [
-    { key: 'members', to: '/admin/members', label: t('admin.nav.members'), enabled: false },
+    { key: 'members', to: '/admin/members', label: t('admin.nav.members'), enabled: true },
     { key: 'invites', to: '/admin/invites', label: t('admin.nav.invites'), enabled: false },
     { key: 'audit', to: '/admin/audit', label: t('admin.nav.audit'), enabled: true },
 ])
