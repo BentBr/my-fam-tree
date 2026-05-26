@@ -66,7 +66,14 @@ const inviteRole = ref<'user' | 'admin'>('user')
 
 const canInvite = computed(() => {
     const role = family.activeFamily?.role ?? null
-    return role === 'admin' || role === 'owner'
+    if (role !== 'admin' && role !== 'owner') return false
+    // Hide the CTA once the person is already linked to a user account —
+    // a second invite for the same row would either re-bind an unrelated
+    // user (admins can do this if they really mean to, via the seam in
+    // the FE update flow) or get rejected on accept because the
+    // recipient's email already maps to a member.
+    if (person.value?.linked_user_id !== null && person.value?.linked_user_id !== undefined) return false
+    return true
 })
 
 function openInvite(): void {

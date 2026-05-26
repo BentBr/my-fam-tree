@@ -101,6 +101,16 @@ test('admin invites a person; recipient accepts and is linked', async ({ browser
     await expect(myNode).toBeVisible()
     await expect(myNode).toContainText(/Hannelore/)
 
+    // Back on the owner's session, re-open the now-linked Hannelore drawer.
+    // The invite CTA must be gone — admins shouldn't be able to re-invite a
+    // person row that already maps to an account.
+    await owner.goto('/tree')
+    const hanneloreNode = owner.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Hannelore' }).first()
+    await hanneloreNode.click()
+    await expect(owner.getByTestId('person-detail')).toBeVisible()
+    await expect(owner.getByTestId('person-linked-account-chip')).toBeVisible()
+    await expect(owner.getByTestId('person-invite-cta')).toHaveCount(0)
+
     await inviteeCtx.close()
     await ownerCtx.close()
 })

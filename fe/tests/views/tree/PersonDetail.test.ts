@@ -384,6 +384,21 @@ describe('PersonDetail', () => {
         expect(w.find('[data-testid="person-readonly-badge"]').exists()).toBe(true)
     })
 
+    it('hides the invite CTA when the person is already linked to an account', () => {
+        activeRole.value = 'owner'
+        personGetData.value = {
+            id: 'p1',
+            given_name: 'A',
+            family_name: 'X',
+            linked_user_id: 'u-someone-else',
+        }
+        const w = mountDetail('p1')
+        // Owner still sees the Edit button (canEdit is true) but the
+        // invite CTA disappears once the row has a linked account.
+        expect(w.find('[data-testid="person-edit-button"]').exists()).toBe(true)
+        expect(w.find('[data-testid="person-invite-cta"]').exists()).toBe(false)
+    })
+
     it('shows the "Has account" chip when person.linked_user_id is set', () => {
         personGetData.value = {
             id: 'p1',
