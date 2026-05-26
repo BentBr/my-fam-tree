@@ -630,6 +630,204 @@
         ]
       }
     },
+    "/api/v1/families/{family_id}/transfer-owner": {
+      "get": {
+        "tags": [
+          "owner-transfer"
+        ],
+        "operationId": "owner_transfer_status",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending transfer or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferStatusOptionalResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Insufficient role (admin / owner required)"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "owner-transfer"
+        ],
+        "operationId": "owner_transfer_begin",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BeginReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer started; both confirmation emails dispatched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferStatusResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Owner role required"
+          },
+          "409": {
+            "description": "A transfer is already pending"
+          },
+          "422": {
+            "description": "Target is not a current admin in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "owner-transfer"
+        ],
+        "operationId": "owner_transfer_cancel",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (must match the active X-Family-Id)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending transfer cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Path family_id does not match active family"
+          },
+          "403": {
+            "description": "Owner role required"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/families/{family_id}/transfer-owner/confirm": {
+      "post": {
+        "tags": [
+          "owner-transfer"
+        ],
+        "summary": "Token-bearing: the supplied `token` IS the authorization. We require an\nauthenticated session (so the audit row has an `actor_user_id`) but do\nNOT bind to `X-Family-Id`, because the recipient may have a different\nactive family selected when they click the link from their email.",
+        "operationId": "owner_transfer_confirm",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "description": "Family id (informational; the BE derives it from the token hash)",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "One side confirmed; completes the transfer if both sides agreed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferStatusResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "404": {
+            "description": "Token not found / already used"
+          },
+          "410": {
+            "description": "Token expired"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/families/{id}": {
       "delete": {
         "tags": [
@@ -1972,6 +2170,29 @@
           "metadata": {}
         }
       },
+      "BeginReq": {
+        "type": "object",
+        "required": [
+          "to_user_id"
+        ],
+        "properties": {
+          "to_user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ConfirmReq": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
       "ConsumeReq": {
         "type": "object",
         "required": [
@@ -2285,6 +2506,7 @@
           "conflict_stale",
           "email_taken",
           "invite_duplicate",
+          "owner_transfer_pending",
           "rate_limited",
           "upstream",
           "internal"
@@ -3392,6 +3614,88 @@
           }
         }
       },
+      "TransferStatus": {
+        "type": "object",
+        "description": "Wire DTO for both single-transfer endpoints (`POST` begin / `POST` confirm\n/ `GET` status). `null` from `GET` is rendered as the outer `data: null`.",
+        "required": [
+          "id",
+          "from_user_id",
+          "to_user_id",
+          "from_confirmed",
+          "to_confirmed",
+          "expires_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "from_confirmed": {
+            "type": "boolean"
+          },
+          "from_user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "to_confirmed": {
+            "type": "boolean"
+          },
+          "to_user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "TransferStatusOptionalResponseBody": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TransferStatus"
+              }
+            ]
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "TransferStatusResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TransferStatus"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
       "TreeNode": {
         "type": "object",
         "description": "One person plus their relationship adjacency lists.\n\n`parent_ids` and `partner_ids` are denormalized so the FE's SVG layout\ndoesn't have to join `parent_edges` / `partner_edges` itself.",
@@ -3753,6 +4057,10 @@
     {
       "name": "members",
       "description": "Family membership management (admin / owner only)"
+    },
+    {
+      "name": "owner-transfer",
+      "description": "Double-verification ownership handoff (owner-initiated)"
     }
   ]
 }
