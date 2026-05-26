@@ -216,7 +216,9 @@
         "parent_link_updated": "Elternverbindung aktualisiert",
         "contact_created": "Kontakt hinzugefügt",
         "contact_updated": "Kontakt aktualisiert",
-        "contact_deleted": "Kontakt entfernt"
+        "contact_deleted": "Kontakt entfernt",
+        "member_updated": "Rolle aktualisiert",
+        "member_revoked": "Zugriff entzogen"
     },
     "admin": {
         "nav": {
@@ -267,6 +269,33 @@
             },
             "empty": "Keine Einträge entsprechen den Filtern.",
             "rowsPerPage": "Einträge pro Seite"
+        },
+        "members": {
+            "title": "Mitglieder",
+            "col": {
+                "name": "Name",
+                "email": "E-Mail",
+                "role": "Rolle",
+                "joined": "Beigetreten",
+                "actions": "Aktionen"
+            },
+            "role": {
+                "owner": "Inhaber:in",
+                "admin": "Admin",
+                "user": "Mitglied"
+            },
+            "action": {
+                "promote": "Zum Admin befördern",
+                "demote": "Zum Mitglied zurückstufen",
+                "revoke": "Zugriff entziehen"
+            },
+            "confirm": {
+                "revokeTitle": "Zugriff entziehen?",
+                "revokeText": "{name} verliert den Zugriff auf diese Familie. Das kann nicht rückgängig gemacht werden.",
+                "demoteTitle": "{name} zurückstufen?",
+                "demoteText": "{name} verliert Admin-Rechte."
+            },
+            "empty": "Nur du, bisher."
         }
     },
     "errors": {

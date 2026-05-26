@@ -216,7 +216,9 @@
         "parent_link_updated": "Parent relation updated",
         "contact_created": "Contact added",
         "contact_updated": "Contact updated",
-        "contact_deleted": "Contact removed"
+        "contact_deleted": "Contact removed",
+        "member_updated": "Role updated",
+        "member_revoked": "Access revoked"
     },
     "admin": {
         "nav": {
@@ -267,6 +269,33 @@
             },
             "empty": "No audit entries match the current filters.",
             "rowsPerPage": "Rows per page"
+        },
+        "members": {
+            "title": "Members",
+            "col": {
+                "name": "Name",
+                "email": "Email",
+                "role": "Role",
+                "joined": "Joined",
+                "actions": "Actions"
+            },
+            "role": {
+                "owner": "Owner",
+                "admin": "Admin",
+                "user": "User"
+            },
+            "action": {
+                "promote": "Promote to admin",
+                "demote": "Demote to user",
+                "revoke": "Revoke access"
+            },
+            "confirm": {
+                "revokeTitle": "Revoke access?",
+                "revokeText": "{name} will lose access to this family. This cannot be undone.",
+                "demoteTitle": "Demote {name}?",
+                "demoteText": "{name} will lose admin permissions."
+            },
+            "empty": "Only you for now."
         }
     },
     "errors": {
