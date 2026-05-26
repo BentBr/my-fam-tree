@@ -10,13 +10,14 @@ import { ApiClientError, type ApiErrorBody, type Warning } from './errors'
 import type { paths } from './schema'
 
 // When the api hands back a 401 that can't be silently refreshed (refresh
-// itself failed, or the code is `auth_required` because the cookie was
-// dropped server-side), clear the in-memory session and bounce to sign-in
-// immediately. Without this the user sees a stale authenticated UI plus
-// an inline "authentication required" toast and has to manually sign out.
-// The route guard would catch them on the next navigation; we want the
-// redirect to happen on the failed click itself.
-function endSessionAndRedirect(): void {
+// itself failed, or the code isn't `auth_token_expired` because the cookie
+// was dropped server-side), clear the in-memory session and bounce to
+// sign-in. This is the REDIRECT side-effect only — the user-facing
+// "session expired" toast is owned by `reportError` in queryClient.ts so
+// all error messaging lives in exactly one place. The route guard would
+// catch them on the next navigation anyway; we redirect on the failed
+// request itself so the stale authenticated UI doesn't linger.
+function endSession(): void {
     const auth = useAuthStore()
     // If we're already anonymous, this is either initial hydrate or the
     // user is mid-sign-in. The router guards handle that flow on their
@@ -27,6 +28,27 @@ function endSessionAndRedirect(): void {
     // Don't await — middleware must finish before the caller awaits and
     // unmounts the source view. `void` satisfies `no-floating-promises`.
     void router.replace('/auth/sign-in')
+}
+
+// Parse an error response body into the typed `ApiClientError`. Shared by
+// `errorTranslator` (the normal path) AND the `authRefresh` retry, so a
+// request still failing AFTER a token refresh is translated identically
+// instead of slipping through as a raw fetch response (the bug that made
+// favourite-toggle 401s silent). Returns the error; callers `throw` it so
+// TS sees an explicit throw at each site.
+async function toApiError(response: Response): Promise<ApiClientError> {
+    try {
+        return new ApiClientError((await response.clone().json()) as ApiErrorBody)
+    } catch {
+        // Non-JSON error body — synthesise a minimal envelope so callers
+        // still get an ApiClientError with the right status to branch on.
+        return new ApiClientError({
+            type: 'about:blank',
+            title: response.statusText || 'Request failed',
+            status: response.status,
+            code: 'internal',
+        } as ApiErrorBody)
+    }
 }
 
 // Empty string ⇒ openapi-fetch issues same-origin requests. Both the host browser
@@ -60,7 +82,10 @@ const authRefresh: Middleware = {
             return response
         }
         if (body.code !== 'auth_token_expired') {
-            endSessionAndRedirect()
+            // Cookie dropped server-side / not an expiry we can refresh.
+            // Session is gone: redirect, then throw the translated error
+            // so `reportError` shows the session-expired toast.
+            endSession()
             throw new ApiClientError(body)
         }
         const auth = useAuthStore()
@@ -76,12 +101,22 @@ const authRefresh: Middleware = {
             await refreshing
         } catch (e) {
             // Refresh failed — the long-lived session is gone. Treat as
-            // hard logout: kicking the user to sign-in is the only safe
-            // next step.
-            endSessionAndRedirect()
+            // hard logout: redirect + propagate so reportError toasts.
+            endSession()
             throw e
         }
-        return fetch(request)
+        // Retry the original request now that the cookie is fresh. The
+        // retried response does NOT re-enter this middleware chain
+        // (onResponse already ran), so we translate failures here
+        // ourselves rather than letting a still-failing retry escape
+        // silently. A retry that's still 401 means the refresh didn't
+        // actually recover the session → end it.
+        const retried = await fetch(request)
+        if (!retried.ok) {
+            if (retried.status === 401) endSession()
+            throw await toApiError(retried)
+        }
+        return retried
     },
 }
 
@@ -90,8 +125,7 @@ const errorTranslator: Middleware = {
         if (response.ok) return response
         const ct = response.headers.get('content-type') ?? ''
         if (!ct.includes('application/problem+json')) return response
-        const body = (await response.clone().json()) as ApiErrorBody
-        throw new ApiClientError(body)
+        throw await toApiError(response)
     },
 }
 

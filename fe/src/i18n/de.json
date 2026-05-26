@@ -394,6 +394,7 @@
         "owner_transfer_pending": "Für diese Familie läuft bereits eine Eigentumsübertragung.",
         "rate_limited": "Zu viele Versuche. Bitte einen Moment warten und erneut versuchen.",
         "upstream": "Ein vorgelagerter Dienst ist nicht erreichbar. Bitte gleich erneut versuchen.",
-        "internal": "Da ist etwas auf unserer Seite schiefgelaufen. Das Team wurde informiert."
+        "internal": "Da ist etwas auf unserer Seite schiefgelaufen. Das Team wurde informiert.",
+        "session_expired": "Deine Sitzung ist abgelaufen — bitte erneut anmelden."
     }
 }

@@ -394,6 +394,7 @@
         "owner_transfer_pending": "An ownership transfer is already pending for this family.",
         "rate_limited": "Too many attempts. Please wait a moment and try again.",
         "upstream": "An upstream service is unavailable. Please retry shortly.",
-        "internal": "Something went wrong on our side. The team has been notified."
+        "internal": "Something went wrong on our side. The team has been notified.",
+        "session_expired": "Your session expired — please sign in again."
     }
 }

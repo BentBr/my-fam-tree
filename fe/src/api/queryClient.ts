@@ -39,10 +39,21 @@ function translateError(err: ApiClientError): string {
 }
 
 function reportError(error: unknown): void {
-    // 401s are absorbed by the auth refresh middleware / route guard. Surfacing
-    // a toast for them would race with the silent token refresh.
     if (error instanceof ApiClientError) {
-        if (error.status === 401) return
+        // A 401 only reaches here when the auth-refresh middleware has
+        // already given up (refresh failed, or the retry was still 401)
+        // — a successful silent refresh never surfaces an error to
+        // tanstack-query. So any 401 at this point means the session is
+        // genuinely gone: show the session-expired message. The redirect
+        // itself is handled by `endSession()` in the middleware.
+        if (error.status === 401) {
+            useUiStore().pushToast({
+                kind: 'error',
+                message: i18n.global.t('errorCodes.session_expired'),
+                code: 'session_expired',
+            })
+            return
+        }
         const t: Omit<Toast, 'id'> = { kind: 'error', message: translateError(error) }
         t.code = error.body.code
         // RFC 7807 `instance` is the request URL/id — useful for support

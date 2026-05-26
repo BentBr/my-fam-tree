@@ -84,10 +84,16 @@ describe('queryClient onError handler (via QueryCache)', () => {
         expect(ui.toasts[0]?.message).toBe('Server-rendered title')
     })
 
-    it('drops 401 errors silently (auth refresh middleware owns them)', () => {
+    it('surfaces a session-expired toast for a 401 (refresh already gave up)', () => {
+        // A 401 only reaches reportError when the auth-refresh middleware
+        // could not silently recover the session — so it means the session
+        // is genuinely gone. The middleware owns the redirect; reportError
+        // owns the user-facing message.
         const ui = useUiStore()
         fireError(new ApiClientError(body({ status: 401, code: 'auth_token_expired' })))
-        expect(ui.toasts).toHaveLength(0)
+        expect(ui.toasts).toHaveLength(1)
+        expect(ui.toasts[0]?.code).toBe('session_expired')
+        expect(ui.toasts[0]?.kind).toBe('error')
     })
 
     it('forwards instance as requestId when present', () => {
