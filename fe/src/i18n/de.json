@@ -181,7 +181,8 @@
             "emailLabel": "E-Mail-Adresse",
             "roleLabel": "Rolle",
             "submit": "Einladung senden"
-        }
+        },
+        "linkedAccount": "Hat Konto"
     },
     "upcoming": {
         "title": "Anstehende Termine",

@@ -98,9 +98,21 @@ function onRelationsChanged(): void {
 <template>
     <section class="pa-4" data-testid="person-detail">
         <header class="d-flex align-center justify-space-between mb-3">
-            <h3 v-if="person" class="text-h6" data-testid="person-detail-title">
-                {{ person.given_name }} {{ person.family_name }}
-            </h3>
+            <div class="d-flex align-center ga-2">
+                <h3 v-if="person" class="text-h6" data-testid="person-detail-title">
+                    {{ person.given_name }} {{ person.family_name }}
+                </h3>
+                <v-chip
+                    v-if="person?.linked_user_id"
+                    size="small"
+                    color="info"
+                    variant="tonal"
+                    prepend-icon="user-check"
+                    data-testid="person-linked-account-chip"
+                >
+                    {{ t('person.linkedAccount') }}
+                </v-chip>
+            </div>
             <v-btn icon="x" variant="text" size="small" data-testid="person-detail-close" @click="emit('close')" />
         </header>
 

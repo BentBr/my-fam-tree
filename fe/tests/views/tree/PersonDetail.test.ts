@@ -344,6 +344,28 @@ describe('PersonDetail', () => {
         expect(w.emitted('close')).toBeDefined()
     })
 
+    it('shows the "Has account" chip when person.linked_user_id is set', () => {
+        personGetData.value = {
+            id: 'p1',
+            given_name: 'A',
+            family_name: 'X',
+            linked_user_id: 'u-linked',
+        }
+        const w = mountDetail('p1')
+        expect(w.find('[data-testid="person-linked-account-chip"]').exists()).toBe(true)
+    })
+
+    it('hides the "Has account" chip when person.linked_user_id is missing', () => {
+        personGetData.value = {
+            id: 'p1',
+            given_name: 'A',
+            family_name: 'X',
+            linked_user_id: null,
+        }
+        const w = mountDetail('p1')
+        expect(w.find('[data-testid="person-linked-account-chip"]').exists()).toBe(false)
+    })
+
     it('switches to edit mode + back via PersonEdit saved', async () => {
         const w = mountDetail('p1')
         await w.find('[data-testid="person-edit-button"]').trigger('click')
