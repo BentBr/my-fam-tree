@@ -12,6 +12,7 @@ import {
     useDeletePerson,
     useGetPerson,
     useListPersons,
+    useSetFavourite,
     useUpdatePerson,
     type PersonInput,
 } from '@/api/hooks/persons'
@@ -141,5 +142,51 @@ describe('useDeletePerson', () => {
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
         const { result } = makeHookWrapper(() => useDeletePerson())
         await expect(result.mutateAsync('p1')).rejects.toBeDefined()
+    })
+})
+
+describe('useSetFavourite', () => {
+    it('PATCHes the favourite endpoint with the new state', async () => {
+        mocked.PATCH.mockResolvedValueOnce({ data: { data: { is_favourite_for_me: true } }, error: undefined })
+        const { result } = makeHookWrapper(() => useSetFavourite())
+        await result.mutateAsync({ id: 'p1', isFavourite: true })
+        expect(mocked.PATCH).toHaveBeenCalledWith('/api/v1/persons/{id}/favourite', {
+            params: { path: { id: 'p1' } },
+            body: { is_favourite: true },
+        })
+    })
+
+    it('optimistically flips is_favourite_for_me on the cached tree node', async () => {
+        // Never-resolving PATCH so we can observe the optimistic state
+        // between onMutate and settle.
+        mocked.PATCH.mockReturnValueOnce(new Promise(() => {}))
+        const { result, queryClient } = makeHookWrapper(() => useSetFavourite())
+        queryClient.setQueryData(['tree'], {
+            nodes: [
+                { id: 'p1', is_favourite_for_me: false },
+                { id: 'p2', is_favourite_for_me: false },
+            ],
+            edges: [],
+        })
+        result.mutate({ id: 'p1', isFavourite: true })
+        // Let onMutate run.
+        await new Promise((r) => setTimeout(r, 0))
+        const tree = queryClient.getQueryData<{ nodes: { id: string; is_favourite_for_me: boolean }[] }>(['tree'])
+        expect(tree?.nodes.find((n) => n.id === 'p1')?.is_favourite_for_me).toBe(true)
+        // Untouched node stays as-is.
+        expect(tree?.nodes.find((n) => n.id === 'p2')?.is_favourite_for_me).toBe(false)
+    })
+
+    it('rolls the tree cache back when the PATCH rejects', async () => {
+        mocked.PATCH.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
+        const { result, queryClient } = makeHookWrapper(() => useSetFavourite())
+        queryClient.setQueryData(['tree'], {
+            nodes: [{ id: 'p1', is_favourite_for_me: false }],
+            edges: [],
+        })
+        await expect(result.mutateAsync({ id: 'p1', isFavourite: true })).rejects.toBeDefined()
+        const tree = queryClient.getQueryData<{ nodes: { id: string; is_favourite_for_me: boolean }[] }>(['tree'])
+        // Rolled back to the pre-mutation value.
+        expect(tree?.nodes.find((n) => n.id === 'p1')?.is_favourite_for_me).toBe(false)
     })
 })
