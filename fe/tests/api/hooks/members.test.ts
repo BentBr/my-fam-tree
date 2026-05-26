@@ -77,9 +77,7 @@ describe('useSetRole', () => {
 
     it('rejects when no active family is set', async () => {
         const { result } = makeHookWrapper(() => useSetRole())
-        await expect(
-            result.mutateAsync({ userId: 'u-2', role: 'admin' }),
-        ).rejects.toThrow(/no active family/)
+        await expect(result.mutateAsync({ userId: 'u-2', role: 'admin' })).rejects.toThrow(/no active family/)
     })
 })
 

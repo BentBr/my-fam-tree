@@ -121,13 +121,10 @@ describe('useConfirmOwnerTransfer', () => {
         const { result, queryClient } = makeHookWrapper(() => useConfirmOwnerTransfer())
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
         const out = await result.mutateAsync('tok-abc')
-        expect(mocked.POST).toHaveBeenCalledWith(
-            '/api/v1/families/{family_id}/transfer-owner/confirm',
-            {
-                params: { path: { family_id: 'fam-1' } },
-                body: { token: 'tok-abc' },
-            },
-        )
+        expect(mocked.POST).toHaveBeenCalledWith('/api/v1/families/{family_id}/transfer-owner/confirm', {
+            params: { path: { family_id: 'fam-1' } },
+            body: { token: 'tok-abc' },
+        })
         expect(out.from_confirmed).toBe(true)
         expect(out.to_confirmed).toBe(true)
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ['owner-transfer'] })

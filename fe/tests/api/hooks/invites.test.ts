@@ -92,9 +92,7 @@ describe('useCreateInvite', () => {
 
     it('rejects when no active family is set', async () => {
         const { result } = makeHookWrapper(() => useCreateInvite())
-        await expect(
-            result.mutateAsync({ email: 'a@b', role: 'user' }),
-        ).rejects.toThrow(/no active family/)
+        await expect(result.mutateAsync({ email: 'a@b', role: 'user' })).rejects.toThrow(/no active family/)
     })
 })
 

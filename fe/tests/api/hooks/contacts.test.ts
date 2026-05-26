@@ -74,9 +74,7 @@ describe('useCreateContact', () => {
     it('rejects on error', async () => {
         mocked.POST.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useCreateContact('p-1'))
-        await expect(
-            result.mutateAsync({ kind: 'email', value: 'a@b' } as ContactInput),
-        ).rejects.toBeDefined()
+        await expect(result.mutateAsync({ kind: 'email', value: 'a@b' } as ContactInput)).rejects.toBeDefined()
     })
 })
 

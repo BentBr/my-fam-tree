@@ -14,24 +14,20 @@ import OwnerTransferConfirm from '@/views/account/OwnerTransferConfirm.vue'
 function makeRouter(): Router {
     return createRouter({
         history: createMemoryHistory(),
-        routes: [
-            { path: '/account/owner-transfer/confirm', component: { template: '<div />' } },
-        ],
+        routes: [{ path: '/account/owner-transfer/confirm', component: { template: '<div />' } }],
     })
 }
 
 async function mountView(query: string): Promise<ReturnType<typeof mount>> {
     const router = makeRouter()
-    await router.push(
-        `/account/owner-transfer/confirm${query.length ? '?' + query : ''}`,
-    )
+    await router.push(`/account/owner-transfer/confirm${query.length ? '?' + query : ''}`)
     await router.isReady()
     return mount(OwnerTransferConfirm, {
         global: {
             plugins: [i18n, router],
             stubs: {
                 'v-alert': {
-                    template: "<div :data-testid=\"$attrs['data-testid']\"><slot /></div>",
+                    template: '<div :data-testid="$attrs[\'data-testid\']"><slot /></div>',
                 },
             },
         },
