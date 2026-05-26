@@ -101,6 +101,7 @@ pub enum ErrorCode {
     ValidationFailed,
     ConflictStale,
     EmailTaken,
+    InviteDuplicate,
     RateLimited,
     Upstream,
     Internal,
@@ -128,7 +129,8 @@ impl ErrorCode {
             | Self::PartnershipDuplicate
             | Self::ParentLinkDuplicate
             | Self::ConflictStale
-            | Self::EmailTaken => StatusCode::CONFLICT,
+            | Self::EmailTaken
+            | Self::InviteDuplicate => StatusCode::CONFLICT,
             Self::ValidationFailed => StatusCode::UNPROCESSABLE_ENTITY,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::Upstream => StatusCode::BAD_GATEWAY,
@@ -159,6 +161,7 @@ impl ErrorCode {
             Self::ValidationFailed => "Validation failed",
             Self::ConflictStale => "Stale state",
             Self::EmailTaken => "Email already in use",
+            Self::InviteDuplicate => "Invite already pending for this email",
             Self::RateLimited => "Rate limited",
             Self::Upstream => "Upstream service error",
             Self::Internal => "Internal server error",
@@ -188,6 +191,7 @@ impl ErrorCode {
             Self::ValidationFailed => "validation.failed",
             Self::ConflictStale => "conflict.stale",
             Self::EmailTaken => "email.taken",
+            Self::InviteDuplicate => "invite.duplicate",
             Self::RateLimited => "rate_limited",
             Self::Upstream => "upstream",
             Self::Internal => "internal",
@@ -215,6 +219,7 @@ impl ErrorCode {
         Self::ValidationFailed,
         Self::ConflictStale,
         Self::EmailTaken,
+        Self::InviteDuplicate,
         Self::RateLimited,
         Self::Upstream,
         Self::Internal,
@@ -263,6 +268,8 @@ pub enum ApiError {
     ConflictStale,
     #[error("email {email} already in use")]
     EmailTaken { email: String },
+    #[error("invite already pending for this email")]
+    InviteDuplicate,
     #[error("rate limited; retry after {retry_after_secs}s")]
     RateLimited { retry_after_secs: u32 },
     #[error("upstream {service}: {detail}")]
@@ -295,6 +302,7 @@ impl ApiError {
             Self::Validation(_) => ErrorCode::ValidationFailed,
             Self::ConflictStale => ErrorCode::ConflictStale,
             Self::EmailTaken { .. } => ErrorCode::EmailTaken,
+            Self::InviteDuplicate => ErrorCode::InviteDuplicate,
             Self::RateLimited { .. } => ErrorCode::RateLimited,
             Self::Upstream { .. } => ErrorCode::Upstream,
             Self::Internal(_) => ErrorCode::Internal,

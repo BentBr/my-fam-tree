@@ -335,6 +335,7 @@
         "family_invite_expired": "This invite has expired.",
         "conflict_stale": "Someone else updated this just now. Reload and try again.",
         "email_taken": "That email address is already in use.",
+        "invite_duplicate": "An invite is already pending for that email address.",
         "rate_limited": "Too many attempts. Please wait a moment and try again.",
         "upstream": "An upstream service is unavailable. Please retry shortly.",
         "internal": "Something went wrong on our side. The team has been notified."
