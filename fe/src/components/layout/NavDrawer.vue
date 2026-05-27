@@ -9,9 +9,33 @@ import { useUiStore } from '@/stores/ui'
 const { t } = useI18n()
 const ui = useUiStore()
 const family = useActiveFamilyStore()
-const { mobile } = useDisplay()
-const railMode = computed(() => !mobile.value && ui.sidebarCollapsed)
-const open = computed(() => !mobile.value || !ui.sidebarCollapsed)
+const { smAndDown } = useDisplay()
+
+// Two distinct layouts share one toggle flag (`ui.sidebarCollapsed`, driven by
+// the app-bar hamburger) but read it differently per breakpoint:
+//   - Desktop (sm+): the drawer is always present and `permanent`; the flag
+//     switches it between full width and a compact icon `rail`. Unchanged.
+//   - smAndDown (phones/small tablets): a permanent full-width drawer eats the
+//     viewport, so we make it `temporary` (overlays content behind a scrim)
+//     and hidden by default. The hamburger flips the flag to slide it in.
+// `railMode` is desktop-only — a rail still costs ~56px and looks odd on a
+// phone, so on small screens we never rail, we hide.
+const railMode = computed(() => !smAndDown.value && ui.sidebarCollapsed)
+const open = computed(() => (smAndDown.value ? ui.sidebarCollapsed : true))
+
+// Vuetify emits `update:model-value` when the temporary drawer is dismissed by
+// tapping the scrim or pressing Esc. Sync that back into the shared flag so the
+// next hamburger tap can reopen it; without this the flag would stay `true`
+// while the drawer is visually closed and the toggle would feel dead.
+function onUpdateOpen(value: boolean): void {
+    if (smAndDown.value && value !== ui.sidebarCollapsed) ui.toggleSidebar()
+}
+
+// On a phone the overlay drawer should get out of the way once the user picks a
+// destination; on desktop the drawer is permanent so there is nothing to close.
+function onItemClick(): void {
+    if (smAndDown.value && ui.sidebarCollapsed) ui.toggleSidebar()
+}
 
 // `/reminders/history` is added by Phase 4b. Until the route + view land,
 // listing it here triggers a vue-router "No match found" warning on every
@@ -43,7 +67,14 @@ const items = computed<NavItem[]>(() => {
 </script>
 
 <template>
-    <v-navigation-drawer :model-value="open" :rail="railMode" permanent data-testid="nav-drawer">
+    <v-navigation-drawer
+        :model-value="open"
+        :rail="railMode"
+        :permanent="!smAndDown"
+        :temporary="smAndDown"
+        data-testid="nav-drawer"
+        @update:model-value="onUpdateOpen"
+    >
         <v-list density="comfortable" nav>
             <v-list-item
                 v-for="item in items"
@@ -53,6 +84,7 @@ const items = computed<NavItem[]>(() => {
                 :title="item.title"
                 :data-testid="item.testId"
                 color="primary"
+                @click="onItemClick"
             />
         </v-list>
 

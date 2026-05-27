@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 
 import { useSetFavourite } from '@/api/hooks/persons'
 import { useTree } from '@/api/hooks/relationships'
@@ -18,6 +19,7 @@ const router = useRouter()
 const tree = useTree()
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
+const { smAndDown } = useDisplay()
 
 const pageTitle = computed(() => {
     const name = family.activeFamily?.name
@@ -138,20 +140,41 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
 
 <template>
     <div class="tree-page">
+        <!-- The heading + actions share one toolbar row. On phones the family
+             name can be long, so the title truncates (it never pushes the
+             actions off-screen) and shrinks a step, while the action buttons
+             collapse to icon-only to reclaim horizontal space. Desktop keeps
+             the roomier heading and labelled buttons. -->
         <v-toolbar density="comfortable" elevation="0" color="transparent">
-            <v-toolbar-title data-testid="tree-page-title">{{ pageTitle }}</v-toolbar-title>
+            <v-toolbar-title
+                class="tree-title"
+                :class="smAndDown ? 'text-h6' : 'text-h5'"
+                data-testid="tree-page-title"
+                :title="pageTitle"
+            >
+                {{ pageTitle }}
+            </v-toolbar-title>
             <v-spacer />
             <v-btn
                 v-if="tree.data.value !== undefined && tree.data.value.nodes.length > 0"
-                prepend-icon="maximize"
+                :icon="smAndDown ? 'maximize' : undefined"
+                :prepend-icon="smAndDown ? undefined : 'maximize'"
                 variant="text"
+                :title="t('tree.fitToView')"
                 data-testid="tree-fit-to-view"
                 @click="onFit"
             >
-                {{ t('tree.fitToView') }}
+                <template v-if="!smAndDown">{{ t('tree.fitToView') }}</template>
             </v-btn>
-            <v-btn prepend-icon="user-plus" color="primary" data-testid="tree-add-person" @click="onCreateClick">
-                {{ t('tree.addPerson') }}
+            <v-btn
+                :icon="smAndDown ? 'user-plus' : undefined"
+                :prepend-icon="smAndDown ? undefined : 'user-plus'"
+                color="primary"
+                :title="t('tree.addPerson')"
+                data-testid="tree-add-person"
+                @click="onCreateClick"
+            >
+                <template v-if="!smAndDown">{{ t('tree.addPerson') }}</template>
             </v-btn>
         </v-toolbar>
 
@@ -235,6 +258,19 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+}
+/* Let the title shrink and ellipsis-truncate inside the flex toolbar instead
+ * of pushing the action buttons past the viewport edge on narrow screens.
+ * `min-width: 0` is required for a flex child to be allowed to shrink below
+ * its content width; :deep targets the inner element Vuetify renders the
+ * title text into. */
+.tree-title {
+    min-width: 0;
+}
+.tree-title :deep(.v-toolbar-title__placeholder) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .tree-row {
     display: flex;

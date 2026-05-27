@@ -24,7 +24,7 @@ async function signOut(): Promise<void> {
 
 <template>
     <v-app-bar elevation="1" density="comfortable" data-testid="app-bar">
-        <v-app-bar-nav-icon icon="menu" @click="ui.toggleSidebar" />
+        <v-app-bar-nav-icon icon="menu" data-testid="nav-toggle" @click="ui.toggleSidebar" />
         <v-app-bar-title>{{ t('app.title') }}</v-app-bar-title>
         <v-spacer />
         <FamilySwitcher class="mr-2" />

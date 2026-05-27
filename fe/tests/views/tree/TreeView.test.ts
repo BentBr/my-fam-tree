@@ -22,6 +22,11 @@ const treeIsLoading = ref(false)
 const treeError = ref<unknown>(null)
 const refetch = vi.fn()
 
+// `smAndDown` drives the responsive toolbar (heading font step + icon-only
+// actions). Default desktop (false); individual tests flip it for mobile.
+const smAndDown = ref(false)
+vi.mock('vuetify', () => ({ useDisplay: () => ({ smAndDown }) }))
+
 vi.mock('@/api/hooks/relationships', () => ({
     useTree: () => ({ data: treeData, isLoading: treeIsLoading, error: treeError, refetch }),
 }))
@@ -49,7 +54,10 @@ async function mountTree(query = '') {
             plugins: [i18n, router, [VueQueryPlugin, { queryClient }]],
             stubs: {
                 'v-toolbar': { template: '<div><slot /></div>' },
-                'v-toolbar-title': { template: '<div><slot /></div>' },
+                // Render as a real element so the static + dynamic `class`
+                // (the responsive `text-h5`/`text-h6` size step) and the
+                // `data-testid` fall through and are assertable.
+                'v-toolbar-title': { template: '<div class="toolbar-title"><slot /></div>' },
                 'v-spacer': { template: '<div />' },
                 'v-btn': {
                     template:
@@ -96,6 +104,7 @@ describe('TreeView', () => {
         treeIsLoading.value = false
         treeError.value = null
         refetch.mockReset()
+        smAndDown.value = false
     })
 
     it('renders the skeleton while loading', async () => {
@@ -154,5 +163,39 @@ describe('TreeView', () => {
         await w.find('.pe-stub').trigger('click') // emit saved
         await flushPromises()
         expect(refetch).toHaveBeenCalled()
+    })
+
+    it('uses the larger heading step on desktop', async () => {
+        const w = await mountTree()
+        const title = w.find('.toolbar-title')
+        expect(title.classes()).toContain('text-h5')
+        expect(title.classes()).not.toContain('text-h6')
+        // The truncation hook is always applied so a long family name can never
+        // push the toolbar past the viewport edge.
+        expect(title.classes()).toContain('tree-title')
+    })
+
+    it('shrinks the heading a step on smAndDown so it stays readable', async () => {
+        smAndDown.value = true
+        const w = await mountTree()
+        const title = w.find('.toolbar-title')
+        expect(title.classes()).toContain('text-h6')
+        expect(title.classes()).not.toContain('text-h5')
+        expect(title.classes()).toContain('tree-title')
+    })
+
+    it('keeps the add-person action reachable on smAndDown (icon-only)', async () => {
+        smAndDown.value = true
+        treeData.value = {
+            nodes: [{ id: 'a', given_name: 'A', family_name: 'X', parent_ids: [], partner_ids: [] }],
+            parent_edges: [],
+            partner_edges: [],
+        }
+        const w = await mountTree()
+        const add = w.find('[data-testid="tree-add-person"]')
+        expect(add.exists()).toBe(true)
+        await add.trigger('click')
+        await flushPromises()
+        expect(w.find('.pe-stub').exists()).toBe(true)
     })
 })
