@@ -125,7 +125,12 @@ fn build_state(
 
 /// Seed a user (Europe/Berlin tz by default), a family they own, one person
 /// with `birthday`, and the user's reminder preferences. Returns the user id.
-async fn seed(db: &Database, email: &str, prefs: ReminderPreferences, birthday: NaiveDate) -> UserId {
+async fn seed(
+    db: &Database,
+    email: &str,
+    prefs: ReminderPreferences,
+    birthday: NaiveDate,
+) -> UserId {
     let pool = db.pool().clone();
     let users = PgUserRepo::new(pool.clone());
     let families = PgFamilyRepo::new(pool.clone());
