@@ -11,15 +11,7 @@
             "prerelease": false,
             "include-v-in-tag": true,
             "extra-files": [
-                "crates/api/Cargo.toml",
-                "crates/cache/Cargo.toml",
-                "crates/domain/Cargo.toml",
-                "crates/email/Cargo.toml",
-                "crates/migrator/Cargo.toml",
-                "crates/openapi/Cargo.toml",
-                "crates/persistence/Cargo.toml",
-                "crates/reminder-worker/Cargo.toml",
-                "crates/seeder/Cargo.toml",
+                "Cargo.toml",
                 "fe/package.json"
             ]
         }

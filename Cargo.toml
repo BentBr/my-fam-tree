@@ -13,6 +13,11 @@ members = [
 ]
 
 [workspace.package]
+# Single source of truth for every crate's version (each crate uses
+# `version.workspace = true`). release-please bumps the line below on release
+# via the x-release-please-version marker, so env!("CARGO_PKG_VERSION") — and
+# the /api/v1/health version — track the released version.
+version = "0.1.2" # x-release-please-version
 edition = "2024"
 rust-version = "1.83"
 license = "BUSL-1.1"
