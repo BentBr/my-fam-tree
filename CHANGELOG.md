@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.3](https://github.com/BentBr/my-family/compare/core-v0.1.2...core-v0.1.3) (2026-05-27)
+
+
+### Features
+
+* **api:** /health probes DB reachability + latency, always 200 ([e23aeda](https://github.com/BentBr/my-family/commit/e23aeda17399bd1c77b5ef0e2a3adb2d8344c7c2))
+* **api:** GET/PUT /reminder-preferences (per-user mail settings) ([9d75f9b](https://github.com/BentBr/my-family/commit/9d75f9be2dbdf665ccb2b9d6d01cffa2dcaf431d))
+* **cache:** redis reminder digest queue (non-blocking RPOP + push) ([d9259c6](https://github.com/BentBr/my-family/commit/d9259c62c5f700faeffbcd9316b11d9f159e5ef6))
+* **email:** reminder digest template (en + de) listing N events ([a59fd70](https://github.com/BentBr/my-family/commit/a59fd704e3f099ad1dd1174100a892609dd7b0dd))
+* **fe:** demote Health to a drawer footnote + show DB latency ([50c7baa](https://github.com/BentBr/my-family/commit/50c7baa504124136d9df696a2b0a8cc73cca1fce))
+* **fe:** reminder-preferences panel in account settings ([e6b56f9](https://github.com/BentBr/my-family/commit/e6b56f9ffc5a49456a75e1ed8c28b4130804b57c))
+* **persistence:** reminder preferences + digest log (migration 0009 + repos) ([a5f666c](https://github.com/BentBr/my-family/commit/a5f666cb0db39741af2b1b51c337aa9d299fc661))
+* **rdt:** trigger-clock clears the day's digest so re-runs resend ([da53c3d](https://github.com/BentBr/my-family/commit/da53c3d1de3733bcfd94a12bde6e234995d95814))
+* **reminder-worker:** clock-advance dinghy alias + date input + rdt trigger-clock ([06490df](https://github.com/BentBr/my-family/commit/06490dfd3ddbf8d08522b7158056b43fb24697b7))
+* **reminder-worker:** leader-locked digest scheduler + dispatcher ([868e930](https://github.com/BentBr/my-family/commit/868e9309dd9e9be07543cd87145c0f3d80c71ea3))
+
+
+### Bug Fixes
+
+* **api:** default API_ENABLE_DOCS to false (prod-safe docs gate) ([0fdc0c3](https://github.com/BentBr/my-family/commit/0fdc0c30db7dced239065b316a72feb753cc2cdc))
+
 ## [0.1.2](https://github.com/BentBr/my-family/compare/core-v0.1.1...core-v0.1.2) (2026-05-26)
 
 
