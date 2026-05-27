@@ -164,7 +164,10 @@ mod tests {
         ("API_PUBLIC_URL", "http://localhost:8080"),
         ("WEB_PUBLIC_URL", "http://localhost:5173"),
         ("CORS_ALLOWED_ORIGINS", "http://localhost:5173"),
-        ("API_ENABLE_DOCS", "true"),
+        // Safe-by-default: Swagger UI + /api/docs/openapi.json stay OFF unless a
+        // non-production environment explicitly opts in (dev compose + CI set
+        // "true"). A production operator who never sets it gets no public docs.
+        ("API_ENABLE_DOCS", "false"),
         ("API_METRICS_BIND", "0.0.0.0:9090"),
         ("DATABASE_URL", "postgres://u:p@localhost/db"),
         ("DATABASE_MAX_CONNECTIONS", "10"),
