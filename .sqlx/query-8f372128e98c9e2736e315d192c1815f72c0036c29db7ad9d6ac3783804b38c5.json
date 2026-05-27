@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT fm.family_id, f.name AS family_name, fm.role::text AS \"role!\"\n                 FROM family_memberships fm\n                 JOIN families f ON f.id = fm.family_id\n                WHERE fm.user_id = $1\n                ORDER BY f.name",
+  "query": "SELECT fm.family_id, f.name AS family_name, fm.role::text AS \"role!\", f.created_at\n                 FROM family_memberships fm\n                 JOIN families f ON f.id = fm.family_id\n                WHERE fm.user_id = $1\n                ORDER BY f.name",
   "describe": {
     "columns": [
       {
@@ -30,6 +30,17 @@
         "name": "role!",
         "type_info": "Text",
         "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "families",
+            "name": "created_at"
+          }
+        }
       }
     ],
     "parameters": {
@@ -40,8 +51,9 @@
     "nullable": [
       false,
       false,
-      null
+      null,
+      false
     ]
   },
-  "hash": "7ae68675a52bafd53e7d6f880f67331f4c2c67b8dddeae31f1e2260e28dfd7a8"
+  "hash": "8f372128e98c9e2736e315d192c1815f72c0036c29db7ad9d6ac3783804b38c5"
 }

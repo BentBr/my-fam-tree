@@ -16,6 +16,10 @@ pub struct MembershipWithFamilyName {
     pub family_id: FamilyId,
     pub family_name: String,
     pub role: Role,
+    /// When the family was created (`families.created_at`). Display-only —
+    /// lets the FE family switcher disambiguate same-named families. NOT
+    /// carried in the JWT family claim (auth-critical, kept lean).
+    pub created_at: DateTime<Utc>,
 }
 
 /// Member row enriched with the joined user's display fields.

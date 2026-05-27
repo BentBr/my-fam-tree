@@ -298,7 +298,14 @@ async fn family_operations_require_membership_and_role() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    assert_eq!(body["data"]["families"].as_array().unwrap().len(), 1);
+    let fams = body["data"]["families"].as_array().unwrap();
+    assert_eq!(fams.len(), 1);
+    // families/me carries created_at (RFC 3339) so the switcher can
+    // disambiguate same-named families; it's a non-empty string here.
+    assert!(
+        fams[0]["created_at"].as_str().is_some_and(|s| !s.is_empty()),
+        "families/me should include created_at: {body}"
+    );
 
     // A deletes Alpha — happy path covers the DELETE handler success arm.
     let req = test::TestRequest::delete()

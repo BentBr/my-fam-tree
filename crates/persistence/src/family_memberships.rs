@@ -66,6 +66,7 @@ struct MembershipWithFamilyNameRow {
     family_name: String,
     #[sqlx(rename = "role!")]
     role: String,
+    created_at: DateTime<Utc>,
 }
 
 impl From<MembershipWithFamilyNameRow> for MembershipWithFamilyName {
@@ -74,6 +75,7 @@ impl From<MembershipWithFamilyNameRow> for MembershipWithFamilyName {
             family_id: FamilyId::from_uuid(r.family_id),
             family_name: r.family_name,
             role: role_from_db(&r.role),
+            created_at: r.created_at,
         }
     }
 }
@@ -111,7 +113,7 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
     ) -> Result<Vec<MembershipWithFamilyName>, MembershipRepoError> {
         let rows = sqlx::query_as!(
             MembershipWithFamilyNameRow,
-            r#"SELECT fm.family_id, f.name AS family_name, fm.role::text AS "role!"
+            r#"SELECT fm.family_id, f.name AS family_name, fm.role::text AS "role!", f.created_at
                  FROM family_memberships fm
                  JOIN families f ON f.id = fm.family_id
                 WHERE fm.user_id = $1

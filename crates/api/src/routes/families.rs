@@ -1,7 +1,8 @@
 //! `/families` CRUD + `/families/{id}/invites` endpoints.
 //!
-//! - `GET    /families/me`             — echo every family the JWT proves the
-//!   caller belongs to. No DB round-trip; reads from the request's `UserClaims`.
+//! - `GET    /families/me`             — list every family the caller belongs
+//!   to. Reads memberships fresh from the DB (not the JWT) so it can surface
+//!   each family's `created_at` for the switcher without bloating the token.
 //! - `POST   /families`                — create a new family, auto-join the
 //!   creator as `Owner`, then reissue a fresh access cookie so the new
 //!   membership is immediately reflected in the JWT.
@@ -21,7 +22,7 @@
 //! (persons, contacts, reminders).
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 use my_family_domain::{FamilyId, Role};
 use my_family_email::{Locale as EmailLocale, OutboundEmail, render_invite};
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,11 @@ pub struct FamilyView {
     pub id: Uuid,
     pub name: String,
     pub role: Role,
+    /// Family creation time (RFC 3339). Present on `GET /families/me` so the
+    /// switcher can disambiguate same-named families by date; `None` on the
+    /// JWT-projection paths (rename, invite-accept) that don't carry it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -133,12 +139,22 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 #[allow(clippy::future_not_send)]
 #[allow(unreachable_pub)]
 #[get("/families/me")]
-pub async fn list_mine(req: HttpRequest) -> Result<ApiResponse<MyFamiliesRes>, ApiError> {
+pub async fn list_mine(
+    state: web::Data<AppState>,
+    req: HttpRequest,
+) -> Result<ApiResponse<MyFamiliesRes>, ApiError> {
     let claims = crate::auth::user_claims(&req)?;
-    let families = claims
-        .all_families
+    // Fresh DB read (not the JWT claim) so we can surface `created_at` for the
+    // switcher without bloating the signed token. Reflects current memberships.
+    let rows = state.memberships.list_for_user(claims.user_id).await.map_err(internal)?;
+    let families = rows
         .into_iter()
-        .map(|f| FamilyView { id: f.id.into_uuid(), name: f.name, role: f.role })
+        .map(|m| FamilyView {
+            id: m.family_id.into_uuid(),
+            name: m.family_name,
+            role: m.role,
+            created_at: Some(m.created_at),
+        })
         .collect();
     Ok(ApiResponse::ok(MyFamiliesRes { families }))
 }
@@ -208,7 +224,12 @@ pub async fn create(
         families: fams,
     };
     let response = CreateFamilyRes {
-        family: FamilyView { id: family.id.into_uuid(), name: family.name, role: Role::Owner },
+        family: FamilyView {
+            id: family.id.into_uuid(),
+            created_at: Some(family.created_at),
+            name: family.name,
+            role: Role::Owner,
+        },
         claims: claims_payload,
     };
 
@@ -253,7 +274,12 @@ pub async fn rename(
         return Err(value_required("/name"));
     }
     state.families.rename(FamilyId::from_uuid(id), name).await.map_err(internal)?;
-    Ok(ApiResponse::ok(FamilyView { id, name: name.to_string(), role: active.role }))
+    Ok(ApiResponse::ok(FamilyView {
+        id,
+        name: name.to_string(),
+        role: active.role,
+        created_at: None,
+    }))
 }
 
 // ---------------------------------------------------------------------------
@@ -486,6 +512,7 @@ mod tests {
             id: Uuid::nil(),
             name: "Müller".into(),
             role: Role::Owner,
+            created_at: None,
         })
         .unwrap();
         assert_eq!(v["name"], "Müller");

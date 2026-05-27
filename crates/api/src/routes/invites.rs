@@ -44,7 +44,7 @@ fn family_view_from_claims(
         .iter()
         .find(|f| f.id == family_id)
         .map_or_else(|| (String::new(), fallback_role), |f| (f.name.clone(), f.role));
-    FamilyView { id: family_id, name, role }
+    FamilyView { id: family_id, name, role, created_at: None }
 }
 
 // ---------------------------------------------------------------------------

@@ -2669,6 +2669,14 @@
           "role"
         ],
         "properties": {
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Family creation time (RFC 3339). Present on `GET /families/me` so the\nswitcher can disambiguate same-named families by date; `None` on the\nJWT-projection paths (rename, invite-accept) that don't carry it."
+          },
           "id": {
             "type": "string",
             "format": "uuid"
