@@ -37,6 +37,19 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
   outside `crates/api/src/response.rs`. After any api endpoint change, run `rdt openapi`.
 - No global mutable state — inject dependencies via `AppState` / `WorkerState` as
   `Arc<dyn Trait>`. Put pure logic + trait contracts in `domain`; I/O impls in their crate.
+- **SQL only in `persistence`.** Never write `sqlx::query*` or SQL strings in
+  api/services/domain/worker — call the domain repo trait (`Arc<dyn FooRepo>`); add a
+  new query as a trait method in `domain` + impl in `persistence`. (Only `migrations/`
+  and the `seeder` crate hold other SQL.)
+- **Reuse existing domain structures** (newtype IDs, `Role`/`Capability`, repo
+  `Row`/`Draft` types, `build_upcoming`, the cycle/canonicalize helpers) — don't invent
+  parallel structs; map request/response DTOs to/from them.
+- **Keep services & functions atomic** — one responsibility; thin handlers delegating to
+  `services/`; wrap multi-step mutations in a single transaction (SERIALIZABLE for
+  read-then-write invariants). No partial writes.
+- **Be maximally strict** — typed errors over strings, newtypes over primitives,
+  exhaustive matches (no catch-all `_`), validate at the edge, fail loud at startup. The
+  deny-lints are the floor; never `#[allow]` your way past them.
 
 ## Working loop
 

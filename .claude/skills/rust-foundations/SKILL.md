@@ -41,6 +41,31 @@ same set. `seeder` → `{api, domain, persistence}`. **Never** make `domain` dep
 `persistence`/`api`. Put pure logic + traits in `domain`; put I/O behind a trait and
 inject it via `AppState`/`WorkerState` as `Arc<dyn Trait>` — **no global mutable state**.
 
+## Design rules (stay maximally strict)
+
+These are the design choices reviewers expect. Prefer the more constrained option every
+time — the deny-lints are the floor, not the whole bar.
+
+- **SQL lives only in `persistence`.** Runtime code (`api`, `reminder-worker`,
+  `services/`, `domain`) must contain **no** `sqlx::query*` calls or SQL strings — it
+  goes through the domain repo traits as `Arc<dyn FooRepo>`. Need a new query? Add the
+  method to the trait in `crate-domain`, then implement it in `crate-persistence`. (The
+  only other SQL is `migrations/` schema and the `seeder` crate's dev/CI fixtures.)
+- **Reuse existing domain structures.** Don't invent parallel structs in
+  api/services/worker — use the `crate-domain` types: newtype IDs, `Role`/`Capability`,
+  the repo `Row`/`Draft`/result types, `build_upcoming`, `would_create_cycle`,
+  `canonicalize_pair`. Map request/response DTOs to/from domain types; one source of truth.
+- **Atomic services & functions.** One responsibility each — handlers stay thin and
+  delegate orchestration to `crates/api/src/services/`. The 300/500-line ceiling is a
+  smell detector, not a target. Any mutation spanning multiple rows/tables, or enforcing
+  a read-then-write invariant, must be **atomic**: wrap it in a single transaction
+  (SERIALIZABLE where an invariant applies, as `parent_links` cycle-checks do). No
+  partial writes.
+- **Strictness by construction.** Typed errors over `String`/`anyhow` at boundaries;
+  newtypes over bare `Uuid`/`String`; exhaustive `match` (no catch-all `_` that hides a
+  new enum variant); validate inputs at the edge; fail loud at startup (config
+  validation) instead of limping. Never reach for `#[allow]` to silence a finding.
+
 ## Errors & IDs
 
 - Repo traits return `Result<T, FooRepoError>` (`thiserror` enums in `crate-domain`).
