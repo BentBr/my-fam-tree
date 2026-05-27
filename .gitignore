@@ -34,5 +34,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# AI assistants
-.claude/
+# AI assistants — ignore everything under .claude/ EXCEPT the shared
+# skills + agents libraries (committed so collaborators + CI share them).
+# Note: we exclude .claude/* (the children) rather than .claude/ (the dir),
+# because git cannot re-include a path whose parent directory is excluded.
+.claude/*
+!.claude/skills/
+!.claude/agents/
