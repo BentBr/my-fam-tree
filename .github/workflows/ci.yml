@@ -783,6 +783,35 @@ jobs:
                       echo "waiting for api..."
                       sleep 2
                   done
+            - name: Build reminder-worker (test-fixtures)
+              # The test-fixtures feature adds the POST /__test/advance-clock
+              # listener the reminders e2e drives. NEVER built into the
+              # published image (see .docker/worker.Dockerfile).
+              run: cargo build -p my-family-reminder-worker --bin reminder-worker --features test-fixtures
+            - name: Start reminder-worker in background
+              # The job env block already provides DATABASE_URL / REDIS_URL /
+              # EMAIL_* / WEB_PUBLIC_URL; the WORKER_* knobs are worker-only so
+              # they're set here. A short tick keeps the auto-loop cheap; the
+              # e2e drives scheduling explicitly via advance-clock.
+              env:
+                  WORKER_TICK_INTERVAL_SECONDS: "5"
+                  WORKER_LEADER_LEASE_SECONDS: "60"
+                  WORKER_LEADER_REFRESH_SECONDS: "10"
+                  WORKER_MAX_RETRIES: "5"
+                  WORKER_RETRY_BACKOFF_MIN_SECONDS: "60"
+                  WORKER_RETRY_BACKOFF_MAX_SECONDS: "43200"
+                  WORKER_METRICS_BIND: 127.0.0.1:9091
+              run: |
+                  ./target/debug/reminder-worker > /tmp/worker.log 2>&1 &
+                  echo "WORKER_PID=$!" >> "$GITHUB_ENV"
+                  # Readiness: the listener answers advance-clock once bound. A
+                  # 2020 date fires nothing (no enabled users yet) — safe probe.
+                  for i in $(seq 1 30); do
+                      curl -fsS -X POST http://localhost:9091/__test/advance-clock \
+                        -H 'content-type: application/json' -d '{"to":"2020-01-01T00:00:00Z"}' >/dev/null && break
+                      echo "waiting for worker test listener..."
+                      sleep 1
+                  done
             - name: Install FE deps + regenerate openapi types
               working-directory: fe
               run: |
@@ -818,6 +847,7 @@ jobs:
                   E2E_API_BASE_URL: http://localhost:8080
                   E2E_DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
                   MAILPIT_URL: http://localhost:8025
+                  WORKER_TEST_URL: http://localhost:9091
               run: pnpm test:e2e
             - if: always()
               uses: actions/upload-artifact@v4

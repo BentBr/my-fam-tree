@@ -190,6 +190,10 @@ services:
         build:
             context: .
             dockerfile: .docker/worker.Dockerfile
+            args:
+                # Empty in normal dev/prod; set REMINDER_WORKER_FEATURES=test-fixtures
+                # for E2E to build the clock-advance listener on :9091.
+                CARGO_FEATURES: ${REMINDER_WORKER_FEATURES:-}
         environment:
             <<: *rust_env
             VIRTUAL_HOST: worker.my-family.docker

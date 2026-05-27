@@ -12,11 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libssl-dev ca-certificates curl && rm -rf /var/lib/apt/lists/*
 COPY . .
 ENV SQLX_OFFLINE=true
-# PRODUCTION build: no extra cargo features. A later change (Phase 4b) will add
-# an optional `test-fixtures` feature behind a `CARGO_FEATURES` build arg for
-# dev/CI use only — the published image must NEVER enable it, so this default
-# build line stays feature-free.
-RUN cargo build --release --bin reminder-worker
+# CARGO_FEATURES is empty for production (the published image MUST stay
+# feature-free). E2E/dev builds pass `--build-arg CARGO_FEATURES=test-fixtures`
+# (via compose's REMINDER_WORKER_FEATURES) to enable the clock-advance HTTP
+# listener. The `${VAR:+--features "$VAR"}` form expands to nothing when unset.
+ARG CARGO_FEATURES=
+RUN cargo build --release --bin reminder-worker ${CARGO_FEATURES:+--features "$CARGO_FEATURES"}
 
 FROM debian:bookworm-slim
 ARG OCI_SOURCE
