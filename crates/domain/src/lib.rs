@@ -15,6 +15,7 @@ pub use repos::audit_log::{
 };
 pub use repos::families::{Family, FamilyRepo, FamilyRepoError};
 pub use repos::family_invites::{FamilyInviteRepo, Invite, InviteRepoError};
+pub use repos::health::{HealthRepo, HealthRepoError};
 pub use repos::family_memberships::{
     FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError, MembershipWithFamilyName,
 };

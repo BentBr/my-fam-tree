@@ -26,9 +26,9 @@ use my_family_cache::{RedisPool, RedisRateLimiter};
 use my_family_email::FakeEmailSender;
 use my_family_persistence::{
     Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
-    PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo, PgPartnershipRepo, PgPersonContactRepo,
-    PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo, PgReminderDigestRepo,
-    PgReminderPrefsRepo, PgUserRepo,
+    PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo, PgPartnershipRepo,
+    PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo,
+    PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use rand::rngs::OsRng;
 use testcontainers::ContainerAsync;
@@ -145,6 +145,7 @@ pub async fn ephemeral_stack() -> TestStack {
         owner_transfers: Arc::new(PgOwnerTransferRepo::new(pool.clone())),
         reminder_prefs: Arc::new(PgReminderPrefsRepo::new(pool.clone())),
         reminder_digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
+        health: Arc::new(PgHealthRepo::new(pool.clone())),
         audit: Arc::new(PgAuditLogRepo::new(pool)),
         email: fake_email.clone(),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),

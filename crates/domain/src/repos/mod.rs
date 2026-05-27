@@ -1,6 +1,7 @@
 pub mod audit_log;
 pub mod families;
 pub mod family_invites;
+pub mod health;
 pub mod family_memberships;
 pub mod magic_link_tokens;
 pub mod owner_transfers;

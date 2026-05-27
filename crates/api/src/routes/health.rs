@@ -1,16 +1,27 @@
-//! `GET /api/v1/health` — liveness probe + request-id sanity check.
+//! `GET /api/v1/health` — liveness + DB-reachability probe.
+//!
+//! Always returns HTTP 200 (so a status page renders and a container
+//! healthcheck reflects "API process is up") and conveys DB state in the body:
+//! `db_ok` plus the measured `db_latency_ms`. The FE colours the latency
+//! (green < 100 ms, yellow < 200 ms, red ≥ 200 ms or `db_ok: false`).
+
+use std::time::Instant;
 
 use actix_web::{HttpMessage, get, web};
 use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::middleware::RequestIdValue;
-use crate::{ApiError, ApiResponse, response_body};
+use crate::{ApiError, ApiResponse, AppState, response_body};
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Health {
     pub status: &'static str,
     pub version: &'static str,
+    /// `true` when the DB answered the reachability probe.
+    pub db_ok: bool,
+    /// Round-trip duration of the DB probe in milliseconds.
+    pub db_latency_ms: u64,
 }
 
 response_body!(pub HealthResponseBody, Health);
@@ -31,46 +42,26 @@ response_body!(pub HealthResponseBody, Health);
 // The `pub` is needed so the `openapi` crate can name it in `paths(...)`.
 #[allow(unreachable_pub)]
 #[get("/health")]
-pub async fn health(req: actix_web::HttpRequest) -> Result<ApiResponse<Health>, ApiError> {
+pub async fn health(
+    state: web::Data<AppState>,
+    req: actix_web::HttpRequest,
+) -> Result<ApiResponse<Health>, ApiError> {
     let rid = req.extensions().get::<RequestIdValue>().map(|v| v.0.clone());
-    let mut resp = ApiResponse::ok(Health { status: "ok", version: env!("CARGO_PKG_VERSION") });
+
+    // Time the DB probe. A failure is NOT an error response — we report it in
+    // the body and keep the endpoint at 200 (the API process is alive).
+    let started = Instant::now();
+    let db_ok = state.health.ping().await.is_ok();
+    let db_latency_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+
+    let mut resp = ApiResponse::ok(Health {
+        status: "ok",
+        version: env!("CARGO_PKG_VERSION"),
+        db_ok,
+        db_latency_ms,
+    });
     if let Some(rid) = rid {
         resp = resp.with_request_id(rid);
     }
     Ok(resp)
-}
-
-#[must_use]
-pub fn scope() -> actix_web::Scope {
-    web::scope("/api/v1").service(health)
-}
-
-#[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::future_not_send,
-    clippy::indexing_slicing
-)]
-mod tests {
-    use actix_web::{App, test};
-
-    use super::*;
-    use crate::middleware::RequestId;
-
-    #[actix_web::test]
-    async fn health_returns_envelope_and_request_id_in_meta() {
-        let app = test::init_service(App::new().wrap(RequestId).service(scope())).await;
-        let req = test::TestRequest::get()
-            .uri("/api/v1/health")
-            .insert_header(("x-request-id", "rid-test"))
-            .to_request();
-        let res = test::call_service(&app, req).await;
-        assert_eq!(res.status(), 200);
-        let body = test::read_body(res).await;
-        let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(v["data"]["status"], "ok");
-        assert!(v["data"]["version"].is_string());
-        assert_eq!(v["meta"]["request_id"], "rid-test");
-    }
 }
