@@ -63,6 +63,38 @@ toasts. **Do not call the client raw from components.** Use the hooks in
 eslint `no-restricted-imports` rule forbids importing `@/api/schema*` outside
 `src/api/` — consume the re-exported types from `src/api/types.ts` instead.
 
+## i18n — translate every user-facing string
+
+**Never hardcode a user-facing string.** Every label, message, and toast goes through
+vue-i18n (`useI18n().t('some.key')` / `$t('some.key')`). Catalogs live in
+`src/i18n/en.json` (default + fallback) and `src/i18n/de.json` — two locales, nested
+keys, loaded in `src/i18n/index.ts`.
+
+When you add a key, **add it to ALL locale files** (`en.json` *and* `de.json`) and keep
+them structurally in sync — a key missing from `de` silently falls back to English.
+This includes backend errors: a new backend `ErrorCode` slug needs an
+`errorCodes.<slug>` entry, and a new field-validation code needs its matching key, in
+**both** files — otherwise the toast falls back to the raw English server title.
+
+## Errors, warnings & toasts — always give feedback
+
+Outcomes must be visible to the user as toasts (`useUiStore().pushToast`, rendered by
+`components/common/ToastContainer.vue`; kinds `info` / `success` / `error`). The wiring
+is centralized — lean on it, don't bypass it:
+
+- **Errors:** every TanStack query/mutation error runs through `queryClient`'s
+  `onError` → `reportError` (`src/api/queryClient.ts`), which translates the
+  `problem+json` (`fields[]` → `errorCodes.<code>` → server `title`) into an **error
+  toast**. So **let API errors propagate** — never `try/catch`-and-swallow. A 401 that
+  reaches here means the session is gone → `errorCodes.session_expired` toast.
+- **Success:** give positive feedback on writes — pass `success` (an i18n key) to
+  `useApiMutation`, which pushes a **success toast** and invalidates queries.
+- **Warnings:** the client's `warningsBroadcaster` turns `meta.warnings` into **info
+  toasts** automatically.
+
+If you must handle an error locally, still surface a translated toast via
+`useUiStore().pushToast({ kind: 'error', message: t('...') })`.
+
 ## Strict-TS regime
 
 `tsconfig.json`: `strict` + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`
@@ -91,3 +123,6 @@ with Pinia + i18n + vue-query. Coverage gate: `fe/src/` ≥ 80% lines. Run with
 | Types stale after backend change | Run `rdt openapi`; don't edit `schema.d.ts` by hand. |
 | `any` / `!` rejected by lint | Narrow the type or use a guard; both are hard errors here. |
 | Raw `client.GET(...)` in a component | Add/extend a hook in `src/api/hooks/` using `unwrap`/`useApiMutation`. |
+| Hardcoded user-facing string | Wrap in `t('...')` and add the key to `en.json` **and** `de.json`. |
+| Error caught and swallowed (no toast) | Let it propagate to `queryClient` `onError`, or push a translated error toast yourself. |
+| New backend `ErrorCode` shows English title | Add an `errorCodes.<slug>` entry to both locale files. |
