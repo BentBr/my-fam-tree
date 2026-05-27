@@ -273,3 +273,100 @@ where
     let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
     (new_access, family_id)
 }
+
+// ---------------------------------------------------------------------------
+// Three-role family setup (owner + admin + user), shared by the members,
+// roles-authz, and similar matrix tests. Memberships are inserted directly
+// via the repos; callers then `sign_in` so the JWT's `families` claim mirrors
+// the DB (which is all `require_role` ever sees).
+// ---------------------------------------------------------------------------
+
+/// Sign `email` in (provisions the `users` row) and return its `UserId`. The
+/// session cookies are discarded — callers re-sign-in after memberships exist.
+#[allow(clippy::future_not_send)]
+pub async fn provision_user<S, B>(
+    stack: &TestStack,
+    app: &S,
+    email: &str,
+) -> my_family_domain::UserId
+where
+    S: actix_web::dev::Service<
+            actix_http::Request,
+            Response = actix_web::dev::ServiceResponse<B>,
+            Error = actix_web::Error,
+        >,
+    B: actix_web::body::MessageBody,
+{
+    let _ = sign_in(stack, app, email).await;
+    stack.state.users.find_by_email(email).await.expect("user lookup").expect("user exists").id
+}
+
+/// Insert (or update) a membership row directly via the repo.
+#[allow(clippy::future_not_send)]
+pub async fn ensure_membership(
+    state: &my_family_api::AppState,
+    family_id: my_family_domain::FamilyId,
+    user_id: my_family_domain::UserId,
+    role: my_family_domain::Role,
+) {
+    if state.memberships.find(family_id, user_id).await.expect("find").is_some() {
+        state.memberships.set_role(family_id, user_id, role).await.expect("set_role");
+    } else {
+        state.memberships.insert(family_id, user_id, role).await.expect("insert");
+    }
+}
+
+/// A freshly seeded family with one member at each role.
+pub struct ThreeRoleFamily {
+    pub family_id: my_family_domain::FamilyId,
+    pub owner_email: String,
+    pub admin_email: String,
+    pub user_email: String,
+    pub admin_id: my_family_domain::UserId,
+    pub user_id: my_family_domain::UserId,
+}
+
+/// Seed a fresh family with an owner, an admin and a user. `stamp` keeps the
+/// emails unique across parallel tests.
+#[allow(clippy::future_not_send)]
+pub async fn seed_three_role_family<S, B>(stack: &TestStack, app: &S, stamp: u128) -> ThreeRoleFamily
+where
+    S: actix_web::dev::Service<
+            actix_http::Request,
+            Response = actix_web::dev::ServiceResponse<B>,
+            Error = actix_web::Error,
+        >,
+    B: actix_web::body::MessageBody,
+{
+    let owner_email = format!("roles-owner-{stamp}@example.com");
+    let admin_email = format!("roles-admin-{stamp}@example.com");
+    let user_email = format!("roles-user-{stamp}@example.com");
+
+    let (owner_access, _r) = sign_in(stack, app, &owner_email).await;
+    let (_owner_access, family_id_str) =
+        create_family(app, &owner_access, &format!("RolesFam-{stamp}")).await;
+    let family_id = my_family_domain::FamilyId::from_uuid(family_id_str.parse().expect("uuid"));
+
+    let admin_id = provision_user(stack, app, &admin_email).await;
+    let user_id = provision_user(stack, app, &user_email).await;
+    ensure_membership(&stack.state, family_id, admin_id, my_family_domain::Role::Admin).await;
+    ensure_membership(&stack.state, family_id, user_id, my_family_domain::Role::User).await;
+
+    ThreeRoleFamily { family_id, owner_email, admin_email, user_email, admin_id, user_id }
+}
+
+/// Sign `email` in and return just the access-cookie value (JWT now carries
+/// the member's current role for the seeded family).
+#[allow(clippy::future_not_send)]
+pub async fn fresh_access<S, B>(stack: &TestStack, app: &S, email: &str) -> String
+where
+    S: actix_web::dev::Service<
+            actix_http::Request,
+            Response = actix_web::dev::ServiceResponse<B>,
+            Error = actix_web::Error,
+        >,
+    B: actix_web::body::MessageBody,
+{
+    let (access, _r) = sign_in(stack, app, email).await;
+    access
+}
