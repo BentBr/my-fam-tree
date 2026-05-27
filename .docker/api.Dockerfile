@@ -28,8 +28,6 @@ LABEL org.opencontainers.image.title="my-family-api" \
       org.opencontainers.image.created="${OCI_CREATED}"
 # `wget` is required by the compose healthcheck (`wget -qO- /api/v1/health`).
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
-# Land interactive shells (`docker compose exec api bash`) where the bundled
-# binaries actually live — the slim runtime has no /app source tree.
 WORKDIR /usr/local/bin
 # The api server is the default command. The migrator (`run_migrations`) and
 # seeder (`seed`) binaries ride along so an operator can run them one-shot

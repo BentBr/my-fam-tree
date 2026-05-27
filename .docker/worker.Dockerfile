@@ -16,7 +16,7 @@ ENV SQLX_OFFLINE=true
 # feature-free). E2E/dev builds pass `--build-arg CARGO_FEATURES=test-fixtures`
 # (via compose's REMINDER_WORKER_FEATURES) to enable the clock-advance HTTP
 # listener. The `${VAR:+--features "$VAR"}` form expands to nothing when unset.
-ARG CARGO_FEATURES=
+ARG CARGO_FEATURES=""
 RUN cargo build --release --bin reminder-worker ${CARGO_FEATURES:+--features "$CARGO_FEATURES"}
 
 FROM debian:bookworm-slim
@@ -29,8 +29,6 @@ LABEL org.opencontainers.image.title="my-family-reminder-worker" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-# Land interactive shells where the binary lives (the slim runtime has no
-# /app source tree).
 WORKDIR /usr/local/bin
 COPY --from=builder /app/target/release/reminder-worker /usr/local/bin/reminder-worker
 # Declared so the dinghy reverse-proxy (docker-gen) builds a vhost upstream for

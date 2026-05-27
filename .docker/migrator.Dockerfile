@@ -28,6 +28,6 @@ LABEL org.opencontainers.image.title="my-family-migrator" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
+WORKDIR /usr/local/bin
 COPY --from=builder /app/target/release/run_migrations /usr/local/bin/run_migrations
 ENTRYPOINT ["/usr/local/bin/run_migrations"]
