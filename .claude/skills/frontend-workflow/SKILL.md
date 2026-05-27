@@ -61,7 +61,10 @@ toasts. **Do not call the client raw from components.** Use the hooks in
 **gitignored — never hand-edit it.** After any backend endpoint change, run
 `rdt openapi` (dumps the spec to `fe/openapi.json`, then regenerates the types). An
 eslint `no-restricted-imports` rule forbids importing `@/api/schema*` outside
-`src/api/` — consume the re-exported types from `src/api/types.ts` instead.
+`src/api/` — consume the re-exported types from `src/api/types.ts` instead. The
+committed source is `fe/openapi.json`; the full backend→frontend type contract (utoipa
+→ `ApiDoc` → `openapi-dump` → `fe/openapi.json` → `openapi-typescript` → `schema.d.ts`)
+is described in `project-concepts`.
 
 ## i18n — translate every user-facing string
 
@@ -94,6 +97,21 @@ is centralized — lean on it, don't bypass it:
 
 If you must handle an error locally, still surface a translated toast via
 `useUiStore().pushToast({ kind: 'error', message: t('...') })`.
+
+## Form validation
+
+Forms are Vuetify `<v-form @submit.prevent="...">` with `v-text-field`/etc. Use
+field-level checks for immediate UX — the `required` attribute, or `:rules="[...]"`
+arrays for specific constraints — and keep every rule message i18n'd (`t('...')`).
+
+**The backend is the validation authority.** Handlers return `422` with
+`FieldViolation[]` (`{ path, code, message, params }`) whose `code`s are i18n keys; the
+central `reportError` translates them (joining multiple with `; `) into an error toast.
+So client-side rules are a UX nicety, not the source of truth — don't let them diverge
+from the server contract, and don't reimplement complex backend rules in the browser. A
+new validation `code` needs an entry in both locale files (see i18n above). Server
+violations are not bound per-input today; for per-field display, read `err.body.fields`
+off the caught `ApiClientError`.
 
 ## Strict-TS regime
 

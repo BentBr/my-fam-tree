@@ -102,7 +102,8 @@ e.g. `auth.unauthenticated`, `family.not_member`). Status mapping (`ErrorCode::h
    `/api/v1` scope, **auth-required** routes inside the empty-path sub-scope.
 4. In `src/openapi_doc.rs`: add the fn to `paths(...)` and the wrapper + any new
    request/payload structs to `components(schemas(...))`.
-5. `rdt openapi` — regenerates `fe/openapi.json` + FE TS types.
+5. `rdt openapi` — regenerates `fe/openapi.json` + FE TS types; **commit the updated
+   `fe/openapi.json`** (CI `openapi-check` fails on drift). Full pipeline: `project-concepts`.
 6. Add an integration test in `crates/api/tests/<resource>_flow.rs`.
 7. `rdt lint && rdt test`.
 

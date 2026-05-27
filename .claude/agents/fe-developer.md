@@ -38,6 +38,13 @@ proposing fixes), `superpowers:test-driven-development` (new feature/behavior), 
   `queryClient` handler (translated error toast); give mutations a success toast via
   `useApiMutation({ success })`; the `warningsBroadcaster` shows `meta.warnings` as info
   toasts. Never silently swallow an error.
+- **Forms:** Vuetify `<v-form>` with i18n'd field rules for UX, but the **server is the
+  validation authority** (`422` → `FieldViolation[]`, surfaced as a translated toast).
+  Don't duplicate or diverge from backend rules; add any new violation `code` to both
+  locale files.
+- **API types are generated.** After a backend change, run `rdt openapi`; never
+  hand-edit `fe/openapi.json` or `fe/src/api/schema.d.ts`. (Full pipeline in
+  `project-concepts`.)
 - Use `data-testid` for anything E2E needs to select.
 
 ## Working loop

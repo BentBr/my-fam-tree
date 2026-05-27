@@ -97,6 +97,28 @@ access = `SameSite=Lax`, refresh = `SameSite=Strict`, `COOKIE_DOMAIN=.my-family.
 machine string (`ErrorCode`, e.g. `auth.unauthenticated`, `family.not_member`);
 `fields[]` carries per-field violations for `422`. The FE maps `code` → i18n message.
 
+## The API type contract (OpenAPI → TS)
+
+The backend is the single source of truth for the API types; the FE consumes generated
+TypeScript. The pipeline spans **both** stacks — know all of it:
+
+1. **Rust annotations** — each handler carries `#[utoipa::path(...)]` + schema derives;
+   `crates/api/src/openapi_doc.rs` aggregates them into `ApiDoc` (see `crate-api`).
+2. **Dump** — the `crates/openapi` `openapi-dump` binary serializes `ApiDoc` to the
+   **committed** `fe/openapi.json` (see `crate-ops-binaries`).
+3. **Codegen** — `openapi-typescript` turns `fe/openapi.json` into
+   `fe/src/api/schema.d.ts` (**gitignored, regenerated, never hand-edited**), consumed by
+   the `openapi-fetch` client and re-exported via `fe/src/api/types.ts` (see
+   `frontend-workflow`).
+
+**Regenerate both** with `rdt openapi` (dump → `fe/openapi.json`, then codegen →
+`schema.d.ts`). `rdt openapi-check` diffs a fresh dump against the committed
+`fe/openapi.json` and fails on drift (CI + pre-push gate).
+
+**Adding/changing API content:** edit the Rust endpoint → `rdt openapi` → **commit the
+updated `fe/openapi.json`** → consume the new types from a FE hook. Never hand-edit
+`fe/openapi.json` or `schema.d.ts`.
+
 ## Where things live
 
 ```
