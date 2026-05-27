@@ -212,10 +212,22 @@
         }
     },
     "language": { "label": "Language", "en": "English", "de": "German" },
+    "reminderPrefs": {
+        "heading": "Email reminders",
+        "subtitle": "Get one daily email about upcoming family dates.",
+        "emailsEnabled": "Send me reminder emails",
+        "birthdays": "Birthdays",
+        "anniversaries": "Anniversaries",
+        "favouritesOnly": "Only my favourites",
+        "leadDays": "Days ahead",
+        "leadHint": "{n} days before the date",
+        "leadDayOf": "On the day itself"
+    },
     "toast": {
         "dismiss": "Dismiss"
     },
     "toasts": {
+        "reminder_prefs_saved": "Reminder settings saved",
         "profile_saved": "Profile saved",
         "email_change_sent": "Confirmation email sent to your current address",
         "email_changed": "Email address updated",

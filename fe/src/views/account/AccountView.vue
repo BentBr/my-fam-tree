@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { useMe, useRequestEmailChange, useUpdateMe } from '@/api/hooks/users'
 import { useAuthStore } from '@/stores/auth'
+import ReminderPrefsSection from '@/views/account/ReminderPrefsSection.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -134,6 +135,10 @@ async function signOut(): Promise<void> {
                     {{ t('account.email.submit') }}
                 </v-btn>
             </v-form>
+
+            <v-divider class="my-6" />
+
+            <ReminderPrefsSection />
 
             <v-divider class="my-6" />
 

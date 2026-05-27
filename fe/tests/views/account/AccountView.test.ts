@@ -38,6 +38,9 @@ async function mountView() {
         global: {
             plugins: [i18n, router],
             stubs: {
+                // The reminder panel owns its own query hook (needs a QueryClient);
+                // stub it out — it has its own dedicated test.
+                ReminderPrefsSection: { template: '<div data-testid="reminder-prefs-stub" />' },
                 'v-container': { template: '<div><slot /></div>' },
                 'v-card': { template: '<div><slot /></div>' },
                 'v-card-title': { template: '<div><slot /></div>' },

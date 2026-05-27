@@ -212,10 +212,22 @@
         }
     },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
+    "reminderPrefs": {
+        "heading": "E-Mail-Erinnerungen",
+        "subtitle": "Erhalte eine tägliche E-Mail zu anstehenden Familien-Terminen.",
+        "emailsEnabled": "Erinnerungs-E-Mails senden",
+        "birthdays": "Geburtstage",
+        "anniversaries": "Jahrestage",
+        "favouritesOnly": "Nur meine Favoriten",
+        "leadDays": "Tage im Voraus",
+        "leadHint": "{n} Tage vor dem Termin",
+        "leadDayOf": "Am Tag selbst"
+    },
     "toast": {
         "dismiss": "Schließen"
     },
     "toasts": {
+        "reminder_prefs_saved": "Erinnerungs-Einstellungen gespeichert",
         "profile_saved": "Profil gespeichert",
         "email_change_sent": "Bestätigungs-E-Mail an deine aktuelle Adresse gesendet",
         "email_changed": "E-Mail-Adresse aktualisiert",
