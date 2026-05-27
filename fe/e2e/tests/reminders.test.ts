@@ -1,37 +1,12 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
-
-import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
+import { signIn, createFamily } from '../page-objects/session'
 
 // The worker exposes POST /__test/advance-clock only when built with
 // `--features test-fixtures` (CI + `REMINDER_WORKER_FEATURES=test-fixtures`
 // locally). In CI it listens on localhost:9091; under compose it's the
 // `reminder-worker` service. Override via WORKER_TEST_URL.
 const WORKER_URL = process.env['WORKER_TEST_URL'] ?? 'http://localhost:9091'
-
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) throw new Error('consume link not in email body')
-    const link = match[0]
-    if (link === undefined) throw new Error('consume link match was empty')
-    await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
-
-async function createFamily(page: Page, name: string): Promise<void> {
-    await page.goto('/families/create')
-    await page.getByTestId('family-name').locator('input').fill(name)
-    await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
-}
 
 test('a daily digest email fires 7 days before a birthday when reminders are on', async ({ page }) => {
     const stamp = Date.now()

@@ -1,32 +1,7 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
-
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) {
-        throw new Error('consume link not in email body')
-    }
-    const link = match[0]
-    if (link === undefined) {
-        throw new Error('consume link match was empty')
-    }
-    await page.goto(rewriteEmailLink(link))
-    // ConsumeView redirects to /health on success. The family guard may then
-    // bounce a user with no active family to /families/create (new user) or
-    // /families/pick (returning user with multiple). Accept any of the three —
-    // we just need to know the consume succeeded and we're past the auth wall.
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
+import { signIn } from '../page-objects/session'
 
 test('owner signs in, creates family, invites a guest, guest joins', async ({ browser }) => {
     const ownerCtx = await browser.newContext()

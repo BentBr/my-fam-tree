@@ -3,37 +3,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-// ---------------------------------------------------------------------------
-// Shared bootstrap helpers (mirrors tree.test.ts / relationship_validations
-// — inlined per the directory's existing convention so each test stays
-// self-contained). The flows here exercise the new PersonDetail drawer
-// surface: full PersonView rendering, role-gated edits, collapsible
-// relations, and the "End partnership" inline edit.
-// ---------------------------------------------------------------------------
-
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible({ timeout: 15_000 })
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) throw new Error('consume link not in email body')
-    const link = match[0]
-    if (link === undefined) throw new Error('consume link match was empty')
-    await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
-
-async function createFamily(page: Page, name: string): Promise<void> {
-    await page.goto('/families/create')
-    await page.getByTestId('family-name').locator('input').fill(name)
-    await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
-}
+import { signIn, createFamily } from '../page-objects/session'
 
 const TREE_NODE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
