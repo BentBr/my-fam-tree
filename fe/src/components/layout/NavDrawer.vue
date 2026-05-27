@@ -34,7 +34,6 @@ const items = computed<NavItem[]>(() => {
     const list: NavItem[] = [
         { to: '/tree', title: t('nav.tree'), icon: 'network' },
         { to: '/upcoming', title: t('nav.upcoming'), icon: 'calendar-clock' },
-        { to: '/health', title: t('nav.health'), icon: 'activity' },
     ]
     if (isAdmin.value) {
         list.push({ to: '/admin/audit', title: t('nav.admin'), icon: 'shield', testId: 'nav-admin' })
@@ -56,5 +55,30 @@ const items = computed<NavItem[]>(() => {
                 color="primary"
             />
         </v-list>
+
+        <!-- Health is a low-traffic diagnostics page: demote it to a small,
+             muted footnote in the drawer footer. Plain router-link, so simply
+             rendering the nav never triggers a /health request. -->
+        <template #append>
+            <RouterLink to="/health" class="health-footnote" data-testid="nav-health-footer" :title="t('nav.health')">
+                <v-icon icon="activity" size="x-small" />
+                <span v-if="!railMode" class="ml-1">{{ t('nav.health') }}</span>
+            </RouterLink>
+        </template>
     </v-navigation-drawer>
 </template>
+
+<style scoped>
+.health-footnote {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.72rem;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    text-decoration: none;
+}
+.health-footnote:hover {
+    color: rgba(var(--v-theme-on-surface), 0.8);
+}
+</style>

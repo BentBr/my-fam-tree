@@ -49,7 +49,9 @@
         "ok": "API is healthy.",
         "version": "Version {version}",
         "requestId": "Request id: {id}",
-        "error": "Could not reach the API."
+        "error": "Could not reach the API.",
+        "dbLatency": "Database {ms} ms",
+        "dbDown": "Database unreachable"
     },
     "account": {
         "title": "Account",

@@ -189,7 +189,9 @@ describe('@/api/client middlewares', () => {
                 jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
             )
             // 2) the refresh POST issued by auth.refresh() → success
-            .mockResolvedValueOnce(jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }))
+            .mockResolvedValueOnce(
+                jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }),
+            )
             // 3) the retried original GET → success
             .mockResolvedValueOnce(jsonResponse(200, { data: { ok: true } }))
 
@@ -207,7 +209,9 @@ describe('@/api/client middlewares', () => {
             .mockResolvedValueOnce(
                 jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
             )
-            .mockResolvedValueOnce(jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }))
+            .mockResolvedValueOnce(
+                jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }),
+            )
             // retry STILL 401 — refresh didn't actually recover the session
             .mockResolvedValueOnce(
                 jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),

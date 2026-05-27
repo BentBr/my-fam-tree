@@ -49,7 +49,9 @@
         "ok": "API ist erreichbar.",
         "version": "Version {version}",
         "requestId": "Request-ID: {id}",
-        "error": "API konnte nicht erreicht werden."
+        "error": "API konnte nicht erreicht werden.",
+        "dbLatency": "Datenbank {ms} ms",
+        "dbDown": "Datenbank nicht erreichbar"
     },
     "account": {
         "title": "Konto",

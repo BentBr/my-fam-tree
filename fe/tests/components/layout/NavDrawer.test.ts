@@ -29,12 +29,17 @@ function mountDrawer() {
                 'v-navigation-drawer': {
                     props: ['modelValue', 'rail'],
                     template:
-                        '<div class="drawer-stub" :data-rail="String(rail)" :data-open="String(modelValue)"><slot /></div>',
+                        '<div class="drawer-stub" :data-rail="String(rail)" :data-open="String(modelValue)"><slot /><slot name="append" /></div>',
                 },
                 'v-list': { template: '<div><slot /></div>' },
                 'v-list-item': {
                     template: '<a class="li" :data-to="to" :data-icon="prependIcon">{{ title }}</a>',
                     props: ['to', 'title', 'prependIcon', 'activeColor'],
+                },
+                'v-icon': { template: '<i />', props: ['icon', 'size'] },
+                RouterLink: {
+                    template: '<a class="rl" :data-to="to"><slot /></a>',
+                    props: ['to', 'title'],
                 },
             },
         },
@@ -47,14 +52,14 @@ describe('NavDrawer', () => {
         mockStorage()
     })
 
-    it('renders the live nav items only (no /reminders/* yet)', () => {
-        // /reminders/history is wired by Phase 4b. Until the route exists,
-        // the nav must not list it — otherwise vue-router emits a
-        // "No match found" warn on every navigation.
+    it('lists the primary nav items; Health is demoted to a footer footnote', () => {
         const w = mountDrawer()
         const items = w.findAll('.li')
-        expect(items).toHaveLength(3)
-        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/upcoming', '/health'])
+        expect(items.map((i) => i.attributes('data-to'))).toEqual(['/tree', '/upcoming'])
+        // Health lives in the drawer footer (#append), not the main list.
+        const footer = w.find('[data-testid="nav-health-footer"]')
+        expect(footer.exists()).toBe(true)
+        expect(footer.attributes('data-to')).toBe('/health')
     })
 
     it('rail mode follows ui.sidebarCollapsed when not mobile', async () => {
