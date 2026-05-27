@@ -1,35 +1,5 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
-
-import { rewriteEmailLink } from '../fixtures/email-links.fixture'
-import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-// Mirrors the helper in auth_flow.test.ts. Kept inline because Playwright's
-// project layout doesn't share helpers across test files unless we extract
-// them into a fixture module — the helper count is still small enough that
-// duplication is cheaper than the abstraction.
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) {
-        throw new Error('consume link not in email body')
-    }
-    const link = match[0]
-    if (link === undefined) {
-        throw new Error('consume link match was empty')
-    }
-    await page.goto(rewriteEmailLink(link))
-    // After ConsumeView, the family guard sends a brand-new user (no families)
-    // to /families/create. Either landing spot is fine — we just want past the
-    // auth wall so the sign-out button is rendered by MainLayout's AppBar.
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
+import { signIn } from '../page-objects/session'
 
 test.describe('FE auth gate', () => {
     test('anonymous visit to /health redirects to /auth/sign-in', async ({ page }) => {

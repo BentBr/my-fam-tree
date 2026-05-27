@@ -3,35 +3,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-// Magic-link sign-in. Same shape as the sibling admin-members spec — the
-// helper is duplicated inline by convention so each spec stays
-// self-contained.
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) throw new Error('consume link not in email body')
-    const link = match[0]
-    if (link === undefined) throw new Error('consume link match was empty')
-    await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
-
-async function createFamily(page: Page, name: string): Promise<string> {
-    await page.goto('/families/create')
-    await page.getByTestId('family-name').locator('input').fill(name)
-    await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
-    if (familyId === '') throw new Error('active family id missing from localStorage')
-    return familyId
-}
+import { signIn, createFamily } from '../page-objects/session'
 
 /**
  * Create a person row through the FE so the e2e flow exercises real

@@ -1,43 +1,5 @@
-import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
-
-import { rewriteEmailLink } from '../fixtures/email-links.fixture'
-import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-// T7 e2e coverage: every signed-in user is either viewing an auto-selected
-// family or being funneled to /families/create. Mirrors the inline signIn
-// helpers in the other e2e files.
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    // Cold API requests on the CI runner occasionally take >5s on the
-    // first /auth/magic-link POST of a suite-late test, which times out
-    // Playwright's default 5s `toBeVisible`. The element appears as soon
-    // as the POST resolves; bumping the wait is cheaper than adding a
-    // retry loop and avoids reordering tests.
-    await expect(login.sent).toBeVisible({ timeout: 15_000 })
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) throw new Error('consume link not in email body')
-    const link = match[0]
-    if (link === undefined) throw new Error('consume link match was empty')
-    await page.goto(rewriteEmailLink(link))
-    // Wait for ConsumeView's POST + redirect to settle before any further
-    // navigation. A guard-driven landing on /families/create (no families),
-    // /families/pick (multi-family), /tree (single-family auto-select), or
-    // /health is all acceptable here — callers narrow as needed.
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
-
-async function createFamily(page: Page, name: string): Promise<void> {
-    await page.goto('/families/create')
-    await page.getByTestId('family-name').locator('input').fill(name)
-    await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
-}
+import { signIn, createFamily } from '../page-objects/session'
 
 test.describe('FE family flow', () => {
     test('fresh user lands on /families/create', async ({ page }) => {

@@ -1,34 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
-
-import { rewriteEmailLink } from '../fixtures/email-links.fixture'
-import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
-import { LoginPage } from '../page-objects/login.page'
-
-// Sign-in helper mirrors auth_flow / account_flow. Inlining it (rather than
-// extracting to a shared fixture) keeps the test self-contained and matches
-// the existing convention in this directory.
-async function signIn(page: Page, email: string): Promise<void> {
-    await clearMailpit()
-    const login = new LoginPage(page)
-    await login.goto()
-    await login.signIn(email)
-    await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
-    const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
-    if (match === null) throw new Error('consume link not in email body')
-    const link = match[0]
-    if (link === undefined) throw new Error('consume link match was empty')
-    await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
-}
-
-async function createFamily(page: Page, name: string): Promise<void> {
-    await page.goto('/families/create')
-    await page.getByTestId('family-name').locator('input').fill(name)
-    await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
-}
+import { signIn, createFamily } from '../page-objects/session'
 
 // The TreeNode SVG emits sibling `<text>` elements with non-UUID testids
 // (`tree-node-name`, `tree-node-birth`, `tree-node-death`) for granular
