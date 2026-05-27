@@ -140,8 +140,12 @@ test('user role cannot reach /admin/audit (redirects to /tree)', async ({ browse
     await guest.goto(rewriteEmailLink(inviteLink))
     await expect(guest).toHaveURL(/\/(tree|invite\/accept)/)
 
-    // The guest is now a `user` member. Admin nav should not be visible.
-    await guest.goto('/tree')
+    // The guest is now a `user` member. InviteAccept already pushed to /tree
+    // client-side with the active family set, so DON'T re-goto (a full reload
+    // would race the store re-hydrate). Wait for the switcher to show the
+    // joined family — that confirms hydrate settled + the active family is
+    // live and persisted, so the next full navigation re-hydrates correctly.
+    await expect(guest.getByTestId('family-switcher')).toContainText(`AuditGate-${stamp}`, { timeout: 15_000 })
     await expect(guest.getByTestId('nav-admin')).toHaveCount(0)
 
     // Direct navigation to /admin/audit is bounced to /tree by the

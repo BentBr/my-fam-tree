@@ -63,9 +63,14 @@ test('user role gets a read-only person detail and no admin nav for a row they d
     await signIn(user, userEmail)
     await inviteAndAccept(owner, user, familyId, userEmail, 'user')
 
+    // After accept, InviteAccept client-side-pushes to /tree with the auth +
+    // active-family state already set, so we DON'T re-goto (a full reload would
+    // race the store re-hydrate and bounce to /families/create). Wait for the
+    // switcher to show the joined family — proof the active family is live.
+    await expect(user.getByTestId('nav-drawer')).toBeVisible({ timeout: 15_000 })
+    await expect(user.getByTestId('family-switcher')).toContainText(`Roles-${stamp}`, { timeout: 15_000 })
+
     // Admin nav entry is gated behind admin/owner — a user never sees it.
-    await user.goto('/tree')
-    await expect(user.getByTestId('nav-drawer')).toBeVisible()
     await expect(user.getByTestId('nav-admin')).toHaveCount(0)
 
     // Open Otto's detail. The user owns no linked row here, so canEdit is

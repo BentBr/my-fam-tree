@@ -329,7 +329,11 @@ pub struct ThreeRoleFamily {
 /// Seed a fresh family with an owner, an admin and a user. `stamp` keeps the
 /// emails unique across parallel tests.
 #[allow(clippy::future_not_send)]
-pub async fn seed_three_role_family<S, B>(stack: &TestStack, app: &S, stamp: u128) -> ThreeRoleFamily
+pub async fn seed_three_role_family<S, B>(
+    stack: &TestStack,
+    app: &S,
+    stamp: u128,
+) -> ThreeRoleFamily
 where
     S: actix_web::dev::Service<
             actix_http::Request,

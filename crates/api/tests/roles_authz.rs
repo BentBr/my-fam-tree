@@ -3,7 +3,7 @@
 //! The FE gates content cosmetically; the API is the real gate. This proves
 //! each role's access against a freshly-seeded three-role family: non-owners
 //! are denied owner-only endpoints, non-admins are denied admin-only endpoints
-//! (403 `family.insufficient_role`), and every role keeps its read access.
+//! (403 `family_insufficient_role`), and every role keeps its read access.
 
 #![allow(
     clippy::unwrap_used,
@@ -72,13 +72,41 @@ async fn role_matrix_denies_and_allows_the_right_endpoints() {
     let person = || Some(serde_json::json!({ "given_name": "A", "family_name": "B" }));
 
     // --- user: denied every admin/owner gate, allowed its reads ---
-    assert_eq!(status(&app, &user, &fid, "POST", "/api/v1/persons", person()).await, 403, "user create person");
-    assert_eq!(status(&app, &user, &fid, "DELETE", &format!("/api/v1/families/{fid}"), None).await, 403, "user delete family");
-    assert_eq!(status(&app, &user, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await, 403, "user audit");
-    assert_eq!(status(&app, &user, &fid, "GET", &format!("/api/v1/families/{fid}/members"), None).await, 403, "user members");
-    assert_eq!(status(&app, &user, &fid, "GET", "/api/v1/persons", None).await, 200, "user list persons");
-    assert_eq!(status(&app, &user, &fid, "GET", "/api/v1/families/me", None).await, 200, "user families/me");
-    assert_eq!(status(&app, &user, &fid, "GET", "/api/v1/reminder-preferences", None).await, 200, "user reminder prefs");
+    assert_eq!(
+        status(&app, &user, &fid, "POST", "/api/v1/persons", person()).await,
+        403,
+        "user create person"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "DELETE", &format!("/api/v1/families/{fid}"), None).await,
+        403,
+        "user delete family"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await,
+        403,
+        "user audit"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "GET", &format!("/api/v1/families/{fid}/members"), None).await,
+        403,
+        "user members"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "GET", "/api/v1/persons", None).await,
+        200,
+        "user list persons"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "GET", "/api/v1/families/me", None).await,
+        200,
+        "user families/me"
+    );
+    assert_eq!(
+        status(&app, &user, &fid, "GET", "/api/v1/reminder-preferences", None).await,
+        200,
+        "user reminder prefs"
+    );
 
     // The denial code is specifically the role gate (not a generic 403).
     let req = test::TestRequest::post()
@@ -89,17 +117,41 @@ async fn role_matrix_denies_and_allows_the_right_endpoints() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let denied: serde_json::Value = test::read_body_json(res).await;
-    assert_eq!(denied["code"], "family.insufficient_role", "user create person → role gate");
+    assert_eq!(denied["code"], "family_insufficient_role", "user create person → role gate");
 
     // --- admin: admin gates pass, owner gate denied ---
-    assert_eq!(status(&app, &admin, &fid, "POST", "/api/v1/persons", person()).await, 200, "admin create person");
-    assert_eq!(status(&app, &admin, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await, 200, "admin audit");
-    assert_eq!(status(&app, &admin, &fid, "GET", &format!("/api/v1/families/{fid}/members"), None).await, 200, "admin members");
+    assert_eq!(
+        status(&app, &admin, &fid, "POST", "/api/v1/persons", person()).await,
+        200,
+        "admin create person"
+    );
+    assert_eq!(
+        status(&app, &admin, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await,
+        200,
+        "admin audit"
+    );
+    assert_eq!(
+        status(&app, &admin, &fid, "GET", &format!("/api/v1/families/{fid}/members"), None).await,
+        200,
+        "admin members"
+    );
     // Bodyless DELETE reaches require_role(Owner) directly (no extractor to
     // 400 first), cleanly proving the owner-only gate denies an admin.
-    assert_eq!(status(&app, &admin, &fid, "DELETE", &format!("/api/v1/families/{fid}"), None).await, 403, "admin delete family (owner-only)");
+    assert_eq!(
+        status(&app, &admin, &fid, "DELETE", &format!("/api/v1/families/{fid}"), None).await,
+        403,
+        "admin delete family (owner-only)"
+    );
 
     // --- owner: admin-or-higher gates pass ---
-    assert_eq!(status(&app, &owner, &fid, "POST", "/api/v1/persons", person()).await, 200, "owner create person");
-    assert_eq!(status(&app, &owner, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await, 200, "owner audit");
+    assert_eq!(
+        status(&app, &owner, &fid, "POST", "/api/v1/persons", person()).await,
+        200,
+        "owner create person"
+    );
+    assert_eq!(
+        status(&app, &owner, &fid, "GET", &format!("/api/v1/families/{fid}/audit"), None).await,
+        200,
+        "owner audit"
+    );
 }
