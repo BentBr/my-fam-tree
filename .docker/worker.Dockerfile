@@ -29,6 +29,12 @@ LABEL org.opencontainers.image.title="my-family-reminder-worker" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
+# Land interactive shells where the binary lives (the slim runtime has no
+# /app source tree).
+WORKDIR /usr/local/bin
 COPY --from=builder /app/target/release/reminder-worker /usr/local/bin/reminder-worker
+# Declared so the dinghy reverse-proxy (docker-gen) builds a vhost upstream for
+# the worker. Only actually listened on in `test-fixtures` builds (the
+# clock-advance endpoint); a normal build leaves it idle. Harmless in prod.
+EXPOSE 9091
 ENTRYPOINT ["/usr/local/bin/reminder-worker"]

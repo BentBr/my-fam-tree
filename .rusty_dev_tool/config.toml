@@ -83,5 +83,10 @@ no_docker_compose = true
         "alias" = "deny"
         "execution"  = "cargo deny check && cargo machete"
 
+    [commands.trigger-clock]
+        "description" = "Advance the reminder worker test clock to 06:00 Berlin + tick (see Mailpit). Optional date arg YYYY-MM-DD. Needs the worker built with REMINDER_WORKER_FEATURES=test-fixtures."
+        "alias" = "trigger-clock"
+        "execution"  = "./scripts/trigger-clock.sh"
+
 # Mandatory node
 [environments]

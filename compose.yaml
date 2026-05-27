@@ -196,7 +196,10 @@ services:
                 CARGO_FEATURES: ${REMINDER_WORKER_FEATURES:-}
         environment:
             <<: *rust_env
-            VIRTUAL_HOST: worker.my-family.docker
+            # `clock.my-family.docker` is a friendly alias for the test-fixtures
+            # clock-advance endpoint (used by `rdt trigger-clock`). Only routable
+            # when the worker is built with REMINDER_WORKER_FEATURES=test-fixtures.
+            VIRTUAL_HOST: worker.my-family.docker,clock.my-family.docker
             VIRTUAL_PORT: "9091"
         depends_on:
             postgres:

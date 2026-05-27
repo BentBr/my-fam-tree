@@ -7,7 +7,8 @@
 use std::sync::Arc;
 
 use actix_web::{App, HttpResponse, HttpServer, post, web};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
+use chrono_tz::Europe::Berlin;
 use serde::Deserialize;
 
 use crate::clock::FixedClock;
@@ -16,7 +17,24 @@ use crate::ticker;
 
 #[derive(Debug, Deserialize)]
 struct AdvanceReq {
-    to: DateTime<Utc>,
+    /// Explicit UTC instant. Takes precedence over `date` when both are given.
+    #[serde(default)]
+    to: Option<DateTime<Utc>>,
+    /// A calendar date, resolved to 06:00 Europe/Berlin (the worker's default
+    /// user timezone), DST-aware. Defaults to today when neither field is set —
+    /// so `{}` advances to "this morning's 06:00" and fires today's reminders.
+    #[serde(default)]
+    date: Option<NaiveDate>,
+}
+
+/// Resolve the request into the UTC instant to set the clock to.
+fn resolve_instant(req: &AdvanceReq) -> DateTime<Utc> {
+    if let Some(to) = req.to {
+        return to;
+    }
+    let date = req.date.unwrap_or_else(|| Utc::now().with_timezone(&Berlin).date_naive());
+    let Some(naive) = date.and_hms_opt(6, 0, 0) else { return Utc::now() };
+    Berlin.from_local_datetime(&naive).single().map_or_else(Utc::now, |dt| dt.with_timezone(&Utc))
 }
 
 #[derive(Clone)]
@@ -27,10 +45,11 @@ struct TestState {
 
 #[post("/__test/advance-clock")]
 async fn advance(ts: web::Data<TestState>, body: web::Json<AdvanceReq>) -> HttpResponse {
-    ts.fixed.set(body.to);
+    let to = resolve_instant(&body);
+    ts.fixed.set(to);
     match ticker::run_tick(&ts.state).await {
         Ok(scheduled) => HttpResponse::Ok().json(serde_json::json!({
-            "now": body.to,
+            "now": to,
             "scheduled": scheduled,
         })),
         Err(e) => HttpResponse::InternalServerError().body(format!("tick error: {e}")),

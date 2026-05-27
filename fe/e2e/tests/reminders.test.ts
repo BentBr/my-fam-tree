@@ -9,7 +9,7 @@ import { LoginPage } from '../page-objects/login.page'
 // `--features test-fixtures` (CI + `REMINDER_WORKER_FEATURES=test-fixtures`
 // locally). In CI it listens on localhost:9091; under compose it's the
 // `reminder-worker` service. Override via WORKER_TEST_URL.
-const WORKER_URL = process.env.WORKER_TEST_URL ?? 'http://localhost:9091'
+const WORKER_URL = process.env['WORKER_TEST_URL'] ?? 'http://localhost:9091'
 
 async function signIn(page: Page, email: string): Promise<void> {
     await clearMailpit()
