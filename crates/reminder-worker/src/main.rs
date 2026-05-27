@@ -5,21 +5,21 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use my_family_reminder_worker::clock::Clock;
-#[cfg(feature = "test-fixtures")]
-use my_family_reminder_worker::clock::FixedClock;
-#[cfg(not(feature = "test-fixtures"))]
-use my_family_reminder_worker::clock::SystemClock;
-use my_family_reminder_worker::state::WorkerState;
-use my_family_reminder_worker::{config, dispatcher, leader, ticker};
-#[cfg(feature = "test-fixtures")]
-use my_family_reminder_worker::test_clock_http;
 use my_family_cache::{RedisPool, RedisReminderQueue};
 use my_family_email::SmtpSender;
 use my_family_persistence::{
     Database, PgFamilyMembershipRepo, PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo,
     PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
+use my_family_reminder_worker::clock::Clock;
+#[cfg(feature = "test-fixtures")]
+use my_family_reminder_worker::clock::FixedClock;
+#[cfg(not(feature = "test-fixtures"))]
+use my_family_reminder_worker::clock::SystemClock;
+use my_family_reminder_worker::state::WorkerState;
+#[cfg(feature = "test-fixtures")]
+use my_family_reminder_worker::test_clock_http;
+use my_family_reminder_worker::{config, dispatcher, leader, ticker};
 use tokio::time::sleep;
 use tracing_subscriber::prelude::*;
 

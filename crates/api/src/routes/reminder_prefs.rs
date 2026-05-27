@@ -98,13 +98,15 @@ pub async fn put_prefs(
     let claims = crate::auth::user_claims(&req)?;
     let b = body.into_inner();
     if b.lead_days < LEAD_DAYS_MIN || b.lead_days > LEAD_DAYS_MAX {
-        return Err(ApiError::Validation(vec![FieldViolation::new(
-            "/lead_days",
-            "validation.out_of_range",
-            "lead_days must be between 0 and 21",
-        )
-        .with_param("min", LEAD_DAYS_MIN)
-        .with_param("max", LEAD_DAYS_MAX)]));
+        return Err(ApiError::Validation(vec![
+            FieldViolation::new(
+                "/lead_days",
+                "validation.out_of_range",
+                "lead_days must be between 0 and 21",
+            )
+            .with_param("min", LEAD_DAYS_MIN)
+            .with_param("max", LEAD_DAYS_MAX),
+        ]));
     }
     let prefs = ReminderPreferences {
         emails_enabled: b.emails_enabled,

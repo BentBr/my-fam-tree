@@ -141,7 +141,11 @@ fn person_death_anniv(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
     })
 }
 
-fn wedding_anniv(part: &Partnership, persons: &[Person], today: NaiveDate) -> Option<UpcomingEvent> {
+fn wedding_anniv(
+    part: &Partnership,
+    persons: &[Person],
+    today: NaiveDate,
+) -> Option<UpcomingEvent> {
     if part.ended_on.is_some() {
         return None;
     }

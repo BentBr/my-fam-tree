@@ -131,7 +131,12 @@ mod tests {
         }
     }
 
-    fn event(kind: UpcomingKind, primary: &str, secondary: Option<&str>, years: u32) -> UpcomingEvent {
+    fn event(
+        kind: UpcomingKind,
+        primary: &str,
+        secondary: Option<&str>,
+        years: u32,
+    ) -> UpcomingEvent {
         UpcomingEvent {
             kind,
             next_date: NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
@@ -182,7 +187,10 @@ mod tests {
             "Anna — 40. Geburtstag"
         );
         assert_eq!(
-            render_line(Locale::De, &event(UpcomingKind::WeddingAnniversary, "Anna", Some("Klaus"), 10)),
+            render_line(
+                Locale::De,
+                &event(UpcomingKind::WeddingAnniversary, "Anna", Some("Klaus"), 10)
+            ),
             "Anna & Klaus — 10. Jahrestag"
         );
         assert_eq!(

@@ -37,7 +37,8 @@ pub async fn run_tick(state: &WorkerState) -> anyhow::Result<usize> {
             continue;
         }
         let count = i32::try_from(events.len()).unwrap_or(i32::MAX);
-        let (digest_id, inserted) = state.digests.ensure_pending(user_id, today_local, count).await?;
+        let (digest_id, inserted) =
+            state.digests.ensure_pending(user_id, today_local, count).await?;
         if inserted {
             state.queue.push(&ReminderJob { digest_id }).await?;
             scheduled += 1;

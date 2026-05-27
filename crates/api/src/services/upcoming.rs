@@ -6,12 +6,11 @@
 //! shows it verbatim; i18n stays on `upcoming.kinds.*` for the chips).
 
 use chrono::NaiveDate;
+pub use my_family_domain::{DEFAULT_LIMIT, MAX_LIMIT, UpcomingFilter, build_upcoming};
 use my_family_domain::{UpcomingEvent as DomainEvent, UpcomingKind};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
-
-pub use my_family_domain::{build_upcoming, UpcomingFilter, DEFAULT_LIMIT, MAX_LIMIT};
 
 /// One enumerated future date as sent on the wire.
 ///

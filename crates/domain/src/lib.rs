@@ -44,5 +44,5 @@ pub use repos::reminder_prefs::{
 pub use repos::users::{Locale, User, UserRepo, UserRepoError};
 pub use role::Role;
 pub use upcoming::{
-    build_upcoming, UpcomingEvent, UpcomingFilter, UpcomingKind, DEFAULT_LIMIT, MAX_LIMIT,
+    DEFAULT_LIMIT, MAX_LIMIT, UpcomingEvent, UpcomingFilter, UpcomingKind, build_upcoming,
 };
