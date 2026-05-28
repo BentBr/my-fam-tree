@@ -276,6 +276,15 @@ jobs:
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
             MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # Storage: CI has no MinIO/S3 sidecar, so the local driver
+            # writes anything to a temp dir on the runner. The fields below
+            # are required by the config schema even when unused.
+            STORAGE_DRIVER: local
+            STORAGE_BUCKET: ci-uploads
+            STORAGE_REGION: us-east-1
+            STORAGE_ACCESS_KEY_ID: ""
+            STORAGE_SECRET_ACCESS_KEY: ""
+            STORAGE_FORCE_PATH_STYLE: "false"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
@@ -372,6 +381,15 @@ jobs:
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
             MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # Storage: CI has no MinIO/S3 sidecar, so the local driver
+            # writes anything to a temp dir on the runner. The fields below
+            # are required by the config schema even when unused.
+            STORAGE_DRIVER: local
+            STORAGE_BUCKET: ci-uploads
+            STORAGE_REGION: us-east-1
+            STORAGE_ACCESS_KEY_ID: ""
+            STORAGE_SECRET_ACCESS_KEY: ""
+            STORAGE_FORCE_PATH_STYLE: "false"
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@nightly
@@ -735,6 +753,15 @@ jobs:
             INVITE_TTL_SECONDS: "1209600"
             MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
             MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # Storage: CI has no MinIO/S3 sidecar, so the local driver
+            # writes anything to a temp dir on the runner. The fields below
+            # are required by the config schema even when unused.
+            STORAGE_DRIVER: local
+            STORAGE_BUCKET: ci-uploads
+            STORAGE_REGION: us-east-1
+            STORAGE_ACCESS_KEY_ID: ""
+            STORAGE_SECRET_ACCESS_KEY: ""
+            STORAGE_FORCE_PATH_STYLE: "false"
             VITE_API_BASE_URL: http://localhost:8080
         steps:
             - uses: actions/checkout@v4
