@@ -12,7 +12,12 @@
             "include-v-in-tag": true,
             "extra-files": [
                 "Cargo.toml",
-                "fe/package.json"
+                "fe/package.json",
+                {
+                    "type": "json",
+                    "path": "fe/openapi.json",
+                    "jsonpath": "$.info.version"
+                }
             ]
         }
     }
