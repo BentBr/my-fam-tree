@@ -47,8 +47,7 @@ pub async fn process_one(state: &WorkerState) -> bool {
                     let next_attempts = row.attempts + 1;
                     let err_msg = e.to_string();
                     if next_attempts >= state.max_retries {
-                        if let Err(me) =
-                            state.outbox.mark_failed_permanent(row.id, &err_msg).await
+                        if let Err(me) = state.outbox.mark_failed_permanent(row.id, &err_msg).await
                         {
                             tracing::error!(
                                 ?me,
@@ -71,8 +70,7 @@ pub async fn process_one(state: &WorkerState) -> bool {
                             state.retry_min_seconds,
                             state.retry_max_seconds,
                         );
-                        if let Err(me) = state.outbox.mark_retry(row.id, next_at, &err_msg).await
-                        {
+                        if let Err(me) = state.outbox.mark_retry(row.id, next_at, &err_msg).await {
                             tracing::error!(
                                 ?me,
                                 outbox_id = %row.id.into_uuid(),

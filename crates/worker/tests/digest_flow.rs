@@ -27,8 +27,9 @@ use my_family_domain::{
 };
 use my_family_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
 use my_family_persistence::{
-    Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor, PgPartnershipRepo,
-    PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
+    Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor,
+    PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo,
+    PgReminderPrefsRepo, PgUserRepo,
 };
 use my_family_worker::clock::{Clock, FixedClock};
 use my_family_worker::state::WorkerState;

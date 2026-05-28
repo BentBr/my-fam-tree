@@ -61,13 +61,10 @@ impl JanitorRepo for PgJanitor {
         // Family invites: any row whose expires_at is past cutoff — covers
         // both never-accepted (truly stale) and accepted-and-old (the audit
         // log already captures who joined who when).
-        let i = sqlx::query!(
-            "DELETE FROM family_invites WHERE expires_at < $1",
-            cutoff,
-        )
-        .execute(&self.pool)
-        .await
-        .map_err(|e| map_err(&e))?;
+        let i = sqlx::query!("DELETE FROM family_invites WHERE expires_at < $1", cutoff,)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| map_err(&e))?;
 
         // Owner-transfer attempts: settled (completed/cancelled) past grace,
         // or expired without completion. The partial unique index that

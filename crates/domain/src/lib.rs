@@ -13,14 +13,14 @@ pub use relationships::{canonicalize_pair, would_create_cycle};
 pub use repos::audit_log::{
     AuditEntry, AuditFilter, AuditLogRepo, AuditPageMeta, AuditRepoError, AuditRow,
 };
+pub use repos::email_outbox::{
+    EmailOutboxId, EmailOutboxInsert, EmailOutboxKind, EmailOutboxRepo, EmailOutboxRepoError,
+    EmailOutboxRow,
+};
 pub use repos::families::{Family, FamilyRepo, FamilyRepoError};
 pub use repos::family_invites::{FamilyInviteRepo, Invite, InviteRepoError};
 pub use repos::family_memberships::{
     FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError, MembershipWithFamilyName,
-};
-pub use repos::email_outbox::{
-    EmailOutboxId, EmailOutboxInsert, EmailOutboxKind, EmailOutboxRepo, EmailOutboxRepoError,
-    EmailOutboxRow,
 };
 pub use repos::health::{HealthRepo, HealthRepoError};
 pub use repos::janitor::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
