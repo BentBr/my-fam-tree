@@ -36,10 +36,15 @@ test('anonymous invite click signs the recipient in and joins the family in one 
     await recipient.goto(rewriteEmailLink(inviteLink))
     await expect(recipient).toHaveURL(/\/tree$/, { timeout: 10_000 })
 
-    // The post-accept toast carries the "You joined the family" message.
-    await expect(recipient.locator('.v-snackbar')).toContainText(/joined the family|Familie beigetreten/i, {
-        timeout: 5_000,
-    })
+    // The post-accept toast carries the "You joined the family" message. Scope
+    // to the success-kind toast specifically: the ToastContainer stacks each
+    // toast as its own `.v-snackbar`, so an unrelated transient info/error
+    // toast (e.g. a network hiccup elsewhere) would otherwise trip Playwright's
+    // strict-mode multi-element guard.
+    await expect(recipient.locator('[data-testid="toast"][data-testid-kind="success"]')).toContainText(
+        /joined the family|Familie beigetreten/i,
+        { timeout: 5_000 },
+    )
 
     // The recipient is signed in: the user-menu button (top-right of
     // the AppBar) carries their email as its accessible name.

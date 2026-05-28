@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -15,8 +16,17 @@ import { unwrap } from '../request'
  * keys this back fresh on switches.
  */
 export function useMyFamilies() {
+    const auth = useAuthStore()
+    // Gate on `authenticated`: FamilySwitcher (and therefore this hook) is
+    // mounted inside AppBar, which lives in MainLayout. App.vue defaults the
+    // layout to `'main'` while the route is still resolving on first load —
+    // so AppBar can briefly mount before the auth guard's `auth.hydrate()`
+    // settles. Firing this query while anonymous yields a 401 that the global
+    // error handler surfaces as a misleading `session_expired` toast on top
+    // of an otherwise-successful first navigation (e.g. /invite/accept).
     return useQuery({
         queryKey: ['families', 'me'] as const,
+        enabled: computed(() => auth.status === 'authenticated'),
         queryFn: async () => {
             const payload = await unwrap(client.GET('/api/v1/families/me'))
             return payload.families
