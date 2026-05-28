@@ -98,4 +98,30 @@ const items = computed<AdminNavItem[]>(() => [
     min-width: 0;
     padding: 1rem 1.5rem;
 }
+
+/* On phones / small tablets the 220px sidebar leaves no room for the actual
+   admin tables. Collapse the rail to icon-only (~56px) and tighten the
+   content padding so audit/members/invites have a usable canvas. Tables in
+   the admin views may still overflow on very narrow viewports — the
+   content gets a horizontal scroll bar of last resort instead of squashing. */
+@media (max-width: 960px) {
+    .admin-shell {
+        grid-template-columns: 56px 1fr;
+        gap: 0.25rem;
+    }
+    .content {
+        padding: 0.75rem;
+        overflow-x: auto;
+    }
+    .rail :deep(.v-list-item-title) {
+        display: none;
+    }
+    .rail :deep(.v-list-item) {
+        padding-inline: 8px;
+        min-height: 40px;
+    }
+    .rail :deep(.v-list-item__prepend) {
+        margin-inline-end: 0;
+    }
+}
 </style>

@@ -55,12 +55,14 @@ test.describe('mobile responsiveness', () => {
         await expect(page.locator('.v-navigation-drawer__scrim')).toHaveCount(0)
         await expect.poll(drawerRight).toBeLessThanOrEqual(0)
 
-        // --- Part 2: the tree heading is present and does not overflow --------
+        // --- Part 2: the tree heading is present and shows the family name --
         const title = page.getByTestId('tree-page-title')
         await expect(title).toBeVisible()
-        // The DOM text is the full localized heading (CSS ellipsis truncates the
-        // *rendered* glyphs, not the text content) — so we match the whole name.
-        await expect(title).toHaveText(new RegExp(`(Family tree of|Stammbaum von) ${longName}`))
+        // On mobile the "Family tree of …" prefix gets swallowed by ellipsis
+        // truncation and the actual family name disappears — so on smAndDown
+        // the heading renders just the name. The family-name string itself
+        // must be present in the DOM, not lost behind a truncation prefix.
+        await expect(title).toHaveText(new RegExp(longName))
 
         // The heading must not spill past the viewport, and it must truncate
         // (clipped render width < natural text width) rather than overflow. The
@@ -83,5 +85,24 @@ test.describe('mobile responsiveness', () => {
             () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
         )
         expect(horizontallyScrollable).toBe(false)
+
+        // --- Part 3: admin layout collapses its sidebar on mobile ------------
+        // /admin/audit (owner role can reach it). The fixed 220px rail would
+        // eat almost half the viewport on a phone, squashing the content into
+        // an unreadable column — the responsive layout collapses it to an
+        // icon-only rail (~56px wide) so the audit table has room to render.
+        await page.goto('/admin/audit')
+        await expect(page.getByTestId('admin-rail-audit')).toBeVisible()
+        const railWidth = await page
+            .locator('[data-testid="admin-rail"]')
+            .evaluate((el) => el.getBoundingClientRect().width)
+        expect(railWidth).toBeLessThan(90)
+        // Item titles in the rail are hidden on mobile — the icon stands alone.
+        // Vuetify renders the title in a `.v-list-item-title` span; assert it
+        // has no rendered width (display:none from our scoped style).
+        const titleWidth = await page
+            .locator('[data-testid="admin-rail-audit"] .v-list-item-title')
+            .evaluate((el) => el.getBoundingClientRect().width)
+        expect(titleWidth).toBe(0)
     })
 })

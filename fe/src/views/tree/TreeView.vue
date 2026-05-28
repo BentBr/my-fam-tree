@@ -24,7 +24,10 @@ const { smAndDown } = useDisplay()
 const pageTitle = computed(() => {
     const name = family.activeFamily?.name
     if (name === undefined || name === '') return t('tree.title')
-    return t('tree.titleOf', { name })
+    // On mobile the "Family tree of …" prefix swallows the actual name when
+    // the toolbar truncates — render the family name on its own so the most
+    // useful information stays visible.
+    return smAndDown.value ? name : t('tree.titleOf', { name })
 })
 
 // URL `?center=<personId>` is the SOURCE OF TRUTH for both the tree's

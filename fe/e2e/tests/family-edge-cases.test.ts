@@ -165,12 +165,7 @@ test('23.3: invited into the correct same-named family — no cross-family perso
     await inviteAndAccept(c, b, fam2, bEmail, 'user')
 
     // Active family is fam2 (the most recent accept). Tree shows BobC, NOT AliceA.
-    await expect(
-        b
-            .locator('[data-testid^="tree-node-"]')
-            .filter({ hasText: 'Bob' })
-            .first(),
-    ).toBeVisible({
+    await expect(b.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Bob' }).first()).toBeVisible({
         timeout: 15_000,
     })
     await expect(b.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Alice' })).toHaveCount(0)
@@ -183,12 +178,7 @@ test('23.3: invited into the correct same-named family — no cross-family perso
         localStorage.setItem('my-family:activeFamily', id)
     }, fam1)
     await b.goto('/tree')
-    await expect(
-        b
-            .locator('[data-testid^="tree-node-"]')
-            .filter({ hasText: 'Alice' })
-            .first(),
-    ).toBeVisible({
+    await expect(b.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Alice' }).first()).toBeVisible({
         timeout: 15_000,
     })
     await expect(b.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Bob' })).toHaveCount(0)
