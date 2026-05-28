@@ -26,7 +26,7 @@ use actix_web::{HttpRequest, delete, get, post, web};
 use chrono::{Duration, Utc};
 use my_family_domain::{FamilyId, MembershipRepoError, OwnerTransferRepoError, Role, UserId};
 use my_family_email::{
-    Locale as EmailLocale, OutboundEmail, render_owner_transfer_admin, render_owner_transfer_owner,
+    Locale as EmailLocale, render_owner_transfer_admin, render_owner_transfer_owner,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -101,11 +101,16 @@ async fn send_transfer_emails(
     )
     .map_err(internal)?;
 
+    // Both confirmation emails go through the durable outbox; the worker
+    // drains via SMTP with retry. The outbox row only carries to_addr —
+    // the SMTP `To:` display name (`Some(from_display_name)`) used to be
+    // a nicety on the synchronous path and isn't captured today.
+    let _ = (from_display_name, to_display_name);
     state
-        .email
-        .send(OutboundEmail {
+        .outbox
+        .enqueue(&my_family_domain::EmailOutboxInsert {
+            kind: my_family_domain::EmailOutboxKind::OWNER_TRANSFER_FROM.to_string(),
             to_addr: from_email.to_owned(),
-            to_name: Some(from_display_name.to_owned()),
             subject: from_subject,
             text_body: from_body,
             html_body: None,
@@ -113,10 +118,10 @@ async fn send_transfer_emails(
         .await
         .map_err(internal)?;
     state
-        .email
-        .send(OutboundEmail {
+        .outbox
+        .enqueue(&my_family_domain::EmailOutboxInsert {
+            kind: my_family_domain::EmailOutboxKind::OWNER_TRANSFER_TO.to_string(),
             to_addr: to_email.to_owned(),
-            to_name: Some(to_display_name.to_owned()),
             subject: to_subject,
             text_body: to_body,
             html_body: None,

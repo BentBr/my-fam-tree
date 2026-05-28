@@ -22,7 +22,7 @@
 use actix_web::{HttpRequest, get, patch, post, web};
 use chrono::{DateTime, Duration, Utc};
 use my_family_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
-use my_family_email::{Locale as EmailLocale, OutboundEmail, render_email_change};
+use my_family_email::{Locale as EmailLocale, render_email_change};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -284,11 +284,12 @@ pub async fn email_change_request(
     let link = format!("{}/account/email-change/consume?token={}", state.cfg.web_public_url, token);
     let locale = EmailLocale::from_str_or_en(user.locale.as_str());
     let (subject, text_body) = render_email_change(locale, &link, &new_email).map_err(internal)?;
+    // Outbox-enqueue (durable, async). The worker drains via SMTP.
     state
-        .email
-        .send(OutboundEmail {
+        .outbox
+        .enqueue(&my_family_domain::EmailOutboxInsert {
+            kind: my_family_domain::EmailOutboxKind::EMAIL_CHANGE.to_string(),
             to_addr: user.email.clone(),
-            to_name: None,
             subject,
             text_body,
             html_body: None,

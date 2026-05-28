@@ -24,7 +24,7 @@
 use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
 use chrono::{DateTime, Duration, Utc};
 use my_family_domain::{FamilyId, Role};
-use my_family_email::{Locale as EmailLocale, OutboundEmail, render_invite};
+use my_family_email::{Locale as EmailLocale, render_invite};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -381,11 +381,14 @@ pub async fn invite(
     let locale = EmailLocale::from_str_or_en(&claims.locale);
     let (subject, body_text) =
         render_invite(locale, &active.name, &claims.email, &link).map_err(internal)?;
+    // Enqueue into the durable outbox — the worker drains via SMTP. Same
+    // request thread used to block on SmtpSender.send(); now it returns as
+    // soon as Postgres has the row.
     state
-        .email
-        .send(OutboundEmail {
+        .outbox
+        .enqueue(&my_family_domain::EmailOutboxInsert {
+            kind: my_family_domain::EmailOutboxKind::INVITE.to_string(),
             to_addr: email.clone(),
-            to_name: None,
             subject,
             text_body: body_text,
             html_body: None,
