@@ -13,11 +13,7 @@
             "extra-files": [
                 "Cargo.toml",
                 "fe/package.json",
-                {
-                    "type": "json",
-                    "path": "fe/openapi.json",
-                    "jsonpath": "$.info.version"
-                }
+                "fe/openapi.json"
             ]
         }
     }

@@ -25,10 +25,10 @@ use my_family_api::{AppEnv, AppState, Config, LogFormat};
 use my_family_cache::{RedisPool, RedisRateLimiter};
 use my_family_email::FakeEmailSender;
 use my_family_persistence::{
-    Database, PgAuditLogRepo, PgEmailOutboxRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo,
-    PgFamilyRepo, PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo,
-    PgPartnershipRepo, PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo,
-    PgRefreshTokenRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
+    Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
+    PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo, PgPartnershipRepo,
+    PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo,
+    PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use rand::rngs::OsRng;
 use testcontainers::ContainerAsync;
@@ -146,9 +146,9 @@ pub async fn ephemeral_stack() -> TestStack {
         reminder_prefs: Arc::new(PgReminderPrefsRepo::new(pool.clone())),
         reminder_digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         health: Arc::new(PgHealthRepo::new(pool.clone())),
-        audit: Arc::new(PgAuditLogRepo::new(pool.clone())),
+        audit: Arc::new(PgAuditLogRepo::new(pool)),
         email: fake_email.clone(),
-        outbox: Arc::new(PgEmailOutboxRepo::new(pool)),
+        outbox: Arc::new(SyncOutbox(fake_email.clone() as Arc<dyn my_family_email::EmailSender>)),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
@@ -157,25 +157,64 @@ pub async fn ephemeral_stack() -> TestStack {
     TestStack { state, fake_email, _pg: pg, _redis: redis_container }
 }
 
-/// Drain the `email_outbox` synchronously into the `FakeEmailSender` —
-/// mirrors what the worker's outbox poller does in prod/e2e. Used by
-/// `sign_in` (and any future helper that triggers an email-producing
-/// handler) so existing tests that read `stack.fake_email.drain()` keep
-/// working transparently.
-#[allow(clippy::future_not_send)]
-pub async fn drain_outbox_now(stack: &TestStack) {
-    use my_family_email::OutboundEmail;
-    let now = chrono::Utc::now();
-    while let Some(row) = stack.state.outbox.claim_next_due(now).await.expect("claim outbox") {
-        let email = OutboundEmail {
-            to_addr: row.to_addr.clone(),
+/// Test double for [`my_family_domain::EmailOutboxRepo`]: bypasses the
+/// `email_outbox` table and sends directly through the wrapped
+/// [`my_family_email::EmailSender`]. Every API integration test that reads
+/// `stack.fake_email.drain()` works transparently — the producer's
+/// `outbox.enqueue(...)` call becomes a synchronous SMTP send via the
+/// `FakeEmailSender`, no `email_outbox` row required. The real
+/// `PgEmailOutboxRepo` (with retry/backoff/claim semantics) is exercised by
+/// the worker integration tests.
+#[derive(Debug, Clone)]
+struct SyncOutbox(Arc<dyn my_family_email::EmailSender>);
+
+#[async_trait::async_trait]
+impl my_family_domain::EmailOutboxRepo for SyncOutbox {
+    async fn enqueue(
+        &self,
+        email: &my_family_domain::EmailOutboxInsert,
+    ) -> Result<my_family_domain::EmailOutboxId, my_family_domain::EmailOutboxRepoError> {
+        let out = my_family_email::OutboundEmail {
+            to_addr: email.to_addr.clone(),
             to_name: None,
-            subject: row.subject.clone(),
-            text_body: row.text_body.clone(),
-            html_body: row.html_body.clone(),
+            subject: email.subject.clone(),
+            text_body: email.text_body.clone(),
+            html_body: email.html_body.clone(),
         };
-        stack.state.email.send(email).await.expect("send outbox row");
-        stack.state.outbox.mark_sent(row.id, chrono::Utc::now()).await.expect("mark sent");
+        self.0
+            .send(out)
+            .await
+            .map_err(|e| my_family_domain::EmailOutboxRepoError::Db(e.to_string()))?;
+        Ok(my_family_domain::EmailOutboxId::from_uuid(uuid::Uuid::nil()))
+    }
+    async fn claim_next_due(
+        &self,
+        _now: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<my_family_domain::EmailOutboxRow>, my_family_domain::EmailOutboxRepoError>
+    {
+        Ok(None)
+    }
+    async fn mark_sent(
+        &self,
+        _id: my_family_domain::EmailOutboxId,
+        _sent_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+        Ok(())
+    }
+    async fn mark_retry(
+        &self,
+        _id: my_family_domain::EmailOutboxId,
+        _next_attempt_at: chrono::DateTime<chrono::Utc>,
+        _last_error: &str,
+    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+        Ok(())
+    }
+    async fn mark_failed_permanent(
+        &self,
+        _id: my_family_domain::EmailOutboxId,
+        _last_error: &str,
+    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+        Ok(())
     }
 }
 
@@ -245,11 +284,6 @@ where
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "magic-link request should succeed for {email}");
-    // The magic-link handler now writes to the email_outbox instead of
-    // calling EmailSender::send() inline — drain the outbox synchronously
-    // so the FakeEmailSender captures the email (the real worker drains
-    // it in prod / e2e).
-    drain_outbox_now(stack).await;
     let captured = stack.fake_email.drain();
     let last = captured.last().expect("magic-link email captured");
     let token = extract_token_from_link(&last.text_body);
