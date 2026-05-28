@@ -10,5 +10,11 @@ figment = { workspace = true }
 serde = { workspace = true }
 thiserror.workspace = true
 
+[dev-dependencies]
+# `figment::Jail` lives behind the "test" feature and is the only sane way to
+# scope environment-variable mutations to a single #[test] without leaking into
+# parallel tests in the same process.
+figment = { workspace = true, features = ["test"] }
+
 [lints]
 workspace = true

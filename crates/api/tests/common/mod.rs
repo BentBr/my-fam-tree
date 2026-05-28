@@ -11,7 +11,12 @@
 
 #![allow(dead_code)]
 #![allow(unreachable_pub)]
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::too_many_lines)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::too_many_lines
+)]
 
 use std::sync::Arc;
 use std::time::Duration;

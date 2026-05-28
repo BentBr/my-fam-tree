@@ -49,8 +49,11 @@ pub struct WorkerConfig {
     pub outbox: OutboxConfig,
 }
 
+// NB: NO `#[serde(deny_unknown_fields)]` — figment's `Env::raw()` merges the
+// whole process environment (PATH, HOME, the shell's `_`, …) and the
+// deserializer would reject every unknown env var the system happens to have.
+// We rely on REQUIRED fields being absent to surface configuration mistakes.
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
 struct FlatWorkerConfig {
     app_env: AppEnv,
     rust_log: String,
