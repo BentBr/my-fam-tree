@@ -151,7 +151,8 @@ describe('FamilyPicker', () => {
 
         const w = await mountView()
         await flushPromises()
-        const sub = (id: string): string | null => w.find(`[data-testid="pick-${id}"]`).attributes('data-subtitle') ?? null
+        const sub = (id: string): string | null =>
+            w.find(`[data-testid="pick-${id}"]`).attributes('data-subtitle') ?? null
         // Unique name → role only (no date).
         expect(sub('f-1')).toBe('owner')
         // Both Peters entries (same name) → role + their own created date.

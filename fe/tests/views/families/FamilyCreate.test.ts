@@ -47,9 +47,21 @@ async function mountView() {
                     emits: ['update:modelValue'],
                 },
                 'v-btn': {
-                    template: '<button class="btn" type="submit"><slot /></button>',
-                    props: ['loading', 'block', 'size'],
+                    template:
+                        '<button class="btn" :data-testid="$attrs[\'data-testid\']" :type="type ?? \'submit\'" @click="$emit(\'click\')"><slot /></button>',
+                    props: ['loading', 'block', 'size', 'variant', 'color', 'type'],
+                    emits: ['click'],
                 },
+                'v-dialog': {
+                    // Render the slot only when the model is true so tests can
+                    // detect open-state via DOM presence.
+                    template: '<div v-if="modelValue" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
+                    props: ['modelValue', 'maxWidth'],
+                    emits: ['update:modelValue'],
+                },
+                'v-card-text': { template: '<div><slot /></div>' },
+                'v-card-actions': { template: '<div><slot /></div>' },
+                'v-spacer': { template: '<span />' },
             },
         },
     })
@@ -104,5 +116,53 @@ describe('FamilyCreate', () => {
         await w.find('form').trigger('submit')
         await flushPromises()
         expect(w.text()).toContain('unknown error')
+    })
+
+    it('soft-confirms when creating a family with a name you ALREADY own (not a generic duplicate)', async () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            // I OWN one Müller already + I'm a member (not owner) of a Peters.
+            // Re-creating "Müller" should soft-confirm; re-creating "Peters" should NOT
+            // (someone else owns that one, and I'm just a member — my own Peters is fine).
+            families: [
+                { id: 'f-mine', name: 'Müller', role: 'owner' },
+                { id: 'f-other', name: 'Peters', role: 'user' },
+            ],
+        } as never)
+        const w = await mountView()
+
+        // Re-creating an owned name → dialog appears, mutateAsync NOT yet called.
+        await w.find('input').setValue('Müller')
+        await w.find('form').trigger('submit')
+        await flushPromises()
+        expect(w.find('[data-testid="family-duplicate-dialog"]').exists()).toBe(true)
+        expect(mutateAsync).not.toHaveBeenCalled()
+
+        // Confirm → mutateAsync called with the trimmed name.
+        mutateAsync.mockResolvedValueOnce({ data: { family: { id: 'f-new', name: 'Müller' } } })
+        await w.find('[data-testid="family-duplicate-confirm"]').trigger('click')
+        await flushPromises()
+        expect(mutateAsync).toHaveBeenCalledWith('Müller')
+    })
+
+    it('does NOT soft-confirm when the duplicate name belongs to a family you only have membership in', async () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-other', name: 'Peters', role: 'user' }],
+        } as never)
+        mutateAsync.mockResolvedValueOnce({ data: { family: { id: 'f-new', name: 'Peters' } } })
+        const w = await mountView()
+        await w.find('input').setValue('Peters')
+        await w.find('form').trigger('submit')
+        await flushPromises()
+        // No dialog (not an owned name) — proceeds straight to mutateAsync.
+        expect(w.find('[data-testid="family-duplicate-dialog"]').exists()).toBe(false)
+        expect(mutateAsync).toHaveBeenCalledWith('Peters')
     })
 })

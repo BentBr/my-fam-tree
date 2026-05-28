@@ -37,7 +37,13 @@
             "createNew": "Create new family…",
             "placeholder": "Pick a family"
         },
-        "disambiguator": "{role} · created {date}"
+        "disambiguator": "{role} · created {date}",
+        "duplicateConfirm": {
+            "title": "Create another '{name}'?",
+            "body": "You already own a family called '{name}'. Same-named families are allowed — creating a second one is fine, just confirming you mean to.",
+            "cancel": "Cancel",
+            "confirm": "Create anyway"
+        }
     },
     "invite": {
         "pending": "Joining the family…",

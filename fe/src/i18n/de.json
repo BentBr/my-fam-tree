@@ -37,7 +37,13 @@
             "createNew": "Neue Familie anlegen…",
             "placeholder": "Familie wählen"
         },
-        "disambiguator": "{role} · erstellt am {date}"
+        "disambiguator": "{role} · erstellt am {date}",
+        "duplicateConfirm": {
+            "title": "Noch eine Familie '{name}' anlegen?",
+            "body": "Du besitzt bereits eine Familie namens '{name}'. Mehrere Familien mit gleichem Namen sind erlaubt — bitte bestätige nur, dass du eine weitere anlegen möchtest.",
+            "cancel": "Abbrechen",
+            "confirm": "Trotzdem anlegen"
+        }
     },
     "invite": {
         "pending": "Familie wird beigetreten…",
