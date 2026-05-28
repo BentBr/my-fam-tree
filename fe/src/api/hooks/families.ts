@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -6,6 +6,23 @@ import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
 import { unwrap } from '../request'
+
+/**
+ * `GET /api/v1/families/me` — the caller's families enriched with `created_at`
+ * (the JWT family claim deliberately doesn't carry it, to keep the signed
+ * token lean). Drives the picker's + switcher's "only-when-duplicated"
+ * disambiguator. The switcher's family-change `invalidateQueries()` already
+ * keys this back fresh on switches.
+ */
+export function useMyFamilies() {
+    return useQuery({
+        queryKey: ['families', 'me'] as const,
+        queryFn: async () => {
+            const payload = await unwrap(client.GET('/api/v1/families/me'))
+            return payload.families
+        },
+    })
+}
 
 // Kept on raw `useMutation` (not `useApiMutation`): both hooks hydrate the
 // auth store from the response and invalidate ALL queries (not a fixed key

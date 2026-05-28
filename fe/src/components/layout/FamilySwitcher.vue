@@ -4,9 +4,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import { useMyFamilies } from '@/api/hooks/families'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
+import { useLocaleStore } from '@/stores/locale'
 import type { FamilyId } from '@/types/brand'
+import { duplicateNameSet, formatFamilyDate } from '@/utils/familyDisplay'
 
 // Sentinel value the v-select uses for the "Create new family…" trailing
 // entry. A literal string is safer than `null` because v-model treats `null`
@@ -16,15 +19,37 @@ const CREATE_SENTINEL = '__create__'
 
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
+const locale = useLocaleStore()
 const router = useRouter()
 const queryClient = useQueryClient()
 const { t } = useI18n()
 
+// Pull created_at per family from /families/me to disambiguate same-named
+// families ONLY when the name actually repeats — unique names stay clean.
+const myFamiliesQ = useMyFamilies()
+const createdById = computed(() => {
+    const map = new Map<string, string>()
+    for (const m of myFamiliesQ.data.value ?? []) {
+        map.set(m.id as string, m.created_at ?? '')
+    }
+    return map
+})
+const duplicates = computed(() => duplicateNameSet(auth.families))
+
 const items = computed(() => {
-    const familyItems = auth.families.map((f) => ({
-        value: f.id as string,
-        title: f.name,
-    }))
+    const familyItems = auth.families.map((f) => {
+        const item: { value: string; title: string; props?: Record<string, unknown> } = {
+            value: f.id as string,
+            title: f.name,
+        }
+        if (duplicates.value.has(f.name)) {
+            const date = formatFamilyDate(createdById.value.get(f.id as string), locale.locale)
+            if (date !== null) {
+                item.props = { subtitle: t('family.disambiguator', { date, role: f.role }) }
+            }
+        }
+        return item
+    })
     const createEntry = {
         value: CREATE_SENTINEL,
         title: t('family.switcher.createNew'),

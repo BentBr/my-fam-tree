@@ -36,7 +36,8 @@
         "switcher": {
             "createNew": "Neue Familie anlegen…",
             "placeholder": "Familie wählen"
-        }
+        },
+        "disambiguator": "{role} · erstellt am {date}"
     },
     "invite": {
         "pending": "Familie wird beigetreten…",

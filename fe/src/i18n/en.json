@@ -36,7 +36,8 @@
         "switcher": {
             "createNew": "Create new family…",
             "placeholder": "Pick a family"
-        }
+        },
+        "disambiguator": "{role} · created {date}"
     },
     "invite": {
         "pending": "Joining the family…",
