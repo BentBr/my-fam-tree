@@ -3,7 +3,15 @@ import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreateInvite } from '@/api/hooks/invites'
-import { useDeletePerson, useGetPerson, useListPersons, useSetFavourite } from '@/api/hooks/persons'
+import {
+    useClearPersonPhoto,
+    useDeletePerson,
+    useGetPerson,
+    useListPersons,
+    useSetFavourite,
+    useSetPersonPhoto,
+} from '@/api/hooks/persons'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 
@@ -114,12 +122,80 @@ function toggleFavourite(): void {
     if (person.value === null) return
     fav.mutate({ id: person.value.id, isFavourite: !isFavourite.value })
 }
+
+// ---------------------------------------------------------------------------
+// Photo upload
+// ---------------------------------------------------------------------------
+//
+// The hidden file input is triggered programmatically by the avatar button,
+// so the only UI surface is the avatar itself + a clear-photo affordance.
+// `canEdit` already gates whether the user is allowed to touch this person;
+// the BE re-checks anyway (defense in depth).
+const setPhoto = useSetPersonPhoto()
+const clearPhoto = useClearPersonPhoto()
+const fileInput = ref<HTMLInputElement | null>(null)
+const photoBusy = computed(() => setPhoto.isPending.value || clearPhoto.isPending.value)
+const displayName = computed(() => {
+    if (person.value === null) return ''
+    const first = person.value.given_name ?? ''
+    const last = person.value.family_name ?? ''
+    return `${first} ${last}`.trim()
+})
+
+function openPhotoPicker(): void {
+    fileInput.value?.click()
+}
+
+async function onPhotoSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0] ?? null
+    // Reset the input value BEFORE the await so re-selecting the same file
+    // still fires a change event (browsers de-dupe by filename otherwise).
+    input.value = ''
+    if (file === null || person.value === null) return
+    await setPhoto.mutateAsync({ id: person.value.id, file })
+}
+
+async function removePhoto(): Promise<void> {
+    if (person.value === null) return
+    await clearPhoto.mutateAsync(person.value.id)
+}
 </script>
 
 <template>
     <section class="pa-4" data-testid="person-detail">
         <header class="d-flex align-center justify-space-between mb-3">
-            <div class="d-flex align-center ga-2">
+            <div class="d-flex align-center ga-3">
+                <!-- Avatar + hidden file input. Click-to-upload when canEdit;
+                     read-only image otherwise. The DefaultAvatar component
+                     handles both the photo and the initials-fallback path. -->
+                <div class="position-relative">
+                    <DefaultAvatar
+                        :src="person?.photo_url ?? null"
+                        :name="displayName"
+                        :size="56"
+                        data-testid="person-detail-avatar"
+                    />
+                    <v-btn
+                        v-if="canEdit && person !== null"
+                        icon="mdi-camera"
+                        size="x-small"
+                        color="primary"
+                        class="person-detail-avatar-edit"
+                        :loading="photoBusy"
+                        :aria-label="t('person.photo.upload')"
+                        data-testid="person-detail-photo-upload"
+                        @click="openPhotoPicker"
+                    />
+                    <input
+                        ref="fileInput"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="d-none"
+                        data-testid="person-detail-photo-input"
+                        @change="onPhotoSelected"
+                    />
+                </div>
                 <v-btn
                     v-if="person !== null"
                     variant="text"
@@ -143,6 +219,18 @@ function toggleFavourite(): void {
                 >
                     {{ t('person.linkedAccount') }}
                 </v-chip>
+                <v-btn
+                    v-if="canEdit && person?.photo_url"
+                    variant="text"
+                    size="x-small"
+                    color="error"
+                    :loading="photoBusy"
+                    :aria-label="t('person.photo.remove')"
+                    data-testid="person-detail-photo-remove"
+                    @click="removePhoto"
+                >
+                    {{ t('person.photo.remove') }}
+                </v-btn>
             </div>
             <v-btn icon="x" variant="text" size="small" data-testid="person-detail-close" @click="emit('close')" />
         </header>
@@ -334,3 +422,14 @@ function toggleFavourite(): void {
         />
     </section>
 </template>
+
+<style scoped>
+/* Position the camera edit button on the bottom-right of the avatar, the
+   conventional spot for "edit my photo" on every social platform. The
+   parent `.position-relative` div anchors it. */
+.person-detail-avatar-edit {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+}
+</style>

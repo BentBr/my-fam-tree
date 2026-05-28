@@ -196,6 +196,10 @@
         "favourite": {
             "markTooltip": "Als Favorit markieren",
             "unmarkTooltip": "Favorit entfernen"
+        },
+        "photo": {
+            "upload": "Foto hochladen",
+            "remove": "Foto entfernen"
         }
     },
     "upcoming": {
@@ -246,6 +250,10 @@
         "person_created": "Person hinzugefügt",
         "person_updated": "Person aktualisiert",
         "person_deleted": "Person entfernt",
+        "person_photo_set": "Foto aktualisiert",
+        "person_photo_cleared": "Foto entfernt",
+        "user_avatar_set": "Avatar aktualisiert",
+        "user_avatar_cleared": "Avatar entfernt",
         "partnership_updated": "Partnerschaft aktualisiert",
         "partnership_deleted": "Partnerschaft entfernt",
         "parent_link_updated": "Elternverbindung aktualisiert",

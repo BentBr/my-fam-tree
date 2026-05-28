@@ -114,6 +114,48 @@ export function useDeletePerson() {
 }
 
 /**
+ * Upload a new photo for a person. `file` is the raw File from an
+ * `<input type="file">`; we wrap it in a FormData under the single field
+ * name `file` (the BE accepts exactly that, see `routes/person_photos.rs`).
+ *
+ * The body is passed to openapi-fetch as a FormData instance — fetch sets
+ * the multipart boundary automatically, so we MUST NOT also send an
+ * explicit Content-Type header (would clobber the boundary parameter).
+ * The `bodySerializer` short-circuit returns the FormData unchanged.
+ *
+ * Invalidates the per-person GET + the persons list so every render of
+ * the person sees the new `photo_url` immediately.
+ */
+export function useSetPersonPhoto() {
+    return useApiMutation({
+        mutationFn: (vars: { id: string; file: File }) => {
+            const fd = new FormData()
+            fd.append('file', vars.file)
+            return unwrap(
+                client.POST('/api/v1/persons/{id}/photo', {
+                    params: { path: { id: vars.id } },
+                    // openapi-fetch's body for multipart accepts FormData;
+                    // we cast to bypass the schema-generated `string` body
+                    // type (utoipa surfaces multipart bodies as `String`).
+                    body: fd as unknown as string,
+                    bodySerializer: (b: unknown) => b as BodyInit,
+                }),
+            )
+        },
+        success: 'toasts.person_photo_set',
+        invalidate: (vars) => [['persons'], ['tree'], ['person', vars.id]],
+    })
+}
+
+export function useClearPersonPhoto() {
+    return useApiMutation({
+        mutationFn: (id: string) => expectOk(client.DELETE('/api/v1/persons/{id}/photo', { params: { path: { id } } })),
+        success: 'toasts.person_photo_cleared',
+        invalidate: (id) => [['persons'], ['tree'], ['person', id]],
+    })
+}
+
+/**
  * Shape of a tree node as it lives in the `['tree']` query cache. Mirrors
  * the BE's `TreeNode` schema; declared inline (instead of imported from
  * `schema.d.ts`) so the optimistic-update path stays self-contained and
