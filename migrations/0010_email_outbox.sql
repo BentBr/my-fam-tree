@@ -9,9 +9,16 @@
 -- EmailSender. Postgres is durable, so a Redis flush no longer loses mail
 -- and SMTP slowness no longer ties up API request threads.
 
-CREATE TYPE email_outbox_status AS ENUM ('pending', 'sent', 'failed_permanent');
+-- Idempotent: Postgres has no `CREATE TYPE IF NOT EXISTS`. The DO-block + EXCEPTION
+-- handler turns a duplicate-object error into a no-op so the migration can replay
+-- over a half-applied state (e.g. manual hot-fix before the recompiled migrator binary).
+DO $$ BEGIN
+    CREATE TYPE email_outbox_status AS ENUM ('pending', 'sent', 'failed_permanent');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TABLE email_outbox (
+CREATE TABLE IF NOT EXISTS email_outbox (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     -- Logical email kind ("magic_link", "invite", "owner_transfer_from",
     -- "owner_transfer_to", "email_change", …). TEXT (not enum) so new kinds
@@ -37,7 +44,7 @@ CREATE TABLE email_outbox (
 );
 
 -- Hot path: "claim the next due pending email". Partial index keeps it tight.
-CREATE INDEX email_outbox_due_idx
+CREATE INDEX IF NOT EXISTS email_outbox_due_idx
     ON email_outbox (next_attempt_at)
     WHERE status = 'pending';
 

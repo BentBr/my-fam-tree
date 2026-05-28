@@ -11,4 +11,4 @@
 -- one for the same person mid-flight; the API deletes the previous key
 -- after the new put succeeds.
 
-ALTER TABLE persons ADD COLUMN photo_key TEXT;
+ALTER TABLE persons ADD COLUMN IF NOT EXISTS photo_key TEXT;
