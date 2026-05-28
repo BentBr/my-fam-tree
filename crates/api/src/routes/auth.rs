@@ -123,7 +123,7 @@ pub async fn magic_link(
         .rate_limiter
         .check(
             &format!("ml:email:{email}"),
-            state.cfg.magic_link_rate_per_email_per_hour,
+            state.cfg.magic_link.rate_per_email_per_hour,
             StdDuration::from_hours(1),
         )
         .await
@@ -154,8 +154,8 @@ pub async fn magic_link(
         &state.magic_links,
         user.id,
         &user.email,
-        &state.cfg.web_public_url,
-        state.cfg.magic_link_ttl_seconds,
+        &state.cfg.web.public_url,
+        state.cfg.magic_link.ttl_seconds,
     )
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
@@ -244,8 +244,8 @@ pub async fn consume(
             None,
             None,
             None,
-            now + Duration::seconds(seconds_i64(state.cfg.jwt_refresh_ttl_seconds)),
-            now + Duration::seconds(seconds_i64(state.cfg.jwt_refresh_absolute_ttl_seconds)),
+            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds)),
+            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_absolute_ttl_seconds)),
         )
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
@@ -313,7 +313,7 @@ pub async fn refresh(
         .rotate(
             &old_hash,
             &new_hash,
-            now + Duration::seconds(seconds_i64(state.cfg.jwt_refresh_ttl_seconds)),
+            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds)),
             record.device_label.as_deref(),
             None,
             None,

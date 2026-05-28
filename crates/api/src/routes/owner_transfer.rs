@@ -225,9 +225,9 @@ pub async fn begin(
         .ok_or_else(|| internal("active family missing"))?;
 
     let from_link =
-        format!("{}/account/owner-transfer/confirm?token={}", state.cfg.web_public_url, from_token);
+        format!("{}/account/owner-transfer/confirm?token={}", state.cfg.web.public_url, from_token);
     let to_link =
-        format!("{}/account/owner-transfer/confirm?token={}", state.cfg.web_public_url, to_token);
+        format!("{}/account/owner-transfer/confirm?token={}", state.cfg.web.public_url, to_token);
     send_transfer_emails(
         &state,
         &family.name,

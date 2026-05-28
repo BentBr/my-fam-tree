@@ -14,6 +14,7 @@ name = "gen-jwt-keys"
 path = "src/bin/gen_jwt_keys.rs"
 
 [dependencies]
+my-family-config = { path = "../config" }
 my-family-domain = { path = "../domain" }
 my-family-cache = { path = "../cache" }
 my-family-email = { path = "../email" }

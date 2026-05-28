@@ -372,12 +372,12 @@ pub async fn invite(
             claims.user_id,
             body.person_id,
             &hash,
-            Utc::now() + Duration::seconds(seconds_i64(state.cfg.invite_ttl_seconds)),
+            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link.invite_ttl_seconds)),
         )
         .await
         .map_err(internal)?;
 
-    let link = format!("{}/invite/accept?token={}", state.cfg.web_public_url, token);
+    let link = format!("{}/invite/accept?token={}", state.cfg.web.public_url, token);
     let locale = EmailLocale::from_str_or_en(&claims.locale);
     let (subject, body_text) =
         render_invite(locale, &active.name, &claims.email, &link).map_err(internal)?;

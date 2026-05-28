@@ -16,6 +16,7 @@ default = []
 test-fixtures = ["dep:actix-web"]
 
 [dependencies]
+my-family-config = { path = "../config" }
 my-family-cache = { path = "../cache" }
 my-family-domain = { path = "../domain" }
 my-family-persistence = { path = "../persistence" }

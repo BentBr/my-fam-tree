@@ -14,7 +14,6 @@
 
 pub mod backoff;
 pub mod clock;
-pub mod config;
 pub mod digest;
 pub mod dispatcher;
 pub mod janitor;

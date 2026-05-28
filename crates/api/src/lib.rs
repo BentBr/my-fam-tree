@@ -1,7 +1,6 @@
 //! HTTP API. Public from the binary entry point; openapi crate consumes the `ApiDoc`.
 
 pub mod auth;
-pub mod config;
 pub mod cookies;
 pub mod error;
 pub mod middleware;
@@ -17,8 +16,8 @@ use actix_cors::Cors;
 use actix_web::body::MessageBody;
 use actix_web::http::header::HeaderName;
 use actix_web::{App, middleware as actix_mw, web};
-pub use config::{AppEnv, Config, ConfigError, LogFormat};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
+pub use my_family_config::{ApiConfig as Config, AppEnv, ConfigError, LogFormat};
 pub use openapi_doc::ApiDoc;
 pub use response::{ApiResponse, Pagination, ResponseMeta, Warning};
 pub use state::AppState;
@@ -36,7 +35,7 @@ use utoipa_swagger_ui::SwaggerUi;
 ///
 /// `openapi` is `Some(spec)` when the caller wants Swagger UI mounted under
 /// `/api/docs/`; tests pass `None`. Even with `Some`, the UI is only mounted
-/// when `state.cfg.api_enable_docs` is `true`.
+/// when `state.cfg.api.enable_docs` is `true`.
 pub fn build_app(
     state: AppState,
     openapi: Option<utoipa::openapi::OpenApi>,
@@ -50,8 +49,8 @@ pub fn build_app(
     > + use<>,
 > {
     let cfg = state.cfg.clone();
-    let api_enable_docs = cfg.api_enable_docs;
-    let allowed: Vec<&str> = cfg.cors_allowed_origins.split(',').map(str::trim).collect();
+    let api_enable_docs = cfg.api.enable_docs;
+    let allowed: Vec<&str> = cfg.api.cors_allowed_origins.split(',').map(str::trim).collect();
     // With `supports_credentials()`, the `CORS` spec forbids wildcards.
     // Enumerate the methods and headers we actually use.
     let mut cors = Cors::default()

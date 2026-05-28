@@ -22,14 +22,14 @@ async fn main() -> anyhow::Result<()> {
         let _ = dotenvy::dotenv();
     }
 
-    let cfg = Config::load_from_env().context("load config from environment")?;
-    init_tracing(cfg.log_format, &cfg.rust_log);
+    let cfg = Config::from_env().context("load config from environment")?;
+    init_tracing(cfg.log.format, &cfg.log.level);
 
     let db = Database::connect(
-        &cfg.database_url,
-        cfg.database_max_connections,
-        Duration::from_secs(cfg.database_acquire_timeout_seconds),
-        cfg.database_statement_timeout_ms,
+        &cfg.database.url,
+        cfg.database.max_connections,
+        Duration::from_secs(cfg.database.acquire_timeout_seconds),
+        cfg.database.statement_timeout_ms,
     )
     .await
     .context("connect postgres pool")?;

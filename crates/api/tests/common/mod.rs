@@ -11,7 +11,7 @@
 
 #![allow(dead_code)]
 #![allow(unreachable_pub)]
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::too_many_lines)]
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -87,43 +87,65 @@ pub async fn ephemeral_stack() -> TestStack {
 
     let cfg = Config {
         app_env: AppEnv::Development,
-        log_format: LogFormat::Pretty,
-        rust_log: "info".into(),
-        api_host: "0.0.0.0".into(),
-        api_port: 8080,
-        api_public_url: "http://localhost:8080".into(),
-        web_public_url: "http://localhost:5173".into(),
-        cors_allowed_origins: "http://localhost:5173".into(),
-        api_enable_docs: false,
-        api_metrics_bind: "0.0.0.0:9090".into(),
-        database_url: db_url.clone(),
-        database_max_connections: 4,
-        database_acquire_timeout_seconds: 5,
-        database_statement_timeout_ms: 30_000,
-        redis_url: redis_url.clone(),
-        redis_max_connections: 4,
-        redis_key_prefix: "t:".into(),
-        jwt_private_key: priv_pem,
-        jwt_private_key_id: "t".into(),
-        jwt_public_keys: public_json,
-        jwt_issuer: "iss".into(),
-        jwt_audience: "aud".into(),
-        jwt_access_ttl_seconds: 900,
-        jwt_refresh_ttl_seconds: 86_400,
-        jwt_refresh_absolute_ttl_seconds: 604_800,
-        cookie_domain: String::new(),
-        cookie_secure: false,
-        cookie_samesite_access: "Lax".into(),
-        cookie_samesite_refresh: "Strict".into(),
-        magic_link_ttl_seconds: 900,
-        invite_ttl_seconds: 1_209_600,
-        magic_link_rate_per_email_per_hour: 10,
-        magic_link_rate_per_ip_per_hour: 100,
-        email_dsn: "smtp://localhost:1025".into(),
-        email_from_name: "t".into(),
-        email_from_address: "no-reply@t".into(),
-        email_reply_to: None,
-        email_timeout_seconds: 10,
+        log: my_family_config::LogConfig { level: "info".into(), format: LogFormat::Pretty },
+        api: my_family_config::ApiBindConfig {
+            host: "0.0.0.0".into(),
+            port: 8080,
+            public_url: "http://localhost:8080".into(),
+            cors_allowed_origins: "http://localhost:5173".into(),
+            enable_docs: false,
+            metrics_bind: "0.0.0.0:9090".into(),
+        },
+        web: my_family_config::WebConfig { public_url: "http://localhost:5173".into() },
+        database: my_family_config::DatabaseConfig {
+            url: db_url.clone(),
+            max_connections: 4,
+            acquire_timeout_seconds: 5,
+            statement_timeout_ms: 30_000,
+        },
+        redis: my_family_config::RedisConfig {
+            url: redis_url.clone(),
+            max_connections: 4,
+            key_prefix: "t:".into(),
+        },
+        jwt: my_family_config::JwtConfig {
+            private_key: priv_pem,
+            private_key_id: "t".into(),
+            public_keys: public_json,
+            issuer: "iss".into(),
+            audience: "aud".into(),
+            access_ttl_seconds: 900,
+            refresh_ttl_seconds: 86_400,
+            refresh_absolute_ttl_seconds: 604_800,
+        },
+        cookie: my_family_config::CookieConfig {
+            domain: String::new(),
+            secure: false,
+            samesite_access: "Lax".into(),
+            samesite_refresh: "Strict".into(),
+        },
+        magic_link: my_family_config::MagicLinkConfig {
+            ttl_seconds: 900,
+            invite_ttl_seconds: 1_209_600,
+            rate_per_email_per_hour: 10,
+            rate_per_ip_per_hour: 100,
+        },
+        email: my_family_config::EmailConfig {
+            dsn: "smtp://localhost:1025".into(),
+            from_name: "t".into(),
+            from_address: "no-reply@t".into(),
+            reply_to: None,
+            timeout_seconds: 10,
+        },
+        storage: my_family_config::StorageConfig {
+            driver: my_family_config::storage::StorageDriver::Local,
+            bucket: "t".into(),
+            region: "us-east-1".into(),
+            endpoint_url: None,
+            access_key_id: String::new(),
+            secret_access_key: String::new(),
+            force_path_style: false,
+        },
     };
 
     let fake_email = Arc::new(FakeEmailSender::new());

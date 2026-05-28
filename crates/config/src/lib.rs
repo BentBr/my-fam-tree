@@ -39,6 +39,8 @@ pub use worker::{JanitorConfig, OutboxConfig, WorkerConfig, WorkerLoopConfig};
 pub enum ConfigError {
     #[error("missing or invalid env var: {0}")]
     Env(String),
+    #[error("validation: {0}")]
+    Validation(String),
 }
 
 impl From<figment::Error> for ConfigError {

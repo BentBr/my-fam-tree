@@ -17,6 +17,20 @@ impl AppEnv {
     pub const fn is_development(self) -> bool {
         matches!(self, Self::Development)
     }
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Development => "development",
+            Self::Staging => "staging",
+            Self::Production => "production",
+        }
+    }
+}
+
+impl std::fmt::Display for AppEnv {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
 }
 
 /// Log output format. `pretty` for dev, `json` for prod / ELK ingestion.

@@ -1,9 +1,8 @@
 //! `tracing_subscriber` init for the API and worker binaries.
 
+use my_family_config::LogFormat;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{EnvFilter, fmt};
-
-use crate::config::LogFormat;
 
 /// Initialise the global `tracing` subscriber.
 ///

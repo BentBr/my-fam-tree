@@ -28,47 +28,47 @@ async fn main() -> anyhow::Result<()> {
         let _ = dotenvy::dotenv();
     }
 
-    let cfg = Config::load_from_env().context("load config from environment")?;
+    let cfg = Config::from_env().context("load config from environment")?;
 
-    init_tracing(cfg.log_format, &cfg.rust_log);
+    init_tracing(cfg.log.format, &cfg.log.level);
 
     tracing::info!(
         app_env = ?cfg.app_env,
-        host = %cfg.api_host,
-        port = cfg.api_port,
+        host = %cfg.api.host,
+        port = cfg.api.port,
         "starting my-family api",
     );
 
     let db = Database::connect(
-        &cfg.database_url,
-        cfg.database_max_connections,
-        Duration::from_secs(cfg.database_acquire_timeout_seconds),
-        cfg.database_statement_timeout_ms,
+        &cfg.database.url,
+        cfg.database.max_connections,
+        Duration::from_secs(cfg.database.acquire_timeout_seconds),
+        cfg.database.statement_timeout_ms,
     )
     .await
     .context("connect postgres pool")?;
 
-    let redis = RedisPool::build(&cfg.redis_url, cfg.redis_max_connections, &cfg.redis_key_prefix)
+    let redis = RedisPool::build(&cfg.redis.url, cfg.redis.max_connections, &cfg.redis.key_prefix)
         .context("build redis pool")?;
     redis.ping().await.context("ping redis")?;
 
     let email = SmtpSender::from_dsn(
-        &cfg.email_dsn,
-        &cfg.email_from_name,
-        &cfg.email_from_address,
-        cfg.email_reply_to.as_deref(),
-        cfg.email_timeout_seconds,
+        &cfg.email.dsn,
+        &cfg.email.from_name,
+        &cfg.email.from_address,
+        cfg.email.reply_to.as_deref(),
+        cfg.email.timeout_seconds,
     )
     .context("build SMTP sender")?;
 
     let keyset =
-        JwtKeyset::load(&cfg.jwt_private_key, &cfg.jwt_private_key_id, &cfg.jwt_public_keys)
+        JwtKeyset::load(&cfg.jwt.private_key, &cfg.jwt.private_key_id, &cfg.jwt.public_keys)
             .context("load JWT keyset")?;
     let jwt_issuer = JwtIssuer::new(
         keyset,
-        cfg.jwt_issuer.clone(),
-        cfg.jwt_audience.clone(),
-        i64::try_from(cfg.jwt_access_ttl_seconds).unwrap_or(i64::MAX),
+        cfg.jwt.issuer.clone(),
+        cfg.jwt.audience.clone(),
+        i64::try_from(cfg.jwt.access_ttl_seconds).unwrap_or(i64::MAX),
     );
 
     let pool = db.pool().clone();
@@ -97,7 +97,7 @@ async fn main() -> anyhow::Result<()> {
         jwt_issuer: Arc::new(jwt_issuer),
     };
 
-    let bind = format!("{}:{}", state.cfg.api_host, state.cfg.api_port);
+    let bind = format!("{}:{}", state.cfg.api.host, state.cfg.api.port);
     let state_for_factory = state.clone();
     // Build the OpenAPI spec once and clone the (cheap) `OpenApi` value per
     // worker. The `Option` matches the `build_app` signature so tests can

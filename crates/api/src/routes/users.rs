@@ -272,7 +272,7 @@ pub async fn email_change_request(
             &new_email,
             &hash,
             MagicLinkPurpose::EmailChange,
-            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link_ttl_seconds)),
+            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds)),
         )
         .await
         .map_err(internal)?;
@@ -281,7 +281,7 @@ pub async fn email_change_request(
     // (e.g. a coffee-shop session) can't be hijacked into the attacker's
     // inbox. The body shows the proposed new address so the recipient can
     // verify they really initiated the change.
-    let link = format!("{}/account/email-change/consume?token={}", state.cfg.web_public_url, token);
+    let link = format!("{}/account/email-change/consume?token={}", state.cfg.web.public_url, token);
     let locale = EmailLocale::from_str_or_en(user.locale.as_str());
     let (subject, text_body) = render_email_change(locale, &link, &new_email).map_err(internal)?;
     // Outbox-enqueue (durable, async). The worker drains via SMTP.

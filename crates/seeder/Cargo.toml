@@ -23,6 +23,7 @@ path = "src/main.rs"
 
 [dependencies]
 my-family-api = { path = "../api" }
+my-family-config = { path = "../config" }
 my-family-domain = { path = "../domain" }
 my-family-persistence = { path = "../persistence" }
 anyhow.workspace = true
