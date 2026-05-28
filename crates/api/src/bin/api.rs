@@ -10,6 +10,7 @@ use anyhow::Context;
 use my_family_api::auth::{JwtIssuer, JwtKeyset};
 use my_family_api::{ApiDoc, AppEnv, AppState, Config, build_app, init_tracing};
 use my_family_cache::{RedisPool, RedisRateLimiter};
+use my_family_config::storage::StorageDriver;
 use my_family_email::SmtpSender;
 use my_family_persistence::{
     Database, PgAuditLogRepo, PgEmailOutboxRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo,
@@ -17,6 +18,7 @@ use my_family_persistence::{
     PgPartnershipRepo, PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo,
     PgRefreshTokenRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
+use my_family_storage::{LocalObjectStore, ObjectStore, S3Config, S3ObjectStore};
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -71,6 +73,24 @@ async fn main() -> anyhow::Result<()> {
         i64::try_from(cfg.jwt.access_ttl_seconds).unwrap_or(i64::MAX),
     );
 
+    let object_store: Arc<dyn ObjectStore> = match cfg.storage.driver {
+        StorageDriver::S3 => Arc::new(S3ObjectStore::new(S3Config {
+            bucket: cfg.storage.bucket.clone(),
+            region: cfg.storage.region.clone(),
+            endpoint_url: cfg.storage.endpoint_url.clone(),
+            access_key_id: cfg.storage.access_key_id.clone(),
+            secret_access_key: cfg.storage.secret_access_key.clone(),
+            force_path_style: cfg.storage.force_path_style,
+        })),
+        StorageDriver::Local => {
+            // `target/uploads` keeps dev artefacts out of the workspace root
+            // and inside the existing gitignored target/ tree.
+            let base = std::path::PathBuf::from("target/uploads");
+            let prefix = format!("{}/api/v1/uploads", cfg.api.public_url.trim_end_matches('/'));
+            Arc::new(LocalObjectStore::new(base, prefix))
+        }
+    };
+
     let pool = db.pool().clone();
     let state = AppState {
         cfg: Arc::new(cfg.clone()),
@@ -95,6 +115,7 @@ async fn main() -> anyhow::Result<()> {
         rate_limiter: Arc::new(RedisRateLimiter::new(redis.clone())),
         redis: redis.clone(),
         jwt_issuer: Arc::new(jwt_issuer),
+        object_store,
     };
 
     let bind = format!("{}:{}", state.cfg.api.host, state.cfg.api.port);

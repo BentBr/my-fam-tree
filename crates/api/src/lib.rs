@@ -3,6 +3,7 @@
 pub mod auth;
 pub mod cookies;
 pub mod error;
+pub mod images;
 pub mod middleware;
 pub mod openapi_doc;
 pub mod response;

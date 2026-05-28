@@ -18,6 +18,7 @@ use my_family_domain::{
     UserRepo,
 };
 use my_family_email::EmailSender;
+use my_family_storage::ObjectStore;
 
 use crate::Config;
 use crate::auth::JwtIssuer;
@@ -46,6 +47,10 @@ pub struct AppState {
     pub rate_limiter: Arc<dyn RateLimiter>,
     pub redis: RedisPool,
     pub jwt_issuer: Arc<JwtIssuer>,
+    /// S3-compatible object store backing person photos + user avatars.
+    /// Concrete impl is `S3ObjectStore` (`MinIO` in dev, AWS in prod) or
+    /// `LocalObjectStore` (tests that don't want a sidecar).
+    pub object_store: Arc<dyn ObjectStore>,
 }
 
 impl std::fmt::Debug for AppState {

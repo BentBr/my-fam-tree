@@ -68,13 +68,35 @@ time — the deny-lints are the floor, not the whole bar.
 
 ## Errors & IDs
 
-- Repo traits return `Result<T, FooRepoError>` (`thiserror` enums in `crate-domain`).
-- The HTTP layer maps everything to `ApiError` → RFC-7807 (see `crate-api`). Handlers
-  return `Result<ApiResponse<T>, ApiError>`; `HttpResponse::` is forbidden outside
-  `crates/api/src/response.rs`.
-- IDs are newtypes (`UserId`, `FamilyId`, `PersonId`, …) via the `id_newtype!` macro —
-  `from_uuid` / `into_uuid` / `as_uuid`, transparent serde. Pass the newtype, not a
-  bare `Uuid`, so the type system catches mix-ups.
+Every crate owns a precise `thiserror` enum at its boundary; the HTTP layer collapses
+all of them into `ApiError` so RFC-7807 stays the single client-visible shape.
+
+| Crate                | Error type        | Bubble-up convention                                            |
+|----------------------|-------------------|------------------------------------------------------------------|
+| `my-family-domain`   | `FooRepoError`    | `?` from persistence; mapped in `crate-api` via `impl From`     |
+| `my-family-persistence` | `FooRepoError` | implements the domain traits; surfaces sqlx errors as variants  |
+| `my-family-cache`    | `CacheError`      | `?` from `RateLimiter` / `ReminderJobQueue`; mapped in handlers  |
+| `my-family-email`    | `EmailError`      | `?` from `EmailSender`; mapped in handlers (Internal in prod)   |
+| `my-family-config`   | `ConfigError`     | only at binary startup — `anyhow::Context`, exit non-zero       |
+| `my-family-storage`  | `StorageError`    | `NotFound` → `ApiError::NotFound`, `Backend` → `ApiError::Internal` |
+
+- **Repo / service traits return `Result<T, FooError>`** — `thiserror` enum, never
+  `anyhow::Error` at a public trait boundary. Add a named variant for each meaningful
+  failure mode; never reach for an `Other(String)` catch-all.
+- **Handlers return `Result<ApiResponse<T>, ApiError>`.** The mapping from a
+  crate-specific error → `ApiError` lives in `impl From<FooError> for ApiError`
+  inside `crates/api/src/error.rs`. New errors gain an entry there, never inline
+  `match` ladders inside a route.
+- **`HttpResponse::` is forbidden** outside `crates/api/src/response.rs`. The
+  `ApiResponse<T>` + `ApiError` pair is the only legal contract.
+- **`anyhow::Context` is for binary entry-points only** — `bin/api.rs`, `bin/worker`,
+  `bin/seeder`. Library code uses the typed boundary errors.
+- **Never `.expect()` / `.unwrap()`** — workspace clippy denies both. `?` + a named
+  error variant or a `match` arm that returns a precise `ApiError`.
+
+IDs are newtypes (`UserId`, `FamilyId`, `PersonId`, …) via the `id_newtype!` macro —
+`from_uuid` / `into_uuid` / `as_uuid`, transparent serde. Pass the newtype, not a
+bare `Uuid`, so the type system catches mix-ups.
 
 ## SQLx (compile-checked queries + offline cache)
 

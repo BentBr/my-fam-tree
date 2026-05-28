@@ -179,6 +179,14 @@ pub async fn ephemeral_stack() -> TestStack {
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
+        // Per-process tempdir-backed local store so photo/avatar upload
+        // tests don't need a MinIO sidecar. The dir is leaked alongside the
+        // TestStack (testcontainers wipes the postgres+redis state per test
+        // anyway, so the leftover bytes never affect another test).
+        object_store: Arc::new(my_family_storage::LocalObjectStore::new(
+            std::env::temp_dir().join(format!("my-family-test-{}", uuid::Uuid::new_v4())),
+            "http://test.invalid/uploads".into(),
+        )),
     };
 
     TestStack { state, fake_email, _pg: pg, _redis: redis_container }
