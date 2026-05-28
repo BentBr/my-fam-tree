@@ -2,6 +2,7 @@
 
 pub mod audit_log;
 pub mod counts;
+pub mod email_outbox;
 pub mod error;
 pub mod families;
 pub mod family_invites;
@@ -22,6 +23,7 @@ pub mod reminder_prefs;
 pub mod users;
 
 pub use audit_log::PgAuditLogRepo;
+pub use email_outbox::PgEmailOutboxRepo;
 pub use error::PersistenceError;
 pub use families::PgFamilyRepo;
 pub use family_invites::PgFamilyInviteRepo;

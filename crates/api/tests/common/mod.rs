@@ -25,10 +25,10 @@ use my_family_api::{AppEnv, AppState, Config, LogFormat};
 use my_family_cache::{RedisPool, RedisRateLimiter};
 use my_family_email::FakeEmailSender;
 use my_family_persistence::{
-    Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
-    PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo, PgPartnershipRepo,
-    PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo,
-    PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
+    Database, PgAuditLogRepo, PgEmailOutboxRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo,
+    PgFamilyRepo, PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo,
+    PgPartnershipRepo, PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo,
+    PgRefreshTokenRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use rand::rngs::OsRng;
 use testcontainers::ContainerAsync;
@@ -146,14 +146,37 @@ pub async fn ephemeral_stack() -> TestStack {
         reminder_prefs: Arc::new(PgReminderPrefsRepo::new(pool.clone())),
         reminder_digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         health: Arc::new(PgHealthRepo::new(pool.clone())),
-        audit: Arc::new(PgAuditLogRepo::new(pool)),
+        audit: Arc::new(PgAuditLogRepo::new(pool.clone())),
         email: fake_email.clone(),
+        outbox: Arc::new(PgEmailOutboxRepo::new(pool)),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
     };
 
     TestStack { state, fake_email, _pg: pg, _redis: redis_container }
+}
+
+/// Drain the `email_outbox` synchronously into the `FakeEmailSender` —
+/// mirrors what the worker's outbox poller does in prod/e2e. Used by
+/// `sign_in` (and any future helper that triggers an email-producing
+/// handler) so existing tests that read `stack.fake_email.drain()` keep
+/// working transparently.
+#[allow(clippy::future_not_send)]
+pub async fn drain_outbox_now(stack: &TestStack) {
+    use my_family_email::OutboundEmail;
+    let now = chrono::Utc::now();
+    while let Some(row) = stack.state.outbox.claim_next_due(now).await.expect("claim outbox") {
+        let email = OutboundEmail {
+            to_addr: row.to_addr.clone(),
+            to_name: None,
+            subject: row.subject.clone(),
+            text_body: row.text_body.clone(),
+            html_body: row.html_body.clone(),
+        };
+        stack.state.email.send(email).await.expect("send outbox row");
+        stack.state.outbox.mark_sent(row.id, chrono::Utc::now()).await.expect("mark sent");
+    }
 }
 
 /// Pull the magic-link token out of the email's plain-text body. The template
@@ -222,6 +245,11 @@ where
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "magic-link request should succeed for {email}");
+    // The magic-link handler now writes to the email_outbox instead of
+    // calling EmailSender::send() inline — drain the outbox synchronously
+    // so the FakeEmailSender captures the email (the real worker drains
+    // it in prod / e2e).
+    drain_outbox_now(stack).await;
     let captured = stack.fake_email.drain();
     let last = captured.last().expect("magic-link email captured");
     let token = extract_token_from_link(&last.text_body);

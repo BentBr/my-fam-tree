@@ -1,4 +1,5 @@
 pub mod audit_log;
+pub mod email_outbox;
 pub mod families;
 pub mod family_invites;
 pub mod family_memberships;

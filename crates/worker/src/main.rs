@@ -8,8 +8,8 @@ use anyhow::Context;
 use my_family_cache::{RedisPool, RedisReminderQueue};
 use my_family_email::SmtpSender;
 use my_family_persistence::{
-    Database, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo, PgPersonFavouriteRepo,
-    PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
+    Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
+    PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use my_family_worker::clock::Clock;
 #[cfg(feature = "test-fixtures")]
@@ -19,7 +19,7 @@ use my_family_worker::clock::SystemClock;
 use my_family_worker::state::WorkerState;
 #[cfg(feature = "test-fixtures")]
 use my_family_worker::test_clock_http;
-use my_family_worker::{config, dispatcher, janitor, leader, ticker};
+use my_family_worker::{config, dispatcher, janitor, leader, outbox, ticker};
 use tokio::time::sleep;
 use tracing_subscriber::prelude::*;
 
@@ -127,6 +127,7 @@ async fn main() -> anyhow::Result<()> {
         queue: Arc::new(RedisReminderQueue::new(redis.clone())),
         email,
         janitor: Arc::new(PgJanitor::new(pool.clone())),
+        outbox: Arc::new(PgEmailOutboxRepo::new(pool.clone())),
         web_public_url: cfg.web_public_url.clone(),
         max_retries: cfg.worker_max_retries,
         retry_min_seconds: cfg.worker_retry_backoff_min_seconds,
@@ -137,6 +138,14 @@ async fn main() -> anyhow::Result<()> {
     for _ in 0..DISPATCHER_POOL {
         let s = worker.clone();
         tokio::spawn(async move { dispatcher::run_dispatcher(s).await });
+    }
+
+    // Outbox pollers — lock-free (FOR UPDATE SKIP LOCKED in claim_next_due),
+    // so they can drain a backlog in parallel across pool size + replicas.
+    let outbox_poll = Duration::from_secs(cfg.worker_outbox_poll_seconds);
+    for _ in 0..cfg.worker_outbox_pool_size {
+        let s = worker.clone();
+        tokio::spawn(async move { outbox::run_poller(s, outbox_poll).await });
     }
 
     #[cfg(feature = "test-fixtures")]

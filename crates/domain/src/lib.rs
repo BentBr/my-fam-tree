@@ -18,6 +18,10 @@ pub use repos::family_invites::{FamilyInviteRepo, Invite, InviteRepoError};
 pub use repos::family_memberships::{
     FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError, MembershipWithFamilyName,
 };
+pub use repos::email_outbox::{
+    EmailOutboxId, EmailOutboxInsert, EmailOutboxKind, EmailOutboxRepo, EmailOutboxRepoError,
+    EmailOutboxRow,
+};
 pub use repos::health::{HealthRepo, HealthRepoError};
 pub use repos::janitor::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
 pub use repos::magic_link_tokens::{

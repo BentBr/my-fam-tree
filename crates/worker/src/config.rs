@@ -38,6 +38,16 @@ pub struct Config {
     /// `now - this` are kept; older rows get deleted. Default 24 h.
     #[serde(default = "default_janitor_grace")]
     pub worker_janitor_grace_seconds: u64,
+    /// How often each outbox poller checks for due rows when the queue is
+    /// empty. Tight enough to feel snappy (a 1-second poll yields a few
+    /// seconds end-to-end latency), large enough to keep the DB quiet at
+    /// idle. Default 1 s.
+    #[serde(default = "default_outbox_poll")]
+    pub worker_outbox_poll_seconds: u64,
+    /// Number of parallel outbox poller tasks. Drains backlogs in parallel;
+    /// `claim_next_due` uses `FOR UPDATE SKIP LOCKED` so they don't collide.
+    #[serde(default = "default_outbox_pool")]
+    pub worker_outbox_pool_size: usize,
 }
 
 fn default_metrics_bind() -> String {
@@ -49,6 +59,12 @@ const fn default_janitor_interval() -> u64 {
 }
 const fn default_janitor_grace() -> u64 {
     86_400
+}
+const fn default_outbox_poll() -> u64 {
+    1
+}
+const fn default_outbox_pool() -> usize {
+    4
 }
 
 impl Config {

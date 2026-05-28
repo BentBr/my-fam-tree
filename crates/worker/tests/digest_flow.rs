@@ -27,7 +27,7 @@ use my_family_domain::{
 };
 use my_family_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
 use my_family_persistence::{
-    Database, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor, PgPartnershipRepo,
+    Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use my_family_worker::clock::{Clock, FixedClock};
@@ -116,7 +116,8 @@ fn build_state(
         digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         queue,
         email,
-        janitor: Arc::new(PgJanitor::new(pool)),
+        janitor: Arc::new(PgJanitor::new(pool.clone())),
+        outbox: Arc::new(PgEmailOutboxRepo::new(pool)),
         web_public_url: "https://app.example".into(),
         max_retries: 3,
         retry_min_seconds: 60,

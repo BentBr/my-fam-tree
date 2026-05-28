@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use my_family_cache::ReminderJobQueue;
 use my_family_domain::{
-    FamilyMembershipRepo, JanitorRepo, PartnershipRepo, PersonFavouriteRepo, PersonRepo,
-    ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
+    EmailOutboxRepo, FamilyMembershipRepo, JanitorRepo, PartnershipRepo, PersonFavouriteRepo,
+    PersonRepo, ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
 };
 use my_family_email::EmailSender;
 
@@ -28,6 +28,7 @@ pub struct WorkerState {
     pub queue: Arc<dyn ReminderJobQueue>,
     pub email: Arc<dyn EmailSender>,
     pub janitor: Arc<dyn JanitorRepo>,
+    pub outbox: Arc<dyn EmailOutboxRepo>,
     pub web_public_url: String,
     pub max_retries: i32,
     pub retry_min_seconds: u64,

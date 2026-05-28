@@ -22,7 +22,7 @@ use std::time::Duration as StdDuration;
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use chrono::{Duration, Utc};
 use my_family_domain::{Locale, MagicLinkRepoError};
-use my_family_email::{Locale as EmailLocale, OutboundEmail, render_magic_link};
+use my_family_email::{Locale as EmailLocale, render_magic_link};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -160,15 +160,18 @@ pub async fn magic_link(
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
 
-    // Render + send the email.
+    // Render the email + enqueue it into the durable outbox. Postgres is
+    // the source of truth, so a Redis flush can't lose mail and SMTP
+    // slowness no longer blocks this request thread — the worker drains
+    // the outbox out-of-band via SMTP with retry/backoff.
     let locale = EmailLocale::from_str_or_en(user.locale.as_str());
     let (subject, text_body) = render_magic_link(locale, &link)
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
     state
-        .email
-        .send(OutboundEmail {
+        .outbox
+        .enqueue(&my_family_domain::EmailOutboxInsert {
+            kind: my_family_domain::EmailOutboxKind::MAGIC_LINK.to_string(),
             to_addr: user.email.clone(),
-            to_name: None,
             subject,
             text_body,
             html_body: None,

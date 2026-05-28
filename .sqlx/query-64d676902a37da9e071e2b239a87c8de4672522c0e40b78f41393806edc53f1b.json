@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_outbox SET next_attempt_at = $2, updated_at = $1 WHERE id = ( SELECT id FROM email_outbox WHERE status = 'pending' AND next_attempt_at <= $1 ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1 ) RETURNING id, kind, to_addr AS \"to_addr!: String\", subject, text_body, html_body, attempts",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "to_addr!: String",
+        "type_info": {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "to_addr"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "subject",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "subject"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "text_body",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "text_body"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "html_body",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "html_body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "email_outbox",
+            "name": "attempts"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "64d676902a37da9e071e2b239a87c8de4672522c0e40b78f41393806edc53f1b"
+}

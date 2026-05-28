@@ -19,6 +19,7 @@ pub mod digest;
 pub mod dispatcher;
 pub mod janitor;
 pub mod leader;
+pub mod outbox;
 pub mod state;
 #[cfg(feature = "test-fixtures")]
 pub mod test_clock_http;
