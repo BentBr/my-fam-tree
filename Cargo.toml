@@ -1,12 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
+  "crates/config",
   "crates/domain",
   "crates/cache",
   "crates/email",
   "crates/persistence",
   "crates/openapi",
   "crates/migrator",
+  "crates/storage",
   "crates/worker",
   "crates/api",
   "crates/seeder",
@@ -31,7 +33,11 @@ actix-cors = "0.7.1"
 anyhow = "1.0"
 askama = "0.16"
 async-trait = "0.1"
+aws-config = { version = "1", default-features = false, features = ["behavior-version-latest", "rustls"] }
+aws-credential-types = { version = "1", features = ["hardcoded-credentials"] }
+aws-sdk-s3 = { version = "1", default-features = false, features = ["behavior-version-latest", "rustls"] }
 base64 = "0.22"
+bytes = "1.10"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 clap = { version = "4.6", features = ["derive", "env"] }
