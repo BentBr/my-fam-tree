@@ -2103,6 +2103,73 @@
         ]
       }
     },
+    "/api/v1/users/me/avatar": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "user_set_avatar",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAvatarResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "422": {
+            "description": "Invalid image"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "user_clear_avatar",
+        "responses": {
+          "200": {
+            "description": "Avatar cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/users/me/email-change": {
       "post": {
         "tags": [
@@ -4329,6 +4396,42 @@
           }
         }
       },
+      "UserAvatarResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserAvatarView"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "UserAvatarView": {
+        "type": "object",
+        "required": [
+          "avatar_key",
+          "avatar_url"
+        ],
+        "properties": {
+          "avatar_key": {
+            "type": "string"
+          },
+          "avatar_url": {
+            "type": "string"
+          }
+        }
+      },
       "UserProfile": {
         "type": "object",
         "required": [
@@ -4340,6 +4443,13 @@
           "created_at"
         ],
         "properties": {
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time-limited presigned URL for the user's avatar, or `null` when\nno avatar is set. Re-presigned on every read; do NOT cache."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"

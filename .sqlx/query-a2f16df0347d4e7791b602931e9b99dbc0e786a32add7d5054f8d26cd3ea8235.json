@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email::text AS \"email!\", display_name, locale::text AS \"locale!\",\n                      timezone, email_verified_at, created_at\n                 FROM users WHERE id = $1",
+  "query": "INSERT INTO users (email, locale) VALUES ($1, ($2::text)::user_locale)\n               RETURNING id, email::text AS \"email!\", display_name, locale::text AS \"locale!\",\n                         timezone, email_verified_at, avatar_key, created_at",
   "describe": {
     "columns": [
       {
@@ -61,6 +61,17 @@
       },
       {
         "ordinal": 6,
+        "name": "avatar_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "avatar_key"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -73,7 +84,13 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Text"
       ]
     },
     "nullable": [
@@ -83,8 +100,9 @@
       null,
       false,
       true,
+      true,
       false
     ]
   },
-  "hash": "230dccfbda9871268970dadf9edcfb8991da1301bed59ca9c14cb7cf61f37401"
+  "hash": "a2f16df0347d4e7791b602931e9b99dbc0e786a32add7d5054f8d26cd3ea8235"
 }

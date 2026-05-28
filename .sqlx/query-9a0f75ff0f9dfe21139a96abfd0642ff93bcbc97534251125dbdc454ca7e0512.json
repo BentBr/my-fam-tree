@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH old AS (SELECT avatar_key FROM users WHERE id = $1)\n               UPDATE users SET avatar_key = $2 WHERE id = $1\n            RETURNING (SELECT avatar_key FROM old) AS \"previous\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "previous",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "9a0f75ff0f9dfe21139a96abfd0642ff93bcbc97534251125dbdc454ca7e0512"
+}

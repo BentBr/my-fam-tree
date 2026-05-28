@@ -42,6 +42,7 @@ use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBo
 use crate::routes::relationships::{self, TreePayloadResponseBody};
 use crate::routes::reminder_prefs::{self, ReminderPrefsResponseBody};
 use crate::routes::upcoming::{self, UpcomingResponseBody};
+use crate::routes::user_avatars::{self, UserAvatarResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
 use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreePayload};
 use crate::services::upcoming::UpcomingEvent;
@@ -76,6 +77,8 @@ use crate::services::upcoming::UpcomingEvent;
         users::update,
         users::email_change_request,
         users::email_change_confirm,
+        user_avatars::upload,
+        user_avatars::clear,
         persons::list,
         persons::create,
         persons::get_one,
@@ -123,6 +126,7 @@ use crate::services::upcoming::UpcomingEvent;
             InvitesListResponseBody,
             AcceptResponseBody,
             UserProfileResponseBody,
+            UserAvatarResponseBody,
             EmailChangeResponseBody,
             PersonsListResponseBody,
             PersonViewResponseBody,

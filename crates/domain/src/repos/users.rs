@@ -11,6 +11,9 @@ pub struct User {
     pub locale: Locale,
     pub timezone: String,
     pub email_verified_at: Option<DateTime<Utc>>,
+    /// Opaque object-storage key for this user's avatar, or `None` when
+    /// they have no avatar yet. Resolved to a presigned URL at the HTTP edge.
+    pub avatar_key: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -60,4 +63,13 @@ pub trait UserRepo: Send + Sync {
     /// Clears `email_verified_at`. Used after `update_email` so the new
     /// address must be re-verified via the standard magic-link flow.
     async fn mark_email_unverified(&self, id: UserId) -> Result<(), UserRepoError>;
+
+    /// Set (or clear) the object-storage key for this user's avatar.
+    /// Returns the PREVIOUS key so the caller can best-effort-delete the
+    /// orphaned bytes from the store after the DB commit lands.
+    async fn set_avatar_key(
+        &self,
+        id: UserId,
+        avatar_key: Option<String>,
+    ) -> Result<Option<String>, UserRepoError>;
 }

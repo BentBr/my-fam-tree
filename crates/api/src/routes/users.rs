@@ -53,6 +53,9 @@ pub struct UserProfile {
     pub locale: String,
     pub timezone: String,
     pub email_verified_at: Option<DateTime<Utc>>,
+    /// Time-limited presigned URL for the user's avatar, or `null` when
+    /// no avatar is set. Re-presigned on every read; do NOT cache.
+    pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -102,7 +105,23 @@ fn parse_locale(raw: &str) -> Result<Locale, ApiError> {
     }
 }
 
-fn profile_from(user: &my_family_domain::User) -> UserProfile {
+/// Wall-clock TTL for the avatar presigned URL. Mirrors `PHOTO_URL_TTL`
+/// in `routes::persons` — one hour, re-presigned on every read.
+const AVATAR_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
+
+fn profile_from(
+    user: &my_family_domain::User,
+    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+) -> UserProfile {
+    let avatar_url = user.avatar_key.as_deref().and_then(|key| {
+        match object_store.presigned_get(key, AVATAR_URL_TTL) {
+            Ok(url) => Some(url),
+            Err(e) => {
+                tracing::warn!(error = ?e, avatar_key = %key, "could not presign avatar URL");
+                None
+            }
+        }
+    });
     UserProfile {
         id: user.id.into_uuid(),
         email: user.email.clone(),
@@ -110,6 +129,7 @@ fn profile_from(user: &my_family_domain::User) -> UserProfile {
         locale: user.locale.as_str().to_string(),
         timezone: user.timezone.clone(),
         email_verified_at: user.email_verified_at,
+        avatar_url,
         created_at: user.created_at,
     }
 }
@@ -143,7 +163,7 @@ pub async fn me(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +231,7 @@ pub async fn update(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------
@@ -360,7 +380,7 @@ pub async fn email_change_confirm(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------

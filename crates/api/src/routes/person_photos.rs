@@ -116,7 +116,7 @@ async fn read_single_file_field(
             // here saves us holding a multi-GB BytesMut in memory.
             if bytes.len().saturating_add(chunk.len()) > MAX_UPLOAD_BYTES {
                 return Err(ApiError::ImageInvalid {
-                    reason: format!("upload exceeds maximum size of {MAX_UPLOAD_BYTES} bytes",),
+                    reason: format!("upload exceeds maximum size of {MAX_UPLOAD_BYTES} bytes"),
                 });
             }
             bytes.extend_from_slice(&chunk);

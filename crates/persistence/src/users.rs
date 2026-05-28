@@ -38,6 +38,7 @@ struct UserRow {
     locale: String,
     timezone: String,
     email_verified_at: Option<DateTime<Utc>>,
+    avatar_key: Option<String>,
     created_at: DateTime<Utc>,
 }
 
@@ -50,6 +51,7 @@ impl From<UserRow> for User {
             locale: locale_from_db(&r.locale),
             timezone: r.timezone,
             email_verified_at: r.email_verified_at,
+            avatar_key: r.avatar_key,
             created_at: r.created_at,
         }
     }
@@ -61,7 +63,7 @@ impl UserRepo for PgUserRepo {
         let row = sqlx::query_as!(
             UserRow,
             r#"SELECT id, email::text AS "email!", display_name, locale::text AS "locale!",
-                      timezone, email_verified_at, created_at
+                      timezone, email_verified_at, avatar_key, created_at
                  FROM users WHERE email = $1"#,
             email
         )
@@ -75,7 +77,7 @@ impl UserRepo for PgUserRepo {
         let row = sqlx::query_as!(
             UserRow,
             r#"SELECT id, email::text AS "email!", display_name, locale::text AS "locale!",
-                      timezone, email_verified_at, created_at
+                      timezone, email_verified_at, avatar_key, created_at
                  FROM users WHERE id = $1"#,
             id.into_uuid()
         )
@@ -90,7 +92,7 @@ impl UserRepo for PgUserRepo {
             UserRow,
             r#"INSERT INTO users (email, locale) VALUES ($1, ($2::text)::user_locale)
                RETURNING id, email::text AS "email!", display_name, locale::text AS "locale!",
-                         timezone, email_verified_at, created_at"#,
+                         timezone, email_verified_at, avatar_key, created_at"#,
             email,
             locale_to_db(locale)
         )
@@ -163,5 +165,29 @@ impl UserRepo for PgUserRepo {
             .await
             .map_err(|e| UserRepoError::Db(e.to_string()))?;
         Ok(())
+    }
+
+    async fn set_avatar_key(
+        &self,
+        id: UserId,
+        avatar_key: Option<String>,
+    ) -> Result<Option<String>, UserRepoError> {
+        // Same CTE pattern as PersonRepo::set_photo_key — materialise the
+        // PREVIOUS value before the UPDATE fires so the returned key is
+        // the genuine prior one, never the just-written replacement.
+        let row = sqlx::query!(
+            r#"WITH old AS (SELECT avatar_key FROM users WHERE id = $1)
+               UPDATE users SET avatar_key = $2 WHERE id = $1
+            RETURNING (SELECT avatar_key FROM old) AS "previous""#,
+            id.into_uuid(),
+            avatar_key,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| UserRepoError::Db(e.to_string()))?;
+        match row {
+            None => Err(UserRepoError::NotFound),
+            Some(r) => Ok(r.previous),
+        }
     }
 }

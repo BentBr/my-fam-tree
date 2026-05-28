@@ -28,6 +28,7 @@ pub mod persons;
 pub mod relationships;
 pub mod reminder_prefs;
 pub mod upcoming;
+pub mod user_avatars;
 pub mod users;
 
 use actix_web::web;
@@ -65,6 +66,8 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(users::update)
                 .service(users::email_change_request)
                 .service(users::email_change_confirm)
+                .service(user_avatars::upload)
+                .service(user_avatars::clear)
                 .service(families::list_mine)
                 .service(families::create)
                 .service(families::rename)
