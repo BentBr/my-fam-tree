@@ -83,6 +83,9 @@ pub struct PersonView {
     pub death_date: Option<NaiveDate>,
     pub notes: String,
     pub linked_user_id: Option<Uuid>,
+    /// Time-limited presigned URL for the person's photo, or `null` when
+    /// the person has no photo. Re-presigned on every read; do NOT cache.
+    pub photo_url: Option<String>,
     /// Per-user favourite mark for the signed-in caller. Always set on the
     /// single-person GET; the list endpoint leaves it `false` to avoid
     /// fanning N+1 favourite lookups across the page (the FE re-fetches the
@@ -104,11 +107,41 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     ApiError::Internal(anyhow::anyhow!(e.to_string()))
 }
 
-fn to_view(p: my_family_domain::Person) -> PersonView {
-    to_view_with_favourite(p, false)
+/// Wall-clock TTL for the photo presigned URL. One hour balances "page
+/// stays useful while the user reads" against "stale URL can't be reused
+/// long-term if it leaks".
+const PHOTO_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
+
+/// Resolve a stored `photo_key` to a fresh presigned URL. On storage
+/// backend errors we log + return `None` so a single `MinIO` blip degrades
+/// to "no photo shown" instead of a 500 on the whole person fetch.
+fn presigned_photo_url(
+    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+    key: Option<&str>,
+) -> Option<String> {
+    let key = key?;
+    match object_store.presigned_get(key, PHOTO_URL_TTL) {
+        Ok(url) => Some(url),
+        Err(e) => {
+            tracing::warn!(error = ?e, photo_key = %key, "could not presign photo URL");
+            None
+        }
+    }
 }
 
-fn to_view_with_favourite(p: my_family_domain::Person, is_favourite_for_me: bool) -> PersonView {
+fn to_view(
+    p: my_family_domain::Person,
+    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+) -> PersonView {
+    to_view_with_favourite(p, false, object_store)
+}
+
+fn to_view_with_favourite(
+    p: my_family_domain::Person,
+    is_favourite_for_me: bool,
+    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+) -> PersonView {
+    let photo_url = presigned_photo_url(object_store, p.photo_key.as_deref());
     PersonView {
         id: p.id.into_uuid(),
         family_id: p.family_id.into_uuid(),
@@ -122,6 +155,7 @@ fn to_view_with_favourite(p: my_family_domain::Person, is_favourite_for_me: bool
         death_date: p.death_date,
         notes: p.notes,
         linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+        photo_url,
         is_favourite_for_me,
     }
 }
@@ -217,7 +251,7 @@ pub async fn list(
     let returned = u32::try_from(rows.len()).unwrap_or(u32::MAX);
 
     Ok(ApiResponse::page(
-        rows.into_iter().map(to_view).collect(),
+        rows.into_iter().map(|p| to_view(p, &state.object_store)).collect(),
         Pagination { next_cursor, limit, returned },
     ))
 }
@@ -268,7 +302,7 @@ pub async fn create(
         serde_json::json!({}),
     )
     .await;
-    Ok(ApiResponse::ok(to_view(person)))
+    Ok(ApiResponse::ok(to_view(person, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------
@@ -310,7 +344,7 @@ pub async fn get_one(
         .is_favourite_for_user(claims.user_id, person_id)
         .await
         .map_err(favourite_internal)?;
-    Ok(ApiResponse::ok(to_view_with_favourite(person, fav)))
+    Ok(ApiResponse::ok(to_view_with_favourite(person, fav, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------
@@ -393,7 +427,7 @@ pub async fn update(
         serde_json::json!({}),
     )
     .await;
-    Ok(ApiResponse::ok(to_view(person)))
+    Ok(ApiResponse::ok(to_view(person, &state.object_store)))
 }
 
 // ---------------------------------------------------------------------------

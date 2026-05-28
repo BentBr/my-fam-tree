@@ -1779,6 +1779,109 @@
         ]
       }
     },
+    "/api/v1/persons/{id}/photo": {
+      "post": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "persons_set_photo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Photo set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonPhotoResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit this person"
+          },
+          "404": {
+            "description": "Person not found in this family"
+          },
+          "422": {
+            "description": "Invalid image"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "persons"
+        ],
+        "operationId": "persons_clear_photo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NullResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Not allowed to edit this person"
+          },
+          "404": {
+            "description": "Person not found in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/relationships": {
       "get": {
         "tags": [
@@ -2632,6 +2735,7 @@
           "partnership_duplicate",
           "parent_link_duplicate",
           "validation_failed",
+          "image_invalid",
           "conflict_stale",
           "email_taken",
           "invite_duplicate",
@@ -3547,6 +3651,45 @@
           }
         }
       },
+      "PersonPhotoResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonPhotoView"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
+      "PersonPhotoView": {
+        "type": "object",
+        "description": "`data` shape for the success response.",
+        "required": [
+          "photo_key",
+          "photo_url"
+        ],
+        "properties": {
+          "photo_key": {
+            "type": "string",
+            "description": "Opaque object-storage key (stable across the photo's lifetime)."
+          },
+          "photo_url": {
+            "type": "string",
+            "description": "Time-limited URL the browser can fetch the bytes from. Re-presigned\non every read; do NOT cache."
+          }
+        }
+      },
       "PersonUpdateReq": {
         "type": "object",
         "description": "Partial update. Every field is optional; only `Some(_)` fields overwrite\nthe corresponding column. An empty body is rejected as `validation.value_required`.",
@@ -3683,6 +3826,13 @@
           },
           "notes": {
             "type": "string"
+          },
+          "photo_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time-limited presigned URL for the person's photo, or `null` when\nthe person has no photo. Re-presigned on every read; do NOT cache."
           }
         }
       },

@@ -99,6 +99,7 @@ pub enum ErrorCode {
     PartnershipDuplicate,
     ParentLinkDuplicate,
     ValidationFailed,
+    ImageInvalid,
     ConflictStale,
     EmailTaken,
     InviteDuplicate,
@@ -133,7 +134,7 @@ impl ErrorCode {
             | Self::EmailTaken
             | Self::InviteDuplicate
             | Self::OwnerTransferPending => StatusCode::CONFLICT,
-            Self::ValidationFailed => StatusCode::UNPROCESSABLE_ENTITY,
+            Self::ValidationFailed | Self::ImageInvalid => StatusCode::UNPROCESSABLE_ENTITY,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::Upstream => StatusCode::BAD_GATEWAY,
             Self::Internal => StatusCode::INTERNAL_SERVER_ERROR,
@@ -161,6 +162,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "Partnership already exists",
             Self::ParentLinkDuplicate => "Parent link already exists",
             Self::ValidationFailed => "Validation failed",
+            Self::ImageInvalid => "Invalid image",
             Self::ConflictStale => "Stale state",
             Self::EmailTaken => "Email already in use",
             Self::InviteDuplicate => "Invite already pending for this email",
@@ -192,6 +194,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "partnership.duplicate",
             Self::ParentLinkDuplicate => "parent_link.duplicate",
             Self::ValidationFailed => "validation.failed",
+            Self::ImageInvalid => "image.invalid",
             Self::ConflictStale => "conflict.stale",
             Self::EmailTaken => "email.taken",
             Self::InviteDuplicate => "invite.duplicate",
@@ -221,6 +224,7 @@ impl ErrorCode {
         Self::PartnershipDuplicate,
         Self::ParentLinkDuplicate,
         Self::ValidationFailed,
+        Self::ImageInvalid,
         Self::ConflictStale,
         Self::EmailTaken,
         Self::InviteDuplicate,
@@ -269,6 +273,8 @@ pub enum ApiError {
     ParentLinkDuplicate,
     #[error("validation failed")]
     Validation(Vec<FieldViolation>),
+    #[error("invalid image: {reason}")]
+    ImageInvalid { reason: String },
     #[error("stale state")]
     ConflictStale,
     #[error("email {email} already in use")]
@@ -307,6 +313,7 @@ impl ApiError {
             Self::PartnershipDuplicate => ErrorCode::PartnershipDuplicate,
             Self::ParentLinkDuplicate => ErrorCode::ParentLinkDuplicate,
             Self::Validation(_) => ErrorCode::ValidationFailed,
+            Self::ImageInvalid { .. } => ErrorCode::ImageInvalid,
             Self::ConflictStale => ErrorCode::ConflictStale,
             Self::EmailTaken { .. } => ErrorCode::EmailTaken,
             Self::InviteDuplicate => ErrorCode::InviteDuplicate,
