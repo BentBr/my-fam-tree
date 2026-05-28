@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO persons\n               (family_id, given_name, family_name, name_at_birth, nickname, gender,\n                birth_date, birth_place, death_date, notes,\n                linked_user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes,\n                         linked_user_id, created_at, updated_at",
+  "query": "INSERT INTO persons\n               (family_id, given_name, family_name, name_at_birth, nickname, gender,\n                birth_date, birth_place, death_date, notes,\n                linked_user_id)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n               RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,\n                         gender, birth_date, birth_place, death_date, notes,\n                         linked_user_id, photo_key, created_at, updated_at",
   "describe": {
     "columns": [
       {
@@ -137,6 +137,17 @@
       },
       {
         "ordinal": 12,
+        "name": "photo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "persons",
+            "name": "photo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -186,9 +197,10 @@
       true,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "7c17b16c2343917f282b55c73d3c03965d6451422cbbdec59a51eeda886a8c32"
+  "hash": "8ce1e52a3fb0ea8a64f5894ea98d37b8697fd550e3ff24b2c14b51cb0c22f82b"
 }

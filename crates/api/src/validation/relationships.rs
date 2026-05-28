@@ -253,6 +253,7 @@ mod tests {
             death_date: death,
             notes: String::new(),
             linked_user_id: None,
+            photo_key: None,
             created_at: DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
             updated_at: DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
         }

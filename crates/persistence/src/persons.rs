@@ -36,6 +36,7 @@ struct PersonRow {
     death_date: Option<NaiveDate>,
     notes: String,
     linked_user_id: Option<Uuid>,
+    photo_key: Option<String>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -55,6 +56,7 @@ impl From<PersonRow> for Person {
             death_date: r.death_date,
             notes: r.notes,
             linked_user_id: r.linked_user_id.map(UserId::from_uuid),
+            photo_key: r.photo_key,
             created_at: r.created_at,
             updated_at: r.updated_at,
         }
@@ -73,7 +75,7 @@ impl PersonRepo for PgPersonRepo {
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,
                          gender, birth_date, birth_place, death_date, notes,
-                         linked_user_id, created_at, updated_at"#,
+                         linked_user_id, photo_key, created_at, updated_at"#,
             family_id.into_uuid(),
             d.given_name,
             d.family_name,
@@ -108,7 +110,7 @@ impl PersonRepo for PgPersonRepo {
             PersonRow,
             r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
                       gender, birth_date, birth_place, death_date, notes,
-                      linked_user_id, created_at, updated_at
+                      linked_user_id, photo_key, created_at, updated_at
                  FROM persons WHERE family_id = $1 AND id = $2"#,
             family_id.into_uuid(),
             id.into_uuid()
@@ -132,7 +134,7 @@ impl PersonRepo for PgPersonRepo {
                     PersonRow,
                     r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
                               gender, birth_date, birth_place, death_date, notes,
-                              linked_user_id, created_at, updated_at
+                              linked_user_id, photo_key, created_at, updated_at
                          FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2"#,
                     family_id.into_uuid(),
                     lim
@@ -145,7 +147,7 @@ impl PersonRepo for PgPersonRepo {
                     PersonRow,
                     r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
                               gender, birth_date, birth_place, death_date, notes,
-                              linked_user_id, created_at, updated_at
+                              linked_user_id, photo_key, created_at, updated_at
                          FROM persons WHERE family_id = $1 AND id > $2 ORDER BY id LIMIT $3"#,
                     family_id.into_uuid(),
                     c.into_uuid(),
@@ -174,7 +176,7 @@ impl PersonRepo for PgPersonRepo {
                WHERE family_id = $1 AND id = $2
                RETURNING id, family_id, given_name, family_name, name_at_birth, nickname,
                          gender, birth_date, birth_place, death_date, notes,
-                         linked_user_id, created_at, updated_at"#,
+                         linked_user_id, photo_key, created_at, updated_at"#,
             family_id.into_uuid(),
             id.into_uuid(),
             d.given_name,
@@ -226,7 +228,7 @@ impl PersonRepo for PgPersonRepo {
             PersonRow,
             r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
                       gender, birth_date, birth_place, death_date, notes,
-                      linked_user_id, created_at, updated_at
+                      linked_user_id, photo_key, created_at, updated_at
                  FROM persons WHERE family_id = $1 AND linked_user_id = $2"#,
             family_id.into_uuid(),
             user_id.into_uuid()
@@ -265,6 +267,42 @@ impl PersonRepo for PgPersonRepo {
                 Err(PersonRepoError::LinkedUserConflict)
             }
             Err(e) => Err(PersonRepoError::Db(e.to_string())),
+        }
+    }
+
+    async fn set_photo_key(
+        &self,
+        family_id: FamilyId,
+        id: PersonId,
+        photo_key: Option<String>,
+    ) -> Result<Option<String>, PersonRepoError> {
+        // Single-statement swap returning the PREVIOUS photo_key. The CTE
+        // materialises the value BEFORE the UPDATE executes — a naive
+        // `RETURNING (SELECT photo_key FROM persons WHERE id=$2)` would
+        // re-read the now-updated row and round-trip the caller's new key
+        // back as the "previous" one.
+        //
+        // The caller best-effort-deletes the previous object from the store
+        // after the commit, so a failed UPDATE never orphans the visible photo.
+        let row = sqlx::query!(
+            r#"WITH old AS (
+                   SELECT photo_key FROM persons WHERE family_id = $1 AND id = $2
+               )
+               UPDATE persons SET photo_key = $3
+                WHERE family_id = $1 AND id = $2
+            RETURNING (SELECT photo_key FROM old) AS "previous""#,
+            family_id.into_uuid(),
+            id.into_uuid(),
+            photo_key,
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| PersonRepoError::Db(e.to_string()))?;
+        // `fetch_optional` returns None ONLY when the UPDATE's WHERE clause
+        // matched zero rows.
+        match row {
+            None => Err(PersonRepoError::NotFound),
+            Some(r) => Ok(r.previous),
         }
     }
 }

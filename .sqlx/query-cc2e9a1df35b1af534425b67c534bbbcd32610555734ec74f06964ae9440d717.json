@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                      gender, birth_date, birth_place, death_date, notes,\n                      linked_user_id, created_at, updated_at\n                 FROM persons WHERE family_id = $1 AND id = $2",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                      gender, birth_date, birth_place, death_date, notes,\n                      linked_user_id, photo_key, created_at, updated_at\n                 FROM persons WHERE family_id = $1 AND linked_user_id = $2",
   "describe": {
     "columns": [
       {
@@ -137,6 +137,17 @@
       },
       {
         "ordinal": 12,
+        "name": "photo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "persons",
+            "name": "photo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -177,9 +188,10 @@
       true,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "977a57c22eab1c231a6e9384c8e4f1cd718571d542d37b8f2a9c3640fd88877d"
+  "hash": "cc2e9a1df35b1af534425b67c534bbbcd32610555734ec74f06964ae9440d717"
 }

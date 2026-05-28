@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                      gender, birth_date, birth_place, death_date, notes,\n                      linked_user_id, created_at, updated_at\n                 FROM persons WHERE family_id = $1 AND linked_user_id = $2",
+  "query": "SELECT id, family_id, given_name, family_name, name_at_birth, nickname,\n                              gender, birth_date, birth_place, death_date, notes,\n                              linked_user_id, photo_key, created_at, updated_at\n                         FROM persons WHERE family_id = $1 ORDER BY id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -137,6 +137,17 @@
       },
       {
         "ordinal": 12,
+        "name": "photo_key",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "persons",
+            "name": "photo_key"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -161,7 +172,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Int8"
       ]
     },
     "nullable": [
@@ -177,9 +188,10 @@
       true,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "1f79e182260e101c938100fe676a8a656e5f20af43f2af53e13062a698b9fa10"
+  "hash": "0908cd7aac786f9e6c9fb7ab8e4639a65cf946c83961c7ac01a4e2317a78bb84"
 }

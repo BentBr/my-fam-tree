@@ -30,6 +30,9 @@ pub struct Person {
     pub death_date: Option<NaiveDate>,
     pub notes: String,
     pub linked_user_id: Option<UserId>,
+    /// Opaque object-storage key for this person's photo, or `None` when the
+    /// person has no photo yet. Resolved to a presigned URL at the HTTP edge.
+    pub photo_key: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -100,4 +103,14 @@ pub trait PersonRepo: Send + Sync {
         id: PersonId,
         user_id: Option<UserId>,
     ) -> Result<(), PersonRepoError>;
+
+    /// Set (or clear) the object-storage key for this person's photo.
+    /// Passing `None` clears the column. Returns the previous value so the
+    /// caller can best-effort-delete the orphaned bytes from the store.
+    async fn set_photo_key(
+        &self,
+        family_id: FamilyId,
+        id: PersonId,
+        photo_key: Option<String>,
+    ) -> Result<Option<String>, PersonRepoError>;
 }
