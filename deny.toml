@@ -11,6 +11,17 @@ ignore = [
     # No fix available upstream. Re-evaluate when the rsa crate ships a
     # constant-time release.
     "RUSTSEC-2023-0071",
+    # RUSTSEC-2026-0098/0099/0104 — three rustls-webpki 0.101.x bugs around
+    # name-constraint handling and a panic in CRL parsing. Reachable only if
+    # an attacker controls the TLS peer's certificate. Pulled in via
+    # aws-sdk-s3 → aws-smithy-http-client 1.1.x → hyper-rustls 0.24 →
+    # rustls 0.21 → rustls-webpki 0.101. We talk plain HTTP to MinIO in dev
+    # and CA-issued TLS to real AWS in prod — no attacker-controlled cert
+    # path. Drop these when aws-smithy-http-client ships with rustls ≥ 0.23
+    # (which carries webpki ≥ 0.103.12).
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
 ]
 
 [licenses]
