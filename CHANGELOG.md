@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.4](https://github.com/BentBr/my-family/compare/core-v0.1.3...core-v0.1.4) (2026-05-28)
+
+
+### Features
+
+* **api:** expose created_at on GET /families/me (Phase 5 Task 23) ([1343053](https://github.com/BentBr/my-family/commit/13430537e5f7bf9a4a06c794e1520cfe46c48fd5))
+* **fe:** disambiguate same-named families in picker + switcher; fix picker nav ([240ee0c](https://github.com/BentBr/my-family/commit/240ee0c4497e0896415ba7f4cc6e56ceabbd8a8e))
+* **fe:** mobile-responsive nav drawer + tree heading (Phase 5 Task 20) ([a765463](https://github.com/BentBr/my-family/commit/a765463e2e88ef566a8a1d0380061ef572a247bd))
+
+
+### Bug Fixes
+
+* **release:** sync fe/openapi.json + Cargo.lock to 0.1.3 ([3f3cf76](https://github.com/BentBr/my-family/commit/3f3cf7665b21ab6554379be72ade6e37b7ebbec3))
+* **test:** green up main — fmt, role-gate code string, invite-accept reload race ([3c9c667](https://github.com/BentBr/my-family/commit/3c9c66780c78a86c1a5c1e4fe8b627cf0bdcf1c9))
+
 ## [0.1.3](https://github.com/BentBr/my-family/compare/core-v0.1.2...core-v0.1.3) (2026-05-27)
 
 
