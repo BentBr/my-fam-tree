@@ -17,6 +17,7 @@ pub mod clock;
 pub mod config;
 pub mod digest;
 pub mod dispatcher;
+pub mod janitor;
 pub mod leader;
 pub mod state;
 #[cfg(feature = "test-fixtures")]

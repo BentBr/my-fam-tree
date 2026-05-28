@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use my_family_cache::ReminderJobQueue;
 use my_family_domain::{
-    FamilyMembershipRepo, PartnershipRepo, PersonFavouriteRepo, PersonRepo, ReminderDigestRepo,
-    ReminderPreferencesRepo, UserRepo,
+    FamilyMembershipRepo, JanitorRepo, PartnershipRepo, PersonFavouriteRepo, PersonRepo,
+    ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
 };
 use my_family_email::EmailSender;
 
@@ -27,10 +27,14 @@ pub struct WorkerState {
     pub digests: Arc<dyn ReminderDigestRepo>,
     pub queue: Arc<dyn ReminderJobQueue>,
     pub email: Arc<dyn EmailSender>,
+    pub janitor: Arc<dyn JanitorRepo>,
     pub web_public_url: String,
     pub max_retries: i32,
     pub retry_min_seconds: u64,
     pub retry_max_seconds: u64,
+    /// Rows whose tombstone is younger than this are kept around (debug
+    /// visibility); older rows get deleted on the next sweep.
+    pub janitor_grace_seconds: u64,
 }
 
 impl std::fmt::Debug for WorkerState {

@@ -19,6 +19,7 @@ pub use repos::family_memberships::{
     FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError, MembershipWithFamilyName,
 };
 pub use repos::health::{HealthRepo, HealthRepoError};
+pub use repos::janitor::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
 pub use repos::magic_link_tokens::{
     MagicLinkPurpose, MagicLinkRecord, MagicLinkRepo, MagicLinkRepoError,
 };

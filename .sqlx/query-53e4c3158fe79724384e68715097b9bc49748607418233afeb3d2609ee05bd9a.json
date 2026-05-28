@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM family_owner_transfers WHERE (completed_at IS NOT NULL AND completed_at < $1) OR (cancelled_at IS NOT NULL AND cancelled_at < $1) OR expires_at < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "53e4c3158fe79724384e68715097b9bc49748607418233afeb3d2609ee05bd9a"
+}

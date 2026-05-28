@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM refresh_tokens WHERE absolute_expires_at < $1 OR (revoked_at IS NOT NULL AND revoked_at < $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2498d6282a0e3e14cd2b57e37ca2c10addcef51128d8e628297a7a509158b72d"
+}

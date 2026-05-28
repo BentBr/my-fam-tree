@@ -27,8 +27,8 @@ use my_family_domain::{
 };
 use my_family_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
 use my_family_persistence::{
-    Database, PgFamilyMembershipRepo, PgFamilyRepo, PgPartnershipRepo, PgPersonFavouriteRepo,
-    PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
+    Database, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor, PgPartnershipRepo,
+    PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
 use my_family_worker::clock::{Clock, FixedClock};
 use my_family_worker::state::WorkerState;
@@ -113,13 +113,15 @@ fn build_state(
         partnerships: Arc::new(PgPartnershipRepo::new(pool.clone())),
         favourites: Arc::new(PgPersonFavouriteRepo::new(pool.clone())),
         prefs: Arc::new(PgReminderPrefsRepo::new(pool.clone())),
-        digests: Arc::new(PgReminderDigestRepo::new(pool)),
+        digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         queue,
         email,
+        janitor: Arc::new(PgJanitor::new(pool)),
         web_public_url: "https://app.example".into(),
         max_retries: 3,
         retry_min_seconds: 60,
         retry_max_seconds: 3_600,
+        janitor_grace_seconds: 0,
     }
 }
 

@@ -28,10 +28,27 @@ pub struct Config {
     pub worker_retry_backoff_max_seconds: u64,
     #[serde(default = "default_metrics_bind")]
     pub worker_metrics_bind: String,
+    /// How often the janitor sweep runs (DELETEs expired auth / invite /
+    /// transfer rows). Default 5 min — small enough that table-hygiene
+    /// stays tight, large enough that the DELETEs are amortised.
+    #[serde(default = "default_janitor_interval")]
+    pub worker_janitor_interval_seconds: u64,
+    /// Tombstone grace window: rows whose `expires_at` / `consumed_at` /
+    /// `revoked_at` / `completed_at` / `cancelled_at` is younger than
+    /// `now - this` are kept; older rows get deleted. Default 24 h.
+    #[serde(default = "default_janitor_grace")]
+    pub worker_janitor_grace_seconds: u64,
 }
 
 fn default_metrics_bind() -> String {
     "0.0.0.0:9091".to_string()
+}
+
+const fn default_janitor_interval() -> u64 {
+    300
+}
+const fn default_janitor_grace() -> u64 {
+    86_400
 }
 
 impl Config {
