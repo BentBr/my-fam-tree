@@ -1,6 +1,6 @@
 ---
 name: crate-cache
-description: Use when working in the cache crate (package my-family-cache, crate my_family_cache) — the Redis access layer providing the connection pool, rate limiter, and reminder job queue. Triggers — adding/changing Redis-backed pooling, rate limiting, or the digest queue; wiring these into api or reminder-worker; deciding key namespacing. Keywords — RedisPool, RedisRateLimiter, RedisReminderQueue, rate limit, leader lock, job queue, key prefix, deadpool-redis.
+description: Use when working in the cache crate (package my-family-cache, crate my_family_cache) — the Redis access layer providing the connection pool, rate limiter, and reminder job queue. Triggers — adding/changing Redis-backed pooling, rate limiting, or the digest queue; wiring these into api or worker; deciding key namespacing. Keywords — RedisPool, RedisRateLimiter, RedisReminderQueue, rate limit, leader lock, job queue, key prefix, deadpool-redis.
 ---
 
 # crate-cache — Redis access layer
@@ -10,7 +10,7 @@ description: Use when working in the cache crate (package my-family-cache, crate
 `my-family-cache` is the standalone Redis layer (no domain dependency). It wraps
 `deadpool-redis` + the `redis` crate and exposes three things, each behind a trait so
 `AppState`/`WorkerState` can inject an `Arc<dyn …>` (and fakes in tests). Consumed by
-`crate-api` (rate limiter) and `crate-reminder-worker` (job queue + the leader lease).
+`crate-api` (rate limiter) and `crate-worker` (job queue + the leader lease).
 For workspace conventions see `rust-foundations`; for the domain, `project-concepts`.
 
 `src/lib.rs` re-exports: `RedisPool`, `RateLimiter`, `RateLimitDecision`,
@@ -38,7 +38,7 @@ For workspace conventions see `rust-foundations`; for the domain, `project-conce
 - **`RedisReminderQueue`** — `LPUSH` + non-blocking `RPOP` ⇒ FIFO. `try_pop` returns
   `Ok(None)` when empty (dispatchers poll on a sleep, no `BRPOP`). `reminder_digests`
   is the source of truth, so a dropped queue is recoverable.
-- **Leader lock lives in `crate-reminder-worker`** (`src/leader.rs`, `SET … NX PX`),
+- **Leader lock lives in `crate-worker`** (`src/leader.rs`, `SET … NX PX`),
   *not* here — it merely borrows this crate's `RedisPool` + `prefix()`. Do not add it
   to cache.
 
@@ -54,5 +54,5 @@ or with `REDIS_URL` exported: `cargo test -p my-family-cache`.
 
 - Hardcoding a Redis key without `pool.prefix()` — breaks namespacing and test isolation.
 - Expecting `try_pop` to block — it does not; the caller polls.
-- Looking for the leader lock here — it's in `crate-reminder-worker`.
+- Looking for the leader lock here — it's in `crate-worker`.
 - Assuming `tests/` boot Redis — they no-op without `REDIS_URL`; use `cargo-in-network.sh`.

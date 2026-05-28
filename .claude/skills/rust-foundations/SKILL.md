@@ -36,7 +36,7 @@ root `Cargo.toml` are not advisory:
 ## Crate dependency direction
 
 `domain` depends on nothing internal. `persistence` → `domain`. `cache` and `email`
-are standalone. `api` → `{persistence, cache, email, domain}`. `reminder-worker` →
+are standalone. `api` → `{persistence, cache, email, domain}`. `worker` →
 same set. `seeder` → `{api, domain, persistence}`. **Never** make `domain` depend on
 `persistence`/`api`. Put pure logic + traits in `domain`; put I/O behind a trait and
 inject it via `AppState`/`WorkerState` as `Arc<dyn Trait>` — **no global mutable state**.
@@ -46,7 +46,7 @@ inject it via `AppState`/`WorkerState` as `Arc<dyn Trait>` — **no global mutab
 These are the design choices reviewers expect. Prefer the more constrained option every
 time — the deny-lints are the floor, not the whole bar.
 
-- **SQL lives only in `persistence`.** Runtime code (`api`, `reminder-worker`,
+- **SQL lives only in `persistence`.** Runtime code (`api`, `worker`,
   `services/`, `domain`) must contain **no** `sqlx::query*` calls or SQL strings — it
   goes through the domain repo traits as `Arc<dyn FooRepo>`. Need a new query? Add the
   method to the trait in `crate-domain`, then implement it in `crate-persistence`. (The
@@ -104,7 +104,7 @@ time — the deny-lints are the floor, not the whole bar.
 - One file, with output: `cargo test -p my-family-api --test auth_flow -- --nocapture`.
 - Logs: services emit `tracing` (`RUST_LOG=info,my_family=debug`, `LOG_FORMAT=pretty`
   in dev / `json` in prod). Read them with `docker compose logs -f api` /
-  `… reminder-worker`. Set `RUST_BACKTRACE=1` when chasing a panic in a binary.
+  `… worker`. Set `RUST_BACKTRACE=1` when chasing a panic in a binary.
 
 ## Common mistakes
 

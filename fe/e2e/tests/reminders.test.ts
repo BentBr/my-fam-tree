@@ -5,7 +5,7 @@ import { signIn, createFamily } from '../page-objects/session'
 // The worker exposes POST /__test/advance-clock only when built with
 // `--features test-fixtures` (CI + `REMINDER_WORKER_FEATURES=test-fixtures`
 // locally). In CI it listens on localhost:9091; under compose it's the
-// `reminder-worker` service. Override via WORKER_TEST_URL.
+// `worker` service. Override via WORKER_TEST_URL.
 const WORKER_URL = process.env['WORKER_TEST_URL'] ?? 'http://localhost:9091'
 
 test('a daily digest email fires 7 days before a birthday when reminders are on', async ({ page }) => {

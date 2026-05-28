@@ -47,7 +47,7 @@ for the strict-lint/test regime see `rust-foundations`.
    `async fn` signature; extend `FooRepoError`/Row/Draft if needed.
 2. Implement it in `crate-persistence` (SQLx); see `rust-foundations` for
    `sqlx-prepare` + `.sqlx` cache discipline.
-3. Wire/use it from `crate-api` or `reminder-worker`.
+3. Wire/use it from `crate-api` or `worker`.
 
 A repo trait that compiles but isn't implemented is a `persistence` error, not
 a `domain` one.

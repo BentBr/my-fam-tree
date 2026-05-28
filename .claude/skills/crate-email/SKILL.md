@@ -7,7 +7,7 @@ description: Use when touching the my-family-email crate (package `my-family-ema
 
 Outbound transactional email: the `EmailSender` trait + a real SMTP impl + a
 fake, and locale-aware plain-text bodies rendered from Askama templates. No
-Actix/SQLx; standalone in the workspace graph. `api` and `reminder-worker`
+Actix/SQLx; standalone in the workspace graph. `api` and `worker`
 inject it as `Arc<dyn EmailSender>` (no global state — see `rust-foundations`).
 For roles/auth context see `project-concepts`.
 

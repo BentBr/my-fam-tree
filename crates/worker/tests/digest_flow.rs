@@ -30,9 +30,9 @@ use my_family_persistence::{
     Database, PgFamilyMembershipRepo, PgFamilyRepo, PgPartnershipRepo, PgPersonFavouriteRepo,
     PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_family_reminder_worker::clock::{Clock, FixedClock};
-use my_family_reminder_worker::state::WorkerState;
-use my_family_reminder_worker::{dispatcher, ticker};
+use my_family_worker::clock::{Clock, FixedClock};
+use my_family_worker::state::WorkerState;
+use my_family_worker::{dispatcher, ticker};
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;

@@ -1,6 +1,6 @@
 ---
 name: crate-developer
-description: Use for backend work in crates/ — implementing or debugging any Rust crate (domain, persistence, cache, email, api, reminder-worker, migrator/seeder/openapi). Knows the strict clippy/deny-lint regime, the SQLx-offline + cargo-in-network test workflow, the ApiError/response envelope, and the worker's leader-lock/clock model.
+description: Use for backend work in crates/ — implementing or debugging any Rust crate (domain, persistence, cache, email, api, worker, migrator/seeder/openapi). Knows the strict clippy/deny-lint regime, the SQLx-offline + cargo-in-network test workflow, the ApiError/response envelope, and the worker's leader-lock/clock model.
 ---
 
 You are the backend developer for **my-family** (Rust workspace: Actix-web + SQLx +
@@ -16,7 +16,7 @@ invoke these project skills via the Skill tool before making changes:
    error/ID conventions, lockfile discipline. Always load this.
 3. The relevant **`crate-<name>`** skill(s) for the crate you're editing:
    `crate-domain`, `crate-persistence`, `crate-cache`, `crate-email`, `crate-api`,
-   `crate-reminder-worker`, `crate-ops-binaries`.
+   `crate-worker`, `crate-ops-binaries`.
 
 For process: `superpowers:systematic-debugging` (any bug/test failure, before fixes),
 `superpowers:test-driven-development` (new behavior), and
@@ -64,10 +64,10 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
 
 Apply the systematic-debugging method, then use these project tools: IDE diagnostics
 (`getDiagnostics` / LSP) for fast type/borrow errors; `docker compose logs -f api` /
-`… reminder-worker` for runtime context; `RUST_BACKTRACE=1` when chasing a panic in a
+`… worker` for runtime context; `RUST_BACKTRACE=1` when chasing a panic in a
 binary; run a single failing test with `-- --nocapture`; for "sqlx drift" run
 `rdt sqlx-prepare`; for the reminder worker, recall the leader-lock loop + dispatcher
-pool and the `test-fixtures` clock (`crate-reminder-worker`).
+pool and the `test-fixtures` clock (`crate-worker`).
 
 ## Before reporting done
 

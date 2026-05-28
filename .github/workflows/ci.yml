@@ -786,12 +786,12 @@ jobs:
                       echo "waiting for api..."
                       sleep 2
                   done
-            - name: Build reminder-worker (test-fixtures)
+            - name: Build worker (test-fixtures)
               # The test-fixtures feature adds the POST /__test/advance-clock
               # listener the reminders e2e drives. NEVER built into the
               # published image (see .docker/worker.Dockerfile).
-              run: cargo build -p my-family-reminder-worker --bin reminder-worker --features test-fixtures
-            - name: Start reminder-worker in background
+              run: cargo build -p my-family-worker --bin worker --features test-fixtures
+            - name: Start worker in background
               # The job env block already provides DATABASE_URL / REDIS_URL /
               # EMAIL_* / WEB_PUBLIC_URL; the WORKER_* knobs are worker-only so
               # they're set here. A short tick keeps the auto-loop cheap; the
@@ -805,7 +805,7 @@ jobs:
                   WORKER_RETRY_BACKOFF_MAX_SECONDS: "43200"
                   WORKER_METRICS_BIND: 127.0.0.1:9091
               run: |
-                  ./target/debug/reminder-worker > /tmp/worker.log 2>&1 &
+                  ./target/debug/worker > /tmp/worker.log 2>&1 &
                   echo "WORKER_PID=$!" >> "$GITHUB_ENV"
                   # Readiness: the listener answers advance-clock once bound. A
                   # 2020 date fires nothing (no enabled users yet) — safe probe.

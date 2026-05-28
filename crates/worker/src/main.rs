@@ -11,15 +11,15 @@ use my_family_persistence::{
     Database, PgFamilyMembershipRepo, PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo,
     PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_family_reminder_worker::clock::Clock;
+use my_family_worker::clock::Clock;
 #[cfg(feature = "test-fixtures")]
-use my_family_reminder_worker::clock::FixedClock;
+use my_family_worker::clock::FixedClock;
 #[cfg(not(feature = "test-fixtures"))]
-use my_family_reminder_worker::clock::SystemClock;
-use my_family_reminder_worker::state::WorkerState;
+use my_family_worker::clock::SystemClock;
+use my_family_worker::state::WorkerState;
 #[cfg(feature = "test-fixtures")]
-use my_family_reminder_worker::test_clock_http;
-use my_family_reminder_worker::{config, dispatcher, leader, ticker};
+use my_family_worker::test_clock_http;
+use my_family_worker::{config, dispatcher, leader, ticker};
 use tokio::time::sleep;
 use tracing_subscriber::prelude::*;
 
@@ -113,7 +113,7 @@ async fn main() -> anyhow::Result<()> {
     let leader = leader::Leader::new(redis, Duration::from_secs(cfg.worker_leader_lease_seconds));
     let refresh = Duration::from_secs(cfg.worker_leader_refresh_seconds);
     let tick = Duration::from_secs(cfg.worker_tick_interval_seconds);
-    tracing::info!(app_env = %cfg.app_env, "reminder-worker started");
+    tracing::info!(app_env = %cfg.app_env, "worker started");
     loop {
         leader.acquire_blocking().await;
         tracing::info!("acquired leader lock");

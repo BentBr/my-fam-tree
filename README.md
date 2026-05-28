@@ -83,7 +83,7 @@ The `seeder` container runs once after `migrator` completes and prints three `MA
 ## Project layout
 
 ```
-crates/         Rust workspace (api, reminder-worker, migrator, domain, persistence, email, cache, openapi)
+crates/         Rust workspace (api, worker, migrator, domain, persistence, email, cache, openapi)
 fe/             Vue 3 + TS frontend (all pnpm runs via scripts/fe-in-container.sh)
 migrations/     SQLx migrations
 .docker/        Per-service Dockerfiles

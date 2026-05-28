@@ -5,7 +5,7 @@
 #
 # Requires the worker built WITH the test-fixtures feature (exposes the
 # clock-advance endpoint + the dinghy `clock.my-family.docker` route):
-#   REMINDER_WORKER_FEATURES=test-fixtures docker compose up -d --build reminder-worker
+#   WORKER_FEATURES=test-fixtures docker compose up -d --build worker
 #
 # Digests are idempotent per (user, send-date): once today's digest has sent,
 # re-triggering the same day is a no-op. Since this tool exists for iterating
@@ -35,7 +35,7 @@ echo "→ advancing worker clock to 06:00 Europe/Berlin ($DATE) via $URL"
 if ! curl -fsS -X POST "$URL" -H 'content-type: application/json' -d "$BODY"; then
     echo
     echo "✗ could not reach the clock endpoint. Is the worker built with test-fixtures?"
-    echo "  REMINDER_WORKER_FEATURES=test-fixtures docker compose up -d --build reminder-worker"
+    echo "  WORKER_FEATURES=test-fixtures docker compose up -d --build worker"
     exit 1
 fi
 

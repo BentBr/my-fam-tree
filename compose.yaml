@@ -186,19 +186,19 @@ services:
                 aliases:
                     - api.my-family.docker
 
-    reminder-worker:
+    worker:
         build:
             context: .
             dockerfile: .docker/worker.Dockerfile
             args:
-                # Empty in normal dev/prod; set REMINDER_WORKER_FEATURES=test-fixtures
+                # Empty in normal dev/prod; set WORKER_FEATURES=test-fixtures
                 # for E2E to build the clock-advance listener on :9091.
-                CARGO_FEATURES: ${REMINDER_WORKER_FEATURES:-}
+                CARGO_FEATURES: ${WORKER_FEATURES:-}
         environment:
             <<: *rust_env
             # `clock.my-family.docker` is a friendly alias for the test-fixtures
             # clock-advance endpoint (used by `rdt trigger-clock`). Only routable
-            # when the worker is built with REMINDER_WORKER_FEATURES=test-fixtures.
+            # when the worker is built with WORKER_FEATURES=test-fixtures.
             VIRTUAL_HOST: worker.my-family.docker,clock.my-family.docker
             VIRTUAL_PORT: "9091"
         depends_on:

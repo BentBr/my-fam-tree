@@ -1,9 +1,9 @@
 ---
-name: crate-reminder-worker
-description: Use when working in the reminder-worker crate (package my-family-reminder-worker, crate my_family_reminder_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
+name: crate-worker
+description: Use when working in the worker crate (package my-family-worker, crate my_family_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
 ---
 
-# crate-reminder-worker
+# crate-worker
 
 Load `project-concepts` for the domain and `rust-foundations` for the strict
 lint gate, errors, IDs, and SQLx — not repeated here.
@@ -61,9 +61,9 @@ the clock through this endpoint.
 
 ## Run & debug
 
-- Run: `cargo run -p my-family-reminder-worker --bin reminder-worker` (or `rdt worker`).
+- Run: `cargo run -p my-family-worker --bin worker` (or `rdt worker`).
 - With the test clock: add `--features test-fixtures`.
-- Logs: `docker compose logs -f reminder-worker`.
+- Logs: `docker compose logs -f worker`.
 - Env (compose defaults): `WORKER_TICK_INTERVAL_SECONDS=300`,
   `WORKER_LEADER_LEASE_SECONDS=60`, `WORKER_LEADER_REFRESH_SECONDS=20`,
   `WORKER_MAX_RETRIES=5`, `WORKER_RETRY_BACKOFF_MIN_SECONDS=60`,

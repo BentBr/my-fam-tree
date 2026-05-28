@@ -78,10 +78,10 @@ confirm a fix; then capture the regression as a headless spec in `fe/e2e/tests`.
 
 ## Reminder/time-dependent flows
 
-The reminder-worker can expose a test-clock endpoint (`POST /__test/advance-clock` on
+The worker can expose a test-clock endpoint (`POST /__test/advance-clock` on
 `WORKER_METRICS_BIND` :9091) **only under the `test-fixtures` cargo feature** — the
 intended hook for deterministic digest/birthday testing. It is feature-gated out of
-prod builds; see `crate-reminder-worker`.
+prod builds; see `crate-worker`.
 
 ## Common mistakes
 

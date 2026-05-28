@@ -7,7 +7,7 @@ members = [
   "crates/persistence",
   "crates/openapi",
   "crates/migrator",
-  "crates/reminder-worker",
+  "crates/worker",
   "crates/api",
   "crates/seeder",
 ]

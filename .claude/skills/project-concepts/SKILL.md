@@ -26,7 +26,7 @@ The whole stack runs in Docker Compose (`compose.yaml`). Locally, **dinghy** rou
 | FE (Vite) | http://my-family.docker | dinghy → `fe:5173`; proxies `/api/*` → `api:8080` |
 | API | http://api.my-family.docker | Swagger UI at `/api/docs`; internal `:8080` |
 | Mailpit | http://mail.my-family.docker | dev inbox UI (`:8025`); SMTP internal `:1025` |
-| reminder-worker | `worker.my-family.docker` | metrics/test listener `:9091` |
+| worker | `worker.my-family.docker` | metrics/test listener `:9091` |
 | Postgres | `localhost:3458` (host) → `5432` | db/user/pass all `my_family` |
 | Redis | `redis:6379` (internal only) | key prefix `my-family:` |
 | Playwright | in-network only | `E2E_BASE_URL=http://my-family.docker:5173` |
@@ -35,7 +35,7 @@ The whole stack runs in Docker Compose (`compose.yaml`). Locally, **dinghy** rou
 Project commands live in `.rusty_dev_tool/config.toml`: `migrate`, `migrate-status`,
 `migrate-check`, `sqlx-prepare`, `openapi`, `openapi-check`, `lint`, `test`,
 `test-e2e`, `coverage`, `fe`, `worker`, `gen-jwt-keys`, `seed`, `reset`, `deny`.
-**Logs:** `docker compose logs -f <service>` (e.g. `api`, `reminder-worker`).
+**Logs:** `docker compose logs -f <service>` (e.g. `api`, `worker`).
 
 ## Domain model
 
@@ -127,7 +127,7 @@ crates/persistence    SQLx Postgres impls of the repo traits (.sqlx offline cach
 crates/cache          Redis pool, rate limiter, reminder job queue
 crates/email          SMTP + Fake senders, Askama text templates (en/de)
 crates/api            Actix HTTP server: routes, AppState, middleware, error model, OpenAPI
-crates/reminder-worker leader-locked scheduler + dispatcher pool for digest emails
+crates/worker leader-locked scheduler + dispatcher pool for digest emails
 crates/migrator       sqlx migrate runner binary
 crates/seeder         deterministic dev/CI seed binary
 crates/openapi        openapi-dump binary (spec → fe/openapi.json)

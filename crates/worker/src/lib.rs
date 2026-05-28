@@ -2,7 +2,7 @@
 //!
 //! The leader-locked digest scheduler + dispatcher, factored into a lib so
 //! integration tests can drive the ticker/dispatcher directly. The
-//! `reminder-worker` binary (`main.rs`) is a thin wrapper that wires
+//! `worker` binary (`main.rs`) is a thin wrapper that wires
 //! production collaborators and runs the loop.
 
 // The worker's async orchestration fns capture `Arc<dyn Repo>` trait objects;

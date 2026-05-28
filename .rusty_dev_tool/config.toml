@@ -61,7 +61,7 @@ no_docker_compose = true
     [commands.worker]
         "description" = "Run the reminder worker locally"
         "alias" = "worker"
-        "execution"  = "cargo run -p my-family-reminder-worker --bin reminder-worker"
+        "execution"  = "cargo run -p my-family-worker --bin worker"
 
     [commands.gen-jwt-keys]
         "description" = "Emit a fresh Ed25519 keypair for JWT_PRIVATE_KEY / JWT_PUBLIC_KEYS"
@@ -84,7 +84,7 @@ no_docker_compose = true
         "execution"  = "cargo deny check && cargo machete"
 
     [commands.trigger-clock]
-        "description" = "Advance the reminder worker test clock to 06:00 Berlin + tick (see Mailpit). Optional date arg YYYY-MM-DD. Clears that day's digest first so re-runs resend with current data (TRIGGER_CLOCK_KEEP=1 to keep). Needs the worker built with REMINDER_WORKER_FEATURES=test-fixtures."
+        "description" = "Advance the reminder worker test clock to 06:00 Berlin + tick (see Mailpit). Optional date arg YYYY-MM-DD. Clears that day's digest first so re-runs resend with current data (TRIGGER_CLOCK_KEEP=1 to keep). Needs the worker built with WORKER_FEATURES=test-fixtures."
         "alias" = "trigger-clock"
         "execution"  = "./scripts/trigger-clock.sh"
 

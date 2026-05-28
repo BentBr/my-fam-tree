@@ -24,7 +24,7 @@ We aim to acknowledge reports within 72 hours and provide an initial assessment 
 
 In scope:
 
-- The Rust API (`crates/api`), worker (`crates/reminder-worker`), and migrator (`crates/migrator`).
+- The Rust API (`crates/api`), worker (`crates/worker`), and migrator (`crates/migrator`).
 - The Vue frontend (`fe/`).
 - Container images built from `.docker/`.
 - The hosted instance operated by the project owner.
