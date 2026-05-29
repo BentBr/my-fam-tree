@@ -84,6 +84,31 @@ pub async fn create(
         return Err(ApiError::RelationshipCycle);
     }
 
+    // Cross-family IDOR guard (security audit HIGH). `parent_links` has no
+    // `family_id` column — without this check an F1 admin could POST a row
+    // referencing two F2 persons; the join in `list_for_family` would then
+    // surface the rogue edge inside F2's tree. Resolve both endpoints
+    // through `find_in_family(active.id, _)` so the request is rejected
+    // at the edge with a clear `person.not_found`.
+    if state
+        .persons
+        .find_in_family(active.id, child)
+        .await
+        .map_err(|e| internal(format!("persons.find_in_family: {e}")))?
+        .is_none()
+    {
+        return Err(ApiError::PersonNotFound { id: Some(child.into_uuid()) });
+    }
+    if state
+        .persons
+        .find_in_family(active.id, parent)
+        .await
+        .map_err(|e| internal(format!("persons.find_in_family: {e}")))?
+        .is_none()
+    {
+        return Err(ApiError::PersonNotFound { id: Some(parent.into_uuid()) });
+    }
+
     let edges =
         state.parent_links.all_edges_in_family(active.id).await.map_err(internal_link_err)?;
     if would_create_cycle(&edges, child, parent) {

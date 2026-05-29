@@ -27,11 +27,40 @@ fn favourite_internal<E: std::fmt::Display>(e: E) -> ApiError {
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, Pagination};
 use crate::services::audit;
-use crate::validation::value_required;
+use crate::validation::{string_too_long, value_required};
 use crate::{ApiError, AppState, response_body};
 
 const PERSONS_LIST_DEFAULT_LIMIT: u32 = 50;
 const PERSONS_LIST_MAX_LIMIT: u32 = 100;
+
+// Free-text length caps (security audit MEDIUM). Without these the only
+// upper bound is actix's default 32 KB JSON body, which lets an admin
+// store hundreds of 30 KB notes blobs per person. Caps are in CHARACTERS
+// (Unicode scalar values via `chars().count()`), not bytes — a German
+// umlaut and an emoji each count as one.
+const NAME_MAX: u32 = 200;
+const SHORT_MAX: u32 = 100;
+const NOTES_MAX: u32 = 2000;
+
+/// Bound a single string field's character count. `None` paths (empty
+/// strings) pass; callers handle required-vs-optional separately.
+fn check_max(path: &str, value: &str, max: u32) -> Result<(), ApiError> {
+    if u32::try_from(value.chars().count()).unwrap_or(u32::MAX) > max {
+        return Err(string_too_long(path, max));
+    }
+    Ok(())
+}
+
+fn check_draft(d: &PersonDraft) -> Result<(), ApiError> {
+    check_max("/given_name", &d.given_name, NAME_MAX)?;
+    check_max("/family_name", &d.family_name, NAME_MAX)?;
+    check_max("/name_at_birth", &d.name_at_birth, NAME_MAX)?;
+    check_max("/nickname", &d.nickname, NAME_MAX)?;
+    check_max("/gender", &d.gender, SHORT_MAX)?;
+    check_max("/birth_place", &d.birth_place, SHORT_MAX)?;
+    check_max("/notes", &d.notes, NOTES_MAX)?;
+    Ok(())
+}
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct PersonCreateReq {
@@ -290,6 +319,7 @@ pub async fn create(
     }
 
     let draft = draft_from_create(payload);
+    check_draft(&draft)?;
     let person =
         state.persons.create(active.id, draft).await.map_err(|e| map_person_repo_err(e, None))?;
     audit::record(
@@ -412,6 +442,7 @@ pub async fn update(
     }
 
     let draft = merge_update(&existing, payload);
+    check_draft(&draft)?;
     let person = state
         .persons
         .update(active.id, person_id, draft)

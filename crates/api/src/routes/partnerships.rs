@@ -156,6 +156,30 @@ pub async fn create(
     let a = PersonId::from_uuid(payload.partner_a_id);
     let b = PersonId::from_uuid(payload.partner_b_id);
 
+    // Cross-family IDOR guard (security audit MEDIUM). Although the
+    // partnerships row carries family_id (so list_for_family won't surface
+    // a rogue edge), an F1 admin could still pollute F1's own list with a
+    // partnership between two F2 persons, and ON DELETE CASCADE would wipe
+    // the row when F2 deletes one of those persons. Block at the edge.
+    if state
+        .persons
+        .find_in_family(active.id, a)
+        .await
+        .map_err(|e| internal(format!("persons.find_in_family: {e}")))?
+        .is_none()
+    {
+        return Err(ApiError::PersonNotFound { id: Some(a.into_uuid()) });
+    }
+    if state
+        .persons
+        .find_in_family(active.id, b)
+        .await
+        .map_err(|e| internal(format!("persons.find_in_family: {e}")))?
+        .is_none()
+    {
+        return Err(ApiError::PersonNotFound { id: Some(b.into_uuid()) });
+    }
+
     // Cross-aggregate validation: partnership-before-birth, sibling
     // warning, death cross-check. Pulls the family graph (same scope and
     // bounds as the relationships-tree service uses elsewhere).

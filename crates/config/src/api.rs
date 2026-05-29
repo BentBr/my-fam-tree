@@ -187,6 +187,22 @@ impl ApiConfig {
         if self.api.port == 0 {
             return Err(ConfigError::Validation("API_PORT must be non-zero".into()));
         }
+        // Security audit MEDIUM. In production we MUST ship cookies marked
+        // Secure (so browsers refuse them over plain HTTP) and the refresh
+        // cookie MUST be SameSite=Strict — without these, a misconfigured
+        // prod deploy hands every session cookie to the network.
+        if matches!(self.app_env, AppEnv::Production) {
+            if !self.cookie.secure {
+                return Err(ConfigError::Validation(
+                    "COOKIE_SECURE must be true in production".into(),
+                ));
+            }
+            if self.cookie.samesite_refresh != "Strict" {
+                return Err(ConfigError::Validation(
+                    "COOKIE_SAMESITE_REFRESH must be `Strict` in production".into(),
+                ));
+            }
+        }
         Ok(())
     }
 
@@ -341,6 +357,50 @@ mod tests {
             jail.set_env("JWT_PRIVATE_KEY_ID", "missing-kid");
             let err = ApiConfig::from_env().expect_err("should reject");
             assert!(matches!(err, ConfigError::Validation(_)));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_insecure_cookie() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("APP_ENV", "production");
+            // COOKIE_SECURE defaults to false in the minimum env — that's
+            // fine for development but must fail validate() in production.
+            let err = ApiConfig::from_env().expect_err("prod with secure=false must reject");
+            match err {
+                ConfigError::Validation(msg) => assert!(msg.contains("COOKIE_SECURE")),
+                other => panic!("expected Validation, got {other:?}"),
+            }
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_lax_refresh_samesite() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("APP_ENV", "production");
+            jail.set_env("COOKIE_SECURE", "true");
+            jail.set_env("COOKIE_SAMESITE_REFRESH", "Lax");
+            let err = ApiConfig::from_env().expect_err("prod with lax refresh must reject");
+            match err {
+                ConfigError::Validation(msg) => assert!(msg.contains("COOKIE_SAMESITE_REFRESH")),
+                other => panic!("expected Validation, got {other:?}"),
+            }
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_accepts_secure_and_strict_refresh() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("APP_ENV", "production");
+            jail.set_env("COOKIE_SECURE", "true");
+            // COOKIE_SAMESITE_REFRESH defaults to Strict in the minimum env.
+            ApiConfig::from_env().expect("prod with secure+strict must load");
             Ok(())
         });
     }

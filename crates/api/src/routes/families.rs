@@ -34,7 +34,35 @@ use crate::cookies::access_cookie;
 use crate::response::NullResponseBody;
 use crate::services::audit;
 use crate::services::auth_service::issue_access_token_for;
-use crate::validation::{email_invalid, looks_like_email, role_invalid, value_required};
+use crate::validation::{
+    email_invalid, looks_like_email, role_invalid, string_too_long, value_required,
+};
+
+// Family-name cap (security audit MEDIUM). The same value flows verbatim
+// into the invite + owner-transfer email Subject lines (`templates.rs`);
+// lettre escapes CR/LF in headers, so this is the second line of defense
+// against header-injection on the off-chance the template path changes.
+const FAMILY_NAME_MAX: u32 = 200;
+
+/// Trim and validate a family name. Rejects empty, over-long, or
+/// strings containing CR/LF (header-injection hardening).
+fn validate_family_name(raw: &str) -> Result<String, ApiError> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Err(value_required("/name"));
+    }
+    if trimmed.contains('\r') || trimmed.contains('\n') {
+        return Err(ApiError::Validation(vec![crate::error::FieldViolation::new(
+            "/name",
+            "validation.value_invalid",
+            "family name must not contain newline characters",
+        )]));
+    }
+    if u32::try_from(trimmed.chars().count()).unwrap_or(u32::MAX) > FAMILY_NAME_MAX {
+        return Err(string_too_long("/name", FAMILY_NAME_MAX));
+    }
+    Ok(trimmed.to_string())
+}
 use crate::{ApiError, ApiResponse, AppState, response_body};
 
 // ---------------------------------------------------------------------------
@@ -185,12 +213,9 @@ pub async fn create(
     body: web::Json<CreateFamilyReq>,
 ) -> Result<HttpResponse, ApiError> {
     let claims = crate::auth::user_claims(&req)?;
-    let name = body.name.trim();
-    if name.is_empty() {
-        return Err(value_required("/name"));
-    }
+    let name = validate_family_name(&body.name)?;
 
-    let family = state.families.create(name, claims.user_id).await.map_err(internal)?;
+    let family = state.families.create(&name, claims.user_id).await.map_err(internal)?;
     state.memberships.insert(family.id, claims.user_id, Role::Owner).await.map_err(internal)?;
     audit::record(
         &state.audit,
@@ -269,17 +294,9 @@ pub async fn rename(
     let active = resolve_membership(&claims, id)?;
     crate::auth::require_role(&active, Role::Admin)?;
 
-    let name = body.name.trim();
-    if name.is_empty() {
-        return Err(value_required("/name"));
-    }
-    state.families.rename(FamilyId::from_uuid(id), name).await.map_err(internal)?;
-    Ok(ApiResponse::ok(FamilyView {
-        id,
-        name: name.to_string(),
-        role: active.role,
-        created_at: None,
-    }))
+    let name = validate_family_name(&body.name)?;
+    state.families.rename(FamilyId::from_uuid(id), &name).await.map_err(internal)?;
+    Ok(ApiResponse::ok(FamilyView { id, name, role: active.role, created_at: None }))
 }
 
 // ---------------------------------------------------------------------------
@@ -360,6 +377,23 @@ pub async fn invite(
     let fid = FamilyId::from_uuid(family_id);
     if state.invites.find_pending_by_email(fid, &email).await.map_err(internal)?.is_some() {
         return Err(ApiError::InviteDuplicate);
+    }
+
+    // Cross-family IDOR guard (security audit MEDIUM). `family_invites.person_id`
+    // only `REFERENCES persons(id)`, not the invite's family_id — an F1
+    // admin could otherwise mint an invite referencing an F2 person. On
+    // accept the linkage step would then fail (404 mapped to 500) but the
+    // membership row + audit "verify" event would already have landed,
+    // leaving a member without the intended linkage. Reject at create time.
+    if let Some(pid) = body.person_id
+        && state
+            .persons
+            .find_in_family(fid, my_family_domain::PersonId::from_uuid(pid))
+            .await
+            .map_err(internal)?
+            .is_none()
+    {
+        return Err(ApiError::PersonNotFound { id: Some(pid) });
     }
 
     let (token, hash) = generate_opaque_token();

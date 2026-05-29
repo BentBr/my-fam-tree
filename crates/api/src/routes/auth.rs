@@ -111,6 +111,7 @@ const fn build_consume_response(
 #[post("/auth/magic-link")]
 pub async fn magic_link(
     state: web::Data<AppState>,
+    req: HttpRequest,
     body: web::Json<MagicLinkReq>,
 ) -> Result<ApiResponse<MagicLinkRes>, ApiError> {
     let email = body.email.trim().to_lowercase();
@@ -118,7 +119,8 @@ pub async fn magic_link(
         return Err(email_invalid("/email"));
     }
 
-    // Per-email sliding-window rate limit.
+    // Per-email sliding-window rate limit. Stops a single address from
+    // being spammed (or self-spammed by an automation gone wrong).
     let decision = state
         .rate_limiter
         .check(
@@ -130,6 +132,27 @@ pub async fn magic_link(
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
     if !decision.allowed {
         return Err(ApiError::RateLimited { retry_after_secs: decision.retry_after_seconds });
+    }
+
+    // Per-IP sliding-window rate limit (security audit MEDIUM). The config
+    // already exposes `magic_link.rate_per_ip_per_hour` but the handler
+    // never applied it — letting an attacker iterate over email addresses
+    // from a single IP to drain the SMTP outbox / spam arbitrary mailboxes.
+    // `realip_remote_addr()` returns the peer addr (or the leading X-Forwarded-For
+    // entry when a trusted proxy sets it); `"unknown"` is a safe fallback that
+    // keeps the per-IP bucket usable even when actix can't resolve the peer.
+    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_string();
+    let ip_decision = state
+        .rate_limiter
+        .check(
+            &format!("ml:ip:{ip}"),
+            state.cfg.magic_link.rate_per_ip_per_hour,
+            StdDuration::from_hours(1),
+        )
+        .await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    if !ip_decision.allowed {
+        return Err(ApiError::RateLimited { retry_after_secs: ip_decision.retry_after_seconds });
     }
 
     // Lookup or create the user. We use the user's locale (or default En) to

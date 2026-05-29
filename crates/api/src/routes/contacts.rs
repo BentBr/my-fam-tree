@@ -41,7 +41,7 @@ use uuid::Uuid;
 use crate::auth::user_claims_with_family;
 use crate::response::{ApiResponse, NullResponseBody};
 use crate::services::audit;
-use crate::validation::{email_invalid, looks_like_email};
+use crate::validation::{email_invalid, looks_like_email, string_too_long};
 use crate::{ApiError, AppState, FieldViolation, response_body};
 
 // ---------------------------------------------------------------------------
@@ -129,6 +129,10 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     ApiError::Internal(anyhow::anyhow!(e.to_string()))
 }
 
+// Free-text length caps (security audit MEDIUM).
+const LABEL_MAX: u32 = 100;
+const VALUE_MAX: u32 = 500;
+
 fn input_to_draft(i: ContactInput) -> Result<ContactDraft, ApiError> {
     let kind = parse_kind(&i.kind).ok_or_else(|| {
         ApiError::Validation(vec![FieldViolation::new(
@@ -144,6 +148,16 @@ fn input_to_draft(i: ContactInput) -> Result<ContactDraft, ApiError> {
             "must be one of: family, admins_only",
         )])
     })?;
+    if u32::try_from(i.label.chars().count()).unwrap_or(u32::MAX) > LABEL_MAX {
+        return Err(string_too_long("/label", LABEL_MAX));
+    }
+    // `value` is a JSON `Value` shape — stringify before counting. Caps the
+    // total JSON character width of the field; a structured address with
+    // 5 fields × 100 chars still fits comfortably under 500.
+    let value_str = i.value.to_string();
+    if u32::try_from(value_str.chars().count()).unwrap_or(u32::MAX) > VALUE_MAX {
+        return Err(string_too_long("/value", VALUE_MAX));
+    }
     if kind == ContactKind::Email {
         match email_value_as_str(&i.value) {
             Some(s) if looks_like_email(s) => {}
