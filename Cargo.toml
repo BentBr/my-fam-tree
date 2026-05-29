@@ -39,6 +39,10 @@ async-trait = "0.1"
 aws-config = { version = "1", default-features = false, features = ["behavior-version-latest", "rustls"] }
 aws-credential-types = { version = "1", features = ["hardcoded-credentials"] }
 aws-sdk-s3 = { version = "1", default-features = false, features = ["behavior-version-latest", "rustls"] }
+# `default_async_sleep` for the SDK's retry runtime. aws-config pulls
+# `rt-tokio` in transitively; declaring the dep directly lets us name the
+# helper without leaning on a private re-export.
+aws-smithy-async = { version = "1", features = ["rt-tokio"] }
 base64 = "0.22"
 bytes = "1.10"
 chrono = { version = "0.4", features = ["serde"] }

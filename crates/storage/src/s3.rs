@@ -6,11 +6,13 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
-use aws_sdk_s3::config::Region;
+use aws_sdk_s3::config::timeout::TimeoutConfig;
+use aws_sdk_s3::config::{Region, SharedAsyncSleep};
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::types::ObjectCannedAcl;
 use aws_sdk_s3::{Client, Config as SdkConfig};
+use aws_smithy_async::rt::sleep::TokioSleep;
 use bytes::Bytes;
 
 use crate::{ObjectStore, StorageError};
@@ -49,10 +51,25 @@ impl S3ObjectStore {
     pub fn new(cfg: S3Config) -> Self {
         let creds =
             Credentials::from_keys(cfg.access_key_id.clone(), cfg.secret_access_key.clone(), None);
+        // The SDK uses `sleep_impl` for retries + timeouts. When we build
+        // `SdkConfig` directly (vs `aws_config::load`), it isn't auto-wired
+        // — without it the client panics at first use with "An async sleep
+        // implementation is required for retry to work". `TokioSleep` is
+        // a unit-struct constructor so we don't need a fallible helper.
         let mut builder = SdkConfig::builder()
             .behavior_version(aws_sdk_s3::config::BehaviorVersion::latest())
             .credentials_provider(creds)
             .region(Region::new(cfg.region.clone()))
+            .sleep_impl(SharedAsyncSleep::new(TokioSleep::new()))
+            // Configure a finite timeout so the SDK actually exercises the
+            // sleep_impl above; without an explicit `TimeoutConfig` the
+            // builder leaves them disabled and the retry runtime never
+            // calls sleep at all.
+            .timeout_config(
+                TimeoutConfig::builder()
+                    .operation_attempt_timeout(std::time::Duration::from_secs(30))
+                    .build(),
+            )
             .force_path_style(cfg.force_path_style);
         if let Some(ep) = cfg.endpoint_url.as_ref() {
             builder = builder.endpoint_url(ep);
