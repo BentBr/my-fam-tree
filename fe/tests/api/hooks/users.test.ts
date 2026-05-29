@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/client', () => ({
-    client: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn() },
+    client: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }))
 
 import { client } from '@/api/client'
-import { useConfirmEmailChange, useMe, useRequestEmailChange, useUpdateMe } from '@/api/hooks/users'
+import {
+    useClearMyAvatar,
+    useConfirmEmailChange,
+    useMe,
+    useRequestEmailChange,
+    useSetMyAvatar,
+    useUpdateMe,
+} from '@/api/hooks/users'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
 
@@ -15,6 +22,7 @@ interface MockedClient {
     GET: ReturnType<typeof vi.fn>
     POST: ReturnType<typeof vi.fn>
     PATCH: ReturnType<typeof vi.fn>
+    DELETE: ReturnType<typeof vi.fn>
 }
 const mocked = client as unknown as MockedClient
 
@@ -22,6 +30,7 @@ beforeEach(() => {
     mocked.GET.mockReset()
     mocked.POST.mockReset()
     mocked.PATCH.mockReset()
+    mocked.DELETE.mockReset()
 })
 
 describe('useMe', () => {
@@ -130,5 +139,51 @@ describe('useConfirmEmailChange', () => {
         mocked.POST.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
         const { result } = makeHookWrapper(() => useConfirmEmailChange())
         await expect(result.mutateAsync('bad')).rejects.toBeDefined()
+    })
+})
+
+describe('useSetMyAvatar', () => {
+    it('POSTs FormData with a single `file` field to /users/me/avatar', async () => {
+        mocked.POST.mockResolvedValueOnce({
+            data: { data: { avatar_key: 'users/u1/x.jpg', avatar_url: 'http://store/u1.jpg' } },
+            error: undefined,
+        })
+        const { result } = makeHookWrapper(() => useSetMyAvatar())
+        const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'me.jpg', { type: 'image/jpeg' })
+        await result.mutateAsync(file)
+        expect(mocked.POST).toHaveBeenCalledTimes(1)
+        const [path, opts] = mocked.POST.mock.calls[0] as [
+            string,
+            { body: FormData; bodySerializer: (b: unknown) => BodyInit },
+        ]
+        expect(path).toBe('/api/v1/users/me/avatar')
+        expect(opts.body).toBeInstanceOf(FormData)
+        const sent = opts.body.get('file')
+        expect(sent).toBeInstanceOf(File)
+        expect((sent as File).name).toBe('me.jpg')
+        // bodySerializer must pass the FormData through verbatim so fetch
+        // can mint the multipart boundary itself.
+        expect(opts.bodySerializer(opts.body)).toBe(opts.body)
+    })
+
+    it('rejects on error', async () => {
+        mocked.POST.mockResolvedValueOnce({ data: undefined, error: { msg: 'image.invalid' } })
+        const { result } = makeHookWrapper(() => useSetMyAvatar())
+        await expect(result.mutateAsync(new File([], 'x.png'))).rejects.toBeDefined()
+    })
+})
+
+describe('useClearMyAvatar', () => {
+    it('DELETEs /users/me/avatar', async () => {
+        mocked.DELETE.mockResolvedValueOnce({ data: { data: null }, error: undefined })
+        const { result } = makeHookWrapper(() => useClearMyAvatar())
+        await result.mutateAsync(undefined)
+        expect(mocked.DELETE).toHaveBeenCalledWith('/api/v1/users/me/avatar')
+    })
+
+    it('rejects on error', async () => {
+        mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
+        const { result } = makeHookWrapper(() => useClearMyAvatar())
+        await expect(result.mutateAsync(undefined)).rejects.toBeDefined()
     })
 })

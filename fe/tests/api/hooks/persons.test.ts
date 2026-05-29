@@ -8,11 +8,13 @@ import { ref } from 'vue'
 
 import { client } from '@/api/client'
 import {
+    useClearPersonPhoto,
     useCreatePerson,
     useDeletePerson,
     useGetPerson,
     useListPersons,
     useSetFavourite,
+    useSetPersonPhoto,
     useUpdatePerson,
     type PersonInput,
 } from '@/api/hooks/persons'
@@ -188,5 +190,59 @@ describe('useSetFavourite', () => {
         const tree = queryClient.getQueryData<{ nodes: { id: string; is_favourite_for_me: boolean }[] }>(['tree'])
         // Rolled back to the pre-mutation value.
         expect(tree?.nodes.find((n) => n.id === 'p1')?.is_favourite_for_me).toBe(false)
+    })
+})
+
+describe('useSetPersonPhoto', () => {
+    it('POSTs multipart/form-data with a single `file` field to /persons/{id}/photo', async () => {
+        mocked.POST.mockResolvedValueOnce({
+            data: { data: { photo_key: 'persons/p1/x.jpg', photo_url: 'http://store/p1.jpg' } },
+            error: undefined,
+        })
+        const { result } = makeHookWrapper(() => useSetPersonPhoto())
+        const file = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'pic.jpg', { type: 'image/jpeg' })
+        await result.mutateAsync({ id: 'p1', file })
+        expect(mocked.POST).toHaveBeenCalledTimes(1)
+        const [path, opts] = mocked.POST.mock.calls[0] as [
+            string,
+            { params: { path: { id: string } }; body: FormData; bodySerializer: (b: unknown) => BodyInit },
+        ]
+        expect(path).toBe('/api/v1/persons/{id}/photo')
+        expect(opts.params.path.id).toBe('p1')
+        // The body must be a FormData and carry a single `file` entry that
+        // round-trips the File the caller passed in. openapi-fetch's body
+        // type is `string`, so the hook casts FormData through unknown.
+        expect(opts.body).toBeInstanceOf(FormData)
+        const sent = opts.body.get('file')
+        expect(sent).toBeInstanceOf(File)
+        expect((sent as File).name).toBe('pic.jpg')
+        // The bodySerializer must hand the FormData through unchanged so
+        // fetch can set the multipart boundary itself; rewrapping into
+        // JSON.stringify would break the upload.
+        expect(opts.bodySerializer(opts.body)).toBe(opts.body)
+    })
+
+    it('rejects when the server returns an error envelope', async () => {
+        mocked.POST.mockResolvedValueOnce({ data: undefined, error: { msg: 'image.invalid' } })
+        const { result } = makeHookWrapper(() => useSetPersonPhoto())
+        const file = new File([new Uint8Array([0x00])], 'bad.png', { type: 'image/png' })
+        await expect(result.mutateAsync({ id: 'p1', file })).rejects.toBeDefined()
+    })
+})
+
+describe('useClearPersonPhoto', () => {
+    it('DELETEs /persons/{id}/photo', async () => {
+        mocked.DELETE.mockResolvedValueOnce({ data: { data: null }, error: undefined })
+        const { result } = makeHookWrapper(() => useClearPersonPhoto())
+        await result.mutateAsync('p1')
+        expect(mocked.DELETE).toHaveBeenCalledWith('/api/v1/persons/{id}/photo', {
+            params: { path: { id: 'p1' } },
+        })
+    })
+
+    it('rejects on error', async () => {
+        mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
+        const { result } = makeHookWrapper(() => useClearPersonPhoto())
+        await expect(result.mutateAsync('p1')).rejects.toBeDefined()
     })
 })
