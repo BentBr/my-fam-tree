@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
 
 import { client } from '../client'
-import { unwrap, useApiMutation } from '../request'
+import { expectOk, unwrap, useApiMutation } from '../request'
 
 interface UpdateMeBody {
     display_name?: string
@@ -45,6 +45,40 @@ export function useRequestEmailChange() {
         mutationFn: (newEmail: string) =>
             unwrap(client.POST('/api/v1/users/me/email-change', { body: { new_email: newEmail } })),
         success: 'toasts.email_change_sent',
+    })
+}
+
+/**
+ * Upload the caller's avatar. Mirrors `useSetPersonPhoto` — FormData body
+ * with a single `file` field, multipart boundary set by fetch from the
+ * FormData instance. Invalidates `['users','me']` so every render of the
+ * profile + nav menu sees the new `avatar_url` immediately.
+ */
+export function useSetMyAvatar() {
+    return useApiMutation({
+        mutationFn: (file: File) => {
+            const fd = new FormData()
+            fd.append('file', file)
+            return unwrap(
+                client.POST('/api/v1/users/me/avatar', {
+                    body: fd as unknown as string,
+                    bodySerializer: (b: unknown) => b as BodyInit,
+                }),
+            )
+        },
+        success: 'toasts.user_avatar_set',
+        invalidate: () => [['users', 'me']],
+    })
+}
+
+export function useClearMyAvatar() {
+    return useApiMutation({
+        // useApiMutation's TVars infers from mutationFn — accept and ignore
+        // a void arg so call sites can still `mutateAsync()` cleanly via
+        // a no-arg call when the type allows it.
+        mutationFn: (_: void) => expectOk(client.DELETE('/api/v1/users/me/avatar')),
+        success: 'toasts.user_avatar_cleared',
+        invalidate: () => [['users', 'me']],
     })
 }
 

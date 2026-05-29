@@ -67,6 +67,10 @@
             "displayName": "Display name",
             "save": "Save"
         },
+        "avatar": {
+            "upload": "Upload avatar",
+            "remove": "Remove avatar"
+        },
         "email": {
             "title": "Email",
             "current": "Current email",

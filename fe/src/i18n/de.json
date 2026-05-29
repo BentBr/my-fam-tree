@@ -61,6 +61,10 @@
         "dbDown": "Datenbank nicht erreichbar"
     },
     "account": {
+        "avatar": {
+            "upload": "Avatar hochladen",
+            "remove": "Avatar entfernen"
+        },
         "title": "Konto",
         "profile": {
             "title": "Profil",

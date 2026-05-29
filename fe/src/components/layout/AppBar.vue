@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
+import { useMe } from '@/api/hooks/users'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
@@ -12,6 +15,13 @@ const { t } = useI18n()
 const auth = useAuthStore()
 const ui = useUiStore()
 const router = useRouter()
+
+// Profile fetch — gated on authenticated state so we don't hammer
+// /users/me on every render of the splash / sign-in page where the
+// store is still 'unauthenticated'.
+const me = useMe()
+const avatarUrl = computed(() => me.data.value?.avatar_url ?? null)
+const displayName = computed(() => me.data.value?.display_name ?? auth.user?.email ?? '')
 
 // `auth.logout()` clears the store but does not navigate. We always send the
 // user to /auth/sign-in afterwards so the FE never leaves them on a now-empty
@@ -31,7 +41,9 @@ async function signOut(): Promise<void> {
         <LangSwitcher class="mr-2" />
         <v-menu v-if="auth.status === 'authenticated'" location="bottom end">
             <template #activator="{ props: activatorProps }">
-                <v-btn icon="user" :title="auth.user?.email ?? ''" data-testid="user-menu" v-bind="activatorProps" />
+                <v-btn icon :title="auth.user?.email ?? ''" data-testid="user-menu" v-bind="activatorProps">
+                    <DefaultAvatar :src="avatarUrl" :name="displayName" :size="36" />
+                </v-btn>
             </template>
             <v-list density="comfortable">
                 <v-list-item

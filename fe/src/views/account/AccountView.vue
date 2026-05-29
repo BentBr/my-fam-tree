@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { useMe, useRequestEmailChange, useUpdateMe } from '@/api/hooks/users'
+import { useClearMyAvatar, useMe, useRequestEmailChange, useSetMyAvatar, useUpdateMe } from '@/api/hooks/users'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 import ReminderPrefsSection from '@/views/account/ReminderPrefsSection.vue'
 
@@ -13,6 +14,27 @@ const auth = useAuthStore()
 const me = useMe()
 const update = useUpdateMe()
 const requestChange = useRequestEmailChange()
+const setAvatar = useSetMyAvatar()
+const clearAvatar = useClearMyAvatar()
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarBusy = computed(() => setAvatar.isPending.value || clearAvatar.isPending.value)
+
+function openAvatarPicker(): void {
+    avatarInput.value?.click()
+}
+
+async function onAvatarSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0] ?? null
+    // Reset BEFORE the await so the same file can be re-selected.
+    input.value = ''
+    if (file === null) return
+    await setAvatar.mutateAsync(file)
+}
+
+async function removeAvatar(): Promise<void> {
+    await clearAvatar.mutateAsync(undefined)
+}
 
 const displayName = ref('')
 const localeSelected = ref<'en' | 'de'>('en')
@@ -81,6 +103,48 @@ async function signOut(): Promise<void> {
             <v-card-subtitle class="text-h6 px-0 mt-2">
                 {{ t('account.profile.title') }}
             </v-card-subtitle>
+            <!-- Avatar slot: click the avatar to upload, dedicated remove
+                 button when one is already set. Identical UX shape to the
+                 person photo upload in PersonDetail. -->
+            <div class="d-flex align-center ga-3 mb-4">
+                <div class="position-relative">
+                    <DefaultAvatar
+                        :src="me.data.value?.avatar_url ?? null"
+                        :name="displayName || me.data.value?.email || ''"
+                        :size="72"
+                        data-testid="account-avatar"
+                    />
+                    <v-btn
+                        icon="mdi-camera"
+                        size="x-small"
+                        color="primary"
+                        class="account-avatar-edit"
+                        :loading="avatarBusy"
+                        :aria-label="t('account.avatar.upload')"
+                        data-testid="account-avatar-upload"
+                        @click="openAvatarPicker"
+                    />
+                    <input
+                        ref="avatarInput"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        class="d-none"
+                        data-testid="account-avatar-input"
+                        @change="onAvatarSelected"
+                    />
+                </div>
+                <v-btn
+                    v-if="me.data.value?.avatar_url"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :loading="avatarBusy"
+                    data-testid="account-avatar-remove"
+                    @click="removeAvatar"
+                >
+                    {{ t('account.avatar.remove') }}
+                </v-btn>
+            </div>
             <v-form @submit.prevent="saveProfile">
                 <v-text-field
                     v-model="displayName"
@@ -155,3 +219,11 @@ async function signOut(): Promise<void> {
         </v-card>
     </v-container>
 </template>
+
+<style scoped>
+.account-avatar-edit {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+}
+</style>
