@@ -41,8 +41,25 @@ async function signOut(): Promise<void> {
         <LangSwitcher class="mr-2" />
         <v-menu v-if="auth.status === 'authenticated'" location="bottom end">
             <template #activator="{ props: activatorProps }">
-                <v-btn icon :title="auth.user?.email ?? ''" data-testid="user-menu" v-bind="activatorProps">
-                    <DefaultAvatar :src="avatarUrl" :name="displayName" :size="36" />
+                <!--
+                    `title` keeps the tooltip on hover, but the accessible
+                    name for a11y + Playwright's `getByRole({ name })` is
+                    set explicitly via `aria-label` — `title` only wins when
+                    nothing else contributes, and the inner DefaultAvatar's
+                    `?` placeholder (for a user without a display name)
+                    outranks it. The wrapper span uses `aria-hidden` so the
+                    initials/placeholder text doesn't drown out the label.
+                -->
+                <v-btn
+                    icon
+                    :title="auth.user?.email ?? ''"
+                    :aria-label="auth.user?.email ?? ''"
+                    data-testid="user-menu"
+                    v-bind="activatorProps"
+                >
+                    <span aria-hidden="true">
+                        <DefaultAvatar :src="avatarUrl" :name="displayName" :size="36" />
+                    </span>
                 </v-btn>
             </template>
             <v-list density="comfortable">
