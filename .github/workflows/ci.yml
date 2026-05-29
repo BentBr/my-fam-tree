@@ -519,7 +519,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             # setup-node's built-in pnpm cache assumes a global store at
@@ -541,7 +541,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
@@ -563,7 +563,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
@@ -584,7 +584,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
@@ -606,7 +606,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
@@ -627,7 +627,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
@@ -779,7 +779,7 @@ jobs:
             - uses: pnpm/action-setup@v4
               with:
                   version: 10.33.4
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v6
               with:
                   node-version: 22
             - uses: actions/cache@v4
