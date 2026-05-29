@@ -11,7 +11,7 @@ use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use chrono_tz::Europe::Berlin;
 use serde::Deserialize;
 
-use crate::clock::FixedClock;
+use crate::clock::OffsetClock;
 use crate::state::WorkerState;
 use crate::ticker;
 
@@ -40,7 +40,7 @@ fn resolve_instant(req: &AdvanceReq) -> DateTime<Utc> {
 #[derive(Clone)]
 struct TestState {
     state: WorkerState,
-    fixed: Arc<FixedClock>,
+    fixed: Arc<OffsetClock>,
 }
 
 #[post("/__test/advance-clock")]
@@ -57,7 +57,7 @@ async fn advance(ts: web::Data<TestState>, body: web::Json<AdvanceReq>) -> HttpR
 }
 
 /// Serve the test-fixtures endpoint on `bind`. Runs until the process exits.
-pub async fn serve(state: WorkerState, fixed: Arc<FixedClock>, bind: String) {
+pub async fn serve(state: WorkerState, fixed: Arc<OffsetClock>, bind: String) {
     let data = web::Data::new(TestState { state, fixed });
     tracing::warn!(%bind, "test-fixtures HTTP listener enabled — DO NOT enable in production");
     match HttpServer::new(move || App::new().app_data(data.clone()).service(advance)).bind(&bind) {

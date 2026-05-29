@@ -14,7 +14,7 @@ use my_family_persistence::{
 };
 use my_family_worker::clock::Clock;
 #[cfg(feature = "test-fixtures")]
-use my_family_worker::clock::FixedClock;
+use my_family_worker::clock::OffsetClock;
 #[cfg(not(feature = "test-fixtures"))]
 use my_family_worker::clock::SystemClock;
 use my_family_worker::state::WorkerState;
@@ -109,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
     ) as Arc<dyn my_family_email::EmailSender>;
 
     #[cfg(feature = "test-fixtures")]
-    let fixed = Arc::new(FixedClock::new(chrono::Utc::now()));
+    let fixed = Arc::new(OffsetClock::default());
     #[cfg(feature = "test-fixtures")]
     let clock: Arc<dyn Clock> = fixed.clone();
     #[cfg(not(feature = "test-fixtures"))]

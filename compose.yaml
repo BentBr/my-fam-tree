@@ -188,8 +188,13 @@ services:
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
             MAGIC_LINK_TTL_SECONDS: 900
             INVITE_TTL_SECONDS: 1209600
-            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 5
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 20
+            # Local + e2e use the same compose stack, and the full Playwright
+            # suite sends >100 magic-link requests from one network IP. Keep
+            # the defaults high enough that a clean suite run never trips the
+            # bucket; the production reference values still live in
+            # .env.example.
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 1000
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 10000
             API_HOST: 0.0.0.0
             API_PORT: 8080
             API_PUBLIC_URL: http://api.my-family.docker
@@ -241,8 +246,11 @@ services:
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
             MAGIC_LINK_TTL_SECONDS: 900
             INVITE_TTL_SECONDS: 1209600
-            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 5
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 20
+            # See note on the seeder service — same caps shared by the api
+            # so a `pnpm test:e2e` run inside the compose network never trips
+            # the per-IP bucket.
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: 1000
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: 10000
         depends_on:
             postgres:
                 condition: service_healthy
@@ -348,6 +356,14 @@ services:
             E2E_BASE_URL: http://my-family.docker:5173
             E2E_API_BASE_URL: http://api.my-family.docker:8080
             MAILPIT_URL: http://mail.my-family.docker:8025
+            # reminders.test.ts hits the worker's POST /__test/advance-clock.
+            # The default fallback `http://localhost:9091` only works on a CI
+            # runner where the worker binds 127.0.0.1. Under compose we go
+            # straight to the worker service's compose-network alias on its
+            # native port — the `clock.my-family.docker` dinghy alias is only
+            # resolvable on the host (via dnsmasq), not inside the compose
+            # network.
+            WORKER_TEST_URL: http://worker.my-family.docker:9091
         depends_on:
             fe:
                 condition: service_started

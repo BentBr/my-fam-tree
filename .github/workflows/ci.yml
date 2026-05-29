@@ -274,8 +274,11 @@ jobs:
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
-            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # The e2e suite sends 100+ magic-link requests from one runner
+            # IP. 200 was not enough; pick a number that's safely above any
+            # plausible suite count.
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "1000"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "10000"
             # Storage: CI has no MinIO/S3 sidecar, so the local driver
             # writes anything to a temp dir on the runner. The fields below
             # are required by the config schema even when unused.
@@ -379,8 +382,11 @@ jobs:
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
-            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # The e2e suite sends 100+ magic-link requests from one runner
+            # IP. 200 was not enough; pick a number that's safely above any
+            # plausible suite count.
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "1000"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "10000"
             # Storage: CI has no MinIO/S3 sidecar, so the local driver
             # writes anything to a temp dir on the runner. The fields below
             # are required by the config schema even when unused.
@@ -751,8 +757,11 @@ jobs:
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
             MAGIC_LINK_TTL_SECONDS: "900"
             INVITE_TTL_SECONDS: "1209600"
-            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "5"
-            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "200"
+            # The e2e suite sends 100+ magic-link requests from one runner
+            # IP. 200 was not enough; pick a number that's safely above any
+            # plausible suite count.
+            MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR: "1000"
+            MAGIC_LINK_RATE_PER_IP_PER_HOUR: "10000"
             # Storage: CI has no MinIO/S3 sidecar, so the local driver
             # writes anything to a temp dir on the runner. The fields below
             # are required by the config schema even when unused.
@@ -841,16 +850,19 @@ jobs:
               run: |
                   ./target/debug/worker > /tmp/worker.log 2>&1 &
                   echo "WORKER_PID=$!" >> "$GITHUB_ENV"
-                  # Readiness: the listener answers advance-clock once bound. A
-                  # 2020 date fires nothing (no enabled users yet) — safe probe.
-                  # Fail the step explicitly if the listener never answers — the
-                  # earlier sleep-loop fell through silently when the worker
-                  # crashed at startup, which made the e2e suite spend 30 min
-                  # waiting for emails from a dead worker.
+                  # Readiness: the listener answers advance-clock once bound.
+                  # Pick a far-future target so the resulting OffsetClock has
+                  # a positive offset — outbox rows the api inserts during
+                  # e2e will be `next_attempt_at <= worker now()` and drain
+                  # normally. The previous 2020 probe set a negative offset
+                  # that left every outbox row "in the future" forever, so
+                  # the suite spent 30 min waiting for emails the worker
+                  # would not send. Fail the step explicitly if the listener
+                  # never answers.
                   ready=0
                   for i in $(seq 1 30); do
                       if curl -fsS -X POST http://localhost:9091/__test/advance-clock \
-                        -H 'content-type: application/json' -d '{"to":"2020-01-01T00:00:00Z"}' >/dev/null; then
+                        -H 'content-type: application/json' -d '{"to":"2099-01-01T00:00:00Z"}' >/dev/null; then
                           ready=1
                           break
                       fi
