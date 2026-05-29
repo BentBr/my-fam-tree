@@ -7,20 +7,19 @@ use std::time::Duration;
 
 use actix_multipart::Multipart;
 use actix_web::{HttpRequest, delete, post, web};
-use bytes::{Bytes, BytesMut};
-use futures_util::StreamExt;
+use bytes::Bytes;
 use my_family_domain::UserRepoError;
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::user_claims;
-use crate::images::{self, MAX_RAW_BYTES, OUTPUT_CONTENT_TYPE, OUTPUT_EXTENSION};
+use crate::images::{self, OUTPUT_CONTENT_TYPE, OUTPUT_EXTENSION};
+use crate::multipart::read_single_file_field;
 use crate::response::ApiResponse;
 use crate::{ApiError, AppState, response_body};
 
 const AVATAR_URL_TTL: Duration = Duration::from_hours(1);
-const MAX_UPLOAD_BYTES: usize = MAX_RAW_BYTES;
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserAvatarView {
@@ -43,47 +42,6 @@ fn map_user_repo_err(e: UserRepoError) -> ApiError {
 
 fn image_err_to_api(e: &images::ImageError) -> ApiError {
     ApiError::ImageInvalid { reason: e.to_string() }
-}
-
-#[allow(clippy::future_not_send)]
-async fn read_single_file_field(
-    mut payload: Multipart,
-) -> Result<(Bytes, Option<String>), ApiError> {
-    let mut bytes = BytesMut::with_capacity(64 * 1024);
-    let mut filename: Option<String> = None;
-    let mut seen_file = false;
-
-    while let Some(field_res) = payload.next().await {
-        let mut field =
-            field_res.map_err(|e| ApiError::ImageInvalid { reason: format!("multipart: {e}") })?;
-        if field.name().unwrap_or("") != "file" {
-            continue;
-        }
-        if seen_file {
-            return Err(ApiError::ImageInvalid {
-                reason: "multipart contains more than one `file` field".into(),
-            });
-        }
-        seen_file = true;
-        filename = field.content_disposition().and_then(|cd| cd.get_filename().map(str::to_string));
-        while let Some(chunk_res) = field.next().await {
-            let chunk = chunk_res
-                .map_err(|e| ApiError::ImageInvalid { reason: format!("multipart chunk: {e}") })?;
-            if bytes.len().saturating_add(chunk.len()) > MAX_UPLOAD_BYTES {
-                return Err(ApiError::ImageInvalid {
-                    reason: format!("upload exceeds maximum size of {MAX_UPLOAD_BYTES} bytes"),
-                });
-            }
-            bytes.extend_from_slice(&chunk);
-        }
-    }
-
-    if !seen_file {
-        return Err(ApiError::ImageInvalid {
-            reason: "multipart body missing a `file` field".into(),
-        });
-    }
-    Ok((bytes.freeze(), filename))
 }
 
 #[utoipa::path(

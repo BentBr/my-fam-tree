@@ -5,6 +5,7 @@ pub mod cookies;
 pub mod error;
 pub mod images;
 pub mod middleware;
+pub mod multipart;
 pub mod openapi_doc;
 pub mod response;
 pub mod routes;

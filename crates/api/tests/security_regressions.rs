@@ -246,7 +246,7 @@ async fn email_change_rate_caps_at_5_per_hour_per_user() {
             )
             .to_request();
         let res = test::call_service(&app, req).await;
-        assert_ne!(res.status(), 429, "request {i} should not be rate-limited yet (cap is 5/hour)",);
+        assert_ne!(res.status(), 429, "request {i} should not be rate-limited yet (cap is 5/hour)");
     }
 
     // Sixth attempt MUST 429 — rate gate's exceeded.

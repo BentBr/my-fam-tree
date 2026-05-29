@@ -2,10 +2,10 @@
 //!
 //! The upload flow is:
 //!
-//!   1. Parse the multipart body. Accept exactly one field named `file`;
-//!      anything else is a 422. The raw bytes are bounded by
-//!      [`MAX_UPLOAD_BYTES`] so a malicious client can't OOM us by streaming
-//!      a 5 GB "photo".
+//!   1. Parse the multipart body via `crate::multipart::read_single_file_field`
+//!      which accepts exactly one field named `file` and bounds the raw
+//!      bytes at `images::MAX_RAW_BYTES` so a malicious client can't OOM
+//!      us by streaming a 5 GB "photo".
 //!   2. Hand the bytes to [`crate::images::validate_and_resize`] which
 //!      magic-byte-checks the format (JPEG/PNG/WebP), cross-checks the
 //!      filename extension if supplied, and re-encodes as JPEG q80 fit
@@ -30,15 +30,15 @@ use std::time::Duration;
 
 use actix_multipart::Multipart;
 use actix_web::{HttpRequest, delete, post, web};
-use bytes::{Bytes, BytesMut};
-use futures_util::StreamExt;
+use bytes::Bytes;
 use my_family_domain::{PersonId, PersonRepoError, Role};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::user_claims_with_family;
-use crate::images::{self, MAX_RAW_BYTES, OUTPUT_CONTENT_TYPE, OUTPUT_EXTENSION};
+use crate::images::{self, OUTPUT_CONTENT_TYPE, OUTPUT_EXTENSION};
+use crate::multipart::read_single_file_field;
 use crate::response::ApiResponse;
 use crate::services::audit;
 use crate::{ApiError, AppState, response_body};
@@ -48,11 +48,6 @@ use crate::{ApiError, AppState, response_body};
 /// (e.g. from a copy-paste into a chat) stops working before it can be
 /// abused at scale.
 const PHOTO_URL_TTL: Duration = Duration::from_hours(1);
-
-/// Multipart upload cap. Matches `images::MAX_RAW_BYTES` so a `413` from
-/// the multipart layer and a `422` from the validator pin to the same
-/// effective limit; pick the lower of either guard if they ever drift.
-const MAX_UPLOAD_BYTES: usize = MAX_RAW_BYTES;
 
 /// `data` shape for the success response.
 #[derive(Debug, Serialize, ToSchema)]
@@ -76,59 +71,6 @@ fn map_person_repo_err(e: PersonRepoError, id: Uuid) -> ApiError {
         PersonRepoError::LinkedUserConflict => ApiError::ConflictStale,
         PersonRepoError::Db(_) => internal(e),
     }
-}
-
-/// Drain a single `file` field from a multipart body and return its bytes
-/// plus the original filename (when the client included one). Rejects:
-/// missing field, multiple fields, oversize payload, transport error.
-#[allow(clippy::future_not_send)]
-async fn read_single_file_field(
-    mut payload: Multipart,
-) -> Result<(Bytes, Option<String>), ApiError> {
-    let mut bytes = BytesMut::with_capacity(64 * 1024);
-    let mut filename: Option<String> = None;
-    let mut seen_file = false;
-
-    while let Some(field_res) = payload.next().await {
-        let mut field =
-            field_res.map_err(|e| ApiError::ImageInvalid { reason: format!("multipart: {e}") })?;
-
-        let field_name = field.name().unwrap_or("").to_string();
-        if field_name != "file" {
-            // Drain unknown fields without ballooning memory; the policy
-            // is "one file field named `file`" — anything else is a 422.
-            continue;
-        }
-        if seen_file {
-            return Err(ApiError::ImageInvalid {
-                reason: "multipart contains more than one `file` field".into(),
-            });
-        }
-        seen_file = true;
-
-        filename = field.content_disposition().and_then(|cd| cd.get_filename().map(str::to_string));
-
-        while let Some(chunk_res) = field.next().await {
-            let chunk = chunk_res
-                .map_err(|e| ApiError::ImageInvalid { reason: format!("multipart chunk: {e}") })?;
-            // Cap raw upload BEFORE the decoder touches it — the validator
-            // re-checks once the bytes are fully assembled, but failing
-            // here saves us holding a multi-GB BytesMut in memory.
-            if bytes.len().saturating_add(chunk.len()) > MAX_UPLOAD_BYTES {
-                return Err(ApiError::ImageInvalid {
-                    reason: format!("upload exceeds maximum size of {MAX_UPLOAD_BYTES} bytes"),
-                });
-            }
-            bytes.extend_from_slice(&chunk);
-        }
-    }
-
-    if !seen_file {
-        return Err(ApiError::ImageInvalid {
-            reason: "multipart body missing a `file` field".into(),
-        });
-    }
-    Ok((bytes.freeze(), filename))
 }
 
 fn image_err_to_api(e: &images::ImageError) -> ApiError {
