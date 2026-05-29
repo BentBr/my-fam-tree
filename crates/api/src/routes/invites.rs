@@ -259,7 +259,7 @@ pub async fn list_invites(
     let claims = crate::auth::user_claims(&req)?;
     let family_id = path.into_inner();
     let active = super::families::resolve_membership(&claims, family_id)?;
-    crate::auth::require_role(&active, Role::Admin)?;
+    crate::auth::require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let invites = state
         .invites
@@ -312,7 +312,7 @@ pub async fn cancel_invite(
     let claims = crate::auth::user_claims(&req)?;
     let (family_uuid, invite_id) = path.into_inner();
     let active = super::families::resolve_membership(&claims, family_uuid)?;
-    crate::auth::require_role(&active, Role::Admin)?;
+    crate::auth::require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let family_id = FamilyId::from_uuid(family_uuid);
     state.invites.cancel(invite_id, family_id).await.map_err(|e| match e {

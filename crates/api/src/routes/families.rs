@@ -295,7 +295,7 @@ pub async fn rename(
     let claims = crate::auth::user_claims(&req)?;
     let id = path.into_inner();
     let active = resolve_membership(&claims, id)?;
-    crate::auth::require_role(&active, Role::Admin)?;
+    crate::auth::require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let name = validate_family_name(&body.name)?;
     state.families.rename(FamilyId::from_uuid(id), &name).await.map_err(internal)?;
@@ -328,7 +328,7 @@ pub async fn delete_family(
     let claims = crate::auth::user_claims(&req)?;
     let id = path.into_inner();
     let active = resolve_membership(&claims, id)?;
-    crate::auth::require_role(&active, Role::Owner)?;
+    crate::auth::require_db_role(&state, claims.user_id, active.id, Role::Owner).await?;
     state.families.delete(FamilyId::from_uuid(id)).await.map_err(internal)?;
     Ok(ApiResponse::ok(serde_json::Value::Null))
 }
@@ -362,7 +362,7 @@ pub async fn invite(
     let claims = crate::auth::user_claims(&req)?;
     let family_id = path.into_inner();
     let active = resolve_membership(&claims, family_id)?;
-    crate::auth::require_role(&active, Role::Admin)?;
+    crate::auth::require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     if body.role == Role::Owner {
         return Err(role_invalid("/role", "cannot invite as owner"));

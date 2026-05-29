@@ -58,6 +58,82 @@ where
 }
 
 // ---------------------------------------------------------------------------
+// HIGH: stale-role privilege window (require_db_role)
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn demoted_admin_loses_privilege_immediately_not_at_token_ttl() {
+    // Original shape: admin's access cookie carries `role=admin` baked in
+    // at issue time. After the owner demotes them to `user` in the DB,
+    // the cookie still claims admin until access TTL expires (15 min).
+    // The DB-level role check now fetches the live membership row so
+    // the next privileged write rejects with insufficient_role.
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+
+    let (owner_access, _r) = sign_in(&stack, &app, "stale-owner@example.com").await;
+    let (_owner_access, family_id) = create_family(&app, &owner_access, "StaleRole").await;
+    let (_admin_access, _r) = sign_in(&stack, &app, "stale-admin@example.com").await;
+
+    // Insert admin's membership directly through the repo: cheaper than
+    // running the full invite flow and gives us a clean role state.
+    let admin_user_id = stack
+        .state
+        .users
+        .find_by_email("stale-admin@example.com")
+        .await
+        .expect("find admin")
+        .expect("admin exists")
+        .id;
+    let fid = my_family_domain::FamilyId::from_uuid(
+        uuid::Uuid::parse_str(&family_id).expect("family uuid"),
+    );
+    stack
+        .state
+        .memberships
+        .insert(fid, admin_user_id, my_family_domain::Role::Admin)
+        .await
+        .expect("admin membership");
+
+    // Sign the admin back in so the access cookie reflects the admin role
+    // (otherwise it would still say "user" from before the row was
+    // inserted — the JWT only includes families the user already
+    // belonged to at issuance).
+    let (admin_access, _r) = sign_in(&stack, &app, "stale-admin@example.com").await;
+
+    // Sanity: admin CAN list members while still admin in DB.
+    let req = test::TestRequest::get()
+        .uri(&format!("/api/v1/families/{family_id}/members"))
+        .cookie(Cookie::new("access", admin_access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200, "admin should be able to list members");
+
+    // Owner demotes admin to plain user via the DB (mirrors what
+    // members::set_member_role would do).
+    stack
+        .state
+        .memberships
+        .set_role(fid, admin_user_id, my_family_domain::Role::User)
+        .await
+        .expect("demote admin");
+
+    // The admin's access cookie still claims admin (JWT is unchanged).
+    // The next privileged read must reject with 403 because the DB-level
+    // check sees the real role now.
+    let req = test::TestRequest::get()
+        .uri(&format!("/api/v1/families/{family_id}/members"))
+        .cookie(Cookie::new("access", admin_access))
+        .insert_header(("X-Family-Id", family_id))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 403, "demoted admin must lose access immediately");
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["code"], "family_insufficient_role");
+}
+
+// ---------------------------------------------------------------------------
 // HIGH: parent_links cross-family IDOR (cf0c9b2)
 // ---------------------------------------------------------------------------
 

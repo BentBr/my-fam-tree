@@ -15,7 +15,7 @@ pub use claims::{FamilyClaim, JwtClaims};
 pub use jwt::JwtIssuer;
 pub use keys::JwtKeyset;
 pub use middleware::{
-    AuthMiddleware, FAMILY_HEADER, require_role, try_user_claims, user_claims,
+    AuthMiddleware, FAMILY_HEADER, require_db_role, require_role, try_user_claims, user_claims,
     user_claims_with_family,
 };
 pub use tokens::{generate_opaque_token, hash_token};

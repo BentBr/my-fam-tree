@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
-use crate::auth::{require_role, user_claims_with_family};
+use crate::auth::{require_db_role, user_claims_with_family};
 use crate::response::ApiResponse;
 use crate::{ApiError, AppState, response_body};
 
@@ -102,8 +102,8 @@ pub async fn list_audit(
     path: web::Path<Uuid>,
     q: web::Query<AuditQuery>,
 ) -> Result<ApiResponse<AuditPage>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Admin)?;
+    let (claims, active) = user_claims_with_family(&req)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let family_id = FamilyId::from_uuid(path.into_inner());
     if active.id != family_id {

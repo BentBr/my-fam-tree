@@ -33,7 +33,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::{
-    generate_opaque_token, hash_token, require_role, user_claims, user_claims_with_family,
+    generate_opaque_token, hash_token, require_db_role, user_claims, user_claims_with_family,
 };
 use crate::services::audit;
 use crate::validation::role_invalid;
@@ -165,7 +165,7 @@ pub async fn begin(
     body: web::Json<BeginReq>,
 ) -> Result<ApiResponse<TransferStatus>, ApiError> {
     let (claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Owner)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Owner).await?;
 
     let family_id = FamilyId::from_uuid(path.into_inner());
     if active.id != family_id {
@@ -396,7 +396,7 @@ pub async fn cancel(
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
     let (claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Owner)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Owner).await?;
     let family_id = FamilyId::from_uuid(path.into_inner());
     if active.id != family_id {
         return Err(ApiError::Unauthenticated);
@@ -442,8 +442,8 @@ pub async fn status(
     req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<Option<TransferStatus>>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Admin)?;
+    let (claims, active) = user_claims_with_family(&req)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
     let family_id = FamilyId::from_uuid(path.into_inner());
     if active.id != family_id {
         return Err(ApiError::Unauthenticated);

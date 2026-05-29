@@ -190,10 +190,52 @@ fn family_header_required(msg: &str) -> FieldViolation {
 
 /// Assert the active family's role meets `needed`.
 ///
+/// JWT-only check — fast, but trusts whatever role the access cookie
+/// was issued with. For authz-sensitive WRITES (member role changes,
+/// family rename/delete/invite, owner transfer) prefer
+/// [`require_db_role`] so a freshly-demoted user can't keep using their
+/// stale access cookie until it expires.
+///
 /// # Errors
 /// Returns [`ApiError::InsufficientRole`] when the active role is below `needed`.
 pub const fn require_role(active: &ActiveFamily, needed: Role) -> Result<(), ApiError> {
     if active.role.at_least(needed) { Ok(()) } else { Err(ApiError::InsufficientRole { needed }) }
+}
+
+/// Assert the role recorded in the DB right now is at least `needed`,
+/// not the role baked into the access JWT.
+///
+/// The JWT memberships claim is a snapshot from issuance time. An admin
+/// who was demoted to `user` (or revoked) keeps the old claim until the
+/// access cookie expires — that's the "stale privilege window" the
+/// security review called out. Authz-sensitive WRITES route through
+/// here so a demoted user's next privileged mutation gets the current
+/// DB state, not the cached JWT.
+///
+/// One extra DB round-trip per call site, acceptable for the write
+/// paths it guards (these are user-perceived single-action flows, not
+/// hot loops).
+///
+/// # Errors
+/// * [`ApiError::NotFamilyMember`] when no membership row exists.
+/// * [`ApiError::InsufficientRole`] when the row's role is below `needed`.
+/// * [`ApiError::Internal`] for DB transport / driver failures.
+pub async fn require_db_role(
+    state: &crate::AppState,
+    user_id: my_family_domain::UserId,
+    family_id: my_family_domain::FamilyId,
+    needed: Role,
+) -> Result<(), ApiError> {
+    let membership = state
+        .memberships
+        .find(family_id, user_id)
+        .await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    match membership {
+        None => Err(ApiError::NotFamilyMember(family_id.into_uuid())),
+        Some(m) if !m.role.at_least(needed) => Err(ApiError::InsufficientRole { needed }),
+        Some(_) => Ok(()),
+    }
 }
 
 #[cfg(test)]

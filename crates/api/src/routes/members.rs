@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::auth::{require_role, user_claims_with_family};
+use crate::auth::{require_db_role, user_claims_with_family};
 use crate::response::ApiResponse;
 use crate::services::audit;
 use crate::{ApiError, AppState, response_body};
@@ -139,8 +139,11 @@ pub async fn list_members(
     req: HttpRequest,
     path: web::Path<Uuid>,
 ) -> Result<ApiResponse<MembersList>, ApiError> {
-    let (_claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Admin)?;
+    let (claims, active) = user_claims_with_family(&req)?;
+    // DB-level role check: a freshly-demoted admin's access cookie still
+    // claims `admin` until its TTL expires; we'd otherwise leak the
+    // member list to a now-non-admin. Same shape on the two writes below.
+    require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let family_id = FamilyId::from_uuid(path.into_inner());
     if active.id != family_id {
@@ -189,7 +192,7 @@ pub async fn set_member_role(
     body: web::Json<SetRoleReq>,
 ) -> Result<ApiResponse<MemberDto>, ApiError> {
     let (claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Admin)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let (family_uuid, user_uuid) = path.into_inner();
     let family_id = FamilyId::from_uuid(family_uuid);
@@ -272,7 +275,7 @@ pub async fn revoke_member(
     path: web::Path<(Uuid, Uuid)>,
 ) -> Result<ApiResponse<serde_json::Value>, ApiError> {
     let (claims, active) = user_claims_with_family(&req)?;
-    require_role(&active, Role::Admin)?;
+    require_db_role(&state, claims.user_id, active.id, Role::Admin).await?;
 
     let (family_uuid, user_uuid) = path.into_inner();
     let family_id = FamilyId::from_uuid(family_uuid);
