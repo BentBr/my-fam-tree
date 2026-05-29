@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/vue-query'
+import { computed } from 'vue'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
@@ -12,8 +13,15 @@ interface UpdateMeBody {
 }
 
 export function useMe() {
+    const auth = useAuthStore()
     return useQuery({
         queryKey: ['users', 'me'],
+        // `/users/me` requires the access cookie — gate the query on the auth
+        // store's resolved-and-authenticated state so the AppBar (which
+        // mounts on the sign-in page too) doesn't fire before the cookie
+        // exists, get a clean 401, and trigger the FE's `session_expired`
+        // toast on every page-load before login.
+        enabled: computed(() => auth.status === 'authenticated'),
         // Returns the inner profile (`unwrap` peels the envelope), so call
         // sites read `me.data.value?.display_name` directly.
         queryFn: () => unwrap(client.GET('/api/v1/users/me')),
