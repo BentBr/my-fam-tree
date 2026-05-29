@@ -32,6 +32,7 @@ pub async fn tree(
         &state.parent_links,
         &state.partnerships,
         &state.favourites,
+        &state.object_store,
         active.id,
         claims.user_id,
     )

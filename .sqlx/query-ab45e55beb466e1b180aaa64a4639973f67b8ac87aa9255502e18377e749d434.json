@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE persons SET photo_key = $2 WHERE linked_user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ab45e55beb466e1b180aaa64a4639973f67b8ac87aa9255502e18377e749d434"
+}

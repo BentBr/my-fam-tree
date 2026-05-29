@@ -113,4 +113,17 @@ pub trait PersonRepo: Send + Sync {
         id: PersonId,
         photo_key: Option<String>,
     ) -> Result<Option<String>, PersonRepoError>;
+
+    /// Broadcast a `photo_key` (typically the caller's avatar) to every
+    /// person row across every family where `linked_user_id` equals the
+    /// given user — used by the user-avatar handler so an account-level
+    /// avatar propagates "top-down" to all linked persons.
+    ///
+    /// Returns the count of rows touched so the caller can log it.
+    /// `photo_key = None` clears every linked person's photo.
+    async fn set_photo_key_for_linked_user(
+        &self,
+        user_id: UserId,
+        photo_key: Option<String>,
+    ) -> Result<u64, PersonRepoError>;
 }

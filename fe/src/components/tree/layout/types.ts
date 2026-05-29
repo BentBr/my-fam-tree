@@ -18,6 +18,10 @@ export interface BackendNode {
      * type so test fixtures (which build trees ad-hoc) don't have to
      * supply it; the BE always sends a bool. */
     is_favourite_for_me?: boolean
+    /** Time-limited presigned URL for the person's photo. `null` / missing
+     * when no photo is set; the TreeNode renders the initials circle in
+     * that case. Optional so fixtures can omit. */
+    photo_url?: string | null
     parent_ids: string[]
     partner_ids: string[]
 }
@@ -66,6 +70,7 @@ export interface Positioned {
     death_date: string | null
     linked_user_id: string | null
     is_favourite_for_me: boolean
+    photo_url: string | null
     x: number
     y: number
 }

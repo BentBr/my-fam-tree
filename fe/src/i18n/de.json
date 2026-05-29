@@ -197,6 +197,7 @@
             "submit": "Einladung senden"
         },
         "linkedAccount": "Hat Konto",
+        "itsYou": "Das bist du!",
         "favourite": {
             "markTooltip": "Als Favorit markieren",
             "unmarkTooltip": "Favorit entfernen"

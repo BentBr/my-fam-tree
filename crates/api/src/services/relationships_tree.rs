@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 use my_family_domain::{
-    FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, Person,
-    PersonFavouriteRepo, PersonId, PersonRepo, UserId,
+    FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, PersonFavouriteRepo,
+    PersonId, PersonRepo, UserId,
 };
 use serde::Serialize;
 use utoipa::ToSchema;
@@ -33,6 +33,11 @@ pub struct TreeNode {
     /// resolve "the signed-in user's own node" so the tree can auto-center
     /// on them on first load.
     pub linked_user_id: Option<Uuid>,
+    /// Time-limited presigned URL for this person's photo, or `null` when
+    /// no photo is set. Re-presigned on every read; do NOT cache. The FE
+    /// uses this directly to render the avatar bubble on the tree node so
+    /// the initials fallback only shows when the column is truly empty.
+    pub photo_url: Option<String>,
     /// Per-user mark for the signed-in caller. Two users seeing the same
     /// tree see independent values — favouriting is private. Resolved
     /// against `person_favourites` at request time.
@@ -78,6 +83,10 @@ pub struct TreePayload {
 /// the response — for now `nodes` is bounded by `MAX_NODES`.
 const MAX_NODES: u32 = 1_000;
 
+/// Wall-clock TTL for the per-node presigned photo URLs. Matches the
+/// `PersonView` TTL — one hour, re-presigned on every tree fetch.
+const PHOTO_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
+
 /// Assemble the full tree payload for a family.
 ///
 /// # Errors
@@ -88,6 +97,7 @@ pub async fn build_tree(
     parent_links: &Arc<dyn ParentLinkRepo>,
     partnerships: &Arc<dyn PartnershipRepo>,
     favourites: &Arc<dyn PersonFavouriteRepo>,
+    object_store: &Arc<dyn my_family_storage::ObjectStore>,
     family_id: FamilyId,
     user_id: UserId,
 ) -> anyhow::Result<TreePayload> {
@@ -106,9 +116,23 @@ pub async fn build_tree(
         partners_of.entry(*b).or_default().push(*a);
     }
 
-    let nodes = people
-        .iter()
-        .map(|p: &Person| TreeNode {
+    // Presign in a sequential pass — `presigned_get` is fast (SigV4 only,
+    // no network I/O) and the await keeps the future Send. A concurrent
+    // join_all here would shave milliseconds but force a Send-bound
+    // closure that the actix arbiter doesn't satisfy.
+    let mut nodes = Vec::with_capacity(people.len());
+    for p in &people {
+        let photo_url = match p.photo_key.as_deref() {
+            None => None,
+            Some(key) => match object_store.presigned_get(key, PHOTO_URL_TTL).await {
+                Ok(url) => Some(url),
+                Err(e) => {
+                    tracing::warn!(error = ?e, photo_key = %key, "could not presign tree-node photo");
+                    None
+                }
+            },
+        };
+        nodes.push(TreeNode {
             id: p.id.into_uuid(),
             given_name: p.given_name.clone(),
             family_name: p.family_name.clone(),
@@ -129,9 +153,10 @@ pub async fn build_tree(
                 .map(PersonId::into_uuid)
                 .collect(),
             linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+            photo_url,
             is_favourite_for_me: fav_set.contains(&p.id),
-        })
-        .collect();
+        });
+    }
 
     Ok(TreePayload {
         nodes,

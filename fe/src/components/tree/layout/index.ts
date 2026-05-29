@@ -218,6 +218,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
                 death_date: n.death_date ?? null,
                 linked_user_id: n.linked_user_id ?? null,
                 is_favourite_for_me: n.is_favourite_for_me ?? false,
+                photo_url: n.photo_url ?? null,
                 x: pb.x + offset,
                 y: pb.y,
             })

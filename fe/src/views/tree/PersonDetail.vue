@@ -160,42 +160,72 @@ async function removePhoto(): Promise<void> {
     if (person.value === null) return
     await clearPhoto.mutateAsync(person.value.id)
 }
+
+// The chip distinguishes "this person row is linked to *some* user
+// account" from "this person row is linked to *YOU*". The latter gets a
+// friendlier label and a different colour so the signed-in user
+// immediately sees their own node in the tree drawer.
+const isMe = computed(() => {
+    const linked = person.value?.linked_user_id
+    return linked !== null && linked !== undefined && linked === auth.user?.id
+})
 </script>
 
 <template>
     <section class="pa-4" data-testid="person-detail">
+        <!--
+            Big squared hero photo. Full sidebar width, 1:1 aspect ratio,
+            corners only slightly rounded so it reads as a card rather
+            than an avatar (the rest of the UI uses round avatars).
+            Click-to-upload affordance overlays the bottom-right.
+        -->
+        <div class="person-detail-hero mb-3" data-testid="person-detail-hero">
+            <img
+                v-if="person?.photo_url"
+                :src="person.photo_url"
+                :alt="displayName"
+                class="person-detail-hero-img"
+                data-testid="person-detail-hero-photo"
+            />
+            <div v-else class="person-detail-hero-fallback" data-testid="person-detail-hero-fallback">
+                <DefaultAvatar :src="null" :name="displayName" :size="180" />
+            </div>
+            <v-btn
+                v-if="canEdit && person !== null"
+                icon="mdi-camera"
+                size="small"
+                color="primary"
+                class="person-detail-hero-edit"
+                :loading="photoBusy"
+                :aria-label="t('person.photo.upload')"
+                data-testid="person-detail-photo-upload"
+                @click="openPhotoPicker"
+            />
+            <v-btn
+                v-if="canEdit && person?.photo_url"
+                variant="flat"
+                size="x-small"
+                color="error"
+                class="person-detail-hero-remove"
+                :loading="photoBusy"
+                :aria-label="t('person.photo.remove')"
+                data-testid="person-detail-photo-remove"
+                @click="removePhoto"
+            >
+                {{ t('person.photo.remove') }}
+            </v-btn>
+            <input
+                ref="fileInput"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="d-none"
+                data-testid="person-detail-photo-input"
+                @change="onPhotoSelected"
+            />
+        </div>
+
         <header class="d-flex align-center justify-space-between mb-3">
-            <div class="d-flex align-center ga-3">
-                <!-- Avatar + hidden file input. Click-to-upload when canEdit;
-                     read-only image otherwise. The DefaultAvatar component
-                     handles both the photo and the initials-fallback path. -->
-                <div class="position-relative">
-                    <DefaultAvatar
-                        :src="person?.photo_url ?? null"
-                        :name="displayName"
-                        :size="56"
-                        data-testid="person-detail-avatar"
-                    />
-                    <v-btn
-                        v-if="canEdit && person !== null"
-                        icon="mdi-camera"
-                        size="x-small"
-                        color="primary"
-                        class="person-detail-avatar-edit"
-                        :loading="photoBusy"
-                        :aria-label="t('person.photo.upload')"
-                        data-testid="person-detail-photo-upload"
-                        @click="openPhotoPicker"
-                    />
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        class="d-none"
-                        data-testid="person-detail-photo-input"
-                        @change="onPhotoSelected"
-                    />
-                </div>
+            <div class="d-flex align-center ga-2 flex-wrap">
                 <v-btn
                     v-if="person !== null"
                     variant="text"
@@ -210,7 +240,17 @@ async function removePhoto(): Promise<void> {
                     {{ person.given_name }} {{ person.family_name }}
                 </h3>
                 <v-chip
-                    v-if="person?.linked_user_id"
+                    v-if="isMe"
+                    size="small"
+                    color="success"
+                    variant="tonal"
+                    prepend-icon="user-check"
+                    data-testid="person-its-you-chip"
+                >
+                    {{ t('person.itsYou') }}
+                </v-chip>
+                <v-chip
+                    v-else-if="person?.linked_user_id"
                     size="small"
                     color="info"
                     variant="tonal"
@@ -219,18 +259,6 @@ async function removePhoto(): Promise<void> {
                 >
                     {{ t('person.linkedAccount') }}
                 </v-chip>
-                <v-btn
-                    v-if="canEdit && person?.photo_url"
-                    variant="text"
-                    size="x-small"
-                    color="error"
-                    :loading="photoBusy"
-                    :aria-label="t('person.photo.remove')"
-                    data-testid="person-detail-photo-remove"
-                    @click="removePhoto"
-                >
-                    {{ t('person.photo.remove') }}
-                </v-btn>
             </div>
             <v-btn icon="x" variant="text" size="small" data-testid="person-detail-close" @click="emit('close')" />
         </header>
@@ -424,12 +452,49 @@ async function removePhoto(): Promise<void> {
 </template>
 
 <style scoped>
-/* Position the camera edit button on the bottom-right of the avatar, the
-   conventional spot for "edit my photo" on every social platform. The
-   parent `.position-relative` div anchors it. */
-.person-detail-avatar-edit {
+/* Squared, full-sidebar-width hero photo. The card is 1:1 so the
+   aspect ratio matches social-style profile photos; only the corners
+   are slightly rounded so it reads as "card" rather than "avatar"
+   (the rest of the UI uses round avatars). */
+.person-detail-hero {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgb(var(--v-theme-surface-variant, 240 240 240));
+}
+
+.person-detail-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* When there's no photo the DefaultAvatar (with initials) is centred
+   in the same square so the layout doesn't jump when a photo lands. */
+.person-detail-hero-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Camera button overlays the bottom-right of the hero photo — the
+   conventional "edit my photo" affordance on every social platform. */
+.person-detail-hero-edit {
     position: absolute;
-    bottom: -4px;
-    right: -4px;
+    bottom: 8px;
+    right: 8px;
+}
+
+/* "Remove photo" is a destructive action; tuck it bottom-left away
+   from the primary affordance so it can't be hit accidentally. */
+.person-detail-hero-remove {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
 }
 </style>

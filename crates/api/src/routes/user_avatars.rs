@@ -133,9 +133,18 @@ pub async fn upload(
         tracing::warn!(error = ?e, previous_key = %old, "failed to delete previous avatar from object store");
     }
 
-    // Avatar changes are user-scoped, not family-scoped — `audit_log` is
-    // keyed on `family_id` so a tracing entry is the right shape.
-    tracing::info!(user_id = %user_id, photo_key = %key, "user_set_avatar");
+    // Propagate the new avatar to every person row across every family
+    // where `linked_user_id = self`. Latest-write-wins: this overwrites any
+    // individual person-photo overrides, which is the simple semantic
+    // requested ("the account image is setting images top-down…without
+    // more logic"). A subsequent person-photo upload still wins for that
+    // one person; another account-avatar update will broadcast again.
+    let touched = state
+        .persons
+        .set_photo_key_for_linked_user(claims.user_id, Some(key.clone()))
+        .await
+        .map_err(|e| internal(format!("propagate avatar to linked persons: {e}")))?;
+    tracing::info!(user_id = %user_id, photo_key = %key, propagated_to = touched, "user_set_avatar");
 
     let url = state.object_store.presigned_get(&key, AVATAR_URL_TTL).await.map_err(internal)?;
     Ok(ApiResponse::ok(UserAvatarView { avatar_key: key, avatar_url: url }))
@@ -170,7 +179,15 @@ pub async fn clear(
         tracing::warn!(error = ?e, previous_key = %old, "failed to delete avatar from object store");
     }
 
-    tracing::info!(user_id = %claims.user_id.into_uuid(), "user_clear_avatar");
+    // Same broadcast as the upload path, in reverse — clear photo_key on
+    // every linked person row so the propagated avatars disappear in
+    // lockstep with the account avatar.
+    let touched = state
+        .persons
+        .set_photo_key_for_linked_user(claims.user_id, None)
+        .await
+        .map_err(|e| internal(format!("clear avatar across linked persons: {e}")))?;
+    tracing::info!(user_id = %claims.user_id.into_uuid(), propagated_to = touched, "user_clear_avatar");
 
     Ok(ApiResponse::ok(serde_json::Value::Null))
 }

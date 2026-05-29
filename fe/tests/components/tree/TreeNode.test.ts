@@ -14,6 +14,7 @@ function node(over: Partial<Positioned> = {}): Positioned {
         death_date: null,
         linked_user_id: null,
         is_favourite_for_me: false,
+        photo_url: null,
         x: 10,
         y: 20,
         ...over,

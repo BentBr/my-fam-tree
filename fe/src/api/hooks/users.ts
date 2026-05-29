@@ -75,7 +75,11 @@ export function useSetMyAvatar() {
             )
         },
         success: 'toasts.user_avatar_set',
-        invalidate: () => [['users', 'me']],
+        // BE broadcasts the new avatar to every linked person across every
+        // family — invalidate the trees + person caches so the tree
+        // bubbles + person sidebar pick up the photo without a manual
+        // refresh.
+        invalidate: () => [['users', 'me'], ['tree'], ['persons'], ['person']],
     })
 }
 
@@ -86,7 +90,9 @@ export function useClearMyAvatar() {
         // a no-arg call when the type allows it.
         mutationFn: (_: void) => expectOk(client.DELETE('/api/v1/users/me/avatar')),
         success: 'toasts.user_avatar_cleared',
-        invalidate: () => [['users', 'me']],
+        // Same fan-out as the set path — the BE clears every linked
+        // person's photo too.
+        invalidate: () => [['users', 'me'], ['tree'], ['persons'], ['person']],
     })
 }
 

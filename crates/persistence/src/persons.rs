@@ -270,6 +270,29 @@ impl PersonRepo for PgPersonRepo {
         }
     }
 
+    async fn set_photo_key_for_linked_user(
+        &self,
+        user_id: UserId,
+        photo_key: Option<String>,
+    ) -> Result<u64, PersonRepoError> {
+        // Cross-family broadcast — one statement, no per-family scoping.
+        // The user's identity is the only thing that links these rows;
+        // no family boundary applies (a user can be the "Werner" of one
+        // family AND the "Werner" of another family they've joined).
+        // Latest-write-wins: we overwrite whatever photo_key was there,
+        // including individual person overrides. The simple semantic
+        // Bent asked for ("without more logic").
+        let res = sqlx::query!(
+            "UPDATE persons SET photo_key = $2 WHERE linked_user_id = $1",
+            user_id.into_uuid(),
+            photo_key,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| PersonRepoError::Db(e.to_string()))?;
+        Ok(res.rows_affected())
+    }
+
     async fn set_photo_key(
         &self,
         family_id: FamilyId,

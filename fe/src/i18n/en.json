@@ -197,6 +197,7 @@
             "submit": "Send invite"
         },
         "linkedAccount": "Has account",
+        "itsYou": "It's you!",
         "favourite": {
             "markTooltip": "Mark as favourite",
             "unmarkTooltip": "Remove favourite"

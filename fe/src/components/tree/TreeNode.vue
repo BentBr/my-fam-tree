@@ -235,10 +235,39 @@ const STAR_POINTS = (() => {
             />
             <polygon :points="STAR_POINTS" />
         </g>
-        <circle :cx="32" :cy="NODE_H / 2" r="22" class="avatar" />
-        <text :x="32" :y="NODE_H / 2 + 6" text-anchor="middle" class="initials">
-            {{ initials(props.node) }}
-        </text>
+        <!--
+            Avatar bubble. When the node has a presigned `photo_url` we
+            render the image masked by a circular `clipPath` so it stays
+            round (the rest of the UI uses round avatars; PersonDetail's
+            big squared photo is a deliberate exception). Falling back to
+            the original initials circle keeps the empty-photo render the
+            same as before.
+            The clipPath id is namespaced by the node id so two trees on
+            the same page can't collide on the global SVG id space.
+        -->
+        <template v-if="props.node.photo_url">
+            <defs>
+                <clipPath :id="`tree-node-avatar-clip-${props.node.id}`">
+                    <circle :cx="32" :cy="NODE_H / 2" r="22" />
+                </clipPath>
+            </defs>
+            <image
+                :x="10"
+                :y="NODE_H / 2 - 22"
+                width="44"
+                height="44"
+                :href="props.node.photo_url"
+                :clip-path="`url(#tree-node-avatar-clip-${props.node.id})`"
+                preserveAspectRatio="xMidYMid slice"
+                :data-testid="`tree-node-photo-${props.node.id}`"
+            />
+        </template>
+        <template v-else>
+            <circle :cx="32" :cy="NODE_H / 2" r="22" class="avatar" />
+            <text :x="32" :y="NODE_H / 2 + 6" text-anchor="middle" class="initials">
+                {{ initials(props.node) }}
+            </text>
+        </template>
         <!--
             Native SVG <text> rather than <foreignObject>+<div>. Chromium
             inconsistently applies parent <g> transforms to HTML content

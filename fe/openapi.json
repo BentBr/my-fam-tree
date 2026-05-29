@@ -4239,6 +4239,13 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "photo_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Time-limited presigned URL for this person's photo, or `null` when\nno photo is set. Re-presigned on every read; do NOT cache. The FE\nuses this directly to render the avatar bubble on the tree node so\nthe initials fallback only shows when the column is truly empty."
           }
         }
       },
