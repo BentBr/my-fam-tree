@@ -831,17 +831,37 @@ jobs:
                   WORKER_RETRY_BACKOFF_MIN_SECONDS: "60"
                   WORKER_RETRY_BACKOFF_MAX_SECONDS: "43200"
                   WORKER_METRICS_BIND: 127.0.0.1:9091
+                  # Janitor + outbox knobs — without these the worker config
+                  # load fails at startup and the e2e suite times out because
+                  # every test waits for an email that never lands.
+                  WORKER_JANITOR_INTERVAL_SECONDS: "60"
+                  WORKER_JANITOR_GRACE_SECONDS: "300"
+                  WORKER_OUTBOX_POLL_SECONDS: "1"
+                  WORKER_OUTBOX_POOL_SIZE: "4"
               run: |
                   ./target/debug/worker > /tmp/worker.log 2>&1 &
                   echo "WORKER_PID=$!" >> "$GITHUB_ENV"
                   # Readiness: the listener answers advance-clock once bound. A
                   # 2020 date fires nothing (no enabled users yet) — safe probe.
+                  # Fail the step explicitly if the listener never answers — the
+                  # earlier sleep-loop fell through silently when the worker
+                  # crashed at startup, which made the e2e suite spend 30 min
+                  # waiting for emails from a dead worker.
+                  ready=0
                   for i in $(seq 1 30); do
-                      curl -fsS -X POST http://localhost:9091/__test/advance-clock \
-                        -H 'content-type: application/json' -d '{"to":"2020-01-01T00:00:00Z"}' >/dev/null && break
+                      if curl -fsS -X POST http://localhost:9091/__test/advance-clock \
+                        -H 'content-type: application/json' -d '{"to":"2020-01-01T00:00:00Z"}' >/dev/null; then
+                          ready=1
+                          break
+                      fi
                       echo "waiting for worker test listener..."
                       sleep 1
                   done
+                  if [ "$ready" != "1" ]; then
+                      echo "worker never came up; dumping log:"
+                      cat /tmp/worker.log || true
+                      exit 1
+                  fi
             - name: Install FE deps + regenerate openapi types
               working-directory: fe
               run: |
@@ -886,12 +906,13 @@ jobs:
                   path: fe/playwright-report/
                   retention-days: 7
             - if: always()
-              name: Upload api + vite logs
+              name: Upload api + worker + vite logs
               uses: actions/upload-artifact@v4
               with:
                   name: e2e-logs
                   path: |
                       /tmp/api.log
+                      /tmp/worker.log
                       /tmp/vite.log
                   retention-days: 7
 
