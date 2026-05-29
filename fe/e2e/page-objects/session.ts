@@ -22,7 +22,13 @@ export async function signIn(page: Page, email: string): Promise<void> {
     const link = match[0]
     if (link === undefined) throw new Error('consume link match was empty')
     await page.goto(rewriteEmailLink(link))
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/)
+    // ConsumeView's redirect chain is POST /auth/consume → applyClaimsPayload
+    // → router.replace → beforeEach guards (hydrate skipped, active-family
+    // resolve, role check) → final URL. Under CI runner load this can take
+    // past Playwright's default 5 s `toHaveURL` poll window — bumping the
+    // budget to 15 s leaves the redirect plenty of room without masking a
+    // genuine hang (per-test timeout is still 30 s).
+    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/, { timeout: 15_000 })
 }
 
 /**

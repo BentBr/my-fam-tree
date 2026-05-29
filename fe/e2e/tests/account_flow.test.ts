@@ -86,8 +86,10 @@ test.describe('FE account flow', () => {
 
         await page.goto(rewriteEmailLink(link))
         // EmailChangeConsumeView routes back to /account after the confirm
-        // mutation resolves. Accept the landing spot directly.
-        await expect(page).toHaveURL(/\/account$/)
+        // mutation resolves. The chain (POST /users/me/email-change/consume
+        // → router.replace → guards) can stretch past 5 s on a busy runner;
+        // 15 s leaves headroom without masking a genuine hang.
+        await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 })
 
         // Reload to refetch /users/me from the server and verify the new email
         // really stuck (not just an optimistic store update).
