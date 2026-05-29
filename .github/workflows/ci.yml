@@ -943,7 +943,7 @@ jobs:
             - uses: actions/checkout@v4
             - uses: docker/setup-buildx-action@v3
             - name: Build api image
-              uses: docker/build-push-action@v6
+              uses: docker/build-push-action@v7
               with:
                   context: .
                   file: .docker/api.Dockerfile
@@ -953,7 +953,7 @@ jobs:
                   cache-from: type=gha,scope=api
                   cache-to: type=gha,mode=max,scope=api
             - name: Build worker image
-              uses: docker/build-push-action@v6
+              uses: docker/build-push-action@v7
               with:
                   context: .
                   file: .docker/worker.Dockerfile
@@ -963,7 +963,7 @@ jobs:
                   cache-from: type=gha,scope=worker
                   cache-to: type=gha,mode=max,scope=worker
             - name: Build fe image
-              uses: docker/build-push-action@v6
+              uses: docker/build-push-action@v7
               with:
                   context: .
                   file: .docker/fe/Dockerfile
