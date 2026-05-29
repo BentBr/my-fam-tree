@@ -167,6 +167,65 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         Ok(())
     }
 
+    async fn complete_with_role_swap(
+        &self,
+        transfer_id: Uuid,
+        family_id: FamilyId,
+        from_user_id: UserId,
+        to_user_id: UserId,
+        now: DateTime<Utc>,
+    ) -> Result<(), OwnerTransferRepoError> {
+        // Single SQL transaction across THREE writes — without this the
+        // API made three separate non-transactional calls and a failure
+        // between #1 and #2 left the family with no owner row at all.
+        let mut tx =
+            self.pool.begin().await.map_err(|e| OwnerTransferRepoError::Db(e.to_string()))?;
+
+        // Demote the outgoing owner FIRST. If a future unique partial
+        // index on `(family_id) WHERE role = 'owner'` is added, this
+        // ordering keeps the constraint satisfied at every step (we
+        // never have two owners simultaneously).
+        sqlx::query!(
+            r#"UPDATE family_memberships SET role = ($3::text)::family_role
+                WHERE family_id = $1 AND user_id = $2"#,
+            family_id.into_uuid(),
+            from_user_id.into_uuid(),
+            "admin",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| OwnerTransferRepoError::Db(e.to_string()))?;
+
+        // Promote the incoming user to owner.
+        sqlx::query!(
+            r#"UPDATE family_memberships SET role = ($3::text)::family_role
+                WHERE family_id = $1 AND user_id = $2"#,
+            family_id.into_uuid(),
+            to_user_id.into_uuid(),
+            "owner",
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| OwnerTransferRepoError::Db(e.to_string()))?;
+
+        // Stamp the transfer row. The WHERE guards make this idempotent
+        // — if the row is already completed or cancelled, the rest of
+        // the transaction still commits, which matches the "all three
+        // or none" contract even on retry.
+        sqlx::query!(
+            "UPDATE family_owner_transfers SET completed_at = $2
+                WHERE id = $1 AND completed_at IS NULL AND cancelled_at IS NULL",
+            transfer_id,
+            now,
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| OwnerTransferRepoError::Db(e.to_string()))?;
+
+        tx.commit().await.map_err(|e| OwnerTransferRepoError::Db(e.to_string()))?;
+        Ok(())
+    }
+
     async fn cancel(
         &self,
         family_id: FamilyId,

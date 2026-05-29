@@ -92,7 +92,36 @@ pub trait OwnerTransferRepo: Send + Sync {
 
     /// Mark a transfer completed; meant to be called by the API after
     /// the role swap has been committed. Idempotent.
+    ///
+    /// **Prefer [`complete_with_role_swap`](Self::complete_with_role_swap)**
+    /// for normal completion — that runs the demote + promote + complete
+    /// in a single transaction so a mid-flight failure can't leave the
+    /// family with no owner. This raw `complete` exists so admin tooling
+    /// can mark an out-of-band swap as done without re-running the role
+    /// updates.
     async fn complete(&self, id: Uuid, now: DateTime<Utc>) -> Result<(), OwnerTransferRepoError>;
+
+    /// Atomic completion: in a single SQL transaction, demote the
+    /// outgoing owner to admin, promote the incoming user to owner, and
+    /// stamp `completed_at` on the transfer row. Either all three land
+    /// or none do — without this method the API made three separate
+    /// non-transactional calls and a failure between #1 and #2 left the
+    /// family with no owner row.
+    ///
+    /// Idempotent against a transfer that was already `complete` (the
+    /// stamp + role updates are no-ops in that case).
+    ///
+    /// # Errors
+    /// [`OwnerTransferRepoError::Db`] on transport / driver failure;
+    /// the transaction rolls back so partial state never lands.
+    async fn complete_with_role_swap(
+        &self,
+        transfer_id: Uuid,
+        family_id: FamilyId,
+        from_user_id: UserId,
+        to_user_id: UserId,
+        now: DateTime<Utc>,
+    ) -> Result<(), OwnerTransferRepoError>;
 
     /// Cancel the active pending transfer for a family (owner-only).
     async fn cancel(

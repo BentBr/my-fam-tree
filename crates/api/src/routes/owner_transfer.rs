@@ -326,23 +326,23 @@ pub async fn confirm(
     )
     .await;
 
-    // If both sides are now confirmed, swap the roles + mark complete.
-    // Order: demote the previous owner -> admin BEFORE promoting the target
-    // -> owner. A future invariant could add a partial unique index on
-    // `(family_id, role = owner)`; this order is safe under either.
+    // If both sides are now confirmed, swap the roles + mark complete
+    // — atomically. The single-transaction path means a mid-flight
+    // failure can't leave the family without an owner row (the old
+    // three-separate-calls shape had exactly that hazard).
     let both_confirmed = transfer.from_confirmed_at.is_some() && transfer.to_confirmed_at.is_some();
     if both_confirmed && transfer.completed_at.is_none() {
         state
-            .memberships
-            .set_role(family_id, transfer.from_user_id, Role::Admin)
+            .owner_transfers
+            .complete_with_role_swap(
+                transfer.id,
+                family_id,
+                transfer.from_user_id,
+                transfer.to_user_id,
+                now,
+            )
             .await
             .map_err(internal)?;
-        state
-            .memberships
-            .set_role(family_id, transfer.to_user_id, Role::Owner)
-            .await
-            .map_err(internal)?;
-        state.owner_transfers.complete(transfer.id, now).await.map_err(internal)?;
         audit::record(
             &state.audit,
             family_id,
