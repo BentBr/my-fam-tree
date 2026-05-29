@@ -133,7 +133,13 @@ fn sample_insert(kind: &str, to_addr: &str) -> EmailOutboxInsert {
 async fn enqueue_then_process_one_sends_and_marks_sent() {
     let (db, _pg) = start_pg().await;
     let fake = Arc::new(FakeEmailSender::new());
-    let clock = Arc::new(FixedClock::new(Utc::now()));
+    // FixedClock has to be SAFELY ahead of any subsequent DB `now()` —
+    // the enqueue path stamps `next_attempt_at = now()` from the DB
+    // clock, and `claim_next_due(T)` matches rows where
+    // `next_attempt_at <= T`. If FixedClock T = real-now and the insert
+    // captures real-now + δ, the row stays unclaimed. A 60s shift is
+    // generous against runner clock jitter.
+    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
     let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
 
     state
@@ -169,7 +175,9 @@ async fn enqueue_then_process_one_sends_and_marks_sent() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn failing_send_marks_retry_with_attempts_incremented_and_backoff_scheduled() {
     let (db, _pg) = start_pg().await;
-    let now = Utc::now();
+    // Same 60s shift as the happy-path test — claim_next_due needs the
+    // clock to be at or past the DB's `next_attempt_at`.
+    let now = Utc::now() + chrono::Duration::seconds(60);
     let clock = Arc::new(FixedClock::new(now));
     let state = build_state(
         &db,
@@ -204,7 +212,7 @@ async fn failing_send_marks_retry_with_attempts_incremented_and_backoff_schedule
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn failing_at_max_retries_marks_failed_permanent() {
     let (db, _pg) = start_pg().await;
-    let clock = Arc::new(FixedClock::new(Utc::now()));
+    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
     // max_retries=1 ⇒ the very first failure pushes attempts (0+1) >=
     // max_retries, so the row goes terminal-failed in one cycle.
     let state = build_state(
@@ -247,7 +255,7 @@ async fn skip_locked_lets_two_pollers_drain_in_parallel_without_double_send() {
     // the SKIP-LOCKED contract — distinct rows per drain is enough.)
     let (db, _pg) = start_pg().await;
     let fake = Arc::new(FakeEmailSender::new());
-    let clock = Arc::new(FixedClock::new(Utc::now()));
+    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
     let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
 
     for addr in ["a@example.com", "b@example.com", "c@example.com"] {
