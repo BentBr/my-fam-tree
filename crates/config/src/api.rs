@@ -187,6 +187,43 @@ impl ApiConfig {
         if self.api.port == 0 {
             return Err(ConfigError::Validation("API_PORT must be non-zero".into()));
         }
+        // Security audit LOW. An empty list silently registers a single
+        // empty-string origin with actix-cors; a literal "*" combined with
+        // `supports_credentials()` is forbidden by the CORS spec and
+        // behaviour depends on the actix-cors version. Catch both at boot.
+        let allowed: Vec<&str> = self
+            .api
+            .cors_allowed_origins
+            .split(',')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .collect();
+        if allowed.is_empty() {
+            return Err(ConfigError::Validation(
+                "CORS_ALLOWED_ORIGINS must list at least one origin (comma-separated)".into(),
+            ));
+        }
+        for origin in &allowed {
+            if *origin == "*" {
+                return Err(ConfigError::Validation(
+                    "CORS_ALLOWED_ORIGINS must not contain `*` while credentials are supported"
+                        .into(),
+                ));
+            }
+            // Each entry must parse as an http(s) URL — guards against
+            // typos like "https//example.com" (missing colon) which
+            // actix-cors would silently accept as a bogus origin.
+            let parsed = url::Url::parse(origin).map_err(|e| {
+                ConfigError::Validation(format!(
+                    "CORS_ALLOWED_ORIGINS entry `{origin}` is not a valid URL: {e}",
+                ))
+            })?;
+            if !matches!(parsed.scheme(), "http" | "https") {
+                return Err(ConfigError::Validation(format!(
+                    "CORS_ALLOWED_ORIGINS entry `{origin}` must use http or https",
+                )));
+            }
+        }
         // Security audit MEDIUM. In production we MUST ship cookies marked
         // Secure (so browsers refuse them over plain HTTP) and the refresh
         // cookie MUST be SameSite=Strict — without these, a misconfigured
@@ -369,10 +406,10 @@ mod tests {
             // COOKIE_SECURE defaults to false in the minimum env — that's
             // fine for development but must fail validate() in production.
             let err = ApiConfig::from_env().expect_err("prod with secure=false must reject");
-            match err {
-                ConfigError::Validation(msg) => assert!(msg.contains("COOKIE_SECURE")),
-                other => panic!("expected Validation, got {other:?}"),
-            }
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("COOKIE_SECURE"));
             Ok(())
         });
     }
@@ -385,10 +422,10 @@ mod tests {
             jail.set_env("COOKIE_SECURE", "true");
             jail.set_env("COOKIE_SAMESITE_REFRESH", "Lax");
             let err = ApiConfig::from_env().expect_err("prod with lax refresh must reject");
-            match err {
-                ConfigError::Validation(msg) => assert!(msg.contains("COOKIE_SAMESITE_REFRESH")),
-                other => panic!("expected Validation, got {other:?}"),
-            }
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("COOKIE_SAMESITE_REFRESH"));
             Ok(())
         });
     }

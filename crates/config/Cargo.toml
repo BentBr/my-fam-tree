@@ -9,6 +9,7 @@ publish = false
 figment = { workspace = true }
 serde = { workspace = true }
 thiserror.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 # `figment::Jail` lives behind the "test" feature and is the only sane way to

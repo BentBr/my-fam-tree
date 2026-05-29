@@ -10,4 +10,10 @@ pub enum StorageError {
     /// so swapping backends doesn't ripple through the API.
     #[error("{0}")]
     Backend(String),
+    /// Caller passed an invalid object key (empty, path-traversing,
+    /// absolute, or containing NUL bytes). The path-traversal-guard in
+    /// `LocalObjectStore::path_for` returns this BEFORE touching the
+    /// filesystem; handlers map it to a 422.
+    #[error("invalid storage key: {0}")]
+    InvalidKey(String),
 }

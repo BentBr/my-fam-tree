@@ -265,6 +265,23 @@ pub async fn email_change_request(
         return Err(email_invalid("/new_email"));
     }
 
+    // Per-user rate cap (security audit LOW). Without it an authenticated
+    // user can replay this endpoint to spam their own outbox / inbox or
+    // burn magic-link rows. Five attempts per hour is plenty for honest
+    // mis-types; well below what a meaningful abuse window would need.
+    let decision = state
+        .rate_limiter
+        .check(
+            &format!("ec:user:{}", claims.user_id.into_uuid()),
+            5,
+            std::time::Duration::from_hours(1),
+        )
+        .await
+        .map_err(internal)?;
+    if !decision.allowed {
+        return Err(ApiError::RateLimited { retry_after_secs: decision.retry_after_seconds });
+    }
+
     let user = state
         .users
         .find_by_id(claims.user_id)
@@ -277,7 +294,7 @@ pub async fn email_change_request(
     }
 
     if state.users.find_by_email(&new_email).await.map_err(internal)?.is_some() {
-        return Err(ApiError::EmailTaken { email: new_email });
+        return Err(ApiError::EmailTaken);
     }
 
     // Issue a single-use token. We store the **new** email in the magic-link
@@ -369,7 +386,7 @@ pub async fn email_change_confirm(
     }
 
     state.users.update_email(claims.user_id, &record.email).await.map_err(|e| match e {
-        UserRepoError::DuplicateEmail => ApiError::EmailTaken { email: record.email.clone() },
+        UserRepoError::DuplicateEmail => ApiError::EmailTaken,
         other => ApiError::Internal(anyhow::anyhow!(other.to_string())),
     })?;
     state.users.mark_email_unverified(claims.user_id).await.map_err(internal)?;

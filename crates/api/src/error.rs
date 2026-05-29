@@ -277,8 +277,14 @@ pub enum ApiError {
     ImageInvalid { reason: String },
     #[error("stale state")]
     ConflictStale,
-    #[error("email {email} already in use")]
-    EmailTaken { email: String },
+    // Intentionally a unit variant — the security audit flagged the
+    // previous `{ email: String }` shape as an existence-probe vector on
+    // /users/me/email-change: an authenticated attacker could iterate
+    // arbitrary addresses and read the 409 detail to learn which ones
+    // resolve to a user. The FE always knows the address it just sent
+    // and doesn't need it echoed back.
+    #[error("email already in use")]
+    EmailTaken,
     #[error("invite already pending for this email")]
     InviteDuplicate,
     #[error("an owner transfer is already pending for this family")]
