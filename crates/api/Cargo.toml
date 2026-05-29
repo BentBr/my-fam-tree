@@ -26,6 +26,7 @@ actix-multipart.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 base64.workspace = true
+bytes.workspace = true
 chrono.workspace = true
 dotenvy.workspace = true
 ed25519-dalek.workspace = true
