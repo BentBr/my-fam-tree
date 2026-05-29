@@ -6,10 +6,12 @@
 //! attacker shape the audit described so a future regression flips the
 //! red bit in the same place.
 //!
-//! Tests that need stateful Redis (rate-limit counters) are intentionally
-//! omitted — the `rate_limit_ip` helper is unit-tested via the
-//! `RedisRateLimiter` crate; replaying 120 requests per IP through the
-//! handler in a unit test adds runtime without changing the coverage.
+//! Tests for the token-endpoint per-IP caps (consume / refresh / accept /
+//! owner-transfer-confirm — `d984474`) are intentionally omitted: those
+//! cap at 120/hour each, so a regression test would need 120+ successful
+//! sign-ins per test which dominates runtime without changing the
+//! contract being asserted. The cap on `/users/me/email-change` is 5/hour
+//! and IS tested below.
 
 #![allow(
     clippy::unwrap_used,
@@ -219,6 +221,97 @@ async fn persons_create_rejects_unknown_field() {
         status == 400 || status == 422,
         "unknown field should be rejected with 400 or 422, got {status}",
     );
+}
+
+// ---------------------------------------------------------------------------
+// LOW: /users/me/email-change has a per-user rate cap (964c299)
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn email_change_rate_caps_at_5_per_hour_per_user() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+
+    let (access, _r) = sign_in(&stack, &app, "audit-ec@example.com").await;
+
+    // First five attempts pass the rate gate (they may 4xx on email
+    // already-in-use, but they shouldn't be 429). We don't care about the
+    // status here — the regression is "rate gate eventually fires".
+    for i in 0..5_u8 {
+        let req = test::TestRequest::post()
+            .uri("/api/v1/users/me/email-change")
+            .cookie(Cookie::new("access", access.clone()))
+            .set_json(
+                serde_json::json!({ "new_email": format!("audit-ec-target-{i}@example.com") }),
+            )
+            .to_request();
+        let res = test::call_service(&app, req).await;
+        assert_ne!(res.status(), 429, "request {i} should not be rate-limited yet (cap is 5/hour)",);
+    }
+
+    // Sixth attempt MUST 429 — rate gate's exceeded.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/users/me/email-change")
+        .cookie(Cookie::new("access", access.clone()))
+        .set_json(serde_json::json!({ "new_email": "audit-ec-target-final@example.com" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 429, "sixth attempt within the window must be 429");
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["code"], "rate_limited");
+}
+
+// ---------------------------------------------------------------------------
+// MED: person free-text field length caps (cf0c9b2)
+// ---------------------------------------------------------------------------
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn person_fields_reject_overlong_strings() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+
+    let (access, _r) = sign_in(&stack, &app, "audit-pl@example.com").await;
+    let (access, family_id) = create_family(&app, &access, "Lengths").await;
+
+    // given_name cap is 200 chars.
+    let long_name = "x".repeat(201);
+    let req = test::TestRequest::post()
+        .uri("/api/v1/persons")
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({ "given_name": long_name }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 422, "201-char given_name must 422");
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["fields"][0]["code"], "validation.string_too_long");
+    assert_eq!(body["fields"][0]["path"], "/given_name");
+
+    // notes cap is 2000 chars (highest of the person fields).
+    let long_notes = "x".repeat(2001);
+    let req = test::TestRequest::post()
+        .uri("/api/v1/persons")
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({ "given_name": "OK", "notes": long_notes }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 422, "2001-char notes must 422");
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["fields"][0]["path"], "/notes");
+
+    // gender cap is 100 chars (short bucket).
+    let long_gender = "x".repeat(101);
+    let req = test::TestRequest::post()
+        .uri("/api/v1/persons")
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({ "given_name": "OK", "gender": long_gender }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 422, "101-char gender must 422");
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["fields"][0]["path"], "/gender");
 }
 
 // ---------------------------------------------------------------------------
