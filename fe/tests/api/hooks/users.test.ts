@@ -27,7 +27,15 @@ beforeEach(() => {
 describe('useMe', () => {
     it('GETs /users/me', async () => {
         mocked.GET.mockResolvedValueOnce({ data: { data: { display_name: 'A' } }, error: undefined })
-        const { result } = makeHookWrapper(() => useMe())
+        // useMe is gated on `auth.status === 'authenticated'` (it backs the
+        // AppBar avatar which mounts on the sign-in page too — without the
+        // gate, every fresh page-load fires /users/me, 401s, and triggers
+        // the FE's session_expired toast). Authenticate the store inside
+        // the wrapper's setup so the query is enabled.
+        const { result } = makeHookWrapper(() => {
+            useAuthStore().status = 'authenticated'
+            return useMe()
+        })
         await new Promise<void>((r) => setTimeout(r, 5))
         expect(mocked.GET).toHaveBeenCalledWith('/api/v1/users/me')
         // useMe now unwraps the envelope — call sites get the profile directly.
@@ -36,9 +44,20 @@ describe('useMe', () => {
 
     it('errors on response error', async () => {
         mocked.GET.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
-        const { result } = makeHookWrapper(() => useMe())
+        const { result } = makeHookWrapper(() => {
+            useAuthStore().status = 'authenticated'
+            return useMe()
+        })
         await new Promise<void>((r) => setTimeout(r, 5))
         expect(result.error.value).toBeDefined()
+    })
+
+    it('stays disabled when the auth store is anonymous', async () => {
+        // No `auth.status = 'authenticated'` here — the gate keeps the
+        // query disabled so /users/me is never fetched.
+        makeHookWrapper(() => useMe())
+        await new Promise<void>((r) => setTimeout(r, 5))
+        expect(mocked.GET).not.toHaveBeenCalled()
     })
 })
 

@@ -2267,7 +2267,8 @@
           "token": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AcceptRes": {
         "type": "object",
@@ -2479,7 +2480,8 @@
             "type": "string",
             "format": "uuid"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ConfirmReq": {
         "type": "object",
@@ -2490,7 +2492,8 @@
           "token": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ConsumeReq": {
         "type": "object",
@@ -2501,7 +2504,8 @@
           "token": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ConsumeRes": {
         "type": "object",
@@ -2569,7 +2573,8 @@
           "visibility": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ContactListRes": {
         "type": "object",
@@ -2667,7 +2672,8 @@
           "name": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "CreateFamilyRes": {
         "type": "object",
@@ -2736,7 +2742,8 @@
           "token": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "EmailChangeReq": {
         "type": "object",
@@ -2747,7 +2754,8 @@
           "new_email": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "EmailChangeRes": {
         "type": "object",
@@ -2890,7 +2898,8 @@
           "is_favourite": {
             "type": "boolean"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "FavouriteRes": {
         "type": "object",
@@ -3037,7 +3046,8 @@
           "role": {
             "$ref": "#/components/schemas/Role"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InviteRes": {
         "type": "object",
@@ -3196,7 +3206,8 @@
           "email": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "MagicLinkRes": {
         "type": "object",
@@ -3439,7 +3450,8 @@
             "type": "string",
             "format": "uuid"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PartnerEdge": {
         "type": "object",
@@ -3532,7 +3544,8 @@
             ],
             "format": "date"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PartnershipUpdateReq": {
         "type": "object",
@@ -3569,7 +3582,8 @@
             ],
             "format": "date"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PartnershipView": {
         "type": "object",
@@ -3695,7 +3709,8 @@
           "notes": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PersonFavouriteResponseBody": {
         "type": "object",
@@ -3824,7 +3839,8 @@
               "null"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PersonView": {
         "type": "object",
@@ -4016,7 +4032,8 @@
           "remind_birthdays": {
             "type": "boolean"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "RenameFamilyReq": {
         "type": "object",
@@ -4027,7 +4044,8 @@
           "name": {
             "type": "string"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ResponseMeta": {
         "type": "object",
@@ -4075,7 +4093,8 @@
           "role": {
             "$ref": "#/components/schemas/Role"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "TransferStatus": {
         "type": "object",
@@ -4394,7 +4413,8 @@
               "null"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "UserAvatarResponseBody": {
         "type": "object",

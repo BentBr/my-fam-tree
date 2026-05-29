@@ -87,6 +87,11 @@ vi.mock('@/api/hooks/persons', () => ({
     useGetPerson: () => ({ data: personGetData, isLoading: personGetIsLoading, error: ref(null) }),
     useDeletePerson: () => ({ mutateAsync: delMutate, isPending: ref(false) }),
     useSetFavourite: () => ({ mutate: vi.fn(), isPending: ref(false) }),
+    // PersonDetail's avatar slot drives photo upload through these two
+    // hooks. Stub them out so the test mount doesn't have to construct a
+    // QueryClient or wire the real openapi client.
+    useSetPersonPhoto: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
+    useClearPersonPhoto: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
 }))
 
 const inviteMutate = vi.fn()
@@ -171,6 +176,10 @@ function stubs() {
             template: '<section data-testid="contacts-section" />',
             props: ['personId', 'linkedUserId'],
         },
+        // PersonDetail's new avatar slot pulls in DefaultAvatar (Vuetify
+        // v-avatar/v-img). Stub it so the test mount doesn't recurse into
+        // Vuetify internals.
+        DefaultAvatar: { template: '<div data-testid="default-avatar-stub" />' },
     }
 }
 

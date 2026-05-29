@@ -6,8 +6,12 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 const updateMutate = vi.fn()
 const requestEmailMutate = vi.fn()
+const setAvatarMutate = vi.fn()
+const clearAvatarMutate = vi.fn()
 // useMe now unwraps the envelope, so the mock returns the profile directly.
-const meData = ref<{ display_name: string; email: string; locale: string } | undefined>(undefined)
+const meData = ref<{ display_name: string; email: string; locale: string; avatar_url?: string | null } | undefined>(
+    undefined,
+)
 const meRefs = {
     data: meData,
     isLoading: ref(false),
@@ -18,6 +22,10 @@ vi.mock('@/api/hooks/users', () => ({
     useMe: () => meRefs,
     useUpdateMe: () => ({ mutateAsync: updateMutate, isPending: ref(false) }),
     useRequestEmailChange: () => ({ mutateAsync: requestEmailMutate, isPending: ref(false) }),
+    // Avatar slot on AccountView calls these — return stub pending refs so
+    // `avatarBusy` resolves to `false` and the template renders cleanly.
+    useSetMyAvatar: () => ({ mutateAsync: setAvatarMutate, isPending: ref(false) }),
+    useClearMyAvatar: () => ({ mutateAsync: clearAvatarMutate, isPending: ref(false) }),
 }))
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 
@@ -70,6 +78,9 @@ async function mountView() {
                         '<button class="btn" :data-testid="$attrs[\'data-testid\']" @click="$emit(\'click\')"><slot /></button>',
                     props: ['loading', 'block', 'type', 'variant', 'color', 'prependIcon'],
                 },
+                // The avatar slot pulls in DefaultAvatar (Vuetify v-avatar/v-img).
+                // Stub it so the test mount doesn't recurse into Vuetify internals.
+                DefaultAvatar: { template: '<div data-testid="default-avatar-stub" />' },
             },
         },
     })

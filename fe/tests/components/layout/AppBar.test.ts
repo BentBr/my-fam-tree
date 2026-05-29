@@ -1,9 +1,15 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
+// AppBar now reads /users/me for the avatar — stub the hook so the test
+// doesn't drag tanstack-query + the auth gate into the mount.
+vi.mock('@/api/hooks/users', () => ({
+    useMe: () => ({ data: ref(undefined), isLoading: ref(false), error: ref(null) }),
+}))
 
 import AppBar from '@/components/layout/AppBar.vue'
 import { i18n } from '@/i18n'
@@ -43,6 +49,7 @@ async function mountAppBar() {
                 },
                 FamilySwitcher: { template: '<div />' },
                 LangSwitcher: { template: '<div />' },
+                DefaultAvatar: { template: '<div data-testid="default-avatar-stub" />' },
             },
         },
     })
