@@ -25,6 +25,20 @@ export const useUiStore = defineStore('ui', () => {
     }
 
     function pushToast(t: Omit<Toast, 'id'>): void {
+        // Dedupe: a burst of N concurrent fetches that all 401 (or otherwise
+        // fail with the same `Validation` violation) would otherwise stack
+        // N identical toasts. Two toasts are "the same" when their kind,
+        // message, and code (when set) all match — different texts or
+        // different codes still surface independently. We compare against
+        // toasts currently in the stack; once one is dismissed (manually or
+        // by auto-timeout), a fresh failure can surface again.
+        const duplicate = toasts.value.some(
+            (existing) =>
+                existing.kind === t.kind &&
+                existing.message === t.message &&
+                (existing.code ?? '') === (t.code ?? ''),
+        )
+        if (duplicate) return
         toastIdSeq += 1
         toasts.value.push({ ...t, id: `toast-${toastIdSeq}` })
     }

@@ -69,4 +69,35 @@ describe('ui store', () => {
         expect(ui.toasts).toHaveLength(1)
         expect(ui.toasts[0]?.message).toBe('b')
     })
+
+    it('pushToast deduplicates identical (kind+message+code) entries already on screen', () => {
+        const ui = useUiStore()
+        // The "burst of session_expired" repro: four concurrent 401 toasts
+        // collapse to one.
+        for (let i = 0; i < 4; i += 1) {
+            ui.pushToast({
+                kind: 'error',
+                message: 'Your session expired — please sign in again.',
+                code: 'session_expired',
+            })
+        }
+        expect(ui.toasts).toHaveLength(1)
+    })
+
+    it('pushToast still surfaces a different message even when kind + code match', () => {
+        const ui = useUiStore()
+        ui.pushToast({ kind: 'error', message: 'A', code: 'validation' })
+        ui.pushToast({ kind: 'error', message: 'B', code: 'validation' })
+        expect(ui.toasts).toHaveLength(2)
+    })
+
+    it('pushToast lets the same message reappear once the previous toast is dismissed', () => {
+        const ui = useUiStore()
+        ui.pushToast({ kind: 'error', message: 'hi' })
+        ui.pushToast({ kind: 'error', message: 'hi' })
+        expect(ui.toasts).toHaveLength(1)
+        ui.dismissToast(ui.toasts[0]?.id ?? '')
+        ui.pushToast({ kind: 'error', message: 'hi' })
+        expect(ui.toasts).toHaveLength(1)
+    })
 })
