@@ -113,6 +113,9 @@ pub async fn accept(
     req: HttpRequest,
     body: web::Json<AcceptReq>,
 ) -> Result<HttpResponse, ApiError> {
+    // Per-IP rate cap (security audit INFO). See `auth::rate_limit_ip` for why.
+    crate::routes::auth::rate_limit_ip(&state, &req, "invite-accept:ip", 120).await?;
+
     // The session (if any) is optional. If an active session is bound
     // to a different email than the invite, we reject with 422 so the
     // user can sign out first. If no session, the invite token itself

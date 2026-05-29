@@ -299,6 +299,9 @@ pub async fn confirm(
     _path: web::Path<Uuid>,
     body: web::Json<ConfirmReq>,
 ) -> Result<ApiResponse<TransferStatus>, ApiError> {
+    // Per-IP rate cap (security audit INFO). See `auth::rate_limit_ip` for why.
+    crate::routes::auth::rate_limit_ip(&state, &req, "owner-transfer-confirm:ip", 120).await?;
+
     let claims = user_claims(&req)?;
     let token_hash = hash_token(body.token.trim());
     let now = Utc::now();

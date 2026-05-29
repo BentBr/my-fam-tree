@@ -34,6 +34,34 @@ use crate::services::auth_service::{issue_access_token_for, mint_magic_link_url}
 use crate::validation::{email_invalid, looks_like_email};
 use crate::{ApiError, ApiResponse, AppState, response_body};
 
+/// Per-IP sliding-window rate cap shared by the token-validation endpoints
+/// (`/auth/consume`, `/auth/refresh`, `/invites/accept`,
+/// `/owner-transfer/confirm`). 256-bit opaque tokens make brute force
+/// infeasible — this guard only exists to keep a runaway client from
+/// drowning the DB in `find-by-hash` lookups.
+///
+/// `prefix` is namespaced per endpoint (e.g. `"consume:ip"`) so a busy
+/// `/auth/refresh` doesn't eat the `consume` budget. `max_per_hour` is
+/// expected to be generous (~120).
+#[allow(clippy::future_not_send, reason = "actix HttpRequest is !Send by design")]
+pub(crate) async fn rate_limit_ip(
+    state: &web::Data<AppState>,
+    req: &HttpRequest,
+    prefix: &str,
+    max_per_hour: u32,
+) -> Result<(), ApiError> {
+    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_string();
+    let decision = state
+        .rate_limiter
+        .check(&format!("{prefix}:{ip}"), max_per_hour, StdDuration::from_hours(1))
+        .await
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    if !decision.allowed {
+        return Err(ApiError::RateLimited { retry_after_secs: decision.retry_after_seconds });
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Request / response DTOs.
 // ---------------------------------------------------------------------------
@@ -226,8 +254,14 @@ pub async fn magic_link(
 #[post("/auth/consume")]
 pub async fn consume(
     state: web::Data<AppState>,
+    req: HttpRequest,
     body: web::Json<ConsumeReq>,
 ) -> Result<HttpResponse, ApiError> {
+    // Per-IP rate cap (security audit INFO). 256-bit tokens make brute
+    // force infeasible, so this is purely a DB-DoS guard against
+    // token-guess storms; bound generously at 120/hour.
+    rate_limit_ip(&state, &req, "consume:ip", 120).await?;
+
     let token = body.token.trim();
     if token.is_empty() {
         return Err(ApiError::MagicLinkInvalid);
@@ -308,6 +342,9 @@ pub async fn refresh(
     state: web::Data<AppState>,
     req: HttpRequest,
 ) -> Result<HttpResponse, ApiError> {
+    // Per-IP rate cap (security audit INFO). Same shape as `consume`.
+    rate_limit_ip(&state, &req, "refresh:ip", 120).await?;
+
     let cookie = req.cookie(REFRESH_COOKIE).ok_or(ApiError::RefreshInvalid)?;
     let old_hash = hash_token(cookie.value());
 
