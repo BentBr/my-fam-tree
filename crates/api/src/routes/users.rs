@@ -60,6 +60,7 @@ pub struct UserProfile {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct UpdateUserReq {
     #[serde(default)]
     pub display_name: Option<String>,
@@ -68,6 +69,7 @@ pub struct UpdateUserReq {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EmailChangeReq {
     pub new_email: String,
 }
@@ -78,6 +80,7 @@ pub struct EmailChangeRes {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct EmailChangeConfirmReq {
     pub token: String,
 }
@@ -109,19 +112,23 @@ fn parse_locale(raw: &str) -> Result<Locale, ApiError> {
 /// in `routes::persons` — one hour, re-presigned on every read.
 const AVATAR_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
 
-fn profile_from(
+async fn profile_from(
     user: &my_family_domain::User,
     object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
 ) -> UserProfile {
-    let avatar_url = user.avatar_key.as_deref().and_then(|key| {
-        match object_store.presigned_get(key, AVATAR_URL_TTL) {
+    // `presigned_get` is async — see the trait doc + `crate::routes::persons`
+    // for why the SDK's `.presigned()` future can't be block_in_place'd
+    // from the actix arbiter.
+    let avatar_url = match user.avatar_key.as_deref() {
+        None => None,
+        Some(key) => match object_store.presigned_get(key, AVATAR_URL_TTL).await {
             Ok(url) => Some(url),
             Err(e) => {
                 tracing::warn!(error = ?e, avatar_key = %key, "could not presign avatar URL");
                 None
             }
-        }
-    });
+        },
+    };
     UserProfile {
         id: user.id.into_uuid(),
         email: user.email.clone(),
@@ -163,7 +170,7 @@ pub async fn me(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +238,7 @@ pub async fn update(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------
@@ -397,7 +404,7 @@ pub async fn email_change_confirm(
         .await
         .map_err(internal)?
         .ok_or(ApiError::Unauthenticated)?;
-    Ok(ApiResponse::ok(profile_from(&user, &state.object_store)))
+    Ok(ApiResponse::ok(profile_from(&user, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------

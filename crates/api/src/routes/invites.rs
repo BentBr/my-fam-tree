@@ -52,6 +52,7 @@ fn family_view_from_claims(
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct AcceptReq {
     pub token: String,
 }

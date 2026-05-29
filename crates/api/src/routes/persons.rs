@@ -63,6 +63,7 @@ fn check_draft(d: &PersonDraft) -> Result<(), ApiError> {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PersonCreateReq {
     pub given_name: String,
     #[serde(default)]
@@ -85,6 +86,7 @@ pub struct PersonCreateReq {
 /// Partial update. Every field is optional; only `Some(_)` fields overwrite
 /// the corresponding column. An empty body is rejected as `validation.value_required`.
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PersonUpdateReq {
     pub given_name: Option<String>,
     pub family_name: Option<String>,
@@ -144,12 +146,17 @@ const PHOTO_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
 /// Resolve a stored `photo_key` to a fresh presigned URL. On storage
 /// backend errors we log + return `None` so a single `MinIO` blip degrades
 /// to "no photo shown" instead of a 500 on the whole person fetch.
-fn presigned_photo_url(
+///
+/// Async because the S3 impl of `presigned_get` builds the URL via the
+/// AWS SDK's `.presigned()` future. Calling it from a sync context inside
+/// the actix arbiter panics ("can call blocking only when running on the
+/// multi-threaded runtime").
+async fn presigned_photo_url(
     object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
     key: Option<&str>,
 ) -> Option<String> {
     let key = key?;
-    match object_store.presigned_get(key, PHOTO_URL_TTL) {
+    match object_store.presigned_get(key, PHOTO_URL_TTL).await {
         Ok(url) => Some(url),
         Err(e) => {
             tracing::warn!(error = ?e, photo_key = %key, "could not presign photo URL");
@@ -158,19 +165,19 @@ fn presigned_photo_url(
     }
 }
 
-fn to_view(
+async fn to_view(
     p: my_family_domain::Person,
     object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
 ) -> PersonView {
-    to_view_with_favourite(p, false, object_store)
+    to_view_with_favourite(p, false, object_store).await
 }
 
-fn to_view_with_favourite(
+async fn to_view_with_favourite(
     p: my_family_domain::Person,
     is_favourite_for_me: bool,
     object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
 ) -> PersonView {
-    let photo_url = presigned_photo_url(object_store, p.photo_key.as_deref());
+    let photo_url = presigned_photo_url(object_store, p.photo_key.as_deref()).await;
     PersonView {
         id: p.id.into_uuid(),
         family_id: p.family_id.into_uuid(),
@@ -279,10 +286,13 @@ pub async fn list(
     };
     let returned = u32::try_from(rows.len()).unwrap_or(u32::MAX);
 
-    Ok(ApiResponse::page(
-        rows.into_iter().map(|p| to_view(p, &state.object_store)).collect(),
-        Pagination { next_cursor, limit, returned },
-    ))
+    // `to_view` is async (it presigns the photo URL); collect the
+    // per-person futures and resolve them in order.
+    let mut views = Vec::with_capacity(rows.len());
+    for p in rows {
+        views.push(to_view(p, &state.object_store).await);
+    }
+    Ok(ApiResponse::page(views, Pagination { next_cursor, limit, returned }))
 }
 
 // ---------------------------------------------------------------------------
@@ -332,7 +342,7 @@ pub async fn create(
         serde_json::json!({}),
     )
     .await;
-    Ok(ApiResponse::ok(to_view(person, &state.object_store)))
+    Ok(ApiResponse::ok(to_view(person, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------
@@ -374,7 +384,7 @@ pub async fn get_one(
         .is_favourite_for_user(claims.user_id, person_id)
         .await
         .map_err(favourite_internal)?;
-    Ok(ApiResponse::ok(to_view_with_favourite(person, fav, &state.object_store)))
+    Ok(ApiResponse::ok(to_view_with_favourite(person, fav, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------
@@ -458,7 +468,7 @@ pub async fn update(
         serde_json::json!({}),
     )
     .await;
-    Ok(ApiResponse::ok(to_view(person, &state.object_store)))
+    Ok(ApiResponse::ok(to_view(person, &state.object_store).await))
 }
 
 // ---------------------------------------------------------------------------

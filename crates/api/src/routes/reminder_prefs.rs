@@ -25,6 +25,7 @@ const LEAD_DAYS_MAX: i32 = 21;
     reason = "independent user-facing toggles mirroring reminder_preferences, not a state machine"
 )]
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ReminderPrefsView {
     pub emails_enabled: bool,
     pub remind_birthdays: bool,

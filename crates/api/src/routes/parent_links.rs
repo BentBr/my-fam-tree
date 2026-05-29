@@ -21,6 +21,7 @@ use crate::validation::value_required;
 use crate::{ApiError, AppState};
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ParentLinkReq {
     pub child_id: Uuid,
     pub parent_id: Uuid,

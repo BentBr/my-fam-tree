@@ -39,6 +39,7 @@ use crate::{ApiError, ApiResponse, AppState, response_body};
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct MagicLinkReq {
     pub email: String,
 }
@@ -49,6 +50,7 @@ pub struct MagicLinkRes {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConsumeReq {
     pub token: String,
 }

@@ -87,6 +87,7 @@ pub struct MyFamiliesRes {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct CreateFamilyReq {
     pub name: String,
 }
@@ -98,11 +99,13 @@ pub struct CreateFamilyRes {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct RenameFamilyReq {
     pub name: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct InviteReq {
     pub email: String,
     pub role: Role,

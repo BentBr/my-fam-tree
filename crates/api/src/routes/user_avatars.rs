@@ -137,7 +137,7 @@ pub async fn upload(
     // keyed on `family_id` so a tracing entry is the right shape.
     tracing::info!(user_id = %user_id, photo_key = %key, "user_set_avatar");
 
-    let url = state.object_store.presigned_get(&key, AVATAR_URL_TTL).map_err(internal)?;
+    let url = state.object_store.presigned_get(&key, AVATAR_URL_TTL).await.map_err(internal)?;
     Ok(ApiResponse::ok(UserAvatarView { avatar_key: key, avatar_url: url }))
 }
 

@@ -108,7 +108,11 @@ impl ObjectStore for LocalObjectStore {
         }
     }
 
-    fn presigned_get(&self, key: &str, _expires_in: Duration) -> Result<String, StorageError> {
+    async fn presigned_get(
+        &self,
+        key: &str,
+        _expires_in: Duration,
+    ) -> Result<String, StorageError> {
         // Validate the key the same way `put/get/delete` do, even though
         // the result is a URL and not a filesystem path. A `..`-containing
         // key would otherwise produce a URL that escapes the configured
@@ -131,7 +135,7 @@ mod tests {
         store.put("persons/a.jpg", "image/jpeg", Bytes::from_static(b"PHOTO")).await.unwrap();
         let got = store.get("persons/a.jpg").await.unwrap();
         assert_eq!(&got[..], b"PHOTO");
-        let url = store.presigned_get("persons/a.jpg", Duration::from_mins(1)).unwrap();
+        let url = store.presigned_get("persons/a.jpg", Duration::from_mins(1)).await.unwrap();
         assert_eq!(url, "/api/v1/uploads/persons/a.jpg");
 
         store.delete("persons/a.jpg").await.unwrap();
@@ -172,7 +176,7 @@ mod tests {
                 Err(StorageError::InvalidKey(_)) => {}
                 other => panic!("delete({key:?}) should reject as Config, got {other:?}"),
             }
-            match store.presigned_get(key, Duration::from_mins(1)) {
+            match store.presigned_get(key, Duration::from_mins(1)).await {
                 Err(StorageError::InvalidKey(_)) => {}
                 other => panic!("presigned_get({key:?}) should reject as Config, got {other:?}"),
             }

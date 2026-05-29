@@ -25,6 +25,7 @@ use crate::validation::value_required;
 use crate::{ApiError, AppState, response_body};
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PartnershipCreateReq {
     pub partner_a_id: Uuid,
     pub partner_b_id: Uuid,
@@ -39,6 +40,7 @@ pub struct PartnershipCreateReq {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct PartnershipUpdateReq {
     pub kind: Option<String>,
     pub started_on: Option<NaiveDate>,

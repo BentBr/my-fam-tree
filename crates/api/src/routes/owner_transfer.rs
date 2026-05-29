@@ -44,11 +44,13 @@ use crate::{ApiError, ApiResponse, AppState, response_body};
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct BeginReq {
     pub to_user_id: Uuid,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ConfirmReq {
     pub token: String,
 }

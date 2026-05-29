@@ -42,6 +42,7 @@ pub struct MembersList {
 response_body!(pub MembersListResponseBody, MembersList);
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct SetRoleReq {
     pub role: Role,
 }

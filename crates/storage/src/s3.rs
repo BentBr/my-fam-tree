@@ -123,25 +123,15 @@ impl ObjectStore for S3ObjectStore {
         Ok(())
     }
 
-    fn presigned_get(&self, key: &str, expires_in: Duration) -> Result<String, StorageError> {
-        // The SDK's PresigningConfig builder requires the request to be
-        // .presigned()'d which is async, but build only requires sync
-        // config. We use the synchronous variant: PresigningConfig::expires_in
-        // returns the config; the actual URL build is async in the SDK, so
-        // for a truly sync API we'd need to block. Instead, expose this as
-        // async-by-spawn: tokio::runtime::Handle::current().block_on(...).
-        //
-        // For our caller model the request handler is already in a tokio
-        // runtime, so we can build via Handle::current() block_on the
-        // ready future safely. PresigningConfig::builder().expires_in(...)
-        // returns Result, not a future.
+    async fn presigned_get(&self, key: &str, expires_in: Duration) -> Result<String, StorageError> {
+        // The SDK's `.presigned()` is `async` because it shares the
+        // request-builder lifecycle with `.send()`, but the body just
+        // runs SigV4 signing — no network I/O. Awaiting it inside the
+        // actix arbiter (single-threaded runtime) is cheap.
         let presign_cfg =
             PresigningConfig::builder().expires_in(expires_in).build().map_err(backend)?;
         let req = self.client.get_object().bucket(&self.bucket).key(key);
-        let fut = req.presigned(presign_cfg);
-        let presigned = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(fut).map_err(backend)
-        })?;
+        let presigned = req.presigned(presign_cfg).await.map_err(backend)?;
         Ok(presigned.uri().to_string())
     }
 }

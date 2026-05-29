@@ -27,6 +27,7 @@ use crate::response::ApiResponse;
 use crate::{ApiError, AppState, response_body};
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct FavouriteReq {
     pub is_favourite: bool,
 }

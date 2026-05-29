@@ -41,8 +41,14 @@ pub trait ObjectStore: Send + Sync + std::fmt::Debug + 'static {
     /// route the api serves itself (the `expires_in` is informational
     /// because the local route doesn't enforce expiry).
     ///
+    /// Async because the `S3` impl builds the URL via the SDK's
+    /// `.presigned()` future — calling that from a sync context inside
+    /// actix's per-arbiter (single-threaded) runtime panics with
+    /// "can call blocking only when running on the multi-threaded runtime".
+    /// The future doesn't do any real I/O; it just runs `SigV4` signing.
+    ///
     /// # Errors
     /// Returns [`StorageError::Backend`] if the presigner cannot be
     /// constructed (e.g. an out-of-range expiry).
-    fn presigned_get(&self, key: &str, expires_in: Duration) -> Result<String, StorageError>;
+    async fn presigned_get(&self, key: &str, expires_in: Duration) -> Result<String, StorageError>;
 }

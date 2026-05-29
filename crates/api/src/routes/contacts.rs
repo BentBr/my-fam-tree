@@ -49,6 +49,7 @@ use crate::{ApiError, AppState, FieldViolation, response_body};
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct ContactInput {
     /// One of `email`, `phone`, `address`, `url`, `other`.
     pub kind: String,

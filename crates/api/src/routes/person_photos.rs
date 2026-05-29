@@ -222,7 +222,7 @@ pub async fn upload(
     )
     .await;
 
-    let url = state.object_store.presigned_get(&key, PHOTO_URL_TTL).map_err(internal)?;
+    let url = state.object_store.presigned_get(&key, PHOTO_URL_TTL).await.map_err(internal)?;
     Ok(ApiResponse::ok(PersonPhotoView { photo_key: key, photo_url: url }))
 }
 
