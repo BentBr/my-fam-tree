@@ -441,4 +441,62 @@ mod tests {
             Ok(())
         });
     }
+
+    #[test]
+    fn rejects_empty_cors_origins() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("CORS_ALLOWED_ORIGINS", "");
+            let err = ApiConfig::from_env().expect_err("empty CORS list must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("CORS_ALLOWED_ORIGINS"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn rejects_wildcard_cors_origin() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("CORS_ALLOWED_ORIGINS", "*");
+            let err = ApiConfig::from_env().expect_err("`*` with credentials must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains('*'));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn rejects_non_url_cors_origin() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            // Missing colon — looks like a URL but doesn't parse.
+            jail.set_env("CORS_ALLOWED_ORIGINS", "https//example.com");
+            let err = ApiConfig::from_env().expect_err("bad URL must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("not a valid URL") || msg.contains("must use http"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn rejects_non_http_cors_origin() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            // Valid URL shape, wrong scheme.
+            jail.set_env("CORS_ALLOWED_ORIGINS", "file:///etc/passwd");
+            let err = ApiConfig::from_env().expect_err("non-http scheme must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("http"));
+            Ok(())
+        });
+    }
 }
