@@ -132,10 +132,14 @@ services:
                     - minio.my-family.docker
 
     # nginx reverse-proxy fronting the S3 API on :9000 so consumers reach
-    # MinIO through `http://minio-api.my-family.docker` (port 80). See
-    # `.docker/local/conf/minio-api-proxy.conf` for why.
+    # MinIO through `http://minio-api.my-family.docker` (port 80). The api
+    # talks to the same hostname from INSIDE the docker network (same network
+    # alias resolves to this container directly on port 80) so the SigV4
+    # signature the SDK computes is valid no matter who follows the resulting
+    # presigned URL. Using plain nginx (vs nginx-unprivileged) because the
+    # unprivileged image refuses to bind <1024.
     minio-api:
-        image: nginxinc/nginx-unprivileged:1.27-alpine
+        image: nginx:1.27-alpine
         depends_on:
             minio:
                 condition: service_healthy
@@ -143,7 +147,7 @@ services:
             - ./.docker/local/conf/minio-api-proxy.conf:/etc/nginx/conf.d/default.conf:ro
         environment:
             VIRTUAL_HOST: minio-api.my-family.docker
-            VIRTUAL_PORT: "8080"
+            VIRTUAL_PORT: "80"
         networks:
             my-family:
                 aliases:
