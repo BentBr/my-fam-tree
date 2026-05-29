@@ -135,6 +135,23 @@ struct FlatApiConfig {
     magic_link_rate_per_ip_per_hour: u32,
 }
 
+/// Require a URL-shaped string to use the `https` scheme. Used by the
+/// production-only block of `validate()` for any URL that's either
+/// browser-facing (cookies marked Secure are sent only over HTTPS) or
+/// network-exposed (S3 endpoint). HTTP-only URLs leak credentials +
+/// session cookies on every request.
+fn require_https(value: &str, field: &str) -> Result<(), ConfigError> {
+    let parsed = url::Url::parse(value).map_err(|e| {
+        ConfigError::Validation(format!("{field} `{value}` is not a valid URL: {e}"))
+    })?;
+    if parsed.scheme() != "https" {
+        return Err(ConfigError::Validation(format!(
+            "{field} must use https in production; got `{value}`"
+        )));
+    }
+    Ok(())
+}
+
 impl ApiConfig {
     /// Load the api configuration from the process environment and run
     /// cross-field validation (`JWT_PRIVATE_KEY_ID` must appear as a kid
@@ -238,6 +255,38 @@ impl ApiConfig {
                 return Err(ConfigError::Validation(
                     "COOKIE_SAMESITE_REFRESH must be `Strict` in production".into(),
                 ));
+            }
+            // Public URLs must be HTTPS in production — without that the
+            // browser sends Secure cookies only over the wrong scheme and
+            // every magic-link / invite mail leaks a non-TLS URL.
+            require_https(&self.api.public_url, "API_PUBLIC_URL")?;
+            require_https(&self.web.public_url, "WEB_PUBLIC_URL")?;
+            // Swagger UI in prod is an exposure surface — schema enumeration
+            // + the "try it out" button against authenticated endpoints
+            // becomes a discovery aid for an attacker. Force it off.
+            if self.api.enable_docs {
+                return Err(ConfigError::Validation(
+                    "API_ENABLE_DOCS must be false in production".into(),
+                ));
+            }
+            // The local-filesystem object store is fine for dev / CI but
+            // never appropriate for a real deploy — there's no replication,
+            // bytes live on the api pod's filesystem, and presigned_get
+            // returns a `/api/v1/uploads/{key}` URL the api doesn't even
+            // serve. Reject at boot.
+            if matches!(self.storage.driver, StorageDriver::Local) {
+                return Err(ConfigError::Validation(
+                    "STORAGE_DRIVER=local is not allowed in production; use s3".into(),
+                ));
+            }
+            // If STORAGE_ENDPOINT_URL is set (MinIO / R2 / etc.), it MUST
+            // be HTTPS — same reasoning as the public URLs above. Real
+            // AWS S3 leaves this unset and the SDK uses the default
+            // https://s3.<region>.amazonaws.com endpoint.
+            if let Some(ep) = self.storage.endpoint_url.as_deref()
+                && !ep.is_empty()
+            {
+                require_https(ep, "STORAGE_ENDPOINT_URL")?;
             }
         }
         Ok(())
@@ -417,9 +466,7 @@ mod tests {
     #[test]
     fn prod_rejects_lax_refresh_samesite() {
         Jail::expect_with(|jail| {
-            set_minimum_env(jail);
-            jail.set_env("APP_ENV", "production");
-            jail.set_env("COOKIE_SECURE", "true");
+            set_prod_minimum_env(jail);
             jail.set_env("COOKIE_SAMESITE_REFRESH", "Lax");
             let err = ApiConfig::from_env().expect_err("prod with lax refresh must reject");
             let ConfigError::Validation(msg) = err else {
@@ -433,11 +480,13 @@ mod tests {
     #[test]
     fn prod_accepts_secure_and_strict_refresh() {
         Jail::expect_with(|jail| {
-            set_minimum_env(jail);
-            jail.set_env("APP_ENV", "production");
-            jail.set_env("COOKIE_SECURE", "true");
+            // `set_prod_minimum_env` flips production on AND switches every
+            // field the prod-only validation now requires (https URLs +
+            // s3 driver). Without that this test would 5-way reject before
+            // reaching the cookie assertion we care about.
+            set_prod_minimum_env(jail);
             // COOKIE_SAMESITE_REFRESH defaults to Strict in the minimum env.
-            ApiConfig::from_env().expect("prod with secure+strict must load");
+            ApiConfig::from_env().expect("prod with secure+strict + https + s3 must load");
             Ok(())
         });
     }
@@ -496,6 +545,107 @@ mod tests {
                 unreachable!("expected Validation; got {err:?}");
             };
             assert!(msg.contains("http"));
+            Ok(())
+        });
+    }
+
+    /// Convenience for the production-only validation tests below: takes a
+    /// `Jail` already populated with the minimum env, flips it into
+    /// production with TLS-correct cookies, AND switches storage to S3
+    /// (the local driver is now banned in prod). Tests then mutate ONE
+    /// field to assert the rejection.
+    fn set_prod_minimum_env(jail: &mut Jail) {
+        set_minimum_env(jail);
+        jail.set_env("APP_ENV", "production");
+        jail.set_env("COOKIE_SECURE", "true");
+        // The default API/WEB public URLs in MINIMUM_ENV are http://; bump
+        // them to https so cookie/URL checks succeed and we can isolate
+        // the field under test.
+        jail.set_env("API_PUBLIC_URL", "https://api.example.com");
+        jail.set_env("WEB_PUBLIC_URL", "https://example.com");
+        jail.set_env("CORS_ALLOWED_ORIGINS", "https://example.com");
+        jail.set_env("STORAGE_DRIVER", "s3");
+        jail.set_env("STORAGE_ACCESS_KEY_ID", "AKIA-test");
+        jail.set_env("STORAGE_SECRET_ACCESS_KEY", "secret-test");
+    }
+
+    #[test]
+    fn prod_rejects_http_api_public_url() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            jail.set_env("API_PUBLIC_URL", "http://api.example.com");
+            let err = ApiConfig::from_env().expect_err("http api_public_url must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("API_PUBLIC_URL"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_http_web_public_url() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            jail.set_env("WEB_PUBLIC_URL", "http://example.com");
+            let err = ApiConfig::from_env().expect_err("http web_public_url must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("WEB_PUBLIC_URL"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_enable_docs() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            jail.set_env("API_ENABLE_DOCS", "true");
+            let err = ApiConfig::from_env().expect_err("docs in prod must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("API_ENABLE_DOCS"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_local_storage_driver() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            jail.set_env("STORAGE_DRIVER", "local");
+            let err = ApiConfig::from_env().expect_err("local driver in prod must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("local"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_rejects_http_storage_endpoint_url() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            jail.set_env("STORAGE_ENDPOINT_URL", "http://minio.example.com");
+            let err = ApiConfig::from_env().expect_err("http S3 endpoint must reject");
+            let ConfigError::Validation(msg) = err else {
+                unreachable!("expected Validation; got {err:?}");
+            };
+            assert!(msg.contains("STORAGE_ENDPOINT_URL"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn prod_accepts_full_https_s3_setup() {
+        Jail::expect_with(|jail| {
+            set_prod_minimum_env(jail);
+            // Empty endpoint URL is the "use real AWS S3" path; should pass.
+            jail.set_env("STORAGE_ENDPOINT_URL", "");
+            ApiConfig::from_env().expect("prod with https + s3 + no endpoint must load");
             Ok(())
         });
     }
