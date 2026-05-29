@@ -1,7 +1,7 @@
 //! Postgres-backed [`HealthRepo`].
 
 use async_trait::async_trait;
-use my_family_domain::{HealthRepo, HealthRepoError};
+use my_fam_tree_domain::{HealthRepo, HealthRepoError};
 use sqlx::PgPool;
 
 #[derive(Clone, Debug)]

@@ -11,7 +11,7 @@
 
 use std::time::Duration;
 
-use my_family_email::OutboundEmail;
+use my_fam_tree_email::OutboundEmail;
 
 use crate::backoff;
 use crate::state::WorkerState;

@@ -6,7 +6,7 @@
 //! back via `crate::auth::user_claims(&req)` — branded ID types are used so
 //! handlers can't accidentally mix `UserId` with `FamilyId`.
 
-use my_family_domain::{FamilyId, Role, UserId};
+use my_fam_tree_domain::{FamilyId, Role, UserId};
 
 #[derive(Debug, Clone)]
 pub struct UserClaims {

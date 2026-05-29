@@ -34,7 +34,7 @@ async function inviteAndAccept(
         data: { email: inviteeEmail, role },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const mail = await waitForEmail((s) => /Join the .+ family on my-family|Einladung zur Familie/.test(s))
+    const mail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
     const m = mail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (m === null) throw new Error('invite link not in email')
     const link = m[0]
@@ -57,7 +57,7 @@ async function createOwnedDuplicate(page: Page, name: string): Promise<string> {
     await expect(page.getByTestId('family-duplicate-dialog')).toBeVisible()
     await page.getByTestId('family-duplicate-confirm').click()
     await expect(page).toHaveURL(/\/tree$/)
-    return page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    return page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
 }
 
 test('23.1: existing-account invite + re-accepting the same link is graceful, not a 500', async ({ browser }) => {
@@ -175,7 +175,7 @@ test('23.3: invited into the correct same-named family — no cross-family perso
     // adds noise to a logic test). The store-driven path invalidates queries,
     // which re-issues the tree fetch with the new X-Family-Id.
     await b.evaluate((id) => {
-        localStorage.setItem('my-family:activeFamily', id)
+        localStorage.setItem('my-fam-tree:activeFamily', id)
     }, fam1)
     await b.goto('/tree')
     await expect(b.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Alice' }).first()).toBeVisible({

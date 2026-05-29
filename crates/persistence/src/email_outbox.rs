@@ -7,7 +7,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use my_family_domain::{
+use my_fam_tree_domain::{
     EmailOutboxId, EmailOutboxInsert, EmailOutboxRepo, EmailOutboxRepoError, EmailOutboxRow,
 };
 use sqlx::PgPool;

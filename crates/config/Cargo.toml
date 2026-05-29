@@ -1,5 +1,5 @@
 [package]
-name = "my-family-config"
+name = "my-fam-tree-config"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

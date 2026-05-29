@@ -18,7 +18,7 @@ mod common;
 
 use actix_web::test;
 use common::ephemeral_stack;
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn health_reports_ok_version_and_reachable_db() {

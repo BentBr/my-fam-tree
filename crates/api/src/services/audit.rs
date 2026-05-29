@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use my_family_domain::{AuditEntry, AuditLogRepo, FamilyId, UserId};
+use my_fam_tree_domain::{AuditEntry, AuditLogRepo, FamilyId, UserId};
 use serde_json::Value;
 use uuid::Uuid;
 

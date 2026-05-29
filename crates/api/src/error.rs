@@ -9,7 +9,7 @@ use actix_web::body::BoxBody;
 use actix_web::http::StatusCode;
 use actix_web::http::header::{CONTENT_TYPE, HeaderValue, RETRY_AFTER};
 use actix_web::{HttpResponse, ResponseError};
-use my_family_domain::Role;
+use my_fam_tree_domain::Role;
 use serde::Serialize;
 use thiserror::Error;
 use utoipa::ToSchema;
@@ -331,7 +331,7 @@ impl ApiError {
     }
 
     fn type_uri(code: ErrorCode) -> String {
-        format!("https://my-family/errors/{}", code.slug())
+        format!("https://my-fam-tree/errors/{}", code.slug())
     }
 
     /// Build the wire-safe body. Internal errors get a sanitized detail.
@@ -427,7 +427,7 @@ mod tests {
         let v: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(v["status"], 401);
         assert_eq!(v["code"], "auth_unauthenticated");
-        assert_eq!(v["type"], "https://my-family/errors/auth.unauthenticated");
+        assert_eq!(v["type"], "https://my-fam-tree/errors/auth.unauthenticated");
     }
 
     #[actix_web::test]

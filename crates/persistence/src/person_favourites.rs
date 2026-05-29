@@ -15,7 +15,7 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
-use my_family_domain::{FamilyId, PersonFavouriteRepo, PersonFavouriteRepoError, PersonId, UserId};
+use my_fam_tree_domain::{FamilyId, PersonFavouriteRepo, PersonFavouriteRepoError, PersonId, UserId};
 use sqlx::PgPool;
 
 #[derive(Clone, Debug)]

@@ -8,7 +8,7 @@
 //! - `DELETE /parent-links/{child}/{parent}` — remove the edge.
 
 use actix_web::{HttpRequest, delete, post, web};
-use my_family_domain::{ParentKind, ParentLinkRepoError, PersonId, Role, would_create_cycle};
+use my_fam_tree_domain::{ParentKind, ParentLinkRepoError, PersonId, Role, would_create_cycle};
 use serde::Deserialize;
 use utoipa::ToSchema;
 use uuid::Uuid;

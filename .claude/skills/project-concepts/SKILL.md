@@ -1,13 +1,13 @@
 ---
 name: project-concepts
-description: Use when working anywhere in the my-family repo and you need the lay of the land — the domain model (families, persons, parent-links, partnerships, contacts, reminders), roles and capabilities, the magic-link + JWT auth flow, the API response/error envelope, or how the compose services fit together. Load this first when orienting in an unfamiliar area.
+description: Use when working anywhere in the my-fam-tree repo and you need the lay of the land — the domain model (families, persons, parent-links, partnerships, contacts, reminders), roles and capabilities, the magic-link + JWT auth flow, the API response/error envelope, or how the compose services fit together. Load this first when orienting in an unfamiliar area.
 ---
 
-# my-family — Project Concepts
+# my-fam-tree — Project Concepts
 
 ## Overview
 
-my-family is a self-hosted platform where users create **families**, collaboratively
+my-fam-tree is a self-hosted platform where users create **families**, collaboratively
 maintain a **family tree**, share **contact data**, and receive configurable
 **birthday-reminder** emails. Rust backend (Actix-web + SQLx + Postgres + Redis),
 Vue 3 frontend, magic-link (passwordless) auth.
@@ -19,17 +19,17 @@ its `crate-<name>` skill.
 ## Service topology
 
 The whole stack runs in Docker Compose (`compose.yaml`). Locally, **dinghy** routes
-`*.my-family.docker` to the right container; only Postgres binds a host port.
+`*.my-fam-tree.docker` to the right container; only Postgres binds a host port.
 
 | Service | URL / address | Notes |
 |---|---|---|
-| FE (Vite) | http://my-family.docker | dinghy → `fe:5173`; proxies `/api/*` → `api:8080` |
-| API | http://api.my-family.docker | Swagger UI at `/api/docs`; internal `:8080` |
-| Mailpit | http://mail.my-family.docker | dev inbox UI (`:8025`); SMTP internal `:1025` |
-| worker | `worker.my-family.docker` | metrics/test listener `:9091` |
-| Postgres | `localhost:3458` (host) → `5432` | db/user/pass all `my_family` |
-| Redis | `redis:6379` (internal only) | key prefix `my-family:` |
-| Playwright | in-network only | `E2E_BASE_URL=http://my-family.docker:5173` |
+| FE (Vite) | http://my-fam-tree.docker | dinghy → `fe:5173`; proxies `/api/*` → `api:8080` |
+| API | http://api.my-fam-tree.docker | Swagger UI at `/api/docs`; internal `:8080` |
+| Mailpit | http://mail.my-fam-tree.docker | dev inbox UI (`:8025`); SMTP internal `:1025` |
+| worker | `worker.my-fam-tree.docker` | metrics/test listener `:9091` |
+| Postgres | `localhost:3458` (host) → `5432` | db/user/pass all `my_fam_tree` |
+| Redis | `redis:6379` (internal only) | key prefix `my-fam-tree:` |
+| Playwright | in-network only | `E2E_BASE_URL=http://my-fam-tree.docker:5173` |
 
 **Lifecycle:** `rdt start` / `rdt stop` (or `docker compose up -d` / `down`).
 Project commands live in `.rusty_dev_tool/config.toml`: `migrate`, `migrate-status`,
@@ -83,7 +83,7 @@ rotation) and carry a **`families[]` claim** listing the user's memberships + ro
 
 Per request, the FE sends the active family in the **`X-Family-Id`** header;
 `AuthMiddleware` cross-references it against the `families[]` claim. Cookies:
-access = `SameSite=Lax`, refresh = `SameSite=Strict`, `COOKIE_DOMAIN=.my-family.docker`
+access = `SameSite=Lax`, refresh = `SameSite=Strict`, `COOKIE_DOMAIN=.my-fam-tree.docker`
 (`COOKIE_SECURE=false` in dev). Magic-link issuance is rate-limited per email + per IP.
 
 ## API envelope & error model

@@ -5,7 +5,7 @@
 //! first-time user; `upsert` is an `INSERT ... ON CONFLICT (user_id) DO UPDATE`.
 
 use async_trait::async_trait;
-use my_family_domain::{
+use my_fam_tree_domain::{
     ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError, UserId,
 };
 use sqlx::PgPool;

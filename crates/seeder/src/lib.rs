@@ -1,6 +1,6 @@
 //! Deterministic dev/test seed orchestrator.
 //!
-//! Lives in a dedicated `crates/seeder/` crate — **not** in `my-family-api` —
+//! Lives in a dedicated `crates/seeder/` crate — **not** in `my-fam-tree-api` —
 //! so the production api image never ships a binary capable of mutating real
 //! data via hardcoded UUIDs. The compose `seeder` service builds from
 //! `.docker/seeder.Dockerfile` and is only invoked in dev (`rdt seed` /
@@ -24,10 +24,10 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use my_family_api::Config;
-use my_family_api::services::auth_service::mint_magic_link_url;
-use my_family_domain::{MagicLinkRepo, UserId};
-use my_family_persistence::PgMagicLinkRepo;
+use my_fam_tree_api::Config;
+use my_fam_tree_api::services::auth_service::mint_magic_link_url;
+use my_fam_tree_domain::{MagicLinkRepo, UserId};
+use my_fam_tree_persistence::PgMagicLinkRepo;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -37,7 +37,7 @@ pub mod persons;
 pub mod relationships;
 
 // Re-export the public UUIDs so call sites (and tests) keep the old import
-// path `my_family_seeder::SEED_…_ID` working.
+// path `my_fam_tree_seeder::SEED_…_ID` working.
 pub use ids::{
     SEED_ADMIN_USER_ID, SEED_ALICE_USER_ID, SEED_BOB_USER_ID, SEED_FAMILY_ID,
     SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID, SEED_PARTNERSHIP_KLAUS_ANNA_ID,
@@ -182,9 +182,9 @@ async fn mint_magic_links(
 mod tests {
     use std::time::Duration;
 
-    use my_family_api::{AppEnv, LogFormat};
-    use my_family_persistence::Database;
-    use my_family_persistence::counts::Table;
+    use my_fam_tree_api::{AppEnv, LogFormat};
+    use my_fam_tree_persistence::Database;
+    use my_fam_tree_persistence::counts::Table;
     use testcontainers::ContainerAsync;
     use testcontainers::runners::AsyncRunner;
     use testcontainers_modules::postgres::Postgres;
@@ -229,8 +229,8 @@ mod tests {
 
         let cfg = Config {
             app_env: AppEnv::Development,
-            log: my_family_config::LogConfig { level: "info".into(), format: LogFormat::Pretty },
-            api: my_family_config::ApiBindConfig {
+            log: my_fam_tree_config::LogConfig { level: "info".into(), format: LogFormat::Pretty },
+            api: my_fam_tree_config::ApiBindConfig {
                 host: "0.0.0.0".into(),
                 port: 8080,
                 public_url: "http://localhost:8080".into(),
@@ -238,19 +238,19 @@ mod tests {
                 enable_docs: false,
                 metrics_bind: "0.0.0.0:9090".into(),
             },
-            web: my_family_config::WebConfig { public_url: "http://my-family.docker".into() },
-            database: my_family_config::DatabaseConfig {
+            web: my_fam_tree_config::WebConfig { public_url: "http://my-fam-tree.docker".into() },
+            database: my_fam_tree_config::DatabaseConfig {
                 url: url.clone(),
                 max_connections: 4,
                 acquire_timeout_seconds: 5,
                 statement_timeout_ms: 30_000,
             },
-            redis: my_family_config::RedisConfig {
+            redis: my_fam_tree_config::RedisConfig {
                 url: "redis://localhost".into(),
                 max_connections: 4,
                 key_prefix: "t:".into(),
             },
-            jwt: my_family_config::JwtConfig {
+            jwt: my_fam_tree_config::JwtConfig {
                 private_key: "x".into(),
                 private_key_id: "t".into(),
                 public_keys: "[]".into(),
@@ -260,27 +260,27 @@ mod tests {
                 refresh_ttl_seconds: 86_400,
                 refresh_absolute_ttl_seconds: 604_800,
             },
-            cookie: my_family_config::CookieConfig {
+            cookie: my_fam_tree_config::CookieConfig {
                 domain: String::new(),
                 secure: false,
                 samesite_access: "Lax".into(),
                 samesite_refresh: "Strict".into(),
             },
-            magic_link: my_family_config::MagicLinkConfig {
+            magic_link: my_fam_tree_config::MagicLinkConfig {
                 ttl_seconds: 900,
                 invite_ttl_seconds: 1_209_600,
                 rate_per_email_per_hour: 10,
                 rate_per_ip_per_hour: 100,
             },
-            email: my_family_config::EmailConfig {
+            email: my_fam_tree_config::EmailConfig {
                 dsn: "smtp://localhost:1025".into(),
                 from_name: "t".into(),
                 from_address: "no-reply@t".into(),
                 reply_to: None,
                 timeout_seconds: 10,
             },
-            storage: my_family_config::StorageConfig {
-                driver: my_family_config::storage::StorageDriver::Local,
+            storage: my_fam_tree_config::StorageConfig {
+                driver: my_fam_tree_config::storage::StorageDriver::Local,
                 bucket: "t".into(),
                 region: "us-east-1".into(),
                 endpoint_url: None,
@@ -295,8 +295,8 @@ mod tests {
 
     // Counting rows goes through `persistence::counts::count_rows` so
     // raw SQL stays inside the persistence crate (architectural rule).
-    async fn count(pool: &sqlx::PgPool, table: my_family_persistence::counts::Table) -> i64 {
-        my_family_persistence::counts::count_rows(pool, table).await.expect("count")
+    async fn count(pool: &sqlx::PgPool, table: my_fam_tree_persistence::counts::Table) -> i64 {
+        my_fam_tree_persistence::counts::count_rows(pool, table).await.expect("count")
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -318,7 +318,7 @@ mod tests {
         for (email, url) in &report.magic_links {
             assert!(!email.is_empty(), "magic-link email must be non-empty");
             assert!(url.contains("/auth/consume?token="), "url must point at consume: {url}");
-            assert!(url.starts_with("http://my-family.docker"), "url uses web_public_url: {url}");
+            assert!(url.starts_with("http://my-fam-tree.docker"), "url uses web_public_url: {url}");
         }
     }
 

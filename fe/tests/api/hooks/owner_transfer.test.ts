@@ -30,7 +30,7 @@ beforeEach(() => {
 
 describe('useOwnerTransfer', () => {
     it('GETs /transfer-owner and returns the row when one is pending', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({
             data: {
                 data: {
@@ -54,7 +54,7 @@ describe('useOwnerTransfer', () => {
     })
 
     it('resolves to null when no transfer is pending', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({ data: { data: null }, error: undefined })
         const { result } = makeHookWrapper(() => useOwnerTransfer())
         await new Promise<void>((r) => setTimeout(r, 10))
@@ -70,7 +70,7 @@ describe('useOwnerTransfer', () => {
 
 describe('useBeginOwnerTransfer', () => {
     it('POSTs to /transfer-owner with to_user_id and invalidates caches', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.POST.mockResolvedValueOnce({
             data: {
                 data: {
@@ -104,7 +104,7 @@ describe('useBeginOwnerTransfer', () => {
 
 describe('useConfirmOwnerTransfer', () => {
     it('POSTs to /transfer-owner/confirm with the token and invalidates caches', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.POST.mockResolvedValueOnce({
             data: {
                 data: {
@@ -139,7 +139,7 @@ describe('useConfirmOwnerTransfer', () => {
 
 describe('useCancelOwnerTransfer', () => {
     it('DELETEs /transfer-owner and invalidates the owner-transfer cache', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: undefined })
         const { result, queryClient } = makeHookWrapper(() => useCancelOwnerTransfer())
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -151,7 +151,7 @@ describe('useCancelOwnerTransfer', () => {
     })
 
     it('rejects on error', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useCancelOwnerTransfer())
         await expect(result.mutateAsync()).rejects.toBeDefined()

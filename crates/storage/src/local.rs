@@ -17,7 +17,7 @@ use crate::{ObjectStore, StorageError};
 pub struct LocalObjectStore {
     base_dir: PathBuf,
     /// URL prefix used to build the "presigned" URL. E.g.
-    /// `http://my-family.docker/api/v1/uploads` → the key is appended.
+    /// `http://my-fam-tree.docker/api/v1/uploads` → the key is appended.
     url_prefix: String,
 }
 

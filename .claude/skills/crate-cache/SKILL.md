@@ -1,13 +1,13 @@
 ---
 name: crate-cache
-description: Use when working in the cache crate (package my-family-cache, crate my_family_cache) — the Redis access layer providing the connection pool, rate limiter, and reminder job queue. Triggers — adding/changing Redis-backed pooling, rate limiting, or the digest queue; wiring these into api or worker; deciding key namespacing. Keywords — RedisPool, RedisRateLimiter, RedisReminderQueue, rate limit, leader lock, job queue, key prefix, deadpool-redis.
+description: Use when working in the cache crate (package my-fam-tree-cache, crate my_fam_tree_cache) — the Redis access layer providing the connection pool, rate limiter, and reminder job queue. Triggers — adding/changing Redis-backed pooling, rate limiting, or the digest queue; wiring these into api or worker; deciding key namespacing. Keywords — RedisPool, RedisRateLimiter, RedisReminderQueue, rate limit, leader lock, job queue, key prefix, deadpool-redis.
 ---
 
 # crate-cache — Redis access layer
 
 ## Overview
 
-`my-family-cache` is the standalone Redis layer (no domain dependency). It wraps
+`my-fam-tree-cache` is the standalone Redis layer (no domain dependency). It wraps
 `deadpool-redis` + the `redis` crate and exposes three things, each behind a trait so
 `AppState`/`WorkerState` can inject an `Arc<dyn …>` (and fakes in tests). Consumed by
 `crate-api` (rate limiter) and `crate-worker` (job queue + the leader lease).
@@ -29,7 +29,7 @@ For workspace conventions see `rust-foundations`; for the domain, `project-conce
 
 - **Key prefix discipline.** `RedisPool` carries a `key_prefix` and *every* key is
   built as `format!("{}…", self.prefix())`: `…rate:{key}`, `…queue:reminder-digest`.
-  Prod prefix is `my-family:` (api/worker config default, `REDIS_KEY_PREFIX`); api
+  Prod prefix is `my-fam-tree:` (api/worker config default, `REDIS_KEY_PREFIX`); api
   tests use `t:`; this crate's own tests use a unique per-run prefix. Any new key MUST
   go through `prefix()` — never hardcode a bare key.
 - **`RedisRateLimiter`** — sliding-window-log via a sorted set, one pipelined
@@ -47,8 +47,8 @@ For workspace conventions see `rust-foundations`; for the domain, `project-conce
 Integration tests in `tests/{ping,rate_limit,job_queue}.rs` require a running Redis and
 **skip silently when `REDIS_URL` is unset** (not testcontainers — unlike the api harness
 in `rust-foundations`). Each uses a unique prefix for parallel isolation. Run inside the
-compose network so Redis resolves: `./scripts/cargo-in-network.sh test -p my-family-cache`,
-or with `REDIS_URL` exported: `cargo test -p my-family-cache`.
+compose network so Redis resolves: `./scripts/cargo-in-network.sh test -p my-fam-tree-cache`,
+or with `REDIS_URL` exported: `cargo test -p my-fam-tree-cache`.
 
 ## Common mistakes
 

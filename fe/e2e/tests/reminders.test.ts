@@ -13,7 +13,7 @@ test('a daily digest email fires 7 days before a birthday when reminders are on'
     await signIn(page, `reminders-${stamp}@example.com`)
     await createFamily(page, `Reminders-${stamp}`)
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     // Birthday 2026-06-15. With the worker clock advanced to 2026-06-08 (below)

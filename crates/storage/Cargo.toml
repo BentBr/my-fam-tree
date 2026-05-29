@@ -1,5 +1,5 @@
 [package]
-name = "my-family-storage"
+name = "my-fam-tree-storage"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -7,14 +7,12 @@ publish = false
 
 [dependencies]
 async-trait.workspace = true
-aws-config.workspace = true
 aws-credential-types.workspace = true
 aws-sdk-s3.workspace = true
 aws-smithy-async.workspace = true
 bytes.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["fs", "io-util"] }
-tracing.workspace = true
 
 [dev-dependencies]
 tempfile = "3"

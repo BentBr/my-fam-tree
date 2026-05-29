@@ -9,7 +9,7 @@
 //! reads these rows to decide who gets a daily digest and when.
 
 use actix_web::{HttpRequest, get, put, web};
-use my_family_domain::ReminderPreferences;
+use my_fam_tree_domain::ReminderPreferences;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

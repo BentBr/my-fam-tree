@@ -5,8 +5,8 @@ import type { FamilyId } from '@/types/brand'
 
 import { useAuthStore, type FamilyMembership, type Role } from './auth'
 
-const STORAGE_KEY = 'my-family:activeFamily'
-const FOCUSED_PERSON_KEY = 'my-family:focusedPerson'
+const STORAGE_KEY = 'my-fam-tree:activeFamily'
+const FOCUSED_PERSON_KEY = 'my-fam-tree:focusedPerson'
 
 export const useActiveFamilyStore = defineStore('activeFamily', () => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -19,7 +19,7 @@ export const useActiveFamilyStore = defineStore('activeFamily', () => {
 
     // Persisted "the person the user last centered on" — survives reloads so
     // the tree re-renders with the same focal point. Wiped by auth.logout()
-    // along with the rest of the `my-family:` namespace.
+    // along with the rest of the `my-fam-tree:` namespace.
     const storedFocused = localStorage.getItem(FOCUSED_PERSON_KEY)
     const focusedPersonId = ref<string | null>(storedFocused)
 

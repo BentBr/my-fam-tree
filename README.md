@@ -1,14 +1,15 @@
-# my-family
+# my-fam-tree
 
-[![CI](https://github.com/BentBr/my-family/actions/workflows/ci.yml/badge.svg)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
-[![Release Please](https://github.com/BentBr/my-family/actions/workflows/release-please.yml/badge.svg)](https://github.com/BentBr/my-family/actions/workflows/release-please.yml)
-[![Latest release](https://img.shields.io/github/v/release/BentBr/my-family?display_name=tag&sort=semver&label=release)](https://github.com/BentBr/my-family/releases/latest)
+[![CI](https://github.com/BentBr/my-fam-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/BentBr/my-fam-tree/actions/workflows/ci.yml)
+[![Release Please](https://github.com/BentBr/my-fam-tree/actions/workflows/release-please.yml/badge.svg)](https://github.com/BentBr/my-fam-tree/actions/workflows/release-please.yml)
+[![Latest release](https://img.shields.io/github/v/release/BentBr/my-fam-tree?display_name=tag&sort=semver&label=release)](https://github.com/BentBr/my-fam-tree/releases/latest)
 [![License: BUSL-1.1](https://img.shields.io/badge/license-BUSL--1.1-blue.svg)](LICENSE)
 [![Rust nightly](https://img.shields.io/badge/rust-nightly-orange.svg)](rust-toolchain.toml)
-[![BE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
-[![FE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-family/gh-pages/coverage-fe.json)](https://github.com/BentBr/my-family/actions/workflows/ci.yml)
+[![BE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-fam-tree/gh-pages/coverage.json)](https://github.com/BentBr/my-fam-tree/actions/workflows/ci.yml)
+[![FE coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/BentBr/my-fam-tree/gh-pages/coverage-fe.json)](https://github.com/BentBr/my-fam-tree/actions/workflows/ci.yml)
 
-A platform for managing family trees, contact data, and birthday reminders. Built with Rust + PostgreSQL + Redis + Vue 3.
+A platform for managing family trees, contact data, and birthday reminders. Built with Rust + PostgreSQL + Redis + Vue 3. \
+Checkout the platform live: [my-fam-tree.eu](https://my-fam-tree.eu)
 
 **License:** [BUSL-1.1](./LICENSE) · **Plain-English:** [LICENSING.md](./LICENSING.md)
 
@@ -43,7 +44,7 @@ sudo bash -c 'echo "port 19322" >> /etc/resolver/docker'
 
 # 4. Bootstrap .env — copy template + append fresh Ed25519 JWT keys.
 cp .env.example .env
-cargo run -p my-family-api --bin gen-jwt-keys >> .env
+cargo run -p my-fam-tree-api --bin gen-jwt-keys >> .env
 
 # 5. Bring up the full stack (postgres, redis, mailpit, migrator, api, worker, fe).
 #    The fe container runs pnpm install on first boot — no host pnpm needed.
@@ -53,11 +54,11 @@ rdt start
 rdt openapi
 ```
 
-Open **http://my-family.docker** in your browser — you should see the health page reporting API status. Other endpoints:
+Open **http://my-fam-tree.docker** in your browser — you should see the health page reporting API status. Other endpoints:
 
-- API:     http://api.my-family.docker (Swagger at `/api/docs`)
-- Mailpit: http://mail.my-family.docker
-- Postgres: `psql -h localhost -p 3458 -U my_family my_family` (or point your IDE at port 3458)
+- API:     http://api.my-fam-tree.docker (Swagger at `/api/docs`)
+- Mailpit: http://mail.my-fam-tree.docker
+- Postgres: `psql -h localhost -p 3458 -U my_fam_tree my_fam_tree` (or point your IDE at port 3458)
 
 The `seeder` container runs once after `migrator` completes and prints three `MAGIC_LINK` lines — one per seeded user (admin / alice / bob). View them with `docker compose logs seeder` (or `rdt seed` to re-run; the seed is idempotent) and paste the URL into the browser to sign in.
 
@@ -67,11 +68,11 @@ The `seeder` container runs once after `migrator` completes and prints three `MA
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `http://my-family.docker` does not resolve | dinghy not running / `/etc/resolver/docker` missing | `dinghy up && dinghy status` |
+| `http://my-fam-tree.docker` does not resolve | dinghy not running / `/etc/resolver/docker` missing | `dinghy up && dinghy status` |
 | `compose up` errors with `JWT_PRIVATE_KEY required` | Step 4 was skipped | Run `gen-jwt-keys >> .env` |
 | `pre-push` hook never runs | Step 3 was skipped | `./scripts/install-hooks.sh` |
 | API rejects every token with `auth_token_invalid` | Placeholder JWT_* lines bled into `.env` | Remove `JWT_PRIVATE_KEY*` / `JWT_PUBLIC_KEYS` from `.env`, re-run `gen-jwt-keys` |
-| IDE can't reach Postgres | Wrong port | Use host `localhost`, port `3458` (NOT 5432), user/db = `my_family` |
+| IDE can't reach Postgres | Wrong port | Use host `localhost`, port `3458` (NOT 5432), user/db = `my_fam_tree` |
 | `pnpm` complains about `node_modules` from a different major | Stale FE deps from a previous toolchain | Set `CI=true` in container env (already in compose) or `rm -rf fe/node_modules fe/.pnpm-store` and re-run `rdt start` |
 
 ## Stack

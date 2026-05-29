@@ -1,13 +1,13 @@
 ---
 name: crate-storage
-description: Use when working with object storage in my-family — the my-family-storage crate that abstracts MinIO/S3 (prod) and a filesystem fallback (test/dev). Triggers — adding a new upload/download endpoint, wiring the store into AppState/WorkerState, deciding on storage key conventions, sanitising user-supplied keys, switching driver between S3 and Local. Keywords — ObjectStore trait, S3ObjectStore, LocalObjectStore, StorageError, S3Config, StorageConfig, StorageDriver, presigned_get, put, get, delete, AWS SDK, aws-sdk-s3, MinIO, path traversal, image upload, person photo, user avatar.
+description: Use when working with object storage in my-fam-tree — the my-fam-tree-storage crate that abstracts MinIO/S3 (prod) and a filesystem fallback (test/dev). Triggers — adding a new upload/download endpoint, wiring the store into AppState/WorkerState, deciding on storage key conventions, sanitising user-supplied keys, switching driver between S3 and Local. Keywords — ObjectStore trait, S3ObjectStore, LocalObjectStore, StorageError, S3Config, StorageConfig, StorageDriver, presigned_get, put, get, delete, AWS SDK, aws-sdk-s3, MinIO, path traversal, image upload, person photo, user avatar.
 ---
 
 # crate-storage — S3-compatible object store
 
 ## Overview
 
-`my-family-storage` is the standalone object-storage layer used by the api (and, when
+`my-fam-tree-storage` is the standalone object-storage layer used by the api (and, when
 async resize / cleanup jobs land, the worker). One `ObjectStore` trait, two impls:
 
 - **`S3ObjectStore`** (prod, dev) — talks any S3-compatible endpoint via `aws-sdk-s3`.
@@ -116,9 +116,9 @@ and request IDs.
 - **Storage config** — `crates/config/src/storage.rs` defines `StorageDriver`,
   `StorageConfig`, the env-var names. See `crate-config`.
 - **MinIO compose setup** — `compose.yaml` runs two services: `minio` (S3 API on
-  9000 + console on 9001, exposed on `http://minio.my-family.docker`), and
+  9000 + console on 9001, exposed on `http://minio.my-fam-tree.docker`), and
   `minio-api` (nginx-unprivileged reverse-proxying the S3 API on port 80 via
-  `http://minio-api.my-family.docker`). The api/worker hit the proxy hostname so
+  `http://minio-api.my-fam-tree.docker`). The api/worker hit the proxy hostname so
   presigned URLs don't leak `:9000`.
 
 ## Latent footgun to remember

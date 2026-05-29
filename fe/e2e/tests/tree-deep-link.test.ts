@@ -19,7 +19,7 @@ test('upcoming row click centers the person and opens the drawer', async ({ page
     await signIn(page, `tree-deep-${stamp}@example.com`)
     await createFamily(page, `DeepLink-${stamp}`)
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     // One person with a near-future birthday so Upcoming has exactly one row.
@@ -70,7 +70,7 @@ test('second upcoming click reopens the drawer (cached tree.data path)', async (
     await signIn(page, `tree-deep-multi-${stamp}@example.com`)
     await createFamily(page, `DeepLinkMulti-${stamp}`)
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     const create = async (given: string, days: number): Promise<string> => {

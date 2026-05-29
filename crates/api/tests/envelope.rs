@@ -6,7 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use my_family_api::ErrorCode;
+use my_fam_tree_api::ErrorCode;
 
 #[test]
 fn every_code_has_status_title_and_slug() {

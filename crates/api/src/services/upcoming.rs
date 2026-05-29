@@ -1,13 +1,13 @@
 //! Wire DTO + label rendering for `GET /api/v1/upcoming`.
 //!
-//! The projection itself lives in [`my_family_domain::upcoming`] so the
+//! The projection itself lives in [`my_fam_tree_domain::upcoming`] so the
 //! reminder worker can reuse it. This module maps the domain event to the
 //! API's `ToSchema` shape and renders the English `label` server-side (the FE
 //! shows it verbatim; i18n stays on `upcoming.kinds.*` for the chips).
 
 use chrono::NaiveDate;
-pub use my_family_domain::{DEFAULT_LIMIT, MAX_LIMIT, UpcomingFilter, build_upcoming};
-use my_family_domain::{UpcomingEvent as DomainEvent, UpcomingKind};
+pub use my_fam_tree_domain::{DEFAULT_LIMIT, MAX_LIMIT, UpcomingFilter, build_upcoming};
+use my_fam_tree_domain::{UpcomingEvent as DomainEvent, UpcomingKind};
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;

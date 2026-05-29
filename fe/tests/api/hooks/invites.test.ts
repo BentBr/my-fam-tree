@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe('useInvites', () => {
     it('GETs /families/{id}/invites and unwraps the nested data envelope', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({
             data: {
                 data: {
@@ -61,7 +61,7 @@ describe('useInvites', () => {
 
 describe('useCreateInvite', () => {
     it('POSTs body with the active family id and invalidates the invites cache', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.POST.mockResolvedValueOnce({
             data: { data: { id: 'i-1', email: 'a@b', role: 'user' } },
             error: undefined,
@@ -77,7 +77,7 @@ describe('useCreateInvite', () => {
     })
 
     it('coerces a missing personId to null in the body', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.POST.mockResolvedValueOnce({
             data: { data: { id: 'i-2' } },
             error: undefined,
@@ -98,7 +98,7 @@ describe('useCreateInvite', () => {
 
 describe('useCancelInvite', () => {
     it('DELETEs /invites/{invite_id} and invalidates the invites cache', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: undefined })
         const { result, queryClient } = makeHookWrapper(() => useCancelInvite())
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -110,7 +110,7 @@ describe('useCancelInvite', () => {
     })
 
     it('rejects on error', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useCancelInvite())
         await expect(result.mutateAsync('i-1')).rejects.toBeDefined()

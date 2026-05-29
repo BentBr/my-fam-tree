@@ -176,7 +176,7 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     await createFamily(page, `Hover-${stamp}`)
     await page.goto('/tree')
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     // Helper: create a person + return its server-assigned UUID. Uses the

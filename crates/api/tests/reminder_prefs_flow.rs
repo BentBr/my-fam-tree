@@ -21,7 +21,7 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{ephemeral_stack, sign_in};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn reminder_prefs_defaults_then_upsert_round_trip() {

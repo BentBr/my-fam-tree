@@ -14,7 +14,7 @@ interface RedisEndpoint {
 
 /**
  * Resolve the Redis (host, port) tuple from `REDIS_URL` if set, otherwise
- * the compose alias. The compose-network host (`redis.my-family.docker`)
+ * the compose alias. The compose-network host (`redis.my-fam-tree.docker`)
  * resolves inside the Playwright container but not on a bare CI runner —
  * GitHub Actions exposes the redis service container at `localhost:6379`
  * via `REDIS_URL=redis://localhost:6379/0`. We only need the authority,
@@ -32,7 +32,7 @@ function resolveRedisEndpoint(): RedisEndpoint {
             // surface the real issue if the URL is malformed.
         }
     }
-    return { host: 'redis.my-family.docker', port: 6379 }
+    return { host: 'redis.my-fam-tree.docker', port: 6379 }
 }
 
 function flushRedis(): Promise<void> {

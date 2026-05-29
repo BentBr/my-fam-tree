@@ -17,7 +17,7 @@ There is **no host Node or pnpm**. Every FE command runs in a container via
 
 | Need | Command |
 |---|---|
-| Dev server (Vite :5173 → http://my-family.docker) | `rdt fe` (or `rdt start` for the whole stack) |
+| Dev server (Vite :5173 → http://my-fam-tree.docker) | `rdt fe` (or `rdt start` for the whole stack) |
 | Lint (eslint + typecheck + knip) | `rdt lint` (FE parts) or `scripts/fe-in-container.sh lint` |
 | Type-check only | `scripts/fe-in-container.sh typecheck` |
 | Component tests (Vitest) | `rdt test` or `scripts/fe-in-container.sh test` |

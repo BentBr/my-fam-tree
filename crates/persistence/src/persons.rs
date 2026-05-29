@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, Person, PersonDraft, PersonId, PersonRepo, PersonRepoError, UserId,
 };
 use sqlx::PgPool;

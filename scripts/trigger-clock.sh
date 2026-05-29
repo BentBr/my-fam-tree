@@ -4,7 +4,7 @@
 # pipeline locally without waiting for the real 06:00.
 #
 # Requires the worker built WITH the test-fixtures feature (exposes the
-# clock-advance endpoint + the dinghy `clock.my-family.docker` route):
+# clock-advance endpoint + the dinghy `clock.my-fam-tree.docker` route):
 #   WORKER_FEATURES=test-fixtures docker compose up -d --build worker
 #
 # Digests are idempotent per (user, send-date): once today's digest has sent,
@@ -19,12 +19,12 @@
 #   TRIGGER_CLOCK_KEEP=1 ./scripts/trigger-clock.sh   # don't clear (idempotency test)
 set -euo pipefail
 
-URL="${WORKER_CLOCK_URL:-http://clock.my-family.docker}/__test/advance-clock"
+URL="${WORKER_CLOCK_URL:-http://clock.my-fam-tree.docker}/__test/advance-clock"
 # Resolve the target send-date (the worker's local day at 06:00 Europe/Berlin).
 DATE="${1:-$(TZ=Europe/Berlin date +%F)}"
 
 if [ -z "${TRIGGER_CLOCK_KEEP:-}" ]; then
-    if docker compose exec -T postgres psql -U my_family -d my_family \
+    if docker compose exec -T postgres psql -U my_fam_tree -d my_fam_tree \
         -c "DELETE FROM reminder_digests WHERE send_date = '$DATE';" >/dev/null 2>&1; then
         echo "  cleared any existing digest for $DATE (TRIGGER_CLOCK_KEEP=1 to keep)"
     fi
@@ -42,4 +42,4 @@ fi
 echo
 echo "✓ tick ran. A digest only sends if a reminders-enabled user has a person"
 echo "  whose birthday is lead_days ahead of the trigger date. Check Mailpit:"
-echo "  http://mail.my-family.docker"
+echo "  http://mail.my-fam-tree.docker"

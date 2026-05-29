@@ -387,12 +387,12 @@ mod tests {
         ("DATABASE_STATEMENT_TIMEOUT_MS", "30000"),
         ("REDIS_URL", "redis://localhost:6379/0"),
         ("REDIS_MAX_CONNECTIONS", "10"),
-        ("REDIS_KEY_PREFIX", "my-family:"),
+        ("REDIS_KEY_PREFIX", "my-fam-tree:"),
         ("JWT_PRIVATE_KEY", "dummy-pkcs8"),
         ("JWT_PRIVATE_KEY_ID", "dev-1"),
         ("JWT_PUBLIC_KEYS", "[{\"kid\":\"dev-1\",\"public_pem\":\"x\"}]"),
-        ("JWT_ISSUER", "my-family"),
-        ("JWT_AUDIENCE", "my-family-app"),
+        ("JWT_ISSUER", "my-fam-tree"),
+        ("JWT_AUDIENCE", "my-fam-tree-app"),
         ("JWT_ACCESS_TTL_SECONDS", "900"),
         ("JWT_REFRESH_TTL_SECONDS", "2592000"),
         ("JWT_REFRESH_ABSOLUTE_TTL_SECONDS", "7776000"),
@@ -405,11 +405,11 @@ mod tests {
         ("MAGIC_LINK_RATE_PER_EMAIL_PER_HOUR", "5"),
         ("MAGIC_LINK_RATE_PER_IP_PER_HOUR", "20"),
         ("EMAIL_DSN", "smtp://localhost:1025"),
-        ("EMAIL_FROM_NAME", "my-family"),
-        ("EMAIL_FROM_ADDRESS", "no-reply@my-family.local"),
+        ("EMAIL_FROM_NAME", "my-fam-tree"),
+        ("EMAIL_FROM_ADDRESS", "no-reply@my-fam-tree.local"),
         ("EMAIL_TIMEOUT_SECONDS", "10"),
         ("STORAGE_DRIVER", "local"),
-        ("STORAGE_BUCKET", "my-family"),
+        ("STORAGE_BUCKET", "my-fam-tree"),
         ("STORAGE_REGION", "us-east-1"),
         ("STORAGE_ACCESS_KEY_ID", ""),
         ("STORAGE_SECRET_ACCESS_KEY", ""),
@@ -431,7 +431,7 @@ mod tests {
             assert_eq!(cfg.api.port, 8080);
             assert_eq!(cfg.email.reply_to, None);
             assert_eq!(cfg.database.url, "postgres://u:p@localhost/db");
-            assert_eq!(cfg.storage.bucket, "my-family");
+            assert_eq!(cfg.storage.bucket, "my-fam-tree");
             Ok(())
         });
     }

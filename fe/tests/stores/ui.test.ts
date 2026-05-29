@@ -31,7 +31,7 @@ describe('ui store', () => {
     })
 
     it('reads persisted sidebar state from localStorage', () => {
-        localStorage.setItem('my-family:sidebar', '1')
+        localStorage.setItem('my-fam-tree:sidebar', '1')
         const ui = useUiStore()
         expect(ui.sidebarCollapsed).toBe(true)
     })
@@ -40,10 +40,10 @@ describe('ui store', () => {
         const ui = useUiStore()
         ui.toggleSidebar()
         expect(ui.sidebarCollapsed).toBe(true)
-        expect(localStorage.getItem('my-family:sidebar')).toBe('1')
+        expect(localStorage.getItem('my-fam-tree:sidebar')).toBe('1')
         ui.toggleSidebar()
         expect(ui.sidebarCollapsed).toBe(false)
-        expect(localStorage.getItem('my-family:sidebar')).toBe('0')
+        expect(localStorage.getItem('my-fam-tree:sidebar')).toBe('0')
     })
 
     it('pushToast appends with a generated id', () => {

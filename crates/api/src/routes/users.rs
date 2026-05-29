@@ -21,8 +21,8 @@
 
 use actix_web::{HttpRequest, get, patch, post, web};
 use chrono::{DateTime, Duration, Utc};
-use my_family_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
-use my_family_email::{Locale as EmailLocale, render_email_change};
+use my_fam_tree_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
+use my_fam_tree_email::{Locale as EmailLocale, render_email_change};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -113,8 +113,8 @@ fn parse_locale(raw: &str) -> Result<Locale, ApiError> {
 const AVATAR_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
 
 async fn profile_from(
-    user: &my_family_domain::User,
-    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+    user: &my_fam_tree_domain::User,
+    object_store: &std::sync::Arc<dyn my_fam_tree_storage::ObjectStore>,
 ) -> UserProfile {
     // `presigned_get` is async — see the trait doc + `crate::routes::persons`
     // for why the SDK's `.presigned()` future can't be block_in_place'd
@@ -331,8 +331,8 @@ pub async fn email_change_request(
     // Outbox-enqueue (durable, async). The worker drains via SMTP.
     state
         .outbox
-        .enqueue(&my_family_domain::EmailOutboxInsert {
-            kind: my_family_domain::EmailOutboxKind::EMAIL_CHANGE.to_string(),
+        .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
+            kind: my_fam_tree_domain::EmailOutboxKind::EMAIL_CHANGE.to_string(),
             to_addr: user.email.clone(),
             subject,
             text_body,

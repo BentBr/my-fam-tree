@@ -14,12 +14,12 @@ export default defineConfig({
         host: '0.0.0.0',
         strictPort: true,
         // Vite blocks requests whose Host header doesn't match the dev server.
-        // Dinghy proxies `*.my-family.docker` to this container, so we have to
+        // Dinghy proxies `*.my-fam-tree.docker` to this container, so we have to
         // allow those hostnames explicitly. `localhost` covers host-side runs.
-        allowedHosts: ['my-family.docker', 'app.my-family.docker', 'localhost'],
+        allowedHosts: ['my-fam-tree.docker', 'app.my-fam-tree.docker', 'localhost'],
         proxy: {
             // Inside the `fe` compose container the API is reachable via the FQDN
-            // alias `api.my-family.docker`. On a host-side `pnpm dev` it defaults
+            // alias `api.my-fam-tree.docker`. On a host-side `pnpm dev` it defaults
             // to localhost:8080. Set VITE_API_PROXY_TARGET to override.
             '/api': {
                 target: process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080',

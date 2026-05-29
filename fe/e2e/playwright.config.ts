@@ -1,12 +1,12 @@
 import { defineConfig, devices, type PlaywrightTestConfig } from '@playwright/test'
 
 // Default to the dinghy-routed local domain. CI overrides via E2E_BASE_URL.
-const baseURL = process.env['E2E_BASE_URL'] ?? 'http://my-family.docker'
+const baseURL = process.env['E2E_BASE_URL'] ?? 'http://my-fam-tree.docker'
 const isCI = process.env['CI'] !== undefined
 
 // Local dev convenience: spin up `pnpm dev` if no server is reachable.
 // CI brings up the full compose stack instead — the fe service serves the
-// SPA on http://my-family.docker via dinghy.
+// SPA on http://my-fam-tree.docker via dinghy.
 const webServer: PlaywrightTestConfig['webServer'] = isCI
     ? []
     : {

@@ -7,7 +7,7 @@
 //! partial unique index.
 
 use async_trait::async_trait;
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, Partnership, PartnershipDraft, PartnershipEndReason, PartnershipKind,
     PartnershipRepo, PartnershipRepoError, PersonId,
 };

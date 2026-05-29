@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe('useMembers', () => {
     it('GETs /families/{family_id}/members and unwraps data.data.data', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({
             data: {
                 data: {
@@ -60,7 +60,7 @@ describe('useMembers', () => {
 
 describe('useSetRole', () => {
     it('PATCHes /members/{user_id} and invalidates the members cache', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.PATCH.mockResolvedValueOnce({
             data: { data: { user_id: 'u-2', role: 'admin' } },
             error: undefined,
@@ -83,7 +83,7 @@ describe('useSetRole', () => {
 
 describe('useRevokeMember', () => {
     it('DELETEs /members/{user_id} and invalidates the members cache', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: undefined })
         const { result, queryClient } = makeHookWrapper(() => useRevokeMember())
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -95,7 +95,7 @@ describe('useRevokeMember', () => {
     })
 
     it('rejects on error', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useRevokeMember())
         await expect(result.mutateAsync('u-2')).rejects.toBeDefined()

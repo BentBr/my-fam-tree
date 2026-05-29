@@ -131,8 +131,8 @@ pub struct ReminderDigestArgs<'a> {
 /// Returns [`askama::Error`] if template rendering fails.
 pub fn render_magic_link(locale: Locale, link: &str) -> Result<(String, String), askama::Error> {
     let (subject, body) = match locale {
-        Locale::En => ("Sign in to my-family".to_string(), MagicLinkEn { link }.render()?),
-        Locale::De => ("Anmeldung bei my-family".to_string(), MagicLinkDe { link }.render()?),
+        Locale::En => ("Sign in to my-fam-tree".to_string(), MagicLinkEn { link }.render()?),
+        Locale::De => ("Anmeldung bei my-fam-tree".to_string(), MagicLinkDe { link }.render()?),
     };
     Ok((subject, body))
 }
@@ -152,11 +152,11 @@ pub fn render_invite(
 ) -> Result<(String, String), askama::Error> {
     let (subject, body) = match locale {
         Locale::En => (
-            format!("Join the {family_name} family on my-family"),
+            format!("Join the {family_name} family on my-fam-tree"),
             InviteEn { link, inviter_name, family_name }.render()?,
         ),
         Locale::De => (
-            format!("Einladung zur Familie {family_name} bei my-family"),
+            format!("Einladung zur Familie {family_name} bei my-fam-tree"),
             InviteDe { link, inviter_name, family_name }.render()?,
         ),
     };
@@ -178,11 +178,11 @@ pub fn render_email_change(
 ) -> Result<(String, String), askama::Error> {
     let (subject, body) = match locale {
         Locale::En => (
-            "Confirm your email change on my-family".to_string(),
+            "Confirm your email change on my-fam-tree".to_string(),
             EmailChangeEn { link, new_email }.render()?,
         ),
         Locale::De => (
-            "Bestätige deine E-Mail-Änderung bei my-family".to_string(),
+            "Bestätige deine E-Mail-Änderung bei my-fam-tree".to_string(),
             EmailChangeDe { link, new_email }.render()?,
         ),
     };
@@ -319,14 +319,14 @@ mod tests {
     #[test]
     fn renders_en_magic_link() {
         let (subject, body) = render_magic_link(Locale::En, "https://app/c/xyz").unwrap();
-        assert_eq!(subject, "Sign in to my-family");
+        assert_eq!(subject, "Sign in to my-fam-tree");
         assert!(body.contains("https://app/c/xyz"));
     }
 
     #[test]
     fn renders_de_magic_link_with_umlauts() {
         let (subject, body) = render_magic_link(Locale::De, "https://app/c/xyz").unwrap();
-        assert_eq!(subject, "Anmeldung bei my-family");
+        assert_eq!(subject, "Anmeldung bei my-fam-tree");
         assert!(body.contains("gültig"));
         assert!(body.contains("https://app/c/xyz"));
     }
@@ -344,7 +344,7 @@ mod tests {
     fn renders_de_email_change_with_umlauts_and_new_email() {
         let (subject, body) =
             render_email_change(Locale::De, "https://app/ec/abc", "neu@example.com").unwrap();
-        assert_eq!(subject, "Bestätige deine E-Mail-Änderung bei my-family");
+        assert_eq!(subject, "Bestätige deine E-Mail-Änderung bei my-fam-tree");
         assert!(body.contains("neu@example.com"));
         assert!(body.contains("https://app/ec/abc"));
         assert!(body.contains("bleibt unverändert"));
@@ -354,7 +354,7 @@ mod tests {
     fn renders_en_email_change() {
         let (subject, body) =
             render_email_change(Locale::En, "https://app/ec/xyz", "new@example.com").unwrap();
-        assert_eq!(subject, "Confirm your email change on my-family");
+        assert_eq!(subject, "Confirm your email change on my-fam-tree");
         assert!(body.contains("new@example.com"));
         assert!(body.contains("https://app/ec/xyz"));
     }

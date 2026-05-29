@@ -20,20 +20,20 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use chrono::{NaiveDate, TimeZone, Utc};
-use my_family_cache::{CacheError, ReminderJob, ReminderJobQueue};
-use my_family_domain::{
+use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
+use my_fam_tree_domain::{
     DigestStatus, FamilyMembershipRepo, FamilyRepo, Locale, PersonDraft, PersonRepo,
     ReminderPreferences, ReminderPreferencesRepo, Role, UserId, UserRepo,
 };
-use my_family_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
-use my_family_persistence::{
+use my_fam_tree_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
+use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgJanitor,
     PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo,
     PgReminderPrefsRepo, PgUserRepo,
 };
-use my_family_worker::clock::{Clock, FixedClock};
-use my_family_worker::state::WorkerState;
-use my_family_worker::{dispatcher, ticker};
+use my_fam_tree_worker::clock::{Clock, FixedClock};
+use my_fam_tree_worker::state::WorkerState;
+use my_fam_tree_worker::{dispatcher, ticker};
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;

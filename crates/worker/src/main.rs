@@ -5,22 +5,22 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context;
-use my_family_cache::{RedisPool, RedisReminderQueue};
-use my_family_config::WorkerConfig;
-use my_family_email::SmtpSender;
-use my_family_persistence::{
+use my_fam_tree_cache::{RedisPool, RedisReminderQueue};
+use my_fam_tree_config::WorkerConfig;
+use my_fam_tree_email::SmtpSender;
+use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_family_worker::clock::Clock;
+use my_fam_tree_worker::clock::Clock;
 #[cfg(feature = "test-fixtures")]
-use my_family_worker::clock::OffsetClock;
+use my_fam_tree_worker::clock::OffsetClock;
 #[cfg(not(feature = "test-fixtures"))]
-use my_family_worker::clock::SystemClock;
-use my_family_worker::state::WorkerState;
+use my_fam_tree_worker::clock::SystemClock;
+use my_fam_tree_worker::state::WorkerState;
 #[cfg(feature = "test-fixtures")]
-use my_family_worker::test_clock_http;
-use my_family_worker::{dispatcher, janitor, leader, outbox, ticker};
+use my_fam_tree_worker::test_clock_http;
+use my_fam_tree_worker::{dispatcher, janitor, leader, outbox, ticker};
 use tokio::time::sleep;
 use tracing_subscriber::prelude::*;
 
@@ -77,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
     let filter = tracing_subscriber::EnvFilter::try_new(&cfg.log.level)
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"));
     let registry = tracing_subscriber::registry().with(filter);
-    if matches!(cfg.log.format, my_family_config::LogFormat::Json) {
+    if matches!(cfg.log.format, my_fam_tree_config::LogFormat::Json) {
         registry.with(tracing_subscriber::fmt::layer().json()).init();
     } else {
         registry.with(tracing_subscriber::fmt::layer().pretty()).init();
@@ -106,7 +106,7 @@ async fn main() -> anyhow::Result<()> {
             cfg.email.timeout_seconds,
         )
         .context("build SMTP sender")?,
-    ) as Arc<dyn my_family_email::EmailSender>;
+    ) as Arc<dyn my_fam_tree_email::EmailSender>;
 
     #[cfg(feature = "test-fixtures")]
     let fixed = Arc::new(OffsetClock::default());

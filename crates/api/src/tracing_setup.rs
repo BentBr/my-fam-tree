@@ -1,6 +1,6 @@
 //! `tracing_subscriber` init for the API and worker binaries.
 
-use my_family_config::LogFormat;
+use my_fam_tree_config::LogFormat;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{EnvFilter, fmt};
 

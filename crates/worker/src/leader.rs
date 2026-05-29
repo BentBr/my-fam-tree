@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use my_family_cache::RedisPool;
+use my_fam_tree_cache::RedisPool;
 use tokio::time::sleep;
 
 /// A best-effort leader lease.

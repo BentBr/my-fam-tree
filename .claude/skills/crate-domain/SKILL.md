@@ -1,9 +1,9 @@
 ---
 name: crate-domain
-description: Use when touching the my-family-domain crate (crate `my_family_domain`, under crates/domain) — adding/changing a repo trait or its `FooRepoError`/Row/Draft types, working with newtype IDs (UserId/FamilyId/PersonId/FamilyMembershipId, `id_newtype!`, from_uuid/into_uuid/as_uuid), `Role`/`Capability`/`capabilities_of`/`has`/`at_least`, the relationship invariants `would_create_cycle`/`canonicalize_pair`, or the `build_upcoming`/UpcomingEvent/UpcomingFilter projection. Symptoms: where do I define a repo method, why is domain pure, exhaustive Capability match.
+description: Use when touching the my-fam-tree-domain crate (crate `my_fam_tree_domain`, under crates/domain) — adding/changing a repo trait or its `FooRepoError`/Row/Draft types, working with newtype IDs (UserId/FamilyId/PersonId/FamilyMembershipId, `id_newtype!`, from_uuid/into_uuid/as_uuid), `Role`/`Capability`/`capabilities_of`/`has`/`at_least`, the relationship invariants `would_create_cycle`/`canonicalize_pair`, or the `build_upcoming`/UpcomingEvent/UpcomingFilter projection. Symptoms: where do I define a repo method, why is domain pure, exhaustive Capability match.
 ---
 
-# crate-domain (`my-family-domain`)
+# crate-domain (`my-fam-tree-domain`)
 
 The dependency root: **pure types, newtype IDs, repo traits, role/capability
 logic, relationship invariants**. No I/O — no `tokio`, `sqlx`, or Actix in
@@ -11,7 +11,7 @@ logic, relationship invariants**. No I/O — no `tokio`, `sqlx`, or Actix in
 impls live in `crate-persistence`. For the domain model see `project-concepts`;
 for the strict-lint/test regime see `rust-foundations`.
 
-`src/lib.rs` re-exports everything (`use my_family_domain::PersonRepo;`).
+`src/lib.rs` re-exports everything (`use my_fam_tree_domain::PersonRepo;`).
 
 ## Module map
 
@@ -55,7 +55,7 @@ a `domain` one.
 ## How to test
 
 Pure logic is unit-tested inline, no Docker:
-`cargo test -p my-family-domain`.
+`cargo test -p my-fam-tree-domain`.
 
 ## Common mistakes
 

@@ -55,7 +55,7 @@ describe('activeFamily store', () => {
     })
 
     it('reads stored familyId from localStorage on init', () => {
-        localStorage.setItem('my-family:activeFamily', 'f-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'f-1')
         const family = useActiveFamilyStore()
         expect(family.activeFamilyId).toBe('f-1')
     })
@@ -65,15 +65,15 @@ describe('activeFamily store', () => {
         const family = useActiveFamilyStore()
         family.setActive('f-1' as FamilyId)
         await nextTick()
-        expect(localStorage.getItem('my-family:activeFamily')).toBe('f-1')
+        expect(localStorage.getItem('my-fam-tree:activeFamily')).toBe('f-1')
     })
 
     it('clears stored value when set to null', async () => {
-        localStorage.setItem('my-family:activeFamily', 'f-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'f-1')
         const family = useActiveFamilyStore()
         family.clearOnLogout()
         await nextTick()
-        expect(localStorage.getItem('my-family:activeFamily')).toBeNull()
+        expect(localStorage.getItem('my-fam-tree:activeFamily')).toBeNull()
     })
 
     it('setActive throws when family is unknown', () => {
@@ -98,7 +98,7 @@ describe('activeFamily store', () => {
             locale: 'en',
             families: [],
         } as ClaimsPayload)
-        localStorage.setItem('my-family:activeFamily', 'stale')
+        localStorage.setItem('my-fam-tree:activeFamily', 'stale')
         const family = useActiveFamilyStore()
         expect(family.activeFamily).toBeNull()
     })
@@ -124,14 +124,14 @@ describe('activeFamily store', () => {
         const family = useActiveFamilyStore()
         family.setFocusedPerson('p-1')
         await nextTick()
-        expect(localStorage.getItem('my-family:focusedPerson')).toBe('p-1')
+        expect(localStorage.getItem('my-fam-tree:focusedPerson')).toBe('p-1')
         family.setFocusedPerson(null)
         await nextTick()
-        expect(localStorage.getItem('my-family:focusedPerson')).toBeNull()
+        expect(localStorage.getItem('my-fam-tree:focusedPerson')).toBeNull()
     })
 
     it('reads stored focusedPersonId on init', () => {
-        localStorage.setItem('my-family:focusedPerson', 'p-x')
+        localStorage.setItem('my-fam-tree:focusedPerson', 'p-x')
         const family = useActiveFamilyStore()
         expect(family.focusedPersonId).toBe('p-x')
     })

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use chrono::{Duration, Utc};
-use my_family_domain::{FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, User, UserId};
+use my_fam_tree_domain::{FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, User, UserId};
 
 use crate::auth::{FamilyClaim, JwtIssuer, generate_opaque_token};
 

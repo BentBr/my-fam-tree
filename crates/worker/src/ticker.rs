@@ -8,7 +8,7 @@ use std::str::FromStr;
 
 use chrono::{Duration, Timelike};
 use chrono_tz::Tz;
-use my_family_cache::ReminderJob;
+use my_fam_tree_cache::ReminderJob;
 
 use crate::digest::events_for_user_on;
 use crate::state::WorkerState;

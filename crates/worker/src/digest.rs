@@ -2,15 +2,15 @@
 //!
 //! Turns a user's preferences into the events that fall on a target date,
 //! across all their families, then renders localized digest lines. Reuses
-//! [`my_family_domain::build_upcoming`] — the SAME projection the `/upcoming`
+//! [`my_fam_tree_domain::build_upcoming`] — the SAME projection the `/upcoming`
 //! route uses — so the digest can never drift from the Upcoming page.
 
 use chrono::NaiveDate;
-use my_family_domain::{
+use my_fam_tree_domain::{
     MAX_LIMIT, ReminderPreferences, UpcomingEvent, UpcomingFilter, UpcomingKind, UserId,
     build_upcoming,
 };
-use my_family_email::Locale;
+use my_fam_tree_email::Locale;
 
 use crate::state::WorkerState;
 

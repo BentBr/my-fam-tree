@@ -26,8 +26,8 @@ use actix_web::test;
 use common::{
     ensure_membership, ephemeral_stack, fresh_access, provision_user, seed_three_role_family,
 };
-use my_family_api::build_app;
-use my_family_domain::{AuditFilter, Role};
+use my_fam_tree_api::build_app;
+use my_fam_tree_domain::{AuditFilter, Role};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn admin_lists_members_sees_owner_admin_user_in_role_order() {

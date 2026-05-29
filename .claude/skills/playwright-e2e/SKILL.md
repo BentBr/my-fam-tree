@@ -24,12 +24,12 @@ scripts/fe-in-container.sh test:e2e --grep "sign in"   # subset by test title
 scripts/fe-in-container.sh exec playwright test -c e2e/playwright.config.ts --debug
 ```
 
-Inside the container `E2E_BASE_URL=http://my-family.docker:5173` and
-`MAILPIT_URL=http://mail.my-family.docker:8025` (set in `compose.yaml`).
+Inside the container `E2E_BASE_URL=http://my-fam-tree.docker:5173` and
+`MAILPIT_URL=http://mail.my-fam-tree.docker:8025` (set in `compose.yaml`).
 
 ## Config & isolation (`fe/e2e/playwright.config.ts`)
 
-- `baseURL = E2E_BASE_URL ?? http://my-family.docker`; project `e2e` = Desktop Chromium;
+- `baseURL = E2E_BASE_URL ?? http://my-fam-tree.docker`; project `e2e` = Desktop Chromium;
   viewport 1440×900; `trace: retain-on-failure`, `screenshot: only-on-failure`.
 - **`fullyParallel: false`, `workers: 1`** on purpose — all tests share one Mailpit,
   Postgres, and Redis. Don't "fix" flakiness by enabling parallelism.
@@ -43,7 +43,7 @@ Inside the container `E2E_BASE_URL=http://my-family.docker:5173` and
 |---|---|
 | `fixtures/console.fixture.ts` | the `test` export — **import `test` from here, not `@playwright/test`**. It fails the test on unexpected `console.error`/`pageerror` (Vue Devtools allowlisted). |
 | `fixtures/mailpit.fixture.ts` | `clearMailpit()`, `waitForEmail(matcher, timeoutMs)` |
-| `fixtures/email-links.fixture.ts` | `rewriteEmailLink(link)` — maps the email's `http://my-family.docker` URL to the in-container `E2E_BASE_URL` |
+| `fixtures/email-links.fixture.ts` | `rewriteEmailLink(link)` — maps the email's `http://my-fam-tree.docker` URL to the in-container `E2E_BASE_URL` |
 | `page-objects/login.page.ts` | `LoginPage` (locators by `data-testid`: `login-card`, `sign-in-email`, `sign-in-submit`, `sign-in-sent`, `login-error`) |
 
 **Selectors:** use `data-testid` (via `getByTestId`), not CSS/text. If a component
@@ -68,9 +68,9 @@ For interactive reproduction (not regression), drive a **real browser via the
 Playwright MCP** (`browser_navigate`, `browser_snapshot`, `browser_click`,
 `browser_fill_form`, `browser_console_messages`, `browser_network_requests`,
 `browser_take_screenshot`, `browser_evaluate`). The MCP browser runs on the **host**,
-so navigate to the dinghy URL **`http://my-family.docker`** (stack must be up). To
+so navigate to the dinghy URL **`http://my-fam-tree.docker`** (stack must be up). To
 authenticate, trigger a magic link in the UI, then read it from the Mailpit inbox at
-`http://mail.my-family.docker`. MCP browser output lands in `.playwright-mcp/` at the
+`http://mail.my-fam-tree.docker`. MCP browser output lands in `.playwright-mcp/` at the
 repo root.
 
 Use the MCP to *see* a bug (DOM snapshot, console, failing network request) and

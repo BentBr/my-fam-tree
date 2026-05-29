@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use chrono::NaiveDate;
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, PersonFavouriteRepo,
     PersonId, PersonRepo, UserId,
 };
@@ -97,7 +97,7 @@ pub async fn build_tree(
     parent_links: &Arc<dyn ParentLinkRepo>,
     partnerships: &Arc<dyn PartnershipRepo>,
     favourites: &Arc<dyn PersonFavouriteRepo>,
-    object_store: &Arc<dyn my_family_storage::ObjectStore>,
+    object_store: &Arc<dyn my_fam_tree_storage::ObjectStore>,
     family_id: FamilyId,
     user_id: UserId,
 ) -> anyhow::Result<TreePayload> {
@@ -152,7 +152,7 @@ pub async fn build_tree(
                 .into_iter()
                 .map(PersonId::into_uuid)
                 .collect(),
-            linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+            linked_user_id: p.linked_user_id.map(my_fam_tree_domain::UserId::into_uuid),
             photo_url,
             is_favourite_for_me: fav_set.contains(&p.id),
         });

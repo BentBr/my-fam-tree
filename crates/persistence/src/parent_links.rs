@@ -7,7 +7,7 @@
 //! `Db` error so the route maps it to `Internal` (rare in practice).
 
 use async_trait::async_trait;
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, ParentKind, ParentLink, ParentLinkRepo, ParentLinkRepoError, PersonId,
     would_create_cycle,
 };

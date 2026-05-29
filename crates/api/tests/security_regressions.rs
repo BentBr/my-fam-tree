@@ -31,7 +31,7 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 /// Create a person and return its id. Mirrors the helper in
 /// `person_photo_flow.rs` so each test file stays self-contained.
@@ -85,13 +85,13 @@ async fn demoted_admin_loses_privilege_immediately_not_at_token_ttl() {
         .expect("find admin")
         .expect("admin exists")
         .id;
-    let fid = my_family_domain::FamilyId::from_uuid(
+    let fid = my_fam_tree_domain::FamilyId::from_uuid(
         uuid::Uuid::parse_str(&family_id).expect("family uuid"),
     );
     stack
         .state
         .memberships
-        .insert(fid, admin_user_id, my_family_domain::Role::Admin)
+        .insert(fid, admin_user_id, my_fam_tree_domain::Role::Admin)
         .await
         .expect("admin membership");
 
@@ -115,7 +115,7 @@ async fn demoted_admin_loses_privilege_immediately_not_at_token_ttl() {
     stack
         .state
         .memberships
-        .set_role(fid, admin_user_id, my_family_domain::Role::User)
+        .set_role(fid, admin_user_id, my_fam_tree_domain::Role::User)
         .await
         .expect("demote admin");
 

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import type { WritableComputedRef } from 'vue'
 
-const STORAGE_KEY = 'my-family:locale'
+const STORAGE_KEY = 'my-fam-tree:locale'
 export type SupportedLocale = 'en' | 'de'
 
 // Structural shape covering both the I18n root and the Composer it exposes via

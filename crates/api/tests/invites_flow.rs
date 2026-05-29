@@ -24,8 +24,8 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{ephemeral_stack, extract_token_from_link, sign_in};
-use my_family_api::build_app;
-use my_family_domain::{AuditFilter, FamilyId, PersonDraft, PersonId};
+use my_fam_tree_api::build_app;
+use my_fam_tree_domain::{AuditFilter, FamilyId, PersonDraft, PersonId};
 use uuid::Uuid;
 
 /// Seed an admin-owned family with one person (Klaus) and return

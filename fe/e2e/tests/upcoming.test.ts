@@ -6,7 +6,7 @@ test('upcoming dates page filters by birthday + anniversary toggles', async ({ p
     await signIn(page, `upcoming-${stamp}@example.com`)
     await createFamily(page, `Upcoming-${stamp}`)
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     // Seed a small family graph via the API directly: two people with

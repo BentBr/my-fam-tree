@@ -126,14 +126,14 @@ mod tests {
                 vec![FamilyClaim {
                     id: Uuid::new_v4(),
                     name: "Müller".into(),
-                    role: my_family_domain::Role::Owner,
+                    role: my_fam_tree_domain::Role::Owner,
                 }],
             )
             .unwrap();
         let claims = issuer.verify(&token).unwrap();
         assert_eq!(claims.email, "a@b.c");
         assert_eq!(claims.families.len(), 1);
-        assert_eq!(claims.families[0].role, my_family_domain::Role::Owner);
+        assert_eq!(claims.families[0].role, my_fam_tree_domain::Role::Owner);
     }
 
     #[test]

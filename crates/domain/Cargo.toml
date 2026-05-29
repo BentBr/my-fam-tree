@@ -1,5 +1,5 @@
 [package]
-name = "my-family-domain"
+name = "my-fam-tree-domain"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

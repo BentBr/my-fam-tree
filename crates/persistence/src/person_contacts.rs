@@ -5,7 +5,7 @@
 //! elsewhere in this crate — see `family_memberships` / `partnerships`).
 
 use async_trait::async_trait;
-use my_family_domain::{
+use my_fam_tree_domain::{
     Contact, ContactDraft, ContactKind, ContactRepoError, ContactVisibility, PersonContactRepo,
     PersonId,
 };

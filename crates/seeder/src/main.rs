@@ -5,9 +5,9 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use my_family_api::{Config, init_tracing};
-use my_family_persistence::Database;
-use my_family_seeder::run_seed;
+use my_fam_tree_api::{Config, init_tracing};
+use my_fam_tree_persistence::Database;
+use my_fam_tree_seeder::run_seed;
 
 #[allow(
     clippy::print_stdout,

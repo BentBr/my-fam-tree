@@ -11,7 +11,7 @@ test('owner stars a tree node and the favourite survives reload', async ({ page 
     await signIn(page, `fav-tree-${stamp}@example.com`)
     await createFamily(page, `FavTree-${stamp}`)
 
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     const create = async (given: string, birth: string): Promise<string> => {
@@ -48,7 +48,7 @@ test('two users see independent favourite state on the same person', async ({ br
     const ownerPage = await ownerCtx.newPage()
     await signIn(ownerPage, `fav-pair-owner-${stamp}@example.com`)
     await createFamily(ownerPage, `FavPair-${stamp}`)
-    const familyId = await ownerPage.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await ownerPage.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
     expect(familyId).not.toBe('')
 
     // Create Klaus + invite admin B.
@@ -65,7 +65,7 @@ test('two users see independent favourite state on the same person', async ({ br
         data: { email: adminEmail, role: 'admin' },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-family|Einladung zur Familie/.test(s))
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
     const inviteLink = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)?.[0]
     if (inviteLink === undefined) throw new Error('invite link not in email body')
 
@@ -99,7 +99,7 @@ test('upcoming favourites pill filters to caller favourites', async ({ page }) =
     const stamp = Date.now()
     await signIn(page, `fav-upcoming-${stamp}@example.com`)
     await createFamily(page, `FavUp-${stamp}`)
-    const familyId = await page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
 
     const create = async (given: string, birth: string): Promise<string> => {
         const res = await page.request.post('/api/v1/persons', {

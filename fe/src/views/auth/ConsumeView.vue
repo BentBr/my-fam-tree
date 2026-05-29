@@ -17,7 +17,7 @@ const status = ref<'pending' | 'ok' | 'error'>('pending')
 // double-fires that local dev doesn't reproduce. We key the dedup on
 // the token itself in sessionStorage so any subsequent mount with the
 // same token short-circuits before hitting `/auth/consume`. The entry
-// is cleared on `auth.logout()` (it's under `my-family:`); a fresh
+// is cleared on `auth.logout()` (it's under `my-fam-tree:`); a fresh
 // sign-in mints a new token, so stale-token leakage isn't a concern.
 
 onMounted(async () => {
@@ -26,7 +26,7 @@ onMounted(async () => {
         status.value = 'error'
         return
     }
-    const dedupeKey = `my-family:consumed:${token}`
+    const dedupeKey = `my-fam-tree:consumed:${token}`
     if (sessionStorage.getItem(dedupeKey) !== null) {
         // Already consumed in a previous mount of this same token; the
         // first mount's success path already redirected. If we got

@@ -3,7 +3,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr)]
 
-use my_family_cache::RedisPool;
+use my_fam_tree_cache::RedisPool;
 
 #[tokio::test]
 async fn pings_redis() {

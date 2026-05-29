@@ -4,7 +4,7 @@
 #
 # OCI image metadata (populated by CI via --build-arg). Surfaces on the GHCR
 # package page.
-ARG OCI_SOURCE="https://github.com/BentBr/my-family"
+ARG OCI_SOURCE="https://github.com/BentBr/my-fam-tree"
 ARG OCI_REVISION=""
 ARG OCI_CREATED=""
 
@@ -31,8 +31,8 @@ ARG OCI_SOURCE
 ARG OCI_REVISION
 ARG OCI_CREATED
 
-LABEL org.opencontainers.image.title="my-family-fe" \
-      org.opencontainers.image.description="my-family frontend served by nginx" \
+LABEL org.opencontainers.image.title="my-fam-tree-fe" \
+      org.opencontainers.image.description="my-fam-tree frontend served by nginx" \
       org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"

@@ -1,13 +1,13 @@
 ---
 name: crate-config
-description: Use when reading or changing how my-family loads runtime configuration — the centralised my-family-config crate that backs ApiConfig and WorkerConfig. Triggers — adding a new env var; renaming/removing one; tweaking validation (JWT kid, production cookie flags, storage driver); wiring a new field into AppState or WorkerState; debugging "missing/invalid env var" errors. Keywords — figment, Env::raw, ApiConfig, WorkerConfig, FlatApiConfig, FlatWorkerConfig, load_flat, ConfigError, AppEnv, LogFormat, StorageDriver, from_env, validate.
+description: Use when reading or changing how my-fam-tree loads runtime configuration — the centralised my-fam-tree-config crate that backs ApiConfig and WorkerConfig. Triggers — adding a new env var; renaming/removing one; tweaking validation (JWT kid, production cookie flags, storage driver); wiring a new field into AppState or WorkerState; debugging "missing/invalid env var" errors. Keywords — figment, Env::raw, ApiConfig, WorkerConfig, FlatApiConfig, FlatWorkerConfig, load_flat, ConfigError, AppEnv, LogFormat, StorageDriver, from_env, validate.
 ---
 
 # crate-config — single source of truth for env-derived config
 
 ## Overview
 
-`my-family-config` is the ONLY crate that reads the process environment. Every other crate
+`my-fam-tree-config` is the ONLY crate that reads the process environment. Every other crate
 takes a fully-typed `ApiConfig` / `WorkerConfig` (or sub-config) by reference; raw `std::env`
 lookups outside this crate are a bug. The split mirrors the binaries: `ApiConfig` powers the
 api and the seeder, `WorkerConfig` powers the worker. Shared sub-configs live in `common.rs`
@@ -139,7 +139,7 @@ Symptom: binary loads fine in CI but breaks locally with `missing field` X. Caus
 required env var landed on main without an update to your `.env`. Diff
 `.env.example` to find what to add.
 
-Symptom: tests pass on host but `cargo run -p my-family-seeder` fails inside the
+Symptom: tests pass on host but `cargo run -p my-fam-tree-seeder` fails inside the
 network container. Cause: `scripts/cargo-in-network.sh` only forwards a small set
 of env vars (DB/Redis/Mailpit). Pass others through `docker run --env-file .env`,
 or extend the script if it's a permanent need.

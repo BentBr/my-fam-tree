@@ -25,11 +25,11 @@ use actix_web::test;
 use ed25519_dalek::SigningKey;
 use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
 use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
-use my_family_api::auth::{JwtIssuer, JwtKeyset};
-use my_family_api::{AppEnv, AppState, Config, LogFormat};
-use my_family_cache::{RedisPool, RedisRateLimiter};
-use my_family_email::FakeEmailSender;
-use my_family_persistence::{
+use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
+use my_fam_tree_api::{AppEnv, AppState, Config, LogFormat};
+use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
+use my_fam_tree_email::FakeEmailSender;
+use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
     PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo, PgPartnershipRepo,
     PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo,
@@ -92,8 +92,8 @@ pub async fn ephemeral_stack() -> TestStack {
 
     let cfg = Config {
         app_env: AppEnv::Development,
-        log: my_family_config::LogConfig { level: "info".into(), format: LogFormat::Pretty },
-        api: my_family_config::ApiBindConfig {
+        log: my_fam_tree_config::LogConfig { level: "info".into(), format: LogFormat::Pretty },
+        api: my_fam_tree_config::ApiBindConfig {
             host: "0.0.0.0".into(),
             port: 8080,
             public_url: "http://localhost:8080".into(),
@@ -101,19 +101,19 @@ pub async fn ephemeral_stack() -> TestStack {
             enable_docs: false,
             metrics_bind: "0.0.0.0:9090".into(),
         },
-        web: my_family_config::WebConfig { public_url: "http://localhost:5173".into() },
-        database: my_family_config::DatabaseConfig {
+        web: my_fam_tree_config::WebConfig { public_url: "http://localhost:5173".into() },
+        database: my_fam_tree_config::DatabaseConfig {
             url: db_url.clone(),
             max_connections: 4,
             acquire_timeout_seconds: 5,
             statement_timeout_ms: 30_000,
         },
-        redis: my_family_config::RedisConfig {
+        redis: my_fam_tree_config::RedisConfig {
             url: redis_url.clone(),
             max_connections: 4,
             key_prefix: "t:".into(),
         },
-        jwt: my_family_config::JwtConfig {
+        jwt: my_fam_tree_config::JwtConfig {
             private_key: priv_pem,
             private_key_id: "t".into(),
             public_keys: public_json,
@@ -123,27 +123,27 @@ pub async fn ephemeral_stack() -> TestStack {
             refresh_ttl_seconds: 86_400,
             refresh_absolute_ttl_seconds: 604_800,
         },
-        cookie: my_family_config::CookieConfig {
+        cookie: my_fam_tree_config::CookieConfig {
             domain: String::new(),
             secure: false,
             samesite_access: "Lax".into(),
             samesite_refresh: "Strict".into(),
         },
-        magic_link: my_family_config::MagicLinkConfig {
+        magic_link: my_fam_tree_config::MagicLinkConfig {
             ttl_seconds: 900,
             invite_ttl_seconds: 1_209_600,
             rate_per_email_per_hour: 10,
             rate_per_ip_per_hour: 100,
         },
-        email: my_family_config::EmailConfig {
+        email: my_fam_tree_config::EmailConfig {
             dsn: "smtp://localhost:1025".into(),
             from_name: "t".into(),
             from_address: "no-reply@t".into(),
             reply_to: None,
             timeout_seconds: 10,
         },
-        storage: my_family_config::StorageConfig {
-            driver: my_family_config::storage::StorageDriver::Local,
+        storage: my_fam_tree_config::StorageConfig {
+            driver: my_fam_tree_config::storage::StorageDriver::Local,
             bucket: "t".into(),
             region: "us-east-1".into(),
             endpoint_url: None,
@@ -175,7 +175,7 @@ pub async fn ephemeral_stack() -> TestStack {
         health: Arc::new(PgHealthRepo::new(pool.clone())),
         audit: Arc::new(PgAuditLogRepo::new(pool)),
         email: fake_email.clone(),
-        outbox: Arc::new(SyncOutbox(fake_email.clone() as Arc<dyn my_family_email::EmailSender>)),
+        outbox: Arc::new(SyncOutbox(fake_email.clone() as Arc<dyn my_fam_tree_email::EmailSender>)),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
@@ -183,8 +183,8 @@ pub async fn ephemeral_stack() -> TestStack {
         // tests don't need a MinIO sidecar. The dir is leaked alongside the
         // TestStack (testcontainers wipes the postgres+redis state per test
         // anyway, so the leftover bytes never affect another test).
-        object_store: Arc::new(my_family_storage::LocalObjectStore::new(
-            std::env::temp_dir().join(format!("my-family-test-{}", uuid::Uuid::new_v4())),
+        object_store: Arc::new(my_fam_tree_storage::LocalObjectStore::new(
+            std::env::temp_dir().join(format!("my-fam-tree-test-{}", uuid::Uuid::new_v4())),
             "http://test.invalid/uploads".into(),
         )),
     };
@@ -192,24 +192,24 @@ pub async fn ephemeral_stack() -> TestStack {
     TestStack { state, fake_email, _pg: pg, _redis: redis_container }
 }
 
-/// Test double for [`my_family_domain::EmailOutboxRepo`]: bypasses the
+/// Test double for [`my_fam_tree_domain::EmailOutboxRepo`]: bypasses the
 /// `email_outbox` table and sends directly through the wrapped
-/// [`my_family_email::EmailSender`]. Every API integration test that reads
+/// [`my_fam_tree_email::EmailSender`]. Every API integration test that reads
 /// `stack.fake_email.drain()` works transparently — the producer's
 /// `outbox.enqueue(...)` call becomes a synchronous SMTP send via the
 /// `FakeEmailSender`, no `email_outbox` row required. The real
 /// `PgEmailOutboxRepo` (with retry/backoff/claim semantics) is exercised by
 /// the worker integration tests.
 #[derive(Debug, Clone)]
-struct SyncOutbox(Arc<dyn my_family_email::EmailSender>);
+struct SyncOutbox(Arc<dyn my_fam_tree_email::EmailSender>);
 
 #[async_trait::async_trait]
-impl my_family_domain::EmailOutboxRepo for SyncOutbox {
+impl my_fam_tree_domain::EmailOutboxRepo for SyncOutbox {
     async fn enqueue(
         &self,
-        email: &my_family_domain::EmailOutboxInsert,
-    ) -> Result<my_family_domain::EmailOutboxId, my_family_domain::EmailOutboxRepoError> {
-        let out = my_family_email::OutboundEmail {
+        email: &my_fam_tree_domain::EmailOutboxInsert,
+    ) -> Result<my_fam_tree_domain::EmailOutboxId, my_fam_tree_domain::EmailOutboxRepoError> {
+        let out = my_fam_tree_email::OutboundEmail {
             to_addr: email.to_addr.clone(),
             to_name: None,
             subject: email.subject.clone(),
@@ -219,36 +219,36 @@ impl my_family_domain::EmailOutboxRepo for SyncOutbox {
         self.0
             .send(out)
             .await
-            .map_err(|e| my_family_domain::EmailOutboxRepoError::Db(e.to_string()))?;
-        Ok(my_family_domain::EmailOutboxId::from_uuid(uuid::Uuid::nil()))
+            .map_err(|e| my_fam_tree_domain::EmailOutboxRepoError::Db(e.to_string()))?;
+        Ok(my_fam_tree_domain::EmailOutboxId::from_uuid(uuid::Uuid::nil()))
     }
     async fn claim_next_due(
         &self,
         _now: chrono::DateTime<chrono::Utc>,
-    ) -> Result<Option<my_family_domain::EmailOutboxRow>, my_family_domain::EmailOutboxRepoError>
+    ) -> Result<Option<my_fam_tree_domain::EmailOutboxRow>, my_fam_tree_domain::EmailOutboxRepoError>
     {
         Ok(None)
     }
     async fn mark_sent(
         &self,
-        _id: my_family_domain::EmailOutboxId,
+        _id: my_fam_tree_domain::EmailOutboxId,
         _sent_at: chrono::DateTime<chrono::Utc>,
-    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+    ) -> Result<(), my_fam_tree_domain::EmailOutboxRepoError> {
         Ok(())
     }
     async fn mark_retry(
         &self,
-        _id: my_family_domain::EmailOutboxId,
+        _id: my_fam_tree_domain::EmailOutboxId,
         _next_attempt_at: chrono::DateTime<chrono::Utc>,
         _last_error: &str,
-    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+    ) -> Result<(), my_fam_tree_domain::EmailOutboxRepoError> {
         Ok(())
     }
     async fn mark_failed_permanent(
         &self,
-        _id: my_family_domain::EmailOutboxId,
+        _id: my_fam_tree_domain::EmailOutboxId,
         _last_error: &str,
-    ) -> Result<(), my_family_domain::EmailOutboxRepoError> {
+    ) -> Result<(), my_fam_tree_domain::EmailOutboxRepoError> {
         Ok(())
     }
 }
@@ -385,7 +385,7 @@ pub async fn provision_user<S, B>(
     stack: &TestStack,
     app: &S,
     email: &str,
-) -> my_family_domain::UserId
+) -> my_fam_tree_domain::UserId
 where
     S: actix_web::dev::Service<
             actix_http::Request,
@@ -401,10 +401,10 @@ where
 /// Insert (or update) a membership row directly via the repo.
 #[allow(clippy::future_not_send)]
 pub async fn ensure_membership(
-    state: &my_family_api::AppState,
-    family_id: my_family_domain::FamilyId,
-    user_id: my_family_domain::UserId,
-    role: my_family_domain::Role,
+    state: &my_fam_tree_api::AppState,
+    family_id: my_fam_tree_domain::FamilyId,
+    user_id: my_fam_tree_domain::UserId,
+    role: my_fam_tree_domain::Role,
 ) {
     if state.memberships.find(family_id, user_id).await.expect("find").is_some() {
         state.memberships.set_role(family_id, user_id, role).await.expect("set_role");
@@ -415,12 +415,12 @@ pub async fn ensure_membership(
 
 /// A freshly seeded family with one member at each role.
 pub struct ThreeRoleFamily {
-    pub family_id: my_family_domain::FamilyId,
+    pub family_id: my_fam_tree_domain::FamilyId,
     pub owner_email: String,
     pub admin_email: String,
     pub user_email: String,
-    pub admin_id: my_family_domain::UserId,
-    pub user_id: my_family_domain::UserId,
+    pub admin_id: my_fam_tree_domain::UserId,
+    pub user_id: my_fam_tree_domain::UserId,
 }
 
 /// Seed a fresh family with an owner, an admin and a user. `stamp` keeps the
@@ -446,12 +446,12 @@ where
     let (owner_access, _r) = sign_in(stack, app, &owner_email).await;
     let (_owner_access, family_id_str) =
         create_family(app, &owner_access, &format!("RolesFam-{stamp}")).await;
-    let family_id = my_family_domain::FamilyId::from_uuid(family_id_str.parse().expect("uuid"));
+    let family_id = my_fam_tree_domain::FamilyId::from_uuid(family_id_str.parse().expect("uuid"));
 
     let admin_id = provision_user(stack, app, &admin_email).await;
     let user_id = provision_user(stack, app, &user_email).await;
-    ensure_membership(&stack.state, family_id, admin_id, my_family_domain::Role::Admin).await;
-    ensure_membership(&stack.state, family_id, user_id, my_family_domain::Role::User).await;
+    ensure_membership(&stack.state, family_id, admin_id, my_fam_tree_domain::Role::Admin).await;
+    ensure_membership(&stack.state, family_id, user_id, my_fam_tree_domain::Role::User).await;
 
     ThreeRoleFamily { family_id, owner_email, admin_email, user_email, admin_id, user_id }
 }

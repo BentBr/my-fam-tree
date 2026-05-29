@@ -17,8 +17,8 @@
 use std::time::Duration as StdDuration;
 
 use chrono::{Duration, Utc};
-use my_family_domain::JanitorRepo;
-use my_family_persistence::{Database, PgJanitor};
+use my_fam_tree_domain::JanitorRepo;
+use my_fam_tree_persistence::{Database, PgJanitor};
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;

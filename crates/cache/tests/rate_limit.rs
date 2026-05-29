@@ -8,7 +8,7 @@
 
 use std::time::Duration;
 
-use my_family_cache::{RateLimiter, RedisPool, RedisRateLimiter};
+use my_fam_tree_cache::{RateLimiter, RedisPool, RedisRateLimiter};
 
 #[tokio::test]
 async fn allows_up_to_limit_then_blocks() {

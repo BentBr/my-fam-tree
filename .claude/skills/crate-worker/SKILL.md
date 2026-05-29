@@ -1,6 +1,6 @@
 ---
 name: crate-worker
-description: Use when working in the worker crate (package my-family-worker, crate my_family_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
+description: Use when working in the worker crate (package my-fam-tree-worker, crate my_fam_tree_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
 ---
 
 # crate-worker
@@ -61,7 +61,7 @@ the clock through this endpoint.
 
 ## Run & debug
 
-- Run: `cargo run -p my-family-worker --bin worker` (or `rdt worker`).
+- Run: `cargo run -p my-fam-tree-worker --bin worker` (or `rdt worker`).
 - With the test clock: add `--features test-fixtures`.
 - Logs: `docker compose logs -f worker`.
 - Env (compose defaults): `WORKER_TICK_INTERVAL_SECONDS=300`,

@@ -28,7 +28,7 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, extract_token_from_link, sign_in};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 /// Helper: create a person under the active family and return its id.
 #[allow(clippy::future_not_send)]

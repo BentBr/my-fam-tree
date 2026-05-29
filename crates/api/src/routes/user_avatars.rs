@@ -8,7 +8,7 @@ use std::time::Duration;
 use actix_multipart::Multipart;
 use actix_web::{HttpRequest, delete, post, web};
 use bytes::Bytes;
-use my_family_domain::UserRepoError;
+use my_fam_tree_domain::UserRepoError;
 use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;

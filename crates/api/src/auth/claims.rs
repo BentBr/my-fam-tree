@@ -5,7 +5,7 @@
 //! family picker without an extra round-trip and the middleware can resolve
 //! `X-Family-Id` against the token without hitting the DB.
 
-use my_family_domain::Role;
+use my_fam_tree_domain::Role;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;

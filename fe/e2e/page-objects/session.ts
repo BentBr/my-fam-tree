@@ -16,7 +16,7 @@ export async function signIn(page: Page, email: string): Promise<void> {
     await login.goto()
     await login.signIn(email)
     await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-family|Anmeldung bei my-family/.test(s))
+    const mail = await waitForEmail((s) => /Sign in to my-fam-tree|Anmeldung bei my-fam-tree/.test(s))
     const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
     if (match === null) throw new Error('consume link not in email body')
     const link = match[0]
@@ -35,5 +35,5 @@ export async function createFamily(page: Page, name: string): Promise<string> {
     await page.getByTestId('family-name').locator('input').fill(name)
     await page.getByTestId('family-create-submit').click()
     await expect(page).toHaveURL(/\/tree$/)
-    return page.evaluate(() => localStorage.getItem('my-family:activeFamily') ?? '')
+    return page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
 }

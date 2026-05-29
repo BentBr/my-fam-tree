@@ -98,7 +98,7 @@ describe('InviteAccept', () => {
         expect(mutateAsync).toHaveBeenCalledWith('tok-1')
         // Critically: no token is stashed in sessionStorage (avoiding the
         // earlier security-smell pattern).
-        expect(sessionStorage.getItem('my-family:inviteToken')).toBeNull()
+        expect(sessionStorage.getItem('my-fam-tree:inviteToken')).toBeNull()
     })
 
     it('authenticated user calls accept and sets active family', async () => {

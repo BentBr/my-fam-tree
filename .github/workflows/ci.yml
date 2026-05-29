@@ -224,12 +224,12 @@ jobs:
             postgres:
                 image: postgres:18-alpine
                 env:
-                    POSTGRES_USER: my_family
-                    POSTGRES_PASSWORD: my_family
-                    POSTGRES_DB: my_family
+                    POSTGRES_USER: my_fam_tree
+                    POSTGRES_PASSWORD: my_fam_tree
+                    POSTGRES_DB: my_fam_tree
                 ports: ["3458:5432"]
                 options: >-
-                    --health-cmd "pg_isready -U my_family"
+                    --health-cmd "pg_isready -U my_fam_tree"
                     --health-interval 5s --health-timeout 3s --health-retries 10
             redis:
                 image: redis:7-alpine
@@ -245,16 +245,16 @@ jobs:
             APP_ENV: development
             LOG_FORMAT: pretty
             RUST_LOG: info
-            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            DATABASE_URL: postgres://my_fam_tree:my_fam_tree@localhost:3458/my_fam_tree
             DATABASE_MAX_CONNECTIONS: "10"
             DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
             DATABASE_STATEMENT_TIMEOUT_MS: "30000"
             REDIS_URL: redis://localhost:6379/0
             REDIS_MAX_CONNECTIONS: "10"
-            REDIS_KEY_PREFIX: "my-family:"
+            REDIS_KEY_PREFIX: "my-fam-tree:"
             EMAIL_DSN: smtp://localhost:1025
-            EMAIL_FROM_NAME: my-family
-            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_FROM_NAME: my-fam-tree
+            EMAIL_FROM_ADDRESS: no-reply@my-fam-tree.local
             EMAIL_TIMEOUT_SECONDS: "10"
             API_HOST: 127.0.0.1
             API_PORT: "8080"
@@ -267,8 +267,8 @@ jobs:
             COOKIE_SECURE: "false"
             COOKIE_SAMESITE_ACCESS: Lax
             COOKIE_SAMESITE_REFRESH: Strict
-            JWT_ISSUER: my-family
-            JWT_AUDIENCE: my-family-app
+            JWT_ISSUER: my-fam-tree
+            JWT_AUDIENCE: my-fam-tree-app
             JWT_ACCESS_TTL_SECONDS: "900"
             JWT_REFRESH_TTL_SECONDS: "2592000"
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
@@ -301,17 +301,17 @@ jobs:
             # used by frontend-e2e.
             - name: Generate Ed25519 JWT keypair into .env
               run: |
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  cargo run -p my-fam-tree-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
                   grep -E '^JWT_' /tmp/jwt.env >> .env
             - name: Apply database migrations
-              run: cargo run -p my-family-migrator --bin run_migrations
+              run: cargo run -p my-fam-tree-migrator --bin run_migrations
             - name: Seed dev data
               # The backend-tests integration tests spin up isolated postgres
               # containers via testcontainers (see crates/api/tests/common/mod.rs),
               # so they do NOT read from this service-container DB. This step
               # is a documentation/spec-compliance no-op safety net per the
               # Phase 2c plan, NOT a functional dependency of `cargo test`.
-              run: cargo run -p my-family-seeder
+              run: cargo run -p my-fam-tree-seeder
             - run: cargo test --workspace --all-targets
 
     backend-build:
@@ -332,12 +332,12 @@ jobs:
             postgres:
                 image: postgres:18-alpine
                 env:
-                    POSTGRES_USER: my_family
-                    POSTGRES_PASSWORD: my_family
-                    POSTGRES_DB: my_family
+                    POSTGRES_USER: my_fam_tree
+                    POSTGRES_PASSWORD: my_fam_tree
+                    POSTGRES_DB: my_fam_tree
                 ports: ["3458:5432"]
                 options: >-
-                    --health-cmd "pg_isready -U my_family"
+                    --health-cmd "pg_isready -U my_fam_tree"
                     --health-interval 5s --health-timeout 3s --health-retries 10
             redis:
                 image: redis:7-alpine
@@ -353,16 +353,16 @@ jobs:
             APP_ENV: development
             LOG_FORMAT: pretty
             RUST_LOG: info
-            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            DATABASE_URL: postgres://my_fam_tree:my_fam_tree@localhost:3458/my_fam_tree
             DATABASE_MAX_CONNECTIONS: "10"
             DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
             DATABASE_STATEMENT_TIMEOUT_MS: "30000"
             REDIS_URL: redis://localhost:6379/0
             REDIS_MAX_CONNECTIONS: "10"
-            REDIS_KEY_PREFIX: "my-family:"
+            REDIS_KEY_PREFIX: "my-fam-tree:"
             EMAIL_DSN: smtp://localhost:1025
-            EMAIL_FROM_NAME: my-family
-            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_FROM_NAME: my-fam-tree
+            EMAIL_FROM_ADDRESS: no-reply@my-fam-tree.local
             EMAIL_TIMEOUT_SECONDS: "10"
             API_HOST: 127.0.0.1
             API_PORT: "8080"
@@ -375,8 +375,8 @@ jobs:
             COOKIE_SECURE: "false"
             COOKIE_SAMESITE_ACCESS: Lax
             COOKIE_SAMESITE_REFRESH: Strict
-            JWT_ISSUER: my-family
-            JWT_AUDIENCE: my-family-app
+            JWT_ISSUER: my-fam-tree
+            JWT_AUDIENCE: my-fam-tree-app
             JWT_ACCESS_TTL_SECONDS: "900"
             JWT_REFRESH_TTL_SECONDS: "2592000"
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
@@ -419,12 +419,12 @@ jobs:
             # no-op safety net for spec compliance, not a functional gate.
             - name: Generate Ed25519 JWT keypair into .env
               run: |
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  cargo run -p my-fam-tree-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
                   grep -E '^JWT_' /tmp/jwt.env >> .env
             - name: Apply database migrations
-              run: cargo run -p my-family-migrator --bin run_migrations
+              run: cargo run -p my-fam-tree-migrator --bin run_migrations
             - name: Seed dev data
-              run: cargo run -p my-family-seeder
+              run: cargo run -p my-fam-tree-seeder
             # Exclusion regex + threshold live in scripts/coverage.sh — single
             # source of truth for both CI and local `rdt coverage`.
             - name: Run coverage (profdata + LCOV + JSON)
@@ -501,7 +501,7 @@ jobs:
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - name: Dump live OpenAPI
-              run: cargo run -p my-family-openapi --bin openapi-dump > /tmp/openapi.json
+              run: cargo run -p my-fam-tree-openapi --bin openapi-dump > /tmp/openapi.json
             - name: Diff against committed fe/openapi.json
               run: diff -u fe/openapi.json /tmp/openapi.json
 
@@ -707,12 +707,12 @@ jobs:
             postgres:
                 image: postgres:18-alpine
                 env:
-                    POSTGRES_USER: my_family
-                    POSTGRES_PASSWORD: my_family
-                    POSTGRES_DB: my_family
+                    POSTGRES_USER: my_fam_tree
+                    POSTGRES_PASSWORD: my_fam_tree
+                    POSTGRES_DB: my_fam_tree
                 ports: ["3458:5432"]
                 options: >-
-                    --health-cmd "pg_isready -U my_family"
+                    --health-cmd "pg_isready -U my_fam_tree"
                     --health-interval 5s --health-timeout 3s --health-retries 10
             redis:
                 image: redis:7-alpine
@@ -727,17 +727,17 @@ jobs:
             RUN_ID: ${{ github.run_id }}
             APP_ENV: development
             LOG_FORMAT: pretty
-            RUST_LOG: info,my_family=debug
-            DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+            RUST_LOG: info,my_fam_tree=debug
+            DATABASE_URL: postgres://my_fam_tree:my_fam_tree@localhost:3458/my_fam_tree
             DATABASE_MAX_CONNECTIONS: "20"
             DATABASE_ACQUIRE_TIMEOUT_SECONDS: "5"
             DATABASE_STATEMENT_TIMEOUT_MS: "30000"
             REDIS_URL: redis://localhost:6379/0
             REDIS_MAX_CONNECTIONS: "10"
-            REDIS_KEY_PREFIX: "my-family:"
+            REDIS_KEY_PREFIX: "my-fam-tree:"
             EMAIL_DSN: smtp://localhost:1025
-            EMAIL_FROM_NAME: my-family
-            EMAIL_FROM_ADDRESS: no-reply@my-family.local
+            EMAIL_FROM_NAME: my-fam-tree
+            EMAIL_FROM_ADDRESS: no-reply@my-fam-tree.local
             EMAIL_TIMEOUT_SECONDS: "10"
             API_HOST: 127.0.0.1
             API_PORT: "8080"
@@ -750,8 +750,8 @@ jobs:
             COOKIE_SECURE: "false"
             COOKIE_SAMESITE_ACCESS: Lax
             COOKIE_SAMESITE_REFRESH: Strict
-            JWT_ISSUER: my-family
-            JWT_AUDIENCE: my-family-app
+            JWT_ISSUER: my-fam-tree
+            JWT_AUDIENCE: my-fam-tree-app
             JWT_ACCESS_TTL_SECONDS: "900"
             JWT_REFRESH_TTL_SECONDS: "2592000"
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: "7776000"
@@ -796,23 +796,23 @@ jobs:
               # correctly. Write directly to `.env` so the api process picks
               # them up at startup; no shell env round-trip.
               run: |
-                  cargo run -p my-family-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
+                  cargo run -p my-fam-tree-api --bin gen-jwt-keys -- "ci-${RUN_ID}" > /tmp/jwt.env
                   grep -E '^JWT_' /tmp/jwt.env >> .env
             - name: Apply database migrations
               # Without this the api boots and immediately 500s on every
               # endpoint that touches a table (`relation "users" does not
               # exist`). Uses the same DATABASE_URL the api process will pick
               # up from the workflow env block.
-              run: cargo run -p my-family-migrator --bin run_migrations
+              run: cargo run -p my-fam-tree-migrator --bin run_migrations
             - name: Seed dev data
               # Deterministic UPSERT seed (3 users, 1 family, 8 persons, etc).
               # The Playwright e2e suite can rely on these stable UUIDs
               # without per-test fixtures. Idempotent: a re-run is a no-op.
-              run: cargo run -p my-family-seeder
+              run: cargo run -p my-fam-tree-seeder
             - name: Build api binary
               # Debug profile is fine for an e2e - release would add minutes
               # for no behavior difference.
-              run: cargo build -p my-family-api --bin api
+              run: cargo build -p my-fam-tree-api --bin api
             - name: Start api in background
               run: |
                   ./target/debug/api > /tmp/api.log 2>&1 &
@@ -826,7 +826,7 @@ jobs:
               # The test-fixtures feature adds the POST /__test/advance-clock
               # listener the reminders e2e drives. NEVER built into the
               # published image (see .docker/worker.Dockerfile).
-              run: cargo build -p my-family-worker --bin worker --features test-fixtures
+              run: cargo build -p my-fam-tree-worker --bin worker --features test-fixtures
             - name: Start worker in background
               # The job env block already provides DATABASE_URL / REDIS_URL /
               # EMAIL_* / WEB_PUBLIC_URL; the WORKER_* knobs are worker-only so
@@ -907,7 +907,7 @@ jobs:
               env:
                   E2E_BASE_URL: http://localhost:5173
                   E2E_API_BASE_URL: http://localhost:8080
-                  E2E_DATABASE_URL: postgres://my_family:my_family@localhost:3458/my_family
+                  E2E_DATABASE_URL: postgres://my_fam_tree:my_fam_tree@localhost:3458/my_fam_tree
                   MAILPIT_URL: http://localhost:8025
                   WORKER_TEST_URL: http://localhost:9091
               run: pnpm test:e2e
@@ -949,7 +949,7 @@ jobs:
                   file: .docker/api.Dockerfile
                   push: false
                   load: true
-                  tags: my-family/api:ci
+                  tags: my-fam-tree/api:ci
                   cache-from: type=gha,scope=api
                   cache-to: type=gha,mode=max,scope=api
             - name: Build worker image
@@ -959,7 +959,7 @@ jobs:
                   file: .docker/worker.Dockerfile
                   push: false
                   load: true
-                  tags: my-family/worker:ci
+                  tags: my-fam-tree/worker:ci
                   cache-from: type=gha,scope=worker
                   cache-to: type=gha,mode=max,scope=worker
             - name: Build fe image
@@ -969,7 +969,7 @@ jobs:
                   file: .docker/fe/Dockerfile
                   push: false
                   load: true
-                  tags: my-family/fe:ci
+                  tags: my-fam-tree/fe:ci
                   cache-from: type=gha,scope=fe
                   cache-to: type=gha,mode=max,scope=fe
 

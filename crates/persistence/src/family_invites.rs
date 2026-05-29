@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use my_family_domain::{FamilyId, FamilyInviteRepo, Invite, InviteRepoError, Role, UserId};
+use my_fam_tree_domain::{FamilyId, FamilyInviteRepo, Invite, InviteRepoError, Role, UserId};
 use sqlx::PgPool;
 use uuid::Uuid;
 

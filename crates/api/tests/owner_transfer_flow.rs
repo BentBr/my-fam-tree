@@ -23,8 +23,8 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{ephemeral_stack, sign_in};
-use my_family_api::{AppState, build_app};
-use my_family_domain::{AuditFilter, FamilyId, Role, UserId};
+use my_fam_tree_api::{AppState, build_app};
+use my_fam_tree_domain::{AuditFilter, FamilyId, Role, UserId};
 use uuid::Uuid;
 
 async fn provision_user<S, B>(stack: &common::TestStack, app: &S, email: &str) -> UserId

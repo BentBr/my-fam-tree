@@ -6,12 +6,12 @@
 
 use std::sync::Arc;
 
-use my_family_cache::ReminderJobQueue;
-use my_family_domain::{
+use my_fam_tree_cache::ReminderJobQueue;
+use my_fam_tree_domain::{
     EmailOutboxRepo, FamilyMembershipRepo, JanitorRepo, PartnershipRepo, PersonFavouriteRepo,
     PersonRepo, ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
 };
-use my_family_email::EmailSender;
+use my_fam_tree_email::EmailSender;
 
 use crate::clock::Clock;
 

@@ -1,4 +1,4 @@
-local_key = "my-family"
+local_key = "my-fam-tree"
 no_docker_compose = true
 
 # Project-level RDT config. See: https://github.com/BentBr/rusty_dev_tool
@@ -26,12 +26,12 @@ no_docker_compose = true
     [commands.openapi]
         "description" = "Dump OpenAPI spec to fe/openapi.json and regenerate TS types"
         "alias" = "openapi"
-        "execution"  = "cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json && ./scripts/fe-in-container.sh openapi-codegen"
+        "execution"  = "cargo run -p my-fam-tree-openapi --bin openapi-dump > fe/openapi.json && ./scripts/fe-in-container.sh openapi-codegen"
 
     [commands.openapi-check]
         "description" = "Fail if OpenAPI spec drifted from the committed one"
         "alias" = "openapi-check"
-        "execution"  = "cargo run -p my-family-openapi --bin openapi-dump | diff - fe/openapi.json"
+        "execution"  = "cargo run -p my-fam-tree-openapi --bin openapi-dump | diff - fe/openapi.json"
 
     [commands.lint]
         "description" = "Run all linters (rust + fe + file-size)"
@@ -61,12 +61,12 @@ no_docker_compose = true
     [commands.worker]
         "description" = "Run the reminder worker locally"
         "alias" = "worker"
-        "execution"  = "cargo run -p my-family-worker --bin worker"
+        "execution"  = "cargo run -p my-fam-tree-worker --bin worker"
 
     [commands.gen-jwt-keys]
         "description" = "Emit a fresh Ed25519 keypair for JWT_PRIVATE_KEY / JWT_PUBLIC_KEYS"
         "alias" = "gen-jwt-keys"
-        "execution"  = "cargo run -p my-family-api --bin gen-jwt-keys"
+        "execution"  = "cargo run -p my-fam-tree-api --bin gen-jwt-keys"
 
     [commands.seed]
         "description" = "Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs)"

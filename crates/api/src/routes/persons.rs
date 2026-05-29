@@ -15,7 +15,7 @@
 
 use actix_web::{HttpRequest, delete, get, patch, post, web};
 use chrono::NaiveDate;
-use my_family_domain::{PersonDraft, PersonId, PersonRepoError, Role};
+use my_fam_tree_domain::{PersonDraft, PersonId, PersonRepoError, Role};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -152,7 +152,7 @@ const PHOTO_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
 /// the actix arbiter panics ("can call blocking only when running on the
 /// multi-threaded runtime").
 async fn presigned_photo_url(
-    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+    object_store: &std::sync::Arc<dyn my_fam_tree_storage::ObjectStore>,
     key: Option<&str>,
 ) -> Option<String> {
     let key = key?;
@@ -166,16 +166,16 @@ async fn presigned_photo_url(
 }
 
 async fn to_view(
-    p: my_family_domain::Person,
-    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+    p: my_fam_tree_domain::Person,
+    object_store: &std::sync::Arc<dyn my_fam_tree_storage::ObjectStore>,
 ) -> PersonView {
     to_view_with_favourite(p, false, object_store).await
 }
 
 async fn to_view_with_favourite(
-    p: my_family_domain::Person,
+    p: my_fam_tree_domain::Person,
     is_favourite_for_me: bool,
-    object_store: &std::sync::Arc<dyn my_family_storage::ObjectStore>,
+    object_store: &std::sync::Arc<dyn my_fam_tree_storage::ObjectStore>,
 ) -> PersonView {
     let photo_url = presigned_photo_url(object_store, p.photo_key.as_deref()).await;
     PersonView {
@@ -190,7 +190,7 @@ async fn to_view_with_favourite(
         birth_place: p.birth_place,
         death_date: p.death_date,
         notes: p.notes,
-        linked_user_id: p.linked_user_id.map(my_family_domain::UserId::into_uuid),
+        linked_user_id: p.linked_user_id.map(my_fam_tree_domain::UserId::into_uuid),
         photo_url,
         is_favourite_for_me,
     }
@@ -207,13 +207,13 @@ fn draft_from_create(req: PersonCreateReq) -> PersonDraft {
         birth_place: req.birth_place,
         death_date: req.death_date,
         notes: req.notes,
-        linked_user_id: req.linked_user_id.map(my_family_domain::UserId::from_uuid),
+        linked_user_id: req.linked_user_id.map(my_fam_tree_domain::UserId::from_uuid),
     }
 }
 
 /// Apply a partial `PersonUpdateReq` on top of an existing person, returning
 /// the resulting draft. None fields preserve the existing column.
-fn merge_update(existing: &my_family_domain::Person, patch: PersonUpdateReq) -> PersonDraft {
+fn merge_update(existing: &my_fam_tree_domain::Person, patch: PersonUpdateReq) -> PersonDraft {
     PersonDraft {
         given_name: patch.given_name.unwrap_or_else(|| existing.given_name.clone()),
         family_name: patch.family_name.unwrap_or_else(|| existing.family_name.clone()),
@@ -226,7 +226,7 @@ fn merge_update(existing: &my_family_domain::Person, patch: PersonUpdateReq) -> 
         notes: patch.notes.unwrap_or_else(|| existing.notes.clone()),
         linked_user_id: patch
             .linked_user_id
-            .map(my_family_domain::UserId::from_uuid)
+            .map(my_fam_tree_domain::UserId::from_uuid)
             .or(existing.linked_user_id),
     }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "my-family-seeder"
+name = "my-fam-tree-seeder"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,13 +8,13 @@ publish = false
 # Dev/test seed: a library + thin binary that UPSERTs a deterministic dataset
 # (3 users, 1 family, 8 persons, etc.) and mints one magic-link URL per user.
 #
-# Lives in a dedicated crate — not in `my-family-api` — so production builds
+# Lives in a dedicated crate — not in `my-fam-tree-api` — so production builds
 # of the api never include this code path. The seeder is invoked one-shot
 # from the compose `seeder` service (.docker/seeder.Dockerfile) and from CI
 # backend-tests / backend-coverage / frontend-e2e jobs.
 
 [lib]
-name = "my_family_seeder"
+name = "my_fam_tree_seeder"
 path = "src/lib.rs"
 
 [[bin]]
@@ -22,17 +22,16 @@ name = "seed"
 path = "src/main.rs"
 
 [dependencies]
-my-family-api = { path = "../api" }
-my-family-config = { path = "../config" }
-my-family-domain = { path = "../domain" }
-my-family-persistence = { path = "../persistence" }
+my-fam-tree-api = { path = "../api" }
+my-fam-tree-config = { path = "../config" }
+my-fam-tree-domain = { path = "../domain" }
+my-fam-tree-persistence = { path = "../persistence" }
 anyhow.workspace = true
 chrono.workspace = true
 dotenvy.workspace = true
 serde_json.workspace = true
 sqlx.workspace = true
 tokio.workspace = true
-tracing.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]

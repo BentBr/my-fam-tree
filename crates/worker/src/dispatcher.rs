@@ -5,8 +5,8 @@
 
 use std::time::Duration;
 
-use my_family_cache::ReminderJob;
-use my_family_email::{Locale, OutboundEmail, ReminderDigestArgs, render_reminder_digest};
+use my_fam_tree_cache::ReminderJob;
+use my_fam_tree_email::{Locale, OutboundEmail, ReminderDigestArgs, render_reminder_digest};
 
 use crate::backoff::next_attempt;
 use crate::digest::{events_for_user_on, render_line};

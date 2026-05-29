@@ -1,5 +1,5 @@
 {
-    "app": { "title": "my-family", "tagline": "Family tree, contacts, reminders." },
+    "app": { "title": "my-fam-tree", "tagline": "Family tree, contacts, reminders." },
     "nav": {
         "tree": "Tree",
         "upcoming": "Upcoming dates",

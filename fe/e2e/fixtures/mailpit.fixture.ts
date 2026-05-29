@@ -1,4 +1,4 @@
-const MAILPIT = process.env['MAILPIT_URL'] ?? 'http://mail.my-family.docker'
+const MAILPIT = process.env['MAILPIT_URL'] ?? 'http://mail.my-fam-tree.docker'
 
 export interface MailpitMessage {
     subject: string

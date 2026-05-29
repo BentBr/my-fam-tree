@@ -8,7 +8,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, OwnerTransfer, OwnerTransferRepo, OwnerTransferRepoError, TransferSide, UserId,
 };
 use sqlx::PgPool;

@@ -11,12 +11,12 @@
 use std::time::Duration as StdDuration;
 
 use chrono::{Duration, Utc};
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, Locale, MagicLinkPurpose, MagicLinkRepo,
     ParentKind, ParentLinkRepo, ParentLinkRepoError, PersonId, PersonRepo, RefreshTokenRepo, Role,
     UserRepo,
 };
-use my_family_persistence::{
+use my_fam_tree_persistence::{
     Database, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgMagicLinkRepo,
     PgParentLinkRepo, PgPersonRepo, PgRefreshTokenRepo, PgUserRepo,
 };
@@ -102,7 +102,7 @@ async fn family_owner_uniqueness_enforced() {
     let fam = fams.create("Müller", u1.id).await.unwrap();
     mems.insert(fam.id, u1.id, Role::Owner).await.unwrap();
     let res = mems.insert(fam.id, u2.id, Role::Owner).await;
-    assert!(matches!(res, Err(my_family_domain::MembershipRepoError::OwnerExists)));
+    assert!(matches!(res, Err(my_fam_tree_domain::MembershipRepoError::OwnerExists)));
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -131,7 +131,7 @@ async fn parent_links_db_trigger_rejects_cycle() {
     // (child=B, parent=A) — the in-memory check WILL catch this too,
     // but more importantly the trigger would catch it even if a
     // concurrent writer slipped past the SERIALIZABLE snapshot.
-    use my_family_domain::PersonDraft;
+    use my_fam_tree_domain::PersonDraft;
 
     let db = setup().await;
     let users = PgUserRepo::new(db.pool.clone());
@@ -202,5 +202,5 @@ async fn invite_accept_is_idempotent() {
     let inv = invs.accept(&hash, Utc::now()).await.expect("accept");
     assert_eq!(inv.email, "new@x.y");
     let second = invs.accept(&hash, Utc::now()).await;
-    assert!(matches!(second, Err(my_family_domain::InviteRepoError::NotFoundOrAccepted)));
+    assert!(matches!(second, Err(my_fam_tree_domain::InviteRepoError::NotFoundOrAccepted)));
 }

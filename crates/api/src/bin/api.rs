@@ -7,18 +7,18 @@ use std::time::Duration;
 
 use actix_web::HttpServer;
 use anyhow::Context;
-use my_family_api::auth::{JwtIssuer, JwtKeyset};
-use my_family_api::{ApiDoc, AppEnv, AppState, Config, build_app, init_tracing};
-use my_family_cache::{RedisPool, RedisRateLimiter};
-use my_family_config::storage::StorageDriver;
-use my_family_email::SmtpSender;
-use my_family_persistence::{
+use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
+use my_fam_tree_api::{ApiDoc, AppEnv, AppState, Config, build_app, init_tracing};
+use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
+use my_fam_tree_config::storage::StorageDriver;
+use my_fam_tree_email::SmtpSender;
+use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgEmailOutboxRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo,
     PgFamilyRepo, PgHealthRepo, PgMagicLinkRepo, PgOwnerTransferRepo, PgParentLinkRepo,
     PgPartnershipRepo, PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo,
     PgRefreshTokenRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_family_storage::{LocalObjectStore, ObjectStore, S3Config, S3ObjectStore};
+use my_fam_tree_storage::{LocalObjectStore, ObjectStore, S3Config, S3ObjectStore};
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
@@ -38,7 +38,7 @@ async fn main() -> anyhow::Result<()> {
         app_env = ?cfg.app_env,
         host = %cfg.api.host,
         port = cfg.api.port,
-        "starting my-family api",
+        "starting my-fam-tree api",
     );
 
     let db = Database::connect(

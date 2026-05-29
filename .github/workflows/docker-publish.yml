@@ -65,7 +65,7 @@ jobs:
                 id: meta
                 uses: docker/metadata-action@v5
                 with:
-                    images: ghcr.io/${{ steps.repo.outputs.owner_lc }}/my-family-${{ matrix.image }}
+                    images: ghcr.io/${{ steps.repo.outputs.owner_lc }}/my-fam-tree-${{ matrix.image }}
                     # The version is passed explicitly (release-please emits a clean
                     # `0.1.2`, not the `core-v0.1.2` git tag), so we tag by raw value
                     # rather than parsing semver from the ref.

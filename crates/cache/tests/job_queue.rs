@@ -6,7 +6,7 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use my_family_cache::{RedisPool, RedisReminderQueue, ReminderJob, ReminderJobQueue};
+use my_fam_tree_cache::{RedisPool, RedisReminderQueue, ReminderJob, ReminderJobQueue};
 use uuid::Uuid;
 
 fn queue() -> Option<RedisReminderQueue> {

@@ -36,14 +36,14 @@ describe('locale store', () => {
     })
 
     it('prefers a stored locale over navigator detection', () => {
-        localStorage.setItem('my-family:locale', 'de')
+        localStorage.setItem('my-fam-tree:locale', 'de')
         vi.stubGlobal('navigator', { language: 'en-US' })
         const s = useLocaleStore()
         expect(s.locale).toBe('de')
     })
 
     it('ignores an invalid stored value', () => {
-        localStorage.setItem('my-family:locale', 'fr')
+        localStorage.setItem('my-fam-tree:locale', 'fr')
         vi.stubGlobal('navigator', { language: 'en-US' })
         const s = useLocaleStore()
         expect(s.locale).toBe('en')
@@ -66,6 +66,6 @@ describe('locale store', () => {
         s.set('de')
         await nextTick()
         expect(localeRef.value).toBe('de')
-        expect(localStorage.getItem('my-family:locale')).toBe('de')
+        expect(localStorage.getItem('my-fam-tree:locale')).toBe('de')
     })
 })

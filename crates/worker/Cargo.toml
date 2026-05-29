@@ -1,5 +1,5 @@
 [package]
-name = "my-family-worker"
+name = "my-fam-tree-worker"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -16,17 +16,16 @@ default = []
 test-fixtures = ["dep:actix-web"]
 
 [dependencies]
-my-family-config = { path = "../config" }
-my-family-cache = { path = "../cache" }
-my-family-domain = { path = "../domain" }
-my-family-persistence = { path = "../persistence" }
-my-family-email = { path = "../email" }
+my-fam-tree-config = { path = "../config" }
+my-fam-tree-cache = { path = "../cache" }
+my-fam-tree-domain = { path = "../domain" }
+my-fam-tree-persistence = { path = "../persistence" }
+my-fam-tree-email = { path = "../email" }
 anyhow.workspace = true
 async-trait.workspace = true
 chrono.workspace = true
 chrono-tz.workspace = true
 dotenvy.workspace = true
-envy.workspace = true
 rand.workspace = true
 redis.workspace = true
 serde.workspace = true

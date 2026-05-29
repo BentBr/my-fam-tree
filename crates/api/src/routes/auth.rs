@@ -21,8 +21,8 @@ use std::time::Duration as StdDuration;
 
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use chrono::{Duration, Utc};
-use my_family_domain::{Locale, MagicLinkRepoError};
-use my_family_email::{Locale as EmailLocale, render_magic_link};
+use my_fam_tree_domain::{Locale, MagicLinkRepoError};
+use my_fam_tree_email::{Locale as EmailLocale, render_magic_link};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -222,8 +222,8 @@ pub async fn magic_link(
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
     state
         .outbox
-        .enqueue(&my_family_domain::EmailOutboxInsert {
-            kind: my_family_domain::EmailOutboxKind::MAGIC_LINK.to_string(),
+        .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
+            kind: my_fam_tree_domain::EmailOutboxKind::MAGIC_LINK.to_string(),
             to_addr: user.email.clone(),
             subject,
             text_body,
@@ -475,7 +475,7 @@ pub async fn me(req: HttpRequest) -> Result<ApiResponse<ConsumeRes>, ApiError> {
     clippy::panic
 )]
 mod tests {
-    use my_family_domain::{MagicLinkPurpose, Role};
+    use my_fam_tree_domain::{MagicLinkPurpose, Role};
     use uuid::Uuid;
 
     use super::*;

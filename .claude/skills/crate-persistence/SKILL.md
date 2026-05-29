@@ -1,9 +1,9 @@
 ---
 name: crate-persistence
-description: Use when editing or adding a SQLx repo impl in crates/persistence (package my-family-persistence, crate my_family_persistence) — implementing crate-domain repo traits against Postgres, writing PgUserRepo-style structs, query_as!/query! with FromRow Row structs and column aliases, mapping sqlx errors to FooRepoError, Database::connect/PgPool wiring, or the SERIALIZABLE cycle-check on parent_links.
+description: Use when editing or adding a SQLx repo impl in crates/persistence (package my-fam-tree-persistence, crate my_fam_tree_persistence) — implementing crate-domain repo traits against Postgres, writing PgUserRepo-style structs, query_as!/query! with FromRow Row structs and column aliases, mapping sqlx errors to FooRepoError, Database::connect/PgPool wiring, or the SERIALIZABLE cycle-check on parent_links.
 ---
 
-# crate-persistence (my-family-persistence)
+# crate-persistence (my-fam-tree-persistence)
 
 ## Overview
 
@@ -54,10 +54,10 @@ types/traits and invariants see `project-concepts`; for the deny-lint regime, th
 ## How to test
 
 - `tests/ping.rs`: skips unless `DATABASE_URL` is set; run via
-  `./scripts/cargo-in-network.sh test -p my-family-persistence --test ping`.
+  `./scripts/cargo-in-network.sh test -p my-fam-tree-persistence --test ping`.
 - `tests/auth_repos.rs`: spins a fresh Postgres per test with **testcontainers**
   (`setup()` runs `sqlx::migrate!("../../migrations")`); needs a running Docker daemon.
-- Single crate: `cargo test -p my-family-persistence`.
+- Single crate: `cargo test -p my-fam-tree-persistence`.
 
 ## Common mistakes
 

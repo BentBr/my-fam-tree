@@ -23,7 +23,7 @@ use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform, forwar
 use actix_web::http::header::HeaderName;
 use actix_web::{Error, HttpMessage, HttpRequest, web};
 use futures_util::future::{LocalBoxFuture, Ready, ready};
-use my_family_domain::{FamilyId, Role, UserId};
+use my_fam_tree_domain::{FamilyId, Role, UserId};
 use uuid::Uuid;
 
 use crate::auth::user_claims::{ActiveFamily, FamilyMembershipMirror, UserClaims};
@@ -222,8 +222,8 @@ pub const fn require_role(active: &ActiveFamily, needed: Role) -> Result<(), Api
 /// * [`ApiError::Internal`] for DB transport / driver failures.
 pub async fn require_db_role(
     state: &crate::AppState,
-    user_id: my_family_domain::UserId,
-    family_id: my_family_domain::FamilyId,
+    user_id: my_fam_tree_domain::UserId,
+    family_id: my_fam_tree_domain::FamilyId,
     needed: Role,
 ) -> Result<(), ApiError> {
     let membership = state
@@ -241,7 +241,7 @@ pub async fn require_db_role(
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
-    use my_family_domain::Role;
+    use my_fam_tree_domain::Role;
     use uuid::Uuid;
 
     use super::*;

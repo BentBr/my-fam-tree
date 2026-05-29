@@ -23,7 +23,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use chrono::{Datelike, Utc};
 use common::{create_family, ephemeral_stack, sign_in};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 /// Helper: POST a person with optional birth/death dates and return the new id.
 #[allow(clippy::future_not_send, clippy::too_many_arguments)]

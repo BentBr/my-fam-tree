@@ -23,8 +23,8 @@
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
 use chrono::{DateTime, Duration, Utc};
-use my_family_domain::{FamilyId, Role};
-use my_family_email::{Locale as EmailLocale, render_invite};
+use my_fam_tree_domain::{FamilyId, Role};
+use my_fam_tree_email::{Locale as EmailLocale, render_invite};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -391,7 +391,7 @@ pub async fn invite(
     if let Some(pid) = body.person_id
         && state
             .persons
-            .find_in_family(fid, my_family_domain::PersonId::from_uuid(pid))
+            .find_in_family(fid, my_fam_tree_domain::PersonId::from_uuid(pid))
             .await
             .map_err(internal)?
             .is_none()
@@ -423,8 +423,8 @@ pub async fn invite(
     // soon as Postgres has the row.
     state
         .outbox
-        .enqueue(&my_family_domain::EmailOutboxInsert {
-            kind: my_family_domain::EmailOutboxKind::INVITE.to_string(),
+        .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
+            kind: my_fam_tree_domain::EmailOutboxKind::INVITE.to_string(),
             to_addr: email.clone(),
             subject,
             text_body: body_text,
@@ -463,7 +463,7 @@ pub async fn invite(
     clippy::future_not_send
 )]
 mod tests {
-    use my_family_domain::{FamilyId, Role, UserId};
+    use my_fam_tree_domain::{FamilyId, Role, UserId};
     use uuid::Uuid;
 
     use super::*;

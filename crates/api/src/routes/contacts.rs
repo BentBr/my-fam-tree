@@ -30,7 +30,7 @@
 //! audit hiccup never blocks the request.
 
 use actix_web::{HttpRequest, delete, get, patch, post, web};
-use my_family_domain::{
+use my_fam_tree_domain::{
     ContactDraft, ContactKind, ContactRepoError, ContactVisibility, PersonId, Role,
 };
 use serde::{Deserialize, Serialize};
@@ -168,7 +168,7 @@ fn input_to_draft(i: ContactInput) -> Result<ContactDraft, ApiError> {
     Ok(ContactDraft { kind, label: i.label, value: i.value, visibility })
 }
 
-fn to_view(c: my_family_domain::Contact) -> ContactView {
+fn to_view(c: my_fam_tree_domain::Contact) -> ContactView {
     ContactView {
         id: c.id,
         person_id: c.person_id.into_uuid(),

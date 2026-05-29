@@ -223,7 +223,7 @@ test('user-role member sees read-only PersonDetail with relations panels but no 
 
     // Pull the invite link out of mailpit before the user signs in (the
     // user's sign-in clears and replaces the latest message).
-    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-family|Einladung zur Familie/.test(s))
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email body')
     const inviteLink = inviteMatch[0]

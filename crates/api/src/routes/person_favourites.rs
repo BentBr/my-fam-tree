@@ -17,7 +17,7 @@
 //! family-wide event stream.
 
 use actix_web::{HttpRequest, patch, web};
-use my_family_domain::PersonId;
+use my_fam_tree_domain::PersonId;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;

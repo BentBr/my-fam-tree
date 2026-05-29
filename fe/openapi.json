@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "my-family API",
+    "title": "my-fam-tree API",
     "description": "Family platform API",
     "license": {
       "name": "BUSL-1.1",

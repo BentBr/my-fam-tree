@@ -12,7 +12,7 @@ command is just the `execution` string in `.rusty_dev_tool/config.toml`.
 
 ## migrator — apply/inspect SQLx migrations
 
-Package `my-family-migrator`, bin `run_migrations`. Wraps
+Package `my-fam-tree-migrator`, bin `run_migrations`. Wraps
 `sqlx::migrate!("../../migrations")` and applies the numbered SQL in `migrations/`
 into the `_sqlx_migrations` table (name pinned via `MIGRATIONS_TABLE` const for
 sqlx 0.9 parity). Key file: `crates/migrator/src/main.rs`.
@@ -28,7 +28,7 @@ services `depends_on` migrator `service_completed_successfully`.
 
 ## seeder — deterministic dev/CI seed
 
-Package `my-family-seeder` (lib + bin `seed`). UPSERTs a fixed dataset (3 users,
+Package `my-fam-tree-seeder` (lib + bin `seed`). UPSERTs a fixed dataset (3 users,
 1 family `Müller`, 22 persons, 22 parent-links, 8 partnerships, 9 contacts) with
 `ON CONFLICT … DO UPDATE`, so re-running is a no-op on row counts. Every UUID is
 hardcoded in `crates/seeder/src/ids.rs` (structured hex blocks: `…0001…` users,
@@ -46,14 +46,14 @@ volumes then re-migrates + re-seeds.
 
 ## openapi — dump the spec
 
-Package `my-family-openapi`, bin `openapi-dump`. `src/lib.rs` just re-exports
-`my_family_api::ApiDoc` (definition lives in `crates/api/src/openapi_doc.rs` to
+Package `my-fam-tree-openapi`, bin `openapi-dump`. `src/lib.rs` just re-exports
+`my_fam_tree_api::ApiDoc` (definition lives in `crates/api/src/openapi_doc.rs` to
 avoid a circular dep). `src/bin/openapi_dump.rs` prints
 `ApiDoc::with_cookie_auth()` as pretty JSON to stdout — it carries
 `#[allow(clippy::print_stdout, reason = …)]` because the workspace denies
 `print_stdout`.
 
-`rdt openapi` = `cargo run -p my-family-openapi --bin openapi-dump > fe/openapi.json
+`rdt openapi` = `cargo run -p my-fam-tree-openapi --bin openapi-dump > fe/openapi.json
 && ./scripts/fe-in-container.sh openapi-codegen`. `rdt openapi-check` diffs the
 fresh dump against the committed `fe/openapi.json` to catch drift.
 

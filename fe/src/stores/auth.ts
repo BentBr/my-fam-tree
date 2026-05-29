@@ -95,21 +95,21 @@ export const useAuthStore = defineStore('auth', () => {
             // doesn't leak the previous session.
         }
         applyClaimsPayload(null)
-        // Wipe app-owned local + session storage. All my-family keys share the
-        // `my-family:` namespace (locale, activeFamily, sidebar, …). HttpOnly
+        // Wipe app-owned local + session storage. All my-fam-tree keys share the
+        // `my-fam-tree:` namespace (locale, activeFamily, sidebar, …). HttpOnly
         // cookies can't be cleared from JS — the `Set-Cookie max-age=0` from
         // /auth/logout takes care of that; if that request failed the access
         // cookie may linger until its JWT expires.
         try {
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const key = localStorage.key(i)
-                if (key !== null && key.startsWith('my-family:')) {
+                if (key !== null && key.startsWith('my-fam-tree:')) {
                     localStorage.removeItem(key)
                 }
             }
             for (let i = sessionStorage.length - 1; i >= 0; i--) {
                 const key = sessionStorage.key(i)
-                if (key !== null && key.startsWith('my-family:')) {
+                if (key !== null && key.startsWith('my-fam-tree:')) {
                     sessionStorage.removeItem(key)
                 }
             }

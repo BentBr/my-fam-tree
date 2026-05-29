@@ -2,7 +2,7 @@
 //!
 //! Returns the `audit_log` rows for the active family, filtered + paged.
 //! `entity_person_id` is resolved inside the persistence query
-//! (see [`my_family_persistence::audit_log::PgAuditLogRepo::list_filtered`])
+//! (see [`my_fam_tree_persistence::audit_log::PgAuditLogRepo::list_filtered`])
 //! so the FE can render a one-click `/tree?center=<personId>` deep
 //! link without a second round-trip.
 //!
@@ -14,7 +14,7 @@
 
 use actix_web::{HttpRequest, get, web};
 use chrono::{DateTime, Utc};
-use my_family_domain::{AuditFilter, FamilyId, Role, UserId};
+use my_fam_tree_domain::{AuditFilter, FamilyId, Role, UserId};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;

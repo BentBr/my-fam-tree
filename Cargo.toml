@@ -23,8 +23,8 @@ version = "0.1.4" # x-release-please-version
 edition = "2024"
 rust-version = "1.83"
 license = "BUSL-1.1"
-authors = ["my-family contributors"]
-repository = "https://github.com/BentBr/my-family"
+authors = ["my-fam-tree contributors"]
+repository = "https://github.com/BentBr/my-fam-tree"
 description = "A family tree to organise families and share insights of heredity"
 
 [workspace.dependencies]

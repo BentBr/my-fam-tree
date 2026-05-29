@@ -9,7 +9,7 @@
 
 use actix_web::{HttpRequest, delete, patch, post, web};
 use chrono::NaiveDate;
-use my_family_domain::{
+use my_fam_tree_domain::{
     Partnership, PartnershipDraft, PartnershipEndReason, PartnershipKind, PartnershipRepoError,
     PersonId, Role,
 };

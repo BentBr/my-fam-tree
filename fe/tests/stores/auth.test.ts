@@ -145,20 +145,20 @@ describe('auth store', () => {
         await expect(auth.refresh()).rejects.toBeDefined()
     })
 
-    it('logout calls POST, clears state, wipes my-family:* storage', async () => {
+    it('logout calls POST, clears state, wipes my-fam-tree:* storage', async () => {
         mocked.POST.mockResolvedValueOnce({ data: undefined, error: undefined })
-        localStorage.setItem('my-family:foo', 'x')
+        localStorage.setItem('my-fam-tree:foo', 'x')
         localStorage.setItem('unrelated', 'y')
-        sessionStorage.setItem('my-family:bar', 'z')
+        sessionStorage.setItem('my-fam-tree:bar', 'z')
 
         const auth = useAuthStore()
         auth.applyClaimsPayload(claims())
         await auth.logout()
 
         expect(auth.status).toBe('anonymous')
-        expect(localStorage.getItem('my-family:foo')).toBeNull()
+        expect(localStorage.getItem('my-fam-tree:foo')).toBeNull()
         expect(localStorage.getItem('unrelated')).toBe('y')
-        expect(sessionStorage.getItem('my-family:bar')).toBeNull()
+        expect(sessionStorage.getItem('my-fam-tree:bar')).toBeNull()
     })
 
     it('logout still clears local state when the POST throws', async () => {

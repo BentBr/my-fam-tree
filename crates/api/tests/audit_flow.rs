@@ -24,14 +24,14 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
-use my_family_api::build_app;
-use my_family_domain::{AuditEntry, FamilyId, PersonDraft, PersonId, Role};
+use my_fam_tree_api::build_app;
+use my_fam_tree_domain::{AuditEntry, FamilyId, PersonDraft, PersonId, Role};
 use uuid::Uuid;
 
 /// Seed a person directly via the repo so we have a stable id for the
 /// audit metadata to reference.
 async fn seed_person(
-    state: &my_family_api::AppState,
+    state: &my_fam_tree_api::AppState,
     family_id: FamilyId,
     given: &str,
     family: &str,

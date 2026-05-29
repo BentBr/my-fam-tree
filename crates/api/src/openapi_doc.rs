@@ -3,7 +3,7 @@
 //! Lives in the api crate (not the openapi crate) so [`build_app`] can mount
 //! `utoipa-swagger-ui` against the same spec without introducing a circular
 //! dependency. The openapi crate's `openapi-dump` binary re-exports the type
-//! through `my_family_openapi::ApiDoc` for the CI / FE codegen pipeline.
+//! through `my_fam_tree_openapi::ApiDoc` for the CI / FE codegen pipeline.
 //!
 //! `utoipa` 5 cannot derive `ToSchema` for a bare generic, so each endpoint
 //! declares a named `…ResponseBody` wrapper struct via the `response_body!`
@@ -51,7 +51,7 @@ use crate::services::upcoming::UpcomingEvent;
 #[derive(Debug, OpenApi)]
 #[openapi(
     info(
-        title = "my-family API",
+        title = "my-fam-tree API",
         description = "Family platform API",
         version = env!("CARGO_PKG_VERSION"),
     ),

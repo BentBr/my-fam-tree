@@ -5,13 +5,13 @@
 ## What you can do, freely
 
 - **Read, study, and modify** the source code.
-- **Self-host my-family for personal or family use** — run it on your own server for your own household, no fee required.
+- **Self-host my-fam-tree for personal or family use** — run it on your own server for your own household, no fee required.
 - **Run it for testing, learning, or internal evaluation.**
 - **Submit patches and contribute upstream.**
 
 ## What's reserved to the project owner
 
-- **Offering my-family as a commercial hosted service** — i.e. running it for paying customers as a managed product — is **not permitted** under this licence. The project owner operates the canonical hosted service.
+- **Offering my-fam-tree as a commercial hosted service** — i.e. running it for paying customers as a managed product — is **not permitted** under this licence. The project owner operates the canonical hosted service.
 
 ## What changes over time
 
@@ -19,7 +19,7 @@
 
 ## Why this licence
 
-We want the source to be open and inspectable, and we want personal self-hosting to be unambiguously fine. We also want to prevent a third party from spinning up a competing commercial hosted version of my-family. BUSL-1.1 is the licence used by Sentry, MariaDB, CockroachDB, and others for exactly this trade-off.
+We want the source to be open and inspectable, and we want personal self-hosting to be unambiguously fine. We also want to prevent a third party from spinning up a competing commercial hosted version of my-fam-tree. BUSL-1.1 is the licence used by Sentry, MariaDB, CockroachDB, and others for exactly this trade-off.
 
 ## Questions
 

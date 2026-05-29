@@ -68,7 +68,7 @@ describe('@/api/client middlewares', () => {
     })
 
     it('familyIdInjector adds X-Family-Id when active family is set', async () => {
-        localStorage.setItem('my-family:activeFamily', 'f-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'f-1')
         const { client } = await import('@/api/client')
         fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
         await client.GET('/api/v1/health' as never)

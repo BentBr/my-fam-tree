@@ -10,15 +10,15 @@
 
 use std::sync::Arc;
 
-use my_family_cache::{RateLimiter, RedisPool};
-use my_family_domain::{
+use my_fam_tree_cache::{RateLimiter, RedisPool};
+use my_fam_tree_domain::{
     AuditLogRepo, EmailOutboxRepo, FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, HealthRepo,
     MagicLinkRepo, OwnerTransferRepo, ParentLinkRepo, PartnershipRepo, PersonContactRepo,
     PersonFavouriteRepo, PersonRepo, RefreshTokenRepo, ReminderDigestRepo, ReminderPreferencesRepo,
     UserRepo,
 };
-use my_family_email::EmailSender;
-use my_family_storage::ObjectStore;
+use my_fam_tree_email::EmailSender;
+use my_fam_tree_storage::ObjectStore;
 
 use crate::Config;
 use crate::auth::JwtIssuer;

@@ -33,7 +33,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use image::ImageFormat;
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 /// Returns a fresh PNG (raw bytes) — minted via the image crate so the
 /// fixture isn't checked in as a binary. 4×4 pixels keeps the encode fast.
@@ -146,7 +146,7 @@ async fn upload_photo_then_get_returns_presigned_url_then_delete_clears_it() {
     let key2 = body["data"]["photo_key"].as_str().expect("photo_key").to_string();
     assert_ne!(key1, key2, "replace mints a fresh suffix");
     match store.get(&key1).await {
-        Err(my_family_storage::StorageError::NotFound(_)) => {} // expected
+        Err(my_fam_tree_storage::StorageError::NotFound(_)) => {} // expected
         other => panic!("previous key should be deleted, got {other:?}"),
     }
 
@@ -167,7 +167,7 @@ async fn upload_photo_then_get_returns_presigned_url_then_delete_clears_it() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert!(body["data"]["photo_url"].is_null(), "photo_url null after DELETE");
     match store.get(&key2).await {
-        Err(my_family_storage::StorageError::NotFound(_)) => {}
+        Err(my_fam_tree_storage::StorageError::NotFound(_)) => {}
         other => panic!("post-DELETE object should be gone, got {other:?}"),
     }
 }
@@ -253,7 +253,7 @@ async fn upload_rejects_cross_family_person_id() {
 
     // Sanity: the store has no keys under family A's person.
     match store.get(&format!("persons/{person_a}/anything.jpg")).await {
-        Err(my_family_storage::StorageError::NotFound(_)) => {}
+        Err(my_fam_tree_storage::StorageError::NotFound(_)) => {}
         other => panic!("no rogue object should exist, got {other:?}"),
     }
 }

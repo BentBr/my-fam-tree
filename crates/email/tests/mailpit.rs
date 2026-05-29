@@ -5,16 +5,16 @@
 //!   `EMAIL_DSN`   — SMTP DSN, e.g. `smtp://mailpit:1025` (inside compose network)
 //!                    or `smtp://localhost:1025` (with a host port binding).
 //!   `MAILPIT_API` — HTTP base URL, e.g. `http://mailpit:8025` or
-//!                    `http://mail.my-family.docker` (via dinghy on host) or
+//!                    `http://mail.my-fam-tree.docker` (via dinghy on host) or
 //!                    `http://localhost:8025`.
 //!
 //! Run inside the compose network with `./scripts/cargo-in-network.sh test -p
-//! my-family-email --test mailpit`, which injects both env vars pointing at the
+//! my-fam-tree-email --test mailpit`, which injects both env vars pointing at the
 //! compose `mailpit` service.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr, clippy::indexing_slicing)]
 
-use my_family_email::{EmailSender, OutboundEmail, SmtpSender};
+use my_fam_tree_email::{EmailSender, OutboundEmail, SmtpSender};
 
 #[tokio::test]
 async fn smtp_sender_delivers_to_mailpit() {
@@ -31,7 +31,7 @@ async fn smtp_sender_delivers_to_mailpit() {
         .await
         .expect("delete prior messages");
 
-    let sender = SmtpSender::from_dsn(&dsn, "test", "no-reply@my-family.local", None, 5)
+    let sender = SmtpSender::from_dsn(&dsn, "test", "no-reply@my-fam-tree.local", None, 5)
         .expect("build smtp sender");
 
     let subject = format!("test-{}", uuid::Uuid::new_v4());

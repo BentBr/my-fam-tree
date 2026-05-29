@@ -17,7 +17,7 @@
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
 use chrono::{DateTime, Utc};
-use my_family_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
+use my_fam_tree_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -126,10 +126,10 @@ pub async fn accept(
     // scope: actix's empty-path sibling-scope resolution stops at the
     // first scope and would 404 anonymous callers if the middleware were
     // applied.
-    let existing_claims_email_and_id: Option<(String, my_family_domain::UserId)> = req
+    let existing_claims_email_and_id: Option<(String, my_fam_tree_domain::UserId)> = req
         .cookie(ACCESS_COOKIE)
         .and_then(|c| state.jwt_issuer.verify(c.value()).ok())
-        .map(|jwt| (jwt.email.clone(), my_family_domain::UserId::from_uuid(jwt.sub)));
+        .map(|jwt| (jwt.email.clone(), my_fam_tree_domain::UserId::from_uuid(jwt.sub)));
 
     let hash = hash_token(body.token.trim());
     let invite = state.invites.accept(&hash, Utc::now()).await.map_err(|e| match e {

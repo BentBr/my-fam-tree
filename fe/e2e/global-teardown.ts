@@ -11,12 +11,12 @@ import { Client } from 'pg'
 //   2. DATABASE_URL     — the same env the api reads. CI sets this to
 //      `postgres://…@localhost:3458/…` because GitHub Actions exposes the
 //      postgres service container on the runner's localhost, not the
-//      compose-network alias `postgres.my-family.docker` we use locally.
+//      compose-network alias `postgres.my-fam-tree.docker` we use locally.
 //   3. The compose alias (fallback for the in-network Playwright service).
 const DATABASE_URL =
     process.env['E2E_DATABASE_URL'] ??
     process.env['DATABASE_URL'] ??
-    'postgres://my_family:my_family@postgres.my-family.docker:5432/my_family'
+    'postgres://my_fam_tree:my_fam_tree@postgres.my-fam-tree.docker:5432/my_fam_tree'
 
 // Tables that belong to migrations infrastructure. Never truncate these.
 const SYSTEM_TABLES = new Set(['_sqlx_migrations'])

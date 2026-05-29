@@ -25,7 +25,7 @@ impl Database {
     ) -> Result<Self, PersistenceError> {
         let mut opts = PgConnectOptions::from_str(url)
             .map_err(|e| PersistenceError::Config(e.to_string()))?
-            .application_name("my-family");
+            .application_name("my-fam-tree");
         opts = opts.log_statements(tracing::log::LevelFilter::Debug);
 
         let pool = PgPoolOptions::new()

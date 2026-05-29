@@ -22,7 +22,7 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{ephemeral_stack, fresh_access, seed_three_role_family};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 /// Issue a request as `access` against `family_id` and return the HTTP status.
 #[allow(clippy::future_not_send)]

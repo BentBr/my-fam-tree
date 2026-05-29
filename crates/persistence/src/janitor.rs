@@ -4,7 +4,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
-use my_family_domain::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
+use my_fam_tree_domain::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
 use sqlx::PgPool;
 
 #[derive(Clone, Debug)]

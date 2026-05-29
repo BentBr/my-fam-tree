@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use my_family_domain::{
+use my_fam_tree_domain::{
     FamilyId, FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError,
     MembershipWithFamilyName, Role, UserId,
 };

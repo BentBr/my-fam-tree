@@ -24,7 +24,7 @@ beforeEach(() => {
 describe('useAuditList', () => {
     it('GETs /audit with active family id + camelCase→snake_case query params', async () => {
         // Seed an active family so the query is enabled.
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({
             data: { data: { items: [], total: 0 } },
             error: undefined,
@@ -58,7 +58,7 @@ describe('useAuditList', () => {
     })
 
     it('omits unset filter keys (only passes what the caller supplied)', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({
             data: { data: { items: [], total: 0 } },
             error: undefined,
@@ -86,7 +86,7 @@ describe('useAuditList', () => {
     })
 
     it('surfaces the response error when the GET fails', async () => {
-        localStorage.setItem('my-family:activeFamily', 'fam-1')
+        localStorage.setItem('my-fam-tree:activeFamily', 'fam-1')
         mocked.GET.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const filter = ref<AuditFilter>({})
         const { result } = makeHookWrapper(() => useAuditList(filter))

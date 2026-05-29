@@ -1,4 +1,4 @@
-# Contributing to my-family
+# Contributing to my-fam-tree
 
 Thanks for your interest. A few short conventions keep the project consistent.
 
@@ -12,7 +12,7 @@ Thanks for your interest. A few short conventions keep the project consistent.
     ```
 
 3. Install git hooks: `./scripts/install-hooks.sh`.
-4. Copy env: `cp .env.example .env`, then append fresh JWT keys: `cargo run -p my-family-api --bin gen-jwt-keys >> .env`.
+4. Copy env: `cp .env.example .env`, then append fresh JWT keys: `cargo run -p my-fam-tree-api --bin gen-jwt-keys >> .env`.
 5. Bring up the stack: `rdt start`. The `fe` container runs `pnpm install` on first boot — no host pnpm needed.
 
 ## Workflow

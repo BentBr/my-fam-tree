@@ -82,8 +82,8 @@ pub fn revoked<'a>(cfg: &Config, name: &'static str, path: &'static str) -> Cook
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use actix_web::cookie::SameSite;
-    use my_family_config::storage::StorageDriver;
-    use my_family_config::{
+    use my_fam_tree_config::storage::StorageDriver;
+    use my_fam_tree_config::{
         ApiBindConfig, AppEnv, CookieConfig, DatabaseConfig, EmailConfig, JwtConfig, LogConfig,
         LogFormat, MagicLinkConfig, RedisConfig, StorageConfig, WebConfig,
     };
@@ -193,17 +193,17 @@ mod tests {
     #[test]
     fn revoked_cookie_inherits_domain_so_browsers_actually_drop_it() {
         let mut cfg = test_cfg();
-        cfg.cookie.domain = ".my-family.docker".into();
+        cfg.cookie.domain = ".my-fam-tree.docker".into();
         let c = revoked(&cfg, ACCESS_COOKIE, "/");
-        assert_eq!(c.domain(), Some(".my-family.docker"));
+        assert_eq!(c.domain(), Some(".my-fam-tree.docker"));
     }
 
     #[test]
     fn cookie_domain_when_set_propagates_to_cookie() {
         let mut cfg = test_cfg();
-        cfg.cookie.domain = ".my-family.docker".into();
+        cfg.cookie.domain = ".my-fam-tree.docker".into();
         let c = access_cookie(&cfg, "tok".into());
-        assert_eq!(c.domain(), Some(".my-family.docker"));
+        assert_eq!(c.domain(), Some(".my-fam-tree.docker"));
     }
 
     #[test]

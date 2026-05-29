@@ -19,7 +19,7 @@ mod common;
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{ephemeral_stack, extract_token_from_link, sign_in, try_call};
-use my_family_api::build_app;
+use my_fam_tree_api::build_app;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn magic_link_rejects_invalid_email() {

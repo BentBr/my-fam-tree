@@ -20,7 +20,7 @@
 //! rows so the FE paginator never needs a second round-trip.
 
 use async_trait::async_trait;
-use my_family_domain::{
+use my_fam_tree_domain::{
     AuditEntry, AuditFilter, AuditLogRepo, AuditPageMeta, AuditRepoError, AuditRow, UserId,
 };
 use serde_json::Value;
@@ -47,7 +47,7 @@ impl AuditLogRepo for PgAuditLogRepo {
             r#"INSERT INTO audit_log (family_id, actor_user_id, action, entity_kind, entity_id, metadata)
                VALUES ($1, $2, $3, $4, $5, $6)"#,
             entry.family_id.into_uuid(),
-            entry.actor_user_id.map(my_family_domain::UserId::into_uuid),
+            entry.actor_user_id.map(my_fam_tree_domain::UserId::into_uuid),
             entry.action,
             entry.entity_kind,
             entry.entity_id,

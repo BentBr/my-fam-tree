@@ -1,5 +1,5 @@
 [package]
-name = "my-family-openapi"
+name = "my-fam-tree-openapi"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,9 +10,8 @@ name = "openapi-dump"
 path = "src/bin/openapi_dump.rs"
 
 [dependencies]
-my-family-api = { path = "../api" }
+my-fam-tree-api = { path = "../api" }
 serde_json.workspace = true
-utoipa.workspace = true
 anyhow.workspace = true
 
 [lints]

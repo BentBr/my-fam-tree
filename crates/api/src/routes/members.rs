@@ -15,7 +15,7 @@
 
 use actix_web::{HttpRequest, delete, get, patch, web};
 use chrono::{DateTime, Utc};
-use my_family_domain::{FamilyId, MembershipRepoError, Role, UserId};
+use my_fam_tree_domain::{FamilyId, MembershipRepoError, Role, UserId};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;

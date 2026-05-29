@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, NaiveDate, Utc};
-use my_family_domain::{DigestRepoError, DigestStatus, ReminderDigest, ReminderDigestRepo, UserId};
+use my_fam_tree_domain::{DigestRepoError, DigestStatus, ReminderDigest, ReminderDigestRepo, UserId};
 use sqlx::PgPool;
 use uuid::Uuid;
 

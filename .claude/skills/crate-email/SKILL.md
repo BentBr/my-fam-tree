@@ -1,9 +1,9 @@
 ---
 name: crate-email
-description: Use when touching the my-family-email crate (package `my-family-email`, crate `my_family_email`, under crates/email) — adding or changing the EmailSender trait or OutboundEmail, the real SmtpSender (lettre) or FakeEmailSender, the locale-aware Askama text templates (en/de), `render_*` helpers, or the Mailpit integration test. Symptoms: how do I add a new transactional email, why does the Mailpit test skip, where do en/de bodies live, from_dsn schemes.
+description: Use when touching the my-fam-tree-email crate (package `my-fam-tree-email`, crate `my_fam_tree_email`, under crates/email) — adding or changing the EmailSender trait or OutboundEmail, the real SmtpSender (lettre) or FakeEmailSender, the locale-aware Askama text templates (en/de), `render_*` helpers, or the Mailpit integration test. Symptoms: how do I add a new transactional email, why does the Mailpit test skip, where do en/de bodies live, from_dsn schemes.
 ---
 
-# crate-email (`my-family-email`)
+# crate-email (`my-fam-tree-email`)
 
 Outbound transactional email: the `EmailSender` trait + a real SMTP impl + a
 fake, and locale-aware plain-text bodies rendered from Askama templates. No
@@ -11,7 +11,7 @@ Actix/SQLx; standalone in the workspace graph. `api` and `worker`
 inject it as `Arc<dyn EmailSender>` (no global state — see `rust-foundations`).
 For roles/auth context see `project-concepts`.
 
-`src/lib.rs` re-exports everything (`use my_family_email::EmailSender;`).
+`src/lib.rs` re-exports everything (`use my_fam_tree_email::EmailSender;`).
 
 ## Module map
 
@@ -47,11 +47,11 @@ Templates compile into the binary, so a missing file or undefined var is a
 ## How to test
 
 - Unit tests (render output, locale fallback, fake capture) run with no Docker:
-  `cargo test -p my-family-email`.
+  `cargo test -p my-fam-tree-email`.
 - The Mailpit integration test (`tests/mailpit.rs`) sends real SMTP and verifies
   via the Mailpit HTTP API. It **skips** unless `EMAIL_DSN` (+ `MAILPIT_API`)
   are set. Run it in the compose network, which injects both:
-  `./scripts/cargo-in-network.sh test -p my-family-email --test mailpit`.
+  `./scripts/cargo-in-network.sh test -p my-fam-tree-email --test mailpit`.
 
 ## Common mistakes
 

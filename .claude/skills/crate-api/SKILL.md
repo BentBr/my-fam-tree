@@ -1,9 +1,9 @@
 ---
 name: crate-api
-description: Use when adding or changing an HTTP endpoint, route, or handler in the my-family API; touching AppState, build_app, AuthMiddleware, the X-Family-Id flow, the ApiError/ErrorCode/RFC 7807 error model, the ApiResponse/response_body! success envelope, or the utoipa::path/openapi aggregation. Triggers: "add an endpoint", "new route", "ApiError mapping", "openapi", Actix handler work.
+description: Use when adding or changing an HTTP endpoint, route, or handler in the my-fam-tree API; touching AppState, build_app, AuthMiddleware, the X-Family-Id flow, the ApiError/ErrorCode/RFC 7807 error model, the ApiResponse/response_body! success envelope, or the utoipa::path/openapi aggregation. Triggers: "add an endpoint", "new route", "ApiError mapping", "openapi", Actix handler work.
 ---
 
-# crate-api (`my-family-api`, `my_family_api`)
+# crate-api (`my-fam-tree-api`, `my_fam_tree_api`)
 
 The Actix-web HTTP server: routes, DI container, middleware, the locked-down
 error/response contract, and the aggregated OpenAPI doc. For the domain model and
@@ -123,7 +123,7 @@ e.g. `auth.unauthenticated`, `family.not_member`). Status mapping (`ErrorCode::h
 The integration suite uses the testcontainers harness in
 `crates/api/tests/common/mod.rs`: `ephemeral_stack()` boots throwaway Postgres +
 Redis, migrates, builds `AppState` with `FakeEmailSender`. Build the app with
-`my_family_api::build_app(stack.state.clone(), None)`; helpers: `sign_in`,
+`my_fam_tree_api::build_app(stack.state.clone(), None)`; helpers: `sign_in`,
 `create_family`, `try_call` (use instead of `test::call_service` when
 `AuthMiddleware` may return `Err`), `extract_token_from_link`. Run one suite:
-`cargo test -p my-family-api --test auth_flow -- --nocapture` (needs a Docker daemon).
+`cargo test -p my-fam-tree-api --test auth_flow -- --nocapture` (needs a Docker daemon).

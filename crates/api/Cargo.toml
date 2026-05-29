@@ -1,5 +1,5 @@
 [package]
-name = "my-family-api"
+name = "my-fam-tree-api"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -14,28 +14,24 @@ name = "gen-jwt-keys"
 path = "src/bin/gen_jwt_keys.rs"
 
 [dependencies]
-my-family-config = { path = "../config" }
-my-family-domain = { path = "../domain" }
-my-family-cache = { path = "../cache" }
-my-family-email = { path = "../email" }
-my-family-persistence = { path = "../persistence" }
-my-family-storage = { path = "../storage" }
+my-fam-tree-config = { path = "../config" }
+my-fam-tree-domain = { path = "../domain" }
+my-fam-tree-cache = { path = "../cache" }
+my-fam-tree-email = { path = "../email" }
+my-fam-tree-persistence = { path = "../persistence" }
+my-fam-tree-storage = { path = "../storage" }
 actix-web = { workspace = true, features = ["macros"] }
 actix-cors.workspace = true
 actix-multipart.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 base64.workspace = true
-bytes.workspace = true
 chrono.workspace = true
 dotenvy.workspace = true
 ed25519-dalek.workspace = true
-envy.workspace = true
-figment.workspace = true
 futures-util.workspace = true
 image.workspace = true
 jsonwebtoken.workspace = true
-once_cell.workspace = true
 rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -55,7 +51,6 @@ uuid.workspace = true
 # `Service<Request, ...>` type returned by `actix_web::test::init_service`
 # inside test-local helper functions. actix-web does not re-export this type.
 actix-http = "3.12"
-figment = { workspace = true, features = ["test"] }
 testcontainers = "0.27"
 testcontainers-modules = { version = "0.15", features = ["postgres", "redis"] }
 

@@ -1,9 +1,9 @@
 ---
 name: rust-foundations
-description: Use when writing, building, testing, or debugging any Rust crate in my-family — covers the strict clippy/deny-lint regime (no unwrap/expect/panic/print/indexing), SQLx offline cache + cargo sqlx prepare, the testcontainers integration harness and scripts/cargo-in-network.sh, ApiError/Result conventions, newtype IDs, tracing/logs, and lockfile discipline. Load before touching code under crates/.
+description: Use when writing, building, testing, or debugging any Rust crate in my-fam-tree — covers the strict clippy/deny-lint regime (no unwrap/expect/panic/print/indexing), SQLx offline cache + cargo sqlx prepare, the testcontainers integration harness and scripts/cargo-in-network.sh, ApiError/Result conventions, newtype IDs, tracing/logs, and lockfile discipline. Load before touching code under crates/.
 ---
 
-# Rust Foundations (my-family workspace)
+# Rust Foundations (my-fam-tree workspace)
 
 Cross-cutting backend conventions. For a specific crate's internals, also load its
 `crate-<name>` skill. For the domain model, see `project-concepts`. For the
@@ -73,12 +73,12 @@ all of them into `ApiError` so RFC-7807 stays the single client-visible shape.
 
 | Crate                | Error type        | Bubble-up convention                                            |
 |----------------------|-------------------|------------------------------------------------------------------|
-| `my-family-domain`   | `FooRepoError`    | `?` from persistence; mapped in `crate-api` via `impl From`     |
-| `my-family-persistence` | `FooRepoError` | implements the domain traits; surfaces sqlx errors as variants  |
-| `my-family-cache`    | `CacheError`      | `?` from `RateLimiter` / `ReminderJobQueue`; mapped in handlers  |
-| `my-family-email`    | `EmailError`      | `?` from `EmailSender`; mapped in handlers (Internal in prod)   |
-| `my-family-config`   | `ConfigError`     | only at binary startup — `anyhow::Context`, exit non-zero       |
-| `my-family-storage`  | `StorageError`    | `NotFound` → `ApiError::NotFound`, `Backend` → `ApiError::Internal` |
+| `my-fam-tree-domain`   | `FooRepoError`    | `?` from persistence; mapped in `crate-api` via `impl From`     |
+| `my-fam-tree-persistence` | `FooRepoError` | implements the domain traits; surfaces sqlx errors as variants  |
+| `my-fam-tree-cache`    | `CacheError`      | `?` from `RateLimiter` / `ReminderJobQueue`; mapped in handlers  |
+| `my-fam-tree-email`    | `EmailError`      | `?` from `EmailSender`; mapped in handlers (Internal in prod)   |
+| `my-fam-tree-config`   | `ConfigError`     | only at binary startup — `anyhow::Context`, exit non-zero       |
+| `my-fam-tree-storage`  | `StorageError`    | `NotFound` → `ApiError::NotFound`, `Backend` → `ApiError::Internal` |
 
 - **Repo / service traits return `Result<T, FooError>`** — `thiserror` enum, never
   `anyhow::Error` at a public trait boundary. Add a named variant for each meaningful
@@ -105,7 +105,7 @@ bare `Uuid`, so the type system catches mix-ups.
 - Queries are verified at compile time against `.sqlx/` (committed offline cache).
 - After adding/changing any query: run **`rdt sqlx-prepare`**
   (`cargo sqlx prepare --workspace`) against a migrated DB
-  (`DATABASE_URL=postgres://my_family:my_family@localhost:3458/my_family`), then commit
+  (`DATABASE_URL=postgres://my_fam_tree:my_fam_tree@localhost:3458/my_fam_tree`), then commit
   the `.sqlx/` diff **in the same commit as the query change**.
 - `SQLX_OFFLINE=true` builds without a DB (CI default).
 - Migrations live in `migrations/` (additive, numbered `NNNN_*.sql`); apply with
@@ -121,10 +121,10 @@ bare `Uuid`, so the type system catches mix-ups.
   daemon**, not the full compose stack.
 - A few tests hit live infra and **skip unless env vars are set** (e.g.
   `crates/email/tests/mailpit.rs` needs `EMAIL_DSN` + `MAILPIT_API`). Run those in the
-  compose network: `./scripts/cargo-in-network.sh test -p my-family-email --test mailpit`.
+  compose network: `./scripts/cargo-in-network.sh test -p my-fam-tree-email --test mailpit`.
 - Run everything: `cargo test --workspace` (or `rdt test`, which also runs FE tests).
-- One file, with output: `cargo test -p my-family-api --test auth_flow -- --nocapture`.
-- Logs: services emit `tracing` (`RUST_LOG=info,my_family=debug`, `LOG_FORMAT=pretty`
+- One file, with output: `cargo test -p my-fam-tree-api --test auth_flow -- --nocapture`.
+- Logs: services emit `tracing` (`RUST_LOG=info,my_fam_tree=debug`, `LOG_FORMAT=pretty`
   in dev / `json` in prod). Read them with `docker compose logs -f api` /
   `… worker`. Set `RUST_BACKTRACE=1` when chasing a panic in a binary.
 

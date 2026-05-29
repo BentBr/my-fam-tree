@@ -52,8 +52,8 @@ async function toApiError(response: Response): Promise<ApiClientError> {
 }
 
 // Empty string ⇒ openapi-fetch issues same-origin requests. Both the host browser
-// (`http://my-family.docker` → dinghy → fe:5173) and the in-network Playwright
-// browser (`http://my-family.docker:5173`) hit the FE origin, and Vite's `/api`
+// (`http://my-fam-tree.docker` → dinghy → fe:5173) and the in-network Playwright
+// browser (`http://my-fam-tree.docker:5173`) hit the FE origin, and Vite's `/api`
 // proxy forwards to the api service. Setting an absolute URL here would make the
 // browser bypass the proxy and fail from inside the compose network where the
 // api container only listens on 8080 (no port-80 routing inside docker).

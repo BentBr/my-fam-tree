@@ -4,7 +4,7 @@ use std::net::IpAddr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use my_family_domain::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo, UserId};
+use my_fam_tree_domain::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo, UserId};
 use sqlx::PgPool;
 use uuid::Uuid;
 

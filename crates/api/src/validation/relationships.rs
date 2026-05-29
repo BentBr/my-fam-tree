@@ -19,7 +19,7 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::{Duration, NaiveDate};
-use my_family_domain::{
+use my_fam_tree_domain::{
     ParentKind, ParentLink, Partnership, PartnershipEndReason, Person, PersonId,
 };
 
@@ -228,7 +228,7 @@ fn parents_of(person: PersonId, links: &[ParentLink]) -> HashSet<PersonId> {
 )]
 mod tests {
     use chrono::{DateTime, NaiveDate, Utc};
-    use my_family_domain::{FamilyId, Person, PersonId};
+    use my_fam_tree_domain::{FamilyId, Person, PersonId};
     use uuid::Uuid;
 
     use super::*;

@@ -24,8 +24,8 @@
 
 use actix_web::{HttpRequest, delete, get, post, web};
 use chrono::{Duration, Utc};
-use my_family_domain::{FamilyId, MembershipRepoError, OwnerTransferRepoError, Role, UserId};
-use my_family_email::{
+use my_fam_tree_domain::{FamilyId, MembershipRepoError, OwnerTransferRepoError, Role, UserId};
+use my_fam_tree_email::{
     Locale as EmailLocale, render_owner_transfer_admin, render_owner_transfer_owner,
 };
 use serde::{Deserialize, Serialize};
@@ -110,8 +110,8 @@ async fn send_transfer_emails(
     let _ = (from_display_name, to_display_name);
     state
         .outbox
-        .enqueue(&my_family_domain::EmailOutboxInsert {
-            kind: my_family_domain::EmailOutboxKind::OWNER_TRANSFER_FROM.to_string(),
+        .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
+            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_FROM.to_string(),
             to_addr: from_email.to_owned(),
             subject: from_subject,
             text_body: from_body,
@@ -121,8 +121,8 @@ async fn send_transfer_emails(
         .map_err(internal)?;
     state
         .outbox
-        .enqueue(&my_family_domain::EmailOutboxInsert {
-            kind: my_family_domain::EmailOutboxKind::OWNER_TRANSFER_TO.to_string(),
+        .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
+            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_TO.to_string(),
             to_addr: to_email.to_owned(),
             subject: to_subject,
             text_body: to_body,

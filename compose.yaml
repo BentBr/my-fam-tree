@@ -1,21 +1,21 @@
-name: my-family
+name: my-fam-tree
 
 x-rust-env: &rust_env
     APP_ENV: development
-    RUST_LOG: info,my_family=debug
+    RUST_LOG: info,my_fam_tree=debug
     LOG_FORMAT: pretty
-    DATABASE_URL: postgres://my_family:my_family@postgres.my-family.docker:5432/my_family
+    DATABASE_URL: postgres://my_fam_tree:my_fam_tree@postgres.my-fam-tree.docker:5432/my_fam_tree
     DATABASE_MAX_CONNECTIONS: 20
     DATABASE_ACQUIRE_TIMEOUT_SECONDS: 5
     DATABASE_STATEMENT_TIMEOUT_MS: 30000
-    REDIS_URL: redis://redis.my-family.docker:6379/0
+    REDIS_URL: redis://redis.my-fam-tree.docker:6379/0
     REDIS_MAX_CONNECTIONS: 10
-    REDIS_KEY_PREFIX: "my-family:"
-    EMAIL_DSN: smtp://mail.my-family.docker:1025
-    EMAIL_FROM_NAME: my-family
-    EMAIL_FROM_ADDRESS: no-reply@my-family.local
+    REDIS_KEY_PREFIX: "my-fam-tree:"
+    EMAIL_DSN: smtp://mail.my-fam-tree.docker:1025
+    EMAIL_FROM_NAME: my-fam-tree
+    EMAIL_FROM_ADDRESS: no-reply@my-fam-tree.local
     EMAIL_TIMEOUT_SECONDS: 10
-    WEB_PUBLIC_URL: http://my-family.docker
+    WEB_PUBLIC_URL: http://my-fam-tree.docker
     WORKER_TICK_INTERVAL_SECONDS: 300
     WORKER_LEADER_LEASE_SECONDS: 60
     WORKER_LEADER_REFRESH_SECONDS: 20
@@ -29,9 +29,9 @@ x-rust-env: &rust_env
     WORKER_OUTBOX_POOL_SIZE: 4
     # Object storage (person photos). Dev uses MinIO; prod points at S3.
     STORAGE_DRIVER: s3
-    STORAGE_BUCKET: my-family
+    STORAGE_BUCKET: my-fam-tree
     STORAGE_REGION: us-east-1
-    STORAGE_ENDPOINT_URL: http://minio-api.my-family.docker
+    STORAGE_ENDPOINT_URL: http://minio-api.my-fam-tree.docker
     STORAGE_ACCESS_KEY_ID: minioadmin
     STORAGE_SECRET_ACCESS_KEY: minioadmin
     STORAGE_FORCE_PATH_STYLE: "true"
@@ -40,23 +40,23 @@ services:
     postgres:
         image: postgres:18-alpine
         environment:
-            POSTGRES_USER: my_family
-            POSTGRES_PASSWORD: my_family
-            POSTGRES_DB: my_family
+            POSTGRES_USER: my_fam_tree
+            POSTGRES_PASSWORD: my_fam_tree
+            POSTGRES_DB: my_fam_tree
         # Host port 3458 → container 5432. The only host port binding in this stack.
         ports:
             - "3458:5432"
         volumes:
             - postgres-data:/var/lib/postgresql/data
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U my_family" ]
+            test: [ "CMD-SHELL", "pg_isready -U my_fam_tree" ]
             interval: 5s
             timeout: 3s
             retries: 10
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - postgres.my-family.docker
+                    - postgres.my-fam-tree.docker
 
     redis:
         image: redis:7-alpine
@@ -69,15 +69,15 @@ services:
             timeout: 3s
             retries: 10
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - redis.my-family.docker
+                    - redis.my-fam-tree.docker
 
     mailpit:
         image: axllent/mailpit:latest
         environment:
             # Dinghy reverse-proxy routing for the web UI (SMTP stays internal).
-            VIRTUAL_HOST: mail.my-family.docker
+            VIRTUAL_HOST: mail.my-fam-tree.docker
             VIRTUAL_PORT: "8025"
         healthcheck:
             test: [ "CMD", "wget", "-qO-", "http://localhost:8025/api/v1/info" ]
@@ -85,20 +85,20 @@ services:
             timeout: 3s
             retries: 10
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - mail.my-family.docker
+                    - mail.my-fam-tree.docker
 
     # S3-compatible object store for person photos.
     # Dev/CI use MinIO; prod points STORAGE_ENDPOINT_URL at AWS S3 directly.
     #
     # Two-service layout mirrors ugg-orkestra:
     # - `minio` runs the S3 API on :9000 and the operator console on :9001;
-    #   dinghy exposes the CONSOLE at `http://minio.my-family.docker` so the
+    #   dinghy exposes the CONSOLE at `http://minio.my-fam-tree.docker` so the
     #   bare hostname doesn't redirect the browser to a port that the proxy
     #   isn't bound to.
     # - `minio-api` is a tiny nginx in front of the S3 API on :9000, exposed
-    #   at `http://minio-api.my-family.docker`. The api/worker write through
+    #   at `http://minio-api.my-fam-tree.docker`. The api/worker write through
     #   the proxy so presigned URLs work over port 80 without leaking :9000.
     #
     # The entrypoint auto-creates the bucket + flips it to anonymous-download
@@ -110,14 +110,14 @@ services:
             minio server /data --console-address ':9001' &
             until mc ready local; do sleep 1; done &&
             mc alias set local http://localhost:9000 minioadmin minioadmin &&
-            mc mb --ignore-existing local/my-family &&
-            mc anonymous set download local/my-family &&
+            mc mb --ignore-existing local/my-fam-tree &&
+            mc anonymous set download local/my-fam-tree &&
             wait
             "
         environment:
             MINIO_ROOT_USER: minioadmin
             MINIO_ROOT_PASSWORD: minioadmin
-            VIRTUAL_HOST: minio.my-family.docker
+            VIRTUAL_HOST: minio.my-fam-tree.docker
             VIRTUAL_PORT: "9001"
         volumes:
             - minio-data:/data
@@ -127,12 +127,12 @@ services:
             timeout: 5s
             retries: 20
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - minio.my-family.docker
+                    - minio.my-fam-tree.docker
 
     # nginx reverse-proxy fronting the S3 API on :9000 so consumers reach
-    # MinIO through `http://minio-api.my-family.docker` (port 80). The api
+    # MinIO through `http://minio-api.my-fam-tree.docker` (port 80). The api
     # talks to the same hostname from INSIDE the docker network (same network
     # alias resolves to this container directly on port 80) so the SigV4
     # signature the SDK computes is valid no matter who follows the resulting
@@ -146,12 +146,12 @@ services:
         volumes:
             - ./.docker/local/conf/minio-api-proxy.conf:/etc/nginx/conf.d/default.conf:ro
         environment:
-            VIRTUAL_HOST: minio-api.my-family.docker
+            VIRTUAL_HOST: minio-api.my-fam-tree.docker
             VIRTUAL_PORT: "80"
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - minio-api.my-family.docker
+                    - minio-api.my-fam-tree.docker
 
     migrator:
         build:
@@ -163,9 +163,9 @@ services:
                 condition: service_healthy
         restart: "no"
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - migrator.my-family.docker
+                    - migrator.my-fam-tree.docker
 
     seeder:
         # Dedicated dev/CI image — production api/worker images never include
@@ -181,8 +181,8 @@ services:
             JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY required; run rdt gen-jwt-keys}
             JWT_PRIVATE_KEY_ID: ${JWT_PRIVATE_KEY_ID:?JWT_PRIVATE_KEY_ID required}
             JWT_PUBLIC_KEYS: ${JWT_PUBLIC_KEYS:?JWT_PUBLIC_KEYS required}
-            JWT_ISSUER: my-family
-            JWT_AUDIENCE: my-family-app
+            JWT_ISSUER: my-fam-tree
+            JWT_AUDIENCE: my-fam-tree-app
             JWT_ACCESS_TTL_SECONDS: 900
             JWT_REFRESH_TTL_SECONDS: 2592000
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
@@ -197,11 +197,11 @@ services:
             MAGIC_LINK_RATE_PER_IP_PER_HOUR: 10000
             API_HOST: 0.0.0.0
             API_PORT: 8080
-            API_PUBLIC_URL: http://api.my-family.docker
-            CORS_ALLOWED_ORIGINS: http://my-family.docker
+            API_PUBLIC_URL: http://api.my-fam-tree.docker
+            CORS_ALLOWED_ORIGINS: http://my-fam-tree.docker
             API_ENABLE_DOCS: "false"
             API_METRICS_BIND: 0.0.0.0:9090
-            COOKIE_DOMAIN: .my-family.docker
+            COOKIE_DOMAIN: .my-fam-tree.docker
             COOKIE_SECURE: "false"
             COOKIE_SAMESITE_ACCESS: Lax
             COOKIE_SAMESITE_REFRESH: Strict
@@ -210,9 +210,9 @@ services:
                 condition: service_completed_successfully
         restart: "no"
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - seeder.my-family.docker
+                    - seeder.my-fam-tree.docker
 
     api:
         build:
@@ -223,24 +223,24 @@ services:
             MAIN_SERVICE: rust
             API_HOST: 0.0.0.0
             API_PORT: 8080
-            API_PUBLIC_URL: http://api.my-family.docker
-            CORS_ALLOWED_ORIGINS: http://my-family.docker
+            API_PUBLIC_URL: http://api.my-fam-tree.docker
+            CORS_ALLOWED_ORIGINS: http://my-fam-tree.docker
             API_ENABLE_DOCS: "true"
             API_METRICS_BIND: 0.0.0.0:9090
-            COOKIE_DOMAIN: .my-family.docker
+            COOKIE_DOMAIN: .my-fam-tree.docker
             COOKIE_SECURE: "false"
             COOKIE_SAMESITE_ACCESS: Lax
             COOKIE_SAMESITE_REFRESH: Strict
-            VIRTUAL_HOST: api.my-family.docker
+            VIRTUAL_HOST: api.my-fam-tree.docker
             VIRTUAL_PORT: "8080"
             # JWT keys MUST be set by the operator before bringing the stack up.
-            # Run `cargo run -p my-family-api --bin gen-jwt-keys` (or `rdt gen-jwt-keys`)
+            # Run `cargo run -p my-fam-tree-api --bin gen-jwt-keys` (or `rdt gen-jwt-keys`)
             # to generate a fresh keypair and append it to `.env`.
             JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY required; run rdt gen-jwt-keys}
             JWT_PRIVATE_KEY_ID: ${JWT_PRIVATE_KEY_ID:?JWT_PRIVATE_KEY_ID required}
             JWT_PUBLIC_KEYS: ${JWT_PUBLIC_KEYS:?JWT_PUBLIC_KEYS required}
-            JWT_ISSUER: my-family
-            JWT_AUDIENCE: my-family-app
+            JWT_ISSUER: my-fam-tree
+            JWT_AUDIENCE: my-fam-tree-app
             JWT_ACCESS_TTL_SECONDS: 900
             JWT_REFRESH_TTL_SECONDS: 2592000
             JWT_REFRESH_ABSOLUTE_TTL_SECONDS: 7776000
@@ -266,9 +266,9 @@ services:
             timeout: 3s
             retries: 5
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - api.my-family.docker
+                    - api.my-fam-tree.docker
 
     worker:
         build:
@@ -280,10 +280,10 @@ services:
                 CARGO_FEATURES: ${WORKER_FEATURES:-}
         environment:
             <<: *rust_env
-            # `clock.my-family.docker` is a friendly alias for the test-fixtures
+            # `clock.my-fam-tree.docker` is a friendly alias for the test-fixtures
             # clock-advance endpoint (used by `rdt trigger-clock`). Only routable
             # when the worker is built with WORKER_FEATURES=test-fixtures.
-            VIRTUAL_HOST: worker.my-family.docker,clock.my-family.docker
+            VIRTUAL_HOST: worker.my-fam-tree.docker,clock.my-fam-tree.docker
             VIRTUAL_PORT: "9091"
         depends_on:
             postgres:
@@ -293,9 +293,9 @@ services:
             migrator:
                 condition: service_completed_successfully
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - worker.my-family.docker
+                    - worker.my-fam-tree.docker
 
     fe:
         image: node:22-alpine
@@ -309,7 +309,7 @@ services:
         # `expose:` makes port 5173 visible to dinghy on the docker network
         # without binding it on the host (the node:22-alpine image has no
         # EXPOSE directive of its own). Dinghy reads this to route
-        # http://*.my-family.docker → container:5173.
+        # http://*.my-fam-tree.docker → container:5173.
         expose:
             - "5173"
         environment:
@@ -317,10 +317,10 @@ services:
             # FE issues same-origin `/api/*` requests; Vite proxies them to the
             # api service via the compose service alias (port 8080). We do NOT
             # set VITE_API_BASE_URL so the browser bypass-path (absolute URL to
-            # api.my-family.docker:80) is never used — that only resolved from
+            # api.my-fam-tree.docker:80) is never used — that only resolved from
             # the host via dinghy, not from in-network Playwright.
             VITE_API_PROXY_TARGET: http://api:8080
-            VIRTUAL_HOST: my-family.docker
+            VIRTUAL_HOST: my-fam-tree.docker
             VIRTUAL_PORT: "5173"
             PNPM_HOME: /pnpm
             PATH: /pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -334,9 +334,9 @@ services:
             api:
                 condition: service_started
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - my-family.docker
+                    - my-fam-tree.docker
 
     playwright:
         # Pin must match @playwright/test resolved in fe/pnpm-lock.yaml (1.60.0).
@@ -350,29 +350,29 @@ services:
             - ./fe:/app
             - fe-playwright-node-modules:/app/node_modules
         command: sh -c "corepack enable && corepack prepare pnpm@10.33.4 --activate && pnpm install && pnpm exec playwright install chromium && tail -f /dev/null"
-        # Resolves *.my-family.docker via the network aliases of other services.
+        # Resolves *.my-fam-tree.docker via the network aliases of other services.
         environment:
             CI: "true"
-            E2E_BASE_URL: http://my-family.docker:5173
-            E2E_API_BASE_URL: http://api.my-family.docker:8080
-            MAILPIT_URL: http://mail.my-family.docker:8025
+            E2E_BASE_URL: http://my-fam-tree.docker:5173
+            E2E_API_BASE_URL: http://api.my-fam-tree.docker:8080
+            MAILPIT_URL: http://mail.my-fam-tree.docker:8025
             # reminders.test.ts hits the worker's POST /__test/advance-clock.
             # The default fallback `http://localhost:9091` only works on a CI
             # runner where the worker binds 127.0.0.1. Under compose we go
             # straight to the worker service's compose-network alias on its
-            # native port — the `clock.my-family.docker` dinghy alias is only
+            # native port — the `clock.my-fam-tree.docker` dinghy alias is only
             # resolvable on the host (via dnsmasq), not inside the compose
             # network.
-            WORKER_TEST_URL: http://worker.my-family.docker:9091
+            WORKER_TEST_URL: http://worker.my-fam-tree.docker:9091
         depends_on:
             fe:
                 condition: service_started
             api:
                 condition: service_started
         networks:
-            my-family:
+            my-fam-tree:
                 aliases:
-                    - playwright.my-family.docker
+                    - playwright.my-fam-tree.docker
 
 volumes:
     postgres-data:
@@ -381,4 +381,4 @@ volumes:
     fe-playwright-node-modules:
 
 networks:
-    my-family:
+    my-fam-tree:

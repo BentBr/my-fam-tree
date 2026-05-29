@@ -19,7 +19,7 @@ use actix_web::body::MessageBody;
 use actix_web::http::header::HeaderName;
 use actix_web::{App, middleware as actix_mw, web};
 pub use error::{ApiError, ApiErrorBody, ApiResult, ErrorCode, FieldViolation};
-pub use my_family_config::{ApiConfig as Config, AppEnv, ConfigError, LogFormat};
+pub use my_fam_tree_config::{ApiConfig as Config, AppEnv, ConfigError, LogFormat};
 pub use openapi_doc::ApiDoc;
 pub use response::{ApiResponse, Pagination, ResponseMeta, Warning};
 pub use state::AppState;

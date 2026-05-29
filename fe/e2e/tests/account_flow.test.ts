@@ -103,8 +103,8 @@ test.describe('FE account flow', () => {
         // which the store's bindToI18n watcher persists into localStorage.
         // Trigger a deliberate write so the test does not race the watcher.
         await page.evaluate(() => {
-            localStorage.setItem('my-family:locale', 'en')
-            sessionStorage.setItem('my-family:probe', '1')
+            localStorage.setItem('my-fam-tree:locale', 'en')
+            sessionStorage.setItem('my-fam-tree:probe', '1')
         })
 
         await page.getByTestId('user-menu').click()
@@ -113,9 +113,9 @@ test.describe('FE account flow', () => {
         await signOut.click()
         await expect(page).toHaveURL(/\/auth\/sign-in$/)
 
-        const localKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('my-family:')))
+        const localKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('my-fam-tree:')))
         const sessionKeys = await page.evaluate(() =>
-            Object.keys(sessionStorage).filter((k) => k.startsWith('my-family:')),
+            Object.keys(sessionStorage).filter((k) => k.startsWith('my-fam-tree:')),
         )
         expect(localKeys).toEqual([])
         expect(sessionKeys).toEqual([])

@@ -2,14 +2,14 @@
 
 ## Supported versions
 
-my-family is pre-1.0. Security fixes are applied to `main` and the most recent release branch.
+my-fam-tree is pre-1.0. Security fixes are applied to `main` and the most recent release branch.
 
 ## Reporting a vulnerability
 
 Please **do not open a public issue** for security vulnerabilities. Instead:
 
 1. Open a private security advisory on the project repository, or
-2. Email the maintainers at `security@my-family.local` (substitute with the project's real contact once the hosted instance launches).
+2. Email the maintainers at `security@my-fam-tree.eu` (substitute with the project's real contact once the hosted instance launches).
 
 Include:
 
@@ -24,10 +24,10 @@ We aim to acknowledge reports within 72 hours and provide an initial assessment 
 
 In scope:
 
-- The Rust API (`crates/api`), worker (`crates/worker`), and migrator (`crates/migrator`).
+- The Rust Stack (`crates/*`).
 - The Vue frontend (`fe/`).
 - Container images built from `.docker/`.
-- The hosted instance operated by the project owner.
+- The hosted instance operated by the project owner [my-fam-tree.eu](https://my-fam-tree.eu).
 
 Out of scope (please don't report):
 

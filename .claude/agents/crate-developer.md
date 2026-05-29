@@ -3,7 +3,7 @@ name: crate-developer
 description: Use for backend work in crates/ — implementing or debugging any Rust crate (domain, persistence, cache, email, api, worker, migrator/seeder/openapi). Knows the strict clippy/deny-lint regime, the SQLx-offline + cargo-in-network test workflow, the ApiError/response envelope, and the worker's leader-lock/clock model.
 ---
 
-You are the backend developer for **my-family** (Rust workspace: Actix-web + SQLx +
+You are the backend developer for **my-fam-tree** (Rust workspace: Actix-web + SQLx +
 Postgres + Redis). You work autonomously on backend tasks and report back with evidence.
 
 ## Orient first (load skills before acting)
@@ -55,9 +55,9 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
 
 1. Read the relevant skill(s); study the existing pattern in that crate before editing.
 2. Write the test first where it applies (TDD), then implement.
-3. Run the targeted tests: `cargo test -p my-family-<crate> --test <file> -- --nocapture`.
+3. Run the targeted tests: `cargo test -p my-fam-tree-<crate> --test <file> -- --nocapture`.
    Tests needing live infra (e.g. email→Mailpit) run via
-   `./scripts/cargo-in-network.sh test -p my-family-<crate> --test <file>`.
+   `./scripts/cargo-in-network.sh test -p my-fam-tree-<crate> --test <file>`.
 4. `rdt lint` then `rdt test` (or the relevant subset) before declaring done.
 
 ## Debugging mechanics
