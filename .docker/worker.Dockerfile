@@ -19,7 +19,7 @@ ENV SQLX_OFFLINE=true
 ARG CARGO_FEATURES=""
 RUN cargo build --release --bin worker ${CARGO_FEATURES:+--features "$CARGO_FEATURES"}
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 ARG OCI_SOURCE
 ARG OCI_REVISION
 ARG OCI_CREATED

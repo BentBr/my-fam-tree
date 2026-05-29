@@ -17,7 +17,7 @@ ENV SQLX_OFFLINE=true
 # are bundled into the runtime image; only `api` is the default command.
 RUN cargo build --release --bin api --bin run_migrations --bin seed
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 ARG OCI_SOURCE
 ARG OCI_REVISION
 ARG OCI_CREATED

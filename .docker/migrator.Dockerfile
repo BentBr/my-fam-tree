@@ -18,7 +18,7 @@ COPY . .
 ENV SQLX_OFFLINE=true
 RUN cargo build --release --bin run_migrations
 
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 ARG OCI_SOURCE
 ARG OCI_REVISION
 ARG OCI_CREATED
