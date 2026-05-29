@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.1.5](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.4...core-v0.1.5) (2026-05-29)
+
+
+### Features
+
+* **api:** convert remaining email producers to the outbox ([54f3ea0](https://github.com/BentBr/my-fam-tree/commit/54f3ea00d60647749fb0bcc977bddc56f847af34))
+* **api:** photo-upload foundation + new crate-config / crate-storage skills ([056d2a3](https://github.com/BentBr/my-fam-tree/commit/056d2a3369aa34b4dfec6571c48d9d94461cb7b0))
+* **api:** POST/DELETE /persons/{id}/photo with image validation + presigned URLs ([73c16f8](https://github.com/BentBr/my-fam-tree/commit/73c16f8401466756d9c48fdbdac92b103121f806))
+* **api:** POST/DELETE /users/me/avatar mirroring person photos ([a3ebf21](https://github.com/BentBr/my-fam-tree/commit/a3ebf219545c69a58c35fccd540b6c9360fc189b))
+* **config,storage:** centralised config crate + Task 5 storage scaffold ([922420d](https://github.com/BentBr/my-fam-tree/commit/922420dc75629b240d1c36ee68dd87892cc93960))
+* **domain,persistence:** plumb photo_key through Person aggregate + repo ([dd4cf66](https://github.com/BentBr/my-fam-tree/commit/dd4cf66870622ca13b3c167bebd666f5399c9c50))
+* **fe:** PersonDetail photo upload + DefaultAvatar fallback ([a22d2dd](https://github.com/BentBr/my-fam-tree/commit/a22d2dd91f6e5986d86bbbb95e50d1c710dd7a60))
+* **fe:** soft-confirm on duplicate-owned family + Task 23 edge-case e2e ([30ef22a](https://github.com/BentBr/my-fam-tree/commit/30ef22ac8402d82b434bb10b97770a198e28cd41))
+* **fe:** user avatar upload in account view + nav menu ([b73269a](https://github.com/BentBr/my-fam-tree/commit/b73269ad470f91dadbd3ee9374f990f12a4984d5))
+* **infra:** MinIO two-service setup via nginx proxy on port 80 ([2e75c7b](https://github.com/BentBr/my-fam-tree/commit/2e75c7b9d9b470a791e403e941e64a428ca529a1))
+* **photo:** tree-node photos + hero sidebar + user-avatar propagation ([784553c](https://github.com/BentBr/my-fam-tree/commit/784553c9e088600f08378a20df117ff37a6a0585))
+* **worker,api:** durable email outbox + magic-link goes through it ([1e60501](https://github.com/BentBr/my-fam-tree/commit/1e6050177fc2a0d203d91603d0fc3df2b91a3e5d))
+* **worker:** periodic janitor — sweep expired auth/invite/transfer rows ([0fdec92](https://github.com/BentBr/my-fam-tree/commit/0fdec9246829d03d465d7e7c6d970d0e95674374))
+
+
+### Bug Fixes
+
+* **api:** restore bytes dep dropped by the rebrand sed ([c1295d4](https://github.com/BentBr/my-fam-tree/commit/c1295d461e4682bf4505c4a28d213fe9546c3db8))
+* **ci:** bump magic-link caps and pick a probe date that won't freeze the worker ([fa9e667](https://github.com/BentBr/my-fam-tree/commit/fa9e667c0fd097ae9af737cc9f3868b3bca6f50d))
+* **ci:** regenerate openapi spec + repair stale unit-test expectations ([886e5e2](https://github.com/BentBr/my-fam-tree/commit/886e5e2a79f39c10c89cf52531fa4398f29b455e))
+* **ci:** release-please json updater shape + test outbox SyncOutbox double ([4ccb4cb](https://github.com/BentBr/my-fam-tree/commit/4ccb4cb0cc9d2242060bba4c3af55760f55f8187))
+* **ci:** worker needs janitor + outbox env vars or it dies at startup ([73bcc5a](https://github.com/BentBr/my-fam-tree/commit/73bcc5ad9ccb669088b14e516f5d3f22bdf55f9f))
+* **config:** drop deny_unknown_fields so figment Env::raw ignores PATH/HOME/_ ([263128d](https://github.com/BentBr/my-fam-tree/commit/263128de84d9018d156b6efe3bf2b4c024bad29b))
+* **docker:** match runtime image to builder so binaries actually run ([5a33594](https://github.com/BentBr/my-fam-tree/commit/5a33594b4e948527f8e28925600d51b8f5824bab))
+* **e2e:** lift compose rate caps + route playwright at the worker compose alias ([225d21a](https://github.com/BentBr/my-fam-tree/commit/225d21acf827fb064289e93f5dea8732b9322d5c))
+* **fe:** dedupe identical toasts so a 401 burst surfaces once ([ac38003](https://github.com/BentBr/my-fam-tree/commit/ac3800382f1ede6a50dbf97c1647cb50cf62da52))
+* **fe:** gate useMe on authenticated state so the nav avatar doesn't 401 ([e1fd6cc](https://github.com/BentBr/my-fam-tree/commit/e1fd6cc828315d4e48891203489007b90340bad4))
+* **fe:** gate useMyFamilies on authenticated session — kill spurious 401 toast ([0b0262f](https://github.com/BentBr/my-fam-tree/commit/0b0262f68a89fcc8ee5fa3671a016bc471ac7ba6))
+* **fe:** mobile gaps — admin sidebar collapses, tree heading shows family name ([5112556](https://github.com/BentBr/my-fam-tree/commit/511255670c90d41321dca55afe0dc57f245b443c))
+* **fe:** user-menu button exposes the email via aria-label ([c4ea94d](https://github.com/BentBr/my-fam-tree/commit/c4ea94df7f4e14c6707b2d77e0bfc62589891734))
+* **infra:** minio-api on port 80 so the SAME hostname works inside + outside ([50b3e7b](https://github.com/BentBr/my-fam-tree/commit/50b3e7b7a401949ee61d4016d5d712c98c61b016))
+* **migrations:** make 0010/0011 idempotent so replays over partial state work ([5e1bc73](https://github.com/BentBr/my-fam-tree/commit/5e1bc73bf7573942d2b3948b88b9d66a2a6227b3))
+* **owner-transfer:** atomic completion in a single transaction ([d0d97ac](https://github.com/BentBr/my-fam-tree/commit/d0d97acd115625293916ab94efd0ac2e53abc478))
+* **security:** centralized DB-level role check for authz-sensitive writes ([4f352f6](https://github.com/BentBr/my-fam-tree/commit/4f352f60e720a096771b7a944dab393e5bec7fb0))
+* **security:** close audit High + 5 Medium findings ([cf0c9b2](https://github.com/BentBr/my-fam-tree/commit/cf0c9b246e9bb54a720aa9e9b617d5de20d3ed95))
+* **security:** close the 4 audit Low findings ([964c299](https://github.com/BentBr/my-fam-tree/commit/964c2990055ec040f58a5ef4cf13b4df07ba3a16))
+* **security:** per-IP rate cap on token-validation endpoints ([d984474](https://github.com/BentBr/my-fam-tree/commit/d984474bbafdadeda1d0c6e39add560b3b9f4e8e))
+* **security:** tighten production config validation ([398fe14](https://github.com/BentBr/my-fam-tree/commit/398fe146fc96c563a3398fd908154af3325f26c1))
+* **sqlx:** include test-target queries in offline cache ([91fb7e4](https://github.com/BentBr/my-fam-tree/commit/91fb7e456d042a4d7525b5ef1f27de3ec1e90c6d))
+* **storage,api:** async presigned_get + deny_unknown_fields on body DTOs ([a420ccd](https://github.com/BentBr/my-fam-tree/commit/a420ccd1fb9470b68f350f73e38a8f8a7327d6b8))
+* **storage:** wire a real async sleep_impl into the S3 client ([07f4d60](https://github.com/BentBr/my-fam-tree/commit/07f4d604831f69840dd644bb052054713d470074))
+* **worker tests:** future-shift FixedClock so claim_next_due isn't racy ([4e14acc](https://github.com/BentBr/my-fam-tree/commit/4e14acc27e410470cbd4b1283220e92863570567))
+* **worker:** OffsetClock keeps the outbox draining under test-fixtures ([db3cf48](https://github.com/BentBr/my-fam-tree/commit/db3cf48b05aab944d725d10ab62eb277747a8f22))
+
 ## [0.1.4](https://github.com/BentBr/my-family/compare/core-v0.1.3...core-v0.1.4) (2026-05-28)
 
 
