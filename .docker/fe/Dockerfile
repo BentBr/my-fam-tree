@@ -26,6 +26,16 @@ COPY fe/ ./
 # at the path the script expects (sibling to `/app`). The final runtime
 # stage doesn't include this — it only ships the build output.
 COPY assets/ /assets/
+# Bake the production API origin into the bundle at build time. Vite reads
+# `VITE_*` env vars when transforming the source (`import.meta.env`), and
+# `fe/src/api/client.ts` reads `VITE_API_BASE_URL` as the openapi-fetch
+# base URL. Without this the built image ships with the empty default and
+# falls back to same-origin `/api/*`, which only works when the SPA and
+# the api share an origin (i.e., the local compose stack). Set per-image
+# from CI / Helm via `--build-arg VITE_API_BASE_URL=…` so the same
+# Dockerfile reproduces both prod and the staging variant.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN pnpm openapi-codegen
 RUN pnpm build
 
