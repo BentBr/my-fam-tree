@@ -36,6 +36,10 @@ async function consumeMagicLink(page: Page, email: string): Promise<void> {
     await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/, { timeout: 15_000 })
 }
 
+// Two full signIn cycles + dropdown navigation cleanly overruns the
+// 30 s per-test default in CI under runner load. Give it 90 s.
+test.setTimeout(90_000)
+
 test('account-menu Register flow signs a new user up; Login afterwards reauthenticates them', async ({ page }) => {
     const stamp = Date.now()
     const email = `account-menu-auth-${stamp}@example.com`

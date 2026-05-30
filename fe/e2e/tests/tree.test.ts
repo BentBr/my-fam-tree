@@ -170,7 +170,7 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
 // Max) with the `related` class, while non-related members (Werner, Greta,
 // peter old) get `dimmed`. Builds the seeded family graph inline so the
 // test doesn't depend on the seeder having run.
-test('hovering Klaus highlights direct relations and dims the rest', async ({ page }) => {
+test('hovering Klaus highlights his lineage and dims the rest', async ({ page }) => {
     const stamp = Date.now()
     await signIn(page, `hover-${stamp}@example.com`)
     await createFamily(page, `Hover-${stamp}`)
@@ -280,15 +280,16 @@ test('hovering Klaus highlights direct relations and dims the rest', async ({ pa
     const klassesOf = async (id: string): Promise<string[]> =>
         page.getByTestId(`tree-node-${id}`).evaluate((el) => Array.from((el as Element).classList))
 
-    // Klaus itself carries the `hovered` class; his direct relations carry
-    // `related`. We poll briefly so the Vue reactivity tick lands.
+    // Klaus itself carries the `hovered` class; his lineage carries
+    // `related` — that's ancestors (otto, hannelore, peter), descendants
+    // (felix, lina, max, emma), and direct partners (anna, brigitte).
+    // Werner + Greta are Anna's parents and only related to Anna, not
+    // Klaus, so they stay dimmed.
     await expect.poll(async () => (await klassesOf(klaus)).includes('hovered')).toBe(true)
-    for (const id of [otto, hannelore, anna, lina, max]) {
+    for (const id of [otto, hannelore, peter, felix, lina, max, emma, anna, brigitte]) {
         await expect.poll(async () => (await klassesOf(id)).includes('related')).toBe(true)
     }
-    // Werner / Greta / peter old are NOT direct relations — they should
-    // land with `dimmed` instead of `related`.
-    for (const id of [werner, greta, peter]) {
+    for (const id of [werner, greta]) {
         const cls = await klassesOf(id)
         expect(cls).not.toContain('related')
         expect(cls).toContain('dimmed')
