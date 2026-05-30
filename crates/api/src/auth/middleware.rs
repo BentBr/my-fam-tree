@@ -18,11 +18,10 @@
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use actix_web::ResponseError;
 use actix_web::body::{BoxBody, MessageBody};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready};
 use actix_web::http::header::HeaderName;
-use actix_web::{Error, HttpMessage, HttpRequest, web};
+use actix_web::{Error, HttpMessage, HttpRequest, ResponseError, web};
 use futures_util::future::{LocalBoxFuture, Ready, ready};
 use my_fam_tree_domain::{FamilyId, Role, UserId};
 use uuid::Uuid;
@@ -262,8 +261,7 @@ mod tests {
     // Importing `actix_web::test` unqualified shadows the std `#[test]`
     // attribute for the rest of this module; alias it to keep the existing
     // sync `#[test]` fixtures compiling.
-    use actix_web::test as actix_test;
-    use actix_web::{App, HttpResponse, web};
+    use actix_web::{App, HttpResponse, test as actix_test, web};
     use my_fam_tree_domain::Role;
     use uuid::Uuid;
 
@@ -284,13 +282,9 @@ mod tests {
     /// to `Err`, this test fails before the SPA does.
     #[actix_web::test]
     async fn missing_cookie_returns_ok_401_so_cors_can_decorate() {
-        let app = actix_test::init_service(
-            App::new().service(
-                web::scope("")
-                    .wrap(AuthMiddleware::required())
-                    .route("/p", web::get().to(protected)),
-            ),
-        )
+        let app = actix_test::init_service(App::new().service(
+            web::scope("").wrap(AuthMiddleware::required()).route("/p", web::get().to(protected)),
+        ))
         .await;
         let req = actix_test::TestRequest::get().uri("/p").to_request();
         // `try_call_service` returns `Err` only when the inner Service errors;
