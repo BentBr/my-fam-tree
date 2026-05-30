@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.6](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.5...core-v0.1.6) (2026-05-30)
+
+
+### Features
+
+* **fe:** public marketing site + sitemap/robots + nginx delivery ([f44425a](https://github.com/BentBr/my-fam-tree/commit/f44425a3fd3948f2b6d18511b52eaf76101d95bb))
+* **fe:** Slothlike design system + unified AppBar chrome + brand assets ([d2ed3fa](https://github.com/BentBr/my-fam-tree/commit/d2ed3fab4ed8b5da6071f6dd642fe3a1e044821d))
+* **fe:** unified sidebar, hover-lineage tree glow, public-page screenshot + privacy refresh ([4dae5cf](https://github.com/BentBr/my-fam-tree/commit/4dae5cfb19b4b2362ad90e9218e8e418e409cd39))
+
+
+### Bug Fixes
+
+* **fe:** keep the contact email out of the i18n message compiler ([540c60c](https://github.com/BentBr/my-fam-tree/commit/540c60c804fc9bcf371398df073e6ef105265c1e))
+* **fe:** stabilize the post-rebrand e2e flakes ([3692d2d](https://github.com/BentBr/my-fam-tree/commit/3692d2d6454ef7f7ab1ee900d96516b31991c05c))
+
 ## [0.1.5](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.4...core-v0.1.5) (2026-05-29)
 
 
