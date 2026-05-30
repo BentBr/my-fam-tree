@@ -33,14 +33,12 @@ onMounted(async () => {
         // re-mounted before the navigation settled, finish the redirect
         // here rather than re-firing the now-invalid POST.
         status.value = 'ok'
-        await router.replace('/tree')
+        await safeReplace('/tree')
         return
     }
     sessionStorage.setItem(dedupeKey, '1')
     try {
         await mutation.mutateAsync(token)
-        status.value = 'ok'
-        await router.replace('/tree')
     } catch {
         // Roll back the dedup marker so a manual retry (refresh) can
         // re-attempt with the same URL. The token is single-use server-
@@ -48,8 +46,29 @@ onMounted(async () => {
         // network blew up" which won't actually allow re-consume.
         sessionStorage.removeItem(dedupeKey)
         status.value = 'error'
+        return
     }
+    // Auth is established — flip to success BEFORE attempting the
+    // post-consume navigation. If a route guard redirects the push
+    // (e.g., the family-active guard bounces the user to
+    // `/families/create`), router.replace returns a NavigationFailure
+    // rather than throwing; the previous combined try-catch would
+    // still have surfaced the error UI on any throw inside the push,
+    // even though the user is signed in. Keep the success state and
+    // let the router land where it lands.
+    status.value = 'ok'
+    await safeReplace('/tree')
 })
+
+async function safeReplace(to: string): Promise<void> {
+    try {
+        await router.replace(to)
+    } catch {
+        // Aborted / duplicate / guard-redirected navigations are not
+        // failures of the consume; the auth store is already authed
+        // and the next user interaction will pick up the right route.
+    }
+}
 </script>
 
 <template>

@@ -269,7 +269,15 @@ test('hovering Klaus highlights his lineage and dims the rest', async ({ page })
 
     await page.reload()
     await expect(page.getByTestId('tree-canvas')).toBeVisible()
-    await expect(page.getByTestId(`tree-node-${klaus}`)).toBeVisible()
+    // Wait for every test-created node to be in the DOM before
+    // dispatching the hover. The first `/relationships` GET often
+    // beats some of the test's POSTs in CI, so the tree initially
+    // renders with a partial cache; without this gate the hover BFS
+    // walks against stale `tree.nodes` and the lineage assertions
+    // race the second response that lands the full payload.
+    for (const id of [otto, hannelore, peter, werner, greta, klaus, anna, brigitte, felix, lina, max, emma]) {
+        await expect(page.getByTestId(`tree-node-${id}`)).toBeVisible()
+    }
 
     // Hover Klaus directly via the SVG node's `mouseenter` (dispatchEvent
     // bypasses the viewport/visibility check — the canvas pans/zooms so
@@ -285,14 +293,51 @@ test('hovering Klaus highlights his lineage and dims the rest', async ({ page })
     // (felix, lina, max, emma), and direct partners (anna, brigitte).
     // Werner + Greta are Anna's parents and only related to Anna, not
     // Klaus, so they stay dimmed.
-    await expect.poll(async () => (await klassesOf(klaus)).includes('hovered')).toBe(true)
-    for (const id of [otto, hannelore, peter, felix, lina, max, emma, anna, brigitte]) {
-        await expect.poll(async () => (await klassesOf(id)).includes('related')).toBe(true)
+    //
+    // Poll budget bumped to 10 s per assertion. The mouseenter dispatch
+    // → Vue reactivity → SVG re-render chain sometimes lands past the
+    // default 5 s on a busy CI runner; visually the lineage glow is
+    // correct, the polling just timed out before the DOM mutation
+    // reached the page.
+    const idLabel: Record<string, string> = {
+        [otto]: 'otto',
+        [hannelore]: 'hannelore',
+        [peter]: 'peter',
+        [felix]: 'felix',
+        [lina]: 'lina',
+        [max]: 'max',
+        [emma]: 'emma',
+        [anna]: 'anna',
+        [brigitte]: 'brigitte',
+    }
+    await expect.poll(async () => (await klassesOf(klaus)).includes('hovered'), { timeout: 10_000 }).toBe(true)
+    // Read the full lineage classification in a single browser-context
+    // round-trip. Iterating with one polling call per id raced the Vue
+    // reactivity flush — between two `page.evaluate` calls a transition
+    // class could toggle and the assertion saw the in-between state.
+    // `waitForFunction` runs the check entirely inside the browser; the
+    // browser's microtask queue ensures the BFS has landed before the
+    // predicate sees the DOM.
+    const relatedIds = [otto, hannelore, peter, felix, lina, max, emma, anna, brigitte]
+    await page.waitForFunction(
+        (ids: string[]) =>
+            ids.every((id) =>
+                document.querySelector(`[data-testid="tree-node-${id}"]`)?.classList.contains('related') ?? false,
+            ),
+        relatedIds,
+        { timeout: 10_000 },
+    )
+    // Sanity: make sure the lineage names line up with what `relatedIds`
+    // returned in case a future change adds a node and forgets the
+    // assertion list.
+    for (const id of relatedIds) {
+        const cls = await klassesOf(id)
+        expect(cls, `${idLabel[id] ?? id} must carry the .related class`).toContain('related')
     }
     for (const id of [werner, greta]) {
         const cls = await klassesOf(id)
-        expect(cls).not.toContain('related')
-        expect(cls).toContain('dimmed')
+        expect(cls, `${idLabel[id] ?? id} must not be in Klaus's lineage`).not.toContain('related')
+        expect(cls, `${idLabel[id] ?? id} should be dimmed when Klaus is hovered`).toContain('dimmed')
     }
 
     // Tree layout v3 invariants. Each TreeNode is wrapped in a `<g
