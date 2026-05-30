@@ -18,11 +18,43 @@ test('contact role + visibility gates', async ({ browser }) => {
     const guestEmail = `guest-contacts-${stamp}@example.com`
     await signIn(guest, guestEmail)
 
-    // ----- Owner invites guest, guest accepts. -----
+    // ----- Owner creates two persons: one unlinked, one to be linked to guest. -----
+    // The guest-link path must respect the consent gate (`check_link_consent`
+    // in the BE): an admin can't POST /persons with `linked_user_id: <guest>`
+    // anymore — that was the silent-bind hole. Two consent-safe paths
+    // exist; we use the person-targeted invite (BE's invite-accept handler
+    // atomically sets `linked_user_id` when the recipient clicks the link).
+    // The `claim` endpoint is self-link only and would need admin/owner
+    // role on the guest's side, so it doesn't fit this scenario.
+    //
+    // The earlier version of this test ran TWO invite cycles — a
+    // family-level invite (membership) followed by a person-targeted
+    // invite (link). That broke after the consent fix because
+    // `memberships.insert` 500s on a duplicate-key — the second invite's
+    // accept failed before `set_linked_user_id` could run. One invite
+    // covers both (membership + link), so we collapse to that.
+
+    const ownerPersonRes = await owner.request.post('/api/v1/persons', {
+        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
+        data: { given_name: 'OwnerPerson' },
+    })
+    expect(ownerPersonRes.ok()).toBeTruthy()
+    const ownerPersonId = ((await ownerPersonRes.json()) as { data: { id: string } }).data.id
+
+    const guestPersonRes = await owner.request.post('/api/v1/persons', {
+        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
+        data: { given_name: 'GuestPerson' },
+    })
+    expect(guestPersonRes.ok()).toBeTruthy()
+    const guestPersonId = ((await guestPersonRes.json()) as { data: { id: string } }).data.id
+
+    // ----- Owner invites guest with the person-targeted invite. Guest
+    //       accepts — this creates the membership AND wires
+    //       `GuestPerson.linked_user_id` to the guest in one round-trip.
     await clearMailpit()
     const inviteRes = await owner.request.post(`/api/v1/families/${familyId}/invites`, {
         headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
-        data: { email: guestEmail, role: 'user' },
+        data: { email: guestEmail, role: 'user', person_id: guestPersonId },
     })
     expect(inviteRes.ok()).toBeTruthy()
     const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s), {
@@ -33,53 +65,10 @@ test('contact role + visibility gates', async ({ browser }) => {
     const inviteLink = inviteMatch[0]
     if (inviteLink === undefined) throw new Error('invite link empty')
     await guest.goto(rewriteEmailLink(inviteLink))
-    await expect(guest).toHaveURL(/\/(tree|invite\/accept)/)
-
-    // ----- Owner creates two persons: one unlinked, one linked to the guest. -----
-    // The link to the guest must go through a consent-safe path — the
-    // BE's `check_link_consent` gate rejects an admin posting an
-    // arbitrary `linked_user_id` in the CREATE body (that was the old
-    // silent-bind hole). Two consent-safe paths exist; we use the
-    // person-targeted invite here because the guest is a separate
-    // user-account (the `claim` endpoint is self-link only). The BE's
-    // invite-accept handler atomically sets `linked_user_id` on the
-    // bound person when the recipient clicks the link.
-
-    // Owner-only person.
-    const ownerPersonRes = await owner.request.post('/api/v1/persons', {
-        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
-        data: { given_name: 'OwnerPerson' },
-    })
-    expect(ownerPersonRes.ok()).toBeTruthy()
-    const ownerPersonId = ((await ownerPersonRes.json()) as { data: { id: string } }).data.id
-
-    // Guest-linked person — created unlinked first, then bound via a
-    // person-targeted invite that the guest accepts.
-    const guestPersonRes = await owner.request.post('/api/v1/persons', {
-        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
-        data: { given_name: 'GuestPerson' },
-    })
-    expect(guestPersonRes.ok()).toBeTruthy()
-    const guestPersonId = ((await guestPersonRes.json()) as { data: { id: string } }).data.id
-
-    await clearMailpit()
-    const personInviteRes = await owner.request.post(`/api/v1/families/${familyId}/invites`, {
-        headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },
-        data: { email: guestEmail, role: 'user', person_id: guestPersonId },
-    })
-    expect(personInviteRes.ok()).toBeTruthy()
-    const personInviteMail = await waitForEmail(
-        (s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s),
-        { recipient: guestEmail },
-    )
-    const personInviteMatch = personInviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
-    if (personInviteMatch === null) throw new Error('person-targeted invite link not in email')
-    const personInviteLink = personInviteMatch[0]
-    if (personInviteLink === undefined) throw new Error('person-targeted invite link empty')
-    await guest.goto(rewriteEmailLink(personInviteLink))
-    // InviteAccept redirects to /tree on a successful link (existing-user
-    // path); we wait for that as proof the link landed.
-    await expect(guest).toHaveURL(/\/(tree|invite\/accept)/, { timeout: 15_000 })
+    // InviteAccept redirects to /tree on the existing-user success path.
+    // 15s headroom matches the rest of the consume helpers (CI runner load
+    // sometimes pushes the redirect chain past the default 5s window).
+    await expect(guest).toHaveURL(/\/tree$/, { timeout: 15_000 })
 
     // ----- Owner seeds three contacts on the owner-person:
     //       one family, one admins_only, one address.
