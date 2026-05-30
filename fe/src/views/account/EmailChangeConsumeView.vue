@@ -26,12 +26,30 @@ onMounted(async () => {
     }
     try {
         await confirm.mutateAsync(token)
-        status.value = 'ok'
-        await router.replace('/account')
     } catch {
         status.value = 'error'
+        return
     }
+    // Email change succeeded — flip to success BEFORE the navigation,
+    // and swallow benign router rejections (NavigationDuplicated, guard
+    // redirects). The previous combined try/catch would flip the UI to
+    // 'error' on any throw inside router.replace, leaving the user on
+    // the consume URL with an error alert even though the email change
+    // actually went through. Same shape as ConsumeView.
+    status.value = 'ok'
+    await safeReplace('/account')
 })
+
+async function safeReplace(to: string): Promise<void> {
+    try {
+        await router.replace(to)
+    } catch {
+        // Aborted / duplicate / guard-redirected navigations are not a
+        // failure of the confirm; the email is already updated server-
+        // side and the next user interaction will pick up the right
+        // route.
+    }
+}
 </script>
 
 <template>

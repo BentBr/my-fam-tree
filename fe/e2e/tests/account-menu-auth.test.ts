@@ -64,6 +64,13 @@ test('account-menu Register flow signs a new user up; Login afterwards reauthent
     await expect(page.getByTestId('user-menu-account')).toBeVisible()
     await expect(page.getByTestId('account-register')).toHaveCount(0)
     await page.keyboard.press('Escape')
+    // Wait for the v-menu overlay to fully unmount before reopening.
+    // Without this, Vuetify's close transition is still in flight when
+    // the next click() opens the menu, and the list items mount/detach
+    // in quick succession — Playwright's actionability check resolves
+    // the pre-detach node, sees "not stable", retries, and on retry the
+    // node has been replaced ("element was detached from the DOM").
+    await expect(page.getByTestId('sign-out')).toHaveCount(0)
 
     // -------- 2. Sign out -------------------------------------------------
     await page.getByTestId('user-menu').click()

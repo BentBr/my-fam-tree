@@ -43,9 +43,6 @@ onMounted(async () => {
             // bounces /health → /families/pick.
             family.setActive(res.family.id as FamilyId)
         }
-        status.value = 'ok'
-        await nextTick()
-        await router.push('/tree')
     } catch (err) {
         // 422 invite_email_mismatch is surfaced as a `Validation` ApiError
         // — the FE-readable hint lives inside `body.fields[].code`. We
@@ -59,8 +56,28 @@ onMounted(async () => {
             topCode === 'invite_email_mismatch' ||
             fieldCodes.some((f) => f?.code === 'validation.invite_email_mismatch')
         status.value = mismatched ? 'mismatch' : 'error'
+        return
     }
+    // Acceptance succeeded — flip to 'ok' BEFORE the navigation, and
+    // swallow benign router rejections (NavigationDuplicated, guard
+    // redirects). The previous combined try/catch would treat any
+    // throw from router.push as either 'mismatch' or 'error', even
+    // though the invite already landed server-side. Replace (not push)
+    // so the single-use token URL is not retained in history.
+    status.value = 'ok'
+    await nextTick()
+    await safeReplace('/tree')
 })
+
+async function safeReplace(to: string): Promise<void> {
+    try {
+        await router.replace(to)
+    } catch {
+        // Aborted / duplicate / guard-redirected navigations are not
+        // failures of the accept; the family is joined and the next
+        // user interaction will pick up the right route.
+    }
+}
 
 async function signOutAndRetry(): Promise<void> {
     const token = String(route.query['token'] ?? '')

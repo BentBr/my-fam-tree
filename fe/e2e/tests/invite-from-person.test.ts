@@ -63,8 +63,12 @@ test('admin invites a person; recipient accepts and is linked', async ({ browser
     const invitee = await inviteeCtx.newPage()
     await signIn(invitee, inviteeEmail)
     await invitee.goto(rewriteEmailLink(inviteLink))
-    // InviteAccept view POSTs /invites/accept and pushes /tree on success.
-    await expect(invitee).toHaveURL(/\/tree$/)
+    // InviteAccept POSTs /invites/accept, hydrates the auth store, sets
+    // the active family, then router.replace('/tree'). On a loaded CI
+    // runner that chain plus the family guard occasionally pushes past
+    // the default 5 s expect timeout; give it the same 15 s headroom as
+    // the magic-link consume test for the same reason.
+    await expect(invitee).toHaveURL(/\/tree$/, { timeout: 15_000 })
 
     // The recipient's tree should mark the linked person with the
     // `current-user` class on TreeNode (set by FamilyTree when
