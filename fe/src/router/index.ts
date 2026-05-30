@@ -5,14 +5,38 @@ import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
     interface RouteMeta {
-        layout?: 'login' | 'main' | 'admin'
+        layout?: 'login' | 'main' | 'admin' | 'public'
         requiresAuth?: boolean
         requiresAdmin?: boolean
+        /**
+         * Marks a route as part of the unauthenticated public site.
+         * Guards skip the sign-in bounce; the layout dispatcher picks
+         * `PublicLayout`; signed-in users can still reach `/` (it's
+         * informational, not a sign-in shortcut).
+         */
+        public?: boolean
     }
 }
 
 const routes: RouteRecordRaw[] = [
-    { path: '/', redirect: '/tree' },
+    {
+        path: '/',
+        name: 'home',
+        component: () => import('@/views/public/HomeView.vue'),
+        meta: { layout: 'public', public: true },
+    },
+    {
+        path: '/imprint',
+        name: 'imprint',
+        component: () => import('@/views/public/ImprintView.vue'),
+        meta: { layout: 'public', public: true },
+    },
+    {
+        path: '/data-policy',
+        name: 'data-policy',
+        component: () => import('@/views/public/DataPolicyView.vue'),
+        meta: { layout: 'public', public: true },
+    },
     {
         path: '/auth/sign-in',
         name: 'sign-in',
@@ -123,7 +147,10 @@ router.beforeEach(async (to) => {
     // arrivals itself by stashing the token to sessionStorage and bouncing the
     // user to /auth/sign-in. If the gate bounced first, the token would be
     // dropped from the URL before InviteAccept ever saw it.
-    const isExempt = to.path.startsWith('/auth/') || to.path.startsWith('/invite/')
+    // Routes flagged `meta.public` (the marketing + legal pages) are also
+    // exempt: they're informational and signed-in users may still browse
+    // them. Anonymous visitors stay on them too.
+    const isExempt = to.meta.public === true || to.path.startsWith('/auth/') || to.path.startsWith('/invite/')
     if (auth.status === 'anonymous' && !isExempt) {
         return '/auth/sign-in'
     }
@@ -138,7 +165,14 @@ router.beforeEach((to) => {
     const auth = useAuthStore()
     const family = useActiveFamilyStore()
     if (auth.status !== 'authenticated') return true
-    const isExempt = to.path.startsWith('/auth/') || to.path.startsWith('/families/') || to.path.startsWith('/invite/')
+    // Public + auth + family-picker + invite-accept routes don't require an
+    // active family in scope. The picker itself selects it; the marketing
+    // pages don't care.
+    const isExempt =
+        to.meta.public === true ||
+        to.path.startsWith('/auth/') ||
+        to.path.startsWith('/families/') ||
+        to.path.startsWith('/invite/')
     if (isExempt) return true
     // Reconcile stale active-family: localStorage may carry an
     // `activeFamilyId` from a previous session whose membership no longer

@@ -36,17 +36,12 @@ const route = useRoute()
 
 // The login / sign-up / consume / invite-accept flow uses a chromeless
 // layout (no NavDrawer mounted): the hamburger + family switcher would
-// reference things that don't exist. Hide them there. Every other
-// layout (Main, Admin) carries the drawer — so the hamburger renders
-// and the family switcher follows when the caller is signed in.
-//
-// Phase E will refine this to read `route.meta.sidebar` once every
-// route opts in explicitly; for now `meta.layout` is the boundary
-// that already exists and that AdminLayout / MainLayout / LoginLayout
-// already agree on.
-const isLoginLayout = computed(() => route.meta['layout'] === 'login')
-const showSidebarToggle = computed(() => !isLoginLayout.value)
-const showFamilySwitcher = computed(() => auth.status === 'authenticated' && !isLoginLayout.value)
+// reference things that don't exist. The public marketing pages have
+// no sidebar either. Hide both controls in those cases.
+const layout = computed(() => route.meta['layout'])
+const hasSidebar = computed(() => layout.value === 'main' || layout.value === 'admin')
+const showSidebarToggle = computed(() => hasSidebar.value)
+const showFamilySwitcher = computed(() => auth.status === 'authenticated' && hasSidebar.value)
 </script>
 
 <template>
@@ -71,7 +66,7 @@ const showFamilySwitcher = computed(() => auth.status === 'authenticated' && !is
 /* `v-app-bar` ships with its own internal flex container; we hook the
    horizontal padding onto its deep `.v-toolbar__content` slot rather
    than the outer wrapper so Vuetify's own padding rules don't take
-   precedence. Values mirror the design handoff. */
+   precedence. */
 .app-bar--padded :deep(.v-toolbar__content) {
     padding-inline: clamp(14px, 3vw, 22px);
 }

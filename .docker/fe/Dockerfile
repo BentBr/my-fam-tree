@@ -21,6 +21,11 @@ RUN pnpm install --frozen-lockfile
 # Bring in the rest of the FE source. `fe/openapi.json` is the source of truth
 # for the TS types; `fe/src/api/schema.d.ts` is gitignored and regenerated here.
 COPY fe/ ./
+# `pnpm build` runs `generate-images.js`, which reads the brand source PNGs
+# from the repo-root `assets/` directory. We copy it into the BUILDER stage
+# at the path the script expects (sibling to `/app`). The final runtime
+# stage doesn't include this — it only ships the build output.
+COPY assets/ /assets/
 RUN pnpm openapi-codegen
 RUN pnpm build
 

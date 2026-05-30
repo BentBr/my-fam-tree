@@ -1,4 +1,5 @@
 import { VueQueryPlugin } from '@tanstack/vue-query'
+import { createHead } from '@unhead/vue/client'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import { createVuetify, type IconOptions } from 'vuetify'
@@ -41,6 +42,11 @@ app.use(router)
 app.use(i18n)
 app.use(vuetify)
 app.use(VueQueryPlugin, { queryClient })
+// `@unhead/vue` powers per-route <title>, <meta>, OG tags, canonical
+// links, and hreflang on the public pages. Mounted globally so any
+// authenticated view can also override the document head in the
+// future without a separate plugin registration.
+app.use(createHead())
 
 useLocaleStore().bindToI18n(i18n)
 

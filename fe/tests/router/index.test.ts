@@ -140,13 +140,13 @@ describe('router guards', () => {
         expect(router.currentRoute.value.path).toBe('/families/pick')
     })
 
-    it('/ redirects to /tree', async () => {
-        // Confirm route table covers the root redirect. Anonymous user → tree
-        // is protected → sign-in (we just verify the redirect chain runs).
+    it('/ stays on the public home page for anonymous visitors', async () => {
+        // The root path is the public marketing page and is reachable
+        // without a session. Guards must not redirect anonymous callers
+        // to /auth/sign-in here.
         await router.push('/')
-        // Either /tree (if authenticated) or /auth/sign-in (anonymous) is fine;
-        // both prove the redirect target is /tree.
-        expect(router.currentRoute.value.path === '/auth/sign-in').toBe(true)
+        expect(router.currentRoute.value.path).toBe('/')
+        expect(router.currentRoute.value.meta.public).toBe(true)
     })
 
     it('clears a stale activeFamilyId that is no longer in the membership list', async () => {

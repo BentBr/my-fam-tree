@@ -6,11 +6,6 @@
  * components via `var(--token)` and by Vuetify via the `--v-…` aliases
  * mapped at the bottom of each block.
  *
- * Origin: the design handoff bundle (`assets/family-handoff.zip` →
- * `family/project/styles.css`). Hex values match the handoff bit-for-bit
- * so the Vuetify-rendered surfaces and the design's HTML mockups stay
- * visually identical.
- *
  * Theme switching is driven by `[data-theme="light"]` / `[data-theme="dark"]`
  * on the `<html>` element, written by `composables/useThemeMode.ts`.
  * `:root` carries the light defaults so the page paints correctly before

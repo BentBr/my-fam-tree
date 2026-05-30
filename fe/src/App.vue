@@ -7,11 +7,12 @@ import { useThemeMode } from '@/composables/useThemeMode'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import LoginLayout from '@/layouts/LoginLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
+import PublicLayout from '@/layouts/PublicLayout.vue'
+
+type Layout = 'login' | 'main' | 'admin' | 'public'
 
 const route = useRoute()
-const layout = computed<'login' | 'main' | 'admin'>(
-    () => (route.meta.layout as 'login' | 'main' | 'admin' | undefined) ?? 'main',
-)
+const layout = computed<Layout>(() => (route.meta.layout as Layout | undefined) ?? 'main')
 
 // Single owner of the `<html data-theme>` attribute + Vuetify theme
 // sync; reads the persisted ThemeMode from `useUiStore`. Mounted at
@@ -21,7 +22,8 @@ useThemeMode()
 
 <template>
     <v-app>
-        <LoginLayout v-if="layout === 'login'" />
+        <PublicLayout v-if="layout === 'public'" />
+        <LoginLayout v-else-if="layout === 'login'" />
         <AdminLayout v-else-if="layout === 'admin'" />
         <MainLayout v-else />
         <!-- ToastContainer lives outside the layout switch so toasts persist

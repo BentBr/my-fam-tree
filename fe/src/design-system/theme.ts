@@ -1,18 +1,16 @@
 /**
  * Vuetify theme — Slothlike.
  *
- * The colour values below mirror `tokens.css` 1:1; the design-system
- * doc (`.claude/plans/public-site-and-prerender.md`) calls out the
- * mapping. Vuetify consumes a JS object so we re-state the hexes here
- * — keep them in sync if you ever change one in the CSS. Authentication
- * UI, public chrome, and the tree share this single theme (no
- * per-surface overrides).
+ * Mirrors the CSS custom properties declared in `tokens.css`. Vuetify
+ * consumes a JS object so we re-state the hexes here — keep them in
+ * sync if you ever change one in the CSS. The authenticated chrome,
+ * the public marketing pages, and the tree all share this single
+ * theme (no per-surface overrides).
  *
  * Component defaults live in `slothlikeDefaults` and are picked up via
  * `createVuetify({ defaults })` in `main.ts`. Anything that needs a
  * non-default look (icon-only avatar buttons, etc.) sets it on the
- * instance — but the default is the design system's default, not
- * Vuetify's stock blue.
+ * instance.
  */
 
 import type { ThemeDefinition } from 'vuetify'

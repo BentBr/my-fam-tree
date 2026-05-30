@@ -444,5 +444,124 @@
         "upstream": "An upstream service is unavailable. Please retry shortly.",
         "internal": "Something went wrong on our side. The team has been notified.",
         "session_expired": "Your session expired — please sign in again."
+    },
+    "public": {
+        "home": {
+            "hero": {
+                "eyebrow": "Privacy-first family tree",
+                "title": "Map your family. Share what matters.",
+                "lede": "My Family Tree organises the people in your family, the relationships between them, and the dates worth remembering — without giving any of it to a third party.",
+                "ctaPrimary": "Get started",
+                "ctaSecondary": "Sign in",
+                "imageAlt": "A family of sloths hanging together from a branch"
+            },
+            "features": {
+                "relations": {
+                    "title": "One tree, every relation.",
+                    "body": "Parents, children, partners — the structure follows real families, not a single straight line."
+                },
+                "reminders": {
+                    "title": "Gentle reminders.",
+                    "body": "A short digest email lands a few days before each birthday or anniversary. Off by default; on when you want it."
+                },
+                "privacy": {
+                    "title": "Yours alone.",
+                    "body": "No analytics, no tracking, no third-party scripts. The only cookies are the ones that keep you signed in."
+                }
+            },
+            "screenshot": {
+                "caption": "Screenshot coming soon — see the tree in your own family once you sign in."
+            },
+            "cta": {
+                "title": "Ready to map your family?",
+                "button": "Create an account"
+            }
+        },
+        "footer": {
+            "tagline": "© 2026 Slothlike. Built with Rust and Vue.js.",
+            "links": {
+                "imprint": "Imprint",
+                "dataPolicy": "Privacy policy",
+                "language": "Language"
+            }
+        },
+        "imprint": {
+            "title": "Imprint",
+            "sections": {
+                "contact": {
+                    "heading": "Contact",
+                    "email": "Email",
+                    "phone": "Phone"
+                },
+                "responsible": {
+                    "heading": "Responsible for content",
+                    "name": "Bent Brüggemann"
+                },
+                "disclaimer": {
+                    "heading": "Disclaimer",
+                    "body": "Despite careful content control, we assume no liability for the content of external links."
+                },
+                "linkLiability": {
+                    "heading": "Liability for links",
+                    "body": "The site contains links to third-party websites over which we exercise no control and therefore accept no responsibility for external materials."
+                }
+            },
+            "footerNote": "© 2026 Slothlike. All rights reserved. Built with Rust and Vue.js."
+        },
+        "dataPolicy": {
+            "title": "Privacy policy",
+            "sections": {
+                "intro": {
+                    "heading": "Introduction",
+                    "body": "Your privacy matters. My Family Tree is built privacy-first: no analytics, no third-party trackers, no marketing cookies. The only data we hold is the data you choose to put into your own family tree, and the minimum required to keep you signed in."
+                },
+                "publicSite": {
+                    "heading": "The public website",
+                    "body": "When you browse my-fam-tree.eu without signing in (the home page, the imprint, and this privacy policy), we collect nothing. No cookies, no storage, no logging beyond the access logs the hosting infrastructure keeps for security and rate limiting (IP + timestamp, retained 14 days, purged afterwards)."
+                },
+                "whatWeStore": {
+                    "heading": "What we store once you sign up",
+                    "body": "When you create an account, My Family Tree stores the data you give it: your email address, the people you add to your family tree (names, dates, places, the relationships between them, photos you upload, contact details), and your reminder preferences. This data lives on our infrastructure inside the EU. We do not share it with third parties. We do not sell it. We do not use it to train anything.",
+                    "deletion": "You can delete your account at any time, which removes your data along with it."
+                },
+                "cookies": {
+                    "heading": "Cookies — the only ones we use",
+                    "body": "My Family Tree uses two strictly-necessary cookies, both for authentication, both HttpOnly (your browser never exposes them to JavaScript), both flagged Secure in production:",
+                    "access": "access — a short-lived JSON Web Token (about 15 minutes). Sent on every API request to prove who you are.",
+                    "refresh": "refresh — a longer-lived opaque token (about 30 days). Scoped to /auth/refresh only. When the access token expires, the browser swaps the refresh token for a fresh access token silently so you don't get signed out mid-action.",
+                    "rationale": "Why both? The short access token limits the blast radius if a token ever leaks — anything an attacker could do with it expires inside a few minutes. The refresh token only travels on the renewal request, never on a normal API call, so it's exposed to a far narrower attack surface.",
+                    "noOthers": "That's the whole list. We do not set tracking cookies, marketing cookies, or preference cookies. Your theme (light/dark) and language choice are stored in your browser's localStorage and never reach our server."
+                },
+                "noAnalytics": {
+                    "heading": "No analytics, no third parties",
+                    "body": "We do not run Google Analytics, Plausible, Matomo, Sentry, or any other analytics or error-reporting service. We do not embed YouTube, Vimeo, social-media widgets, or fonts hosted elsewhere. Every asset the public site loads comes from our own servers."
+                },
+                "rights": {
+                    "heading": "Your rights under GDPR",
+                    "lead": "You can ask us, at any time, for:",
+                    "items": [
+                        "access to the personal data we hold about you",
+                        "correction of inaccurate data",
+                        "deletion of your data",
+                        "restriction of how we process it",
+                        "portability — a copy of your data in a machine-readable format"
+                    ],
+                    "trail": "Send any of these requests to hello@my-fam-tree.eu. You also have the right to complain to your local data-protection authority."
+                },
+                "security": {
+                    "heading": "Data security",
+                    "body": "We use technical and organisational measures to protect your data against accidental loss, unauthorised access, and modification. In plain terms: encrypted transport (TLS), encrypted backups, role-based access on the server side, and the cookie discipline above. No system is perfect; we report breaches inside 72 hours of discovery as required by Art. 33 GDPR."
+                },
+                "changes": {
+                    "heading": "Changes to this policy",
+                    "body": "We may update this policy to reflect changes in our practices or in applicable law. When we do, the new version replaces this one in place; the change date below tells you when it last moved."
+                },
+                "contact": {
+                    "heading": "Contact",
+                    "body": "For questions about this policy or your data, write to hello@my-fam-tree.eu, or use the postal contact on the imprint page."
+                }
+            },
+            "lastUpdated": "Last updated: 2026-05-30."
+        }
     }
 }

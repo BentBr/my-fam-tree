@@ -23,8 +23,7 @@ const { t } = useI18n()
 
 const resolved = computed(() => currentResolvedTheme(ui.theme))
 // Icon: when the page is currently light, show the moon (= "click to
-// go dark"); when dark, show the sun. Mirrors the rdatacore/handoff
-// affordance pattern.
+// go dark"); when dark, show the sun.
 const icon = computed(() => (resolved.value === 'dark' ? 'sun' : 'moon'))
 const label = computed(() =>
     resolved.value === 'dark' ? t('chrome.theme.switchToLight') : t('chrome.theme.switchToDark'),
