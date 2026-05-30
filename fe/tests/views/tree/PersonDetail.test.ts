@@ -92,6 +92,10 @@ vi.mock('@/api/hooks/persons', () => ({
     // QueryClient or wire the real openapi client.
     useSetPersonPhoto: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
     useClearPersonPhoto: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
+    // The "Claim as me" CTA fires this mutation; stub it the same as
+    // delete (mutateAsync + isPending) so the button's :loading binding
+    // resolves cleanly even in tests that don't exercise the click.
+    useClaimPerson: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
 }))
 
 const inviteMutate = vi.fn()

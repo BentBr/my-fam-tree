@@ -28,7 +28,7 @@ use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, Pagination};
 use crate::services::audit;
 use crate::validation::{string_too_long, value_required};
-use crate::{ApiError, AppState, response_body};
+use crate::{ApiError, AppState, FieldViolation, response_body};
 
 const PERSONS_LIST_DEFAULT_LIMIT: u32 = 50;
 const PERSONS_LIST_MAX_LIMIT: u32 = 100;
@@ -239,6 +239,59 @@ fn map_person_repo_err(e: PersonRepoError, id: Option<Uuid>) -> ApiError {
     }
 }
 
+/// Gate caller-supplied `linked_user_id` on CREATE / PATCH against the
+/// consent model.
+///
+/// Linking a person row to a user account is privacy-sensitive: the
+/// linked user inherits the row's contacts, photos, "this is you"
+/// highlight in the tree, and several FE affordances. Without a consent
+/// check, any admin in the family could silently bind any person row
+/// to any `user_id` (their own user, an unrelated user, an attacker's
+/// throwaway, …) just by posting `linked_user_id: <uuid>`.
+///
+/// The dedicated consent paths are:
+/// * `POST /persons/{id}/claim` — caller self-links (we gate on the
+///   role; the caller is provably acting for themselves).
+/// * The invite-email round-trip — for linking *other* users, where
+///   the linked party must click their own mailbox before the bind
+///   happens.
+///
+/// CREATE and PATCH stay permissive in three specific cases (so the
+/// FE can keep working without contortions):
+/// 1. `proposed` is `None` — the caller didn't touch the field (most
+///    edits) or sent an explicit null (PATCH's `Option<Uuid>` shape
+///    can't distinguish absent from null, but both mean "no change").
+/// 2. `proposed == current` — defensive echo of the existing value
+///    from a FE that re-sends every field on save.
+/// 3. `proposed == caller_user_id` — admin self-link at CREATE time
+///    (e.g., the family-owner's first row representing themselves).
+///    Equivalent to `POST /claim` after the fact; allowed inline for
+///    convenience.
+///
+/// Anything else (proposed is some *other* user's id) is rejected
+/// with `validation.link_consent_required` so the FE can show a
+/// targeted message and the admin understands they need the invite
+/// flow.
+fn check_link_consent(
+    proposed: Option<my_fam_tree_domain::UserId>,
+    current: Option<my_fam_tree_domain::UserId>,
+    caller_user_id: my_fam_tree_domain::UserId,
+) -> Result<(), ApiError> {
+    match proposed {
+        None => Ok(()),
+        Some(p) if Some(p) == current => Ok(()),
+        Some(p) if p == caller_user_id => Ok(()),
+        Some(_) => Err(ApiError::Validation(vec![FieldViolation::new(
+            "/linked_user_id",
+            "validation.link_consent_required",
+            "Linking a person row to another user requires the invite-email \
+             consent flow. Send an invite (POST /families/{id}/invites) and let \
+             the recipient accept; or for self-link, use POST /persons/{id}/claim \
+             or set this field to your own user id.",
+        )])),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // GET /persons
 // ---------------------------------------------------------------------------
@@ -327,6 +380,15 @@ pub async fn create(
     if payload.given_name.trim().is_empty() {
         return Err(value_required("/given_name"));
     }
+    // Consent gate: CREATE may NOT pre-link the new row to anyone other
+    // than the caller. See `check_link_consent` doc — a new row has no
+    // existing link, so the only allowed Some(_) value is the caller's
+    // own user id (admin self-link). Cross-user links go via invite.
+    check_link_consent(
+        payload.linked_user_id.map(my_fam_tree_domain::UserId::from_uuid),
+        None,
+        claims.user_id,
+    )?;
 
     let draft = draft_from_create(payload);
     check_draft(&draft)?;
@@ -450,6 +512,17 @@ pub async fn update(
     if matches!(payload.given_name.as_deref(), Some(s) if s.trim().is_empty()) {
         return Err(value_required("/given_name"));
     }
+    // Consent gate: PATCH may NOT change `linked_user_id` to anyone
+    // other than the caller. The defensive-echo case (FE re-sends
+    // the existing value as part of a wider edit) is allowed by
+    // `check_link_consent`; the genuine change case routes through
+    // POST /persons/{id}/claim (self) or the invite-email flow
+    // (cross-user). See the helper's doc for the consent rationale.
+    check_link_consent(
+        payload.linked_user_id.map(my_fam_tree_domain::UserId::from_uuid),
+        existing.linked_user_id,
+        claims.user_id,
+    )?;
 
     let draft = merge_update(&existing, payload);
     check_draft(&draft)?;
@@ -628,4 +701,76 @@ pub async fn claim(
         .map_err(|e| map_person_repo_err(e, Some(id)))?
         .ok_or(ApiError::PersonNotFound { id: Some(id) })?;
     Ok(ApiResponse::ok(to_view(updated, &state.object_store).await))
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic)]
+mod tests {
+    use my_fam_tree_domain::UserId;
+    use uuid::Uuid;
+
+    use super::*;
+
+    fn uid() -> UserId {
+        UserId::from_uuid(Uuid::new_v4())
+    }
+
+    // The consent gate has a small but security-relevant truth table —
+    // each branch gets its own test so a future refactor that drops a
+    // branch fails loudly. Reviewers can read the test names as a spec.
+
+    #[test]
+    fn link_consent_allows_none_proposed() {
+        // FE didn't touch the field (most edits) — always fine.
+        let caller = uid();
+        assert!(check_link_consent(None, None, caller).is_ok());
+        assert!(check_link_consent(None, Some(uid()), caller).is_ok());
+    }
+
+    #[test]
+    fn link_consent_allows_proposed_equal_to_current() {
+        // Defensive echo — FE re-sends the existing value as part of a
+        // wider edit. No change attempted, so the consent gate is moot.
+        let caller = uid();
+        let linked = uid();
+        assert!(check_link_consent(Some(linked), Some(linked), caller).is_ok());
+    }
+
+    #[test]
+    fn link_consent_allows_proposed_equal_to_caller() {
+        // Admin self-link at CREATE / PATCH — equivalent to POST /claim.
+        let caller = uid();
+        assert!(check_link_consent(Some(caller), None, caller).is_ok());
+        // Even when re-linking to self over a different existing link
+        // (admin migrates the row to themselves): allowed.
+        assert!(check_link_consent(Some(caller), Some(uid()), caller).is_ok());
+    }
+
+    #[test]
+    fn link_consent_rejects_proposed_equal_to_other_user() {
+        // The consent hole: admin tries to link a row to some OTHER
+        // user's id without an invite round-trip. Must be rejected.
+        let caller = uid();
+        let other = uid();
+        let err = check_link_consent(Some(other), None, caller).expect_err("must reject");
+        match err {
+            ApiError::Validation(v) => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0].path, "/linked_user_id");
+                assert_eq!(v[0].code, "validation.link_consent_required");
+            }
+            _ => panic!("expected Validation, got {err:?}"),
+        }
+    }
+
+    #[test]
+    fn link_consent_rejects_admin_moving_link_between_other_users() {
+        // Admin tries to silently re-bind from user A to user B
+        // (neither is the caller). Must be rejected even though
+        // there's already a link there.
+        let caller = uid();
+        let user_a = uid();
+        let user_b = uid();
+        assert!(check_link_consent(Some(user_b), Some(user_a), caller).is_err());
+    }
 }
