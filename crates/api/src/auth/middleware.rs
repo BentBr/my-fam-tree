@@ -18,7 +18,8 @@
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use actix_web::body::MessageBody;
+use actix_web::ResponseError;
+use actix_web::body::{BoxBody, MessageBody};
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform, forward_ready};
 use actix_web::http::header::HeaderName;
 use actix_web::{Error, HttpMessage, HttpRequest, web};
@@ -67,7 +68,7 @@ where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     B: MessageBody + 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Transform = AuthService<S>;
     type InitError = ();
@@ -83,7 +84,7 @@ where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     B: MessageBody + 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -100,10 +101,27 @@ where
                 (Some((claims, header_family)), _) => {
                     let user_claims = build_user_claims(claims, header_family);
                     req.extensions_mut().insert(user_claims);
-                    svc.call(req).await
+                    svc.call(req).await.map(ServiceResponse::map_into_boxed_body)
                 }
-                (None, true) => Err(Error::from(ApiError::Unauthenticated)),
-                (None, false) => svc.call(req).await,
+                (None, true) => {
+                    // CRITICAL: do NOT `Err(Error::from(ApiError::Unauthenticated))`
+                    // here. `actix-cors`'s response-decoration path runs AFTER
+                    // its `let res = fut.await?` line, so an `Err` propagates
+                    // up the chain WITHOUT going through CORS's header
+                    // injection. The browser then receives the 401 with no
+                    // `Access-Control-Allow-Origin` and reports it as a CORS
+                    // failure — masking the real 401 and breaking cross-origin
+                    // auth probes from the SPA.
+                    //
+                    // Synthesising an `Ok(ServiceResponse)` keeps the 401 body
+                    // identical (same `ApiError::Unauthenticated.error_response()`,
+                    // same `application/problem+json` shape) but lets CORS see
+                    // it as a normal response and decorate it. Same body, same
+                    // status, correct headers.
+                    let resp = ApiError::Unauthenticated.error_response();
+                    Ok(req.into_response(resp))
+                }
+                (None, false) => svc.call(req).await.map(ServiceResponse::map_into_boxed_body),
             }
         })
     }
@@ -241,11 +259,48 @@ pub async fn require_db_role(
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
+    // Importing `actix_web::test` unqualified shadows the std `#[test]`
+    // attribute for the rest of this module; alias it to keep the existing
+    // sync `#[test]` fixtures compiling.
+    use actix_web::test as actix_test;
+    use actix_web::{App, HttpResponse, web};
     use my_fam_tree_domain::Role;
     use uuid::Uuid;
 
     use super::*;
     use crate::auth::claims::{FamilyClaim, JwtClaims};
+
+    async fn protected() -> HttpResponse {
+        HttpResponse::Ok().body("ok")
+    }
+
+    /// Regression: a missing-cookie request to a guarded route MUST resolve
+    /// to an `Ok(ServiceResponse)` with status 401, not `Err`. The previous
+    /// `Err(Error::from(ApiError::Unauthenticated))` shape short-circuited
+    /// `actix-cors`'s response-decoration path (its `let res = fut.await?`),
+    /// so the 401 reached the browser without `Access-Control-Allow-Origin`
+    /// and surfaced as a misleading "CORS error" instead of the real 401.
+    /// Asserting `Ok` here pins the contract — if a future refactor reverts
+    /// to `Err`, this test fails before the SPA does.
+    #[actix_web::test]
+    async fn missing_cookie_returns_ok_401_so_cors_can_decorate() {
+        let app = actix_test::init_service(
+            App::new().service(
+                web::scope("")
+                    .wrap(AuthMiddleware::required())
+                    .route("/p", web::get().to(protected)),
+            ),
+        )
+        .await;
+        let req = actix_test::TestRequest::get().uri("/p").to_request();
+        // `try_call_service` returns `Err` only when the inner Service errors;
+        // an `Ok` with a 401 status passes through as `Ok`. The bug we're
+        // guarding against would return `Err` here.
+        let resp = actix_test::try_call_service(&app, req)
+            .await
+            .expect("auth middleware must return Ok(401), not Err — CORS would skip the response");
+        assert_eq!(resp.status(), 401);
+    }
 
     fn fixture_claims(families: Vec<FamilyClaim>) -> JwtClaims {
         JwtClaims {

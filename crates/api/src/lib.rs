@@ -55,8 +55,14 @@ pub fn build_app(
     let allowed: Vec<&str> = cfg.api.cors_allowed_origins.split(',').map(str::trim).collect();
     // With `supports_credentials()`, the `CORS` spec forbids wildcards.
     // Enumerate the methods and headers we actually use.
+    //
+    // PUT is required for `/reminder-preferences` (full-replace upsert
+    // semantics — the only PUT in the surface today). Omitting it makes
+    // the browser's preflight reject the request before it leaves the
+    // SPA, surfacing as a "CORS error" with no useful detail. Keep the
+    // list in sync if a new HTTP method appears in `routes/`.
     let mut cors = Cors::default()
-        .allowed_methods(["GET", "POST", "PATCH", "DELETE", "OPTIONS"])
+        .allowed_methods(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
         .allowed_headers([
             actix_web::http::header::CONTENT_TYPE,
             actix_web::http::header::ACCEPT,
