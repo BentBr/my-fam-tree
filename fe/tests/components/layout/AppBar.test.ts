@@ -9,12 +9,20 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 vi.mock('@/api/hooks/users', () => ({
     useMe: () => ({ data: ref(undefined), isLoading: ref(false), error: ref(null) }),
 }))
+// AppBar now reads `useDisplay().smAndDown` to fold inline tools into
+// the AccountControl menu on phones. Mocking the helper avoids dragging
+// the full Vuetify plugin into the harness — we always test the
+// desktop layout (smAndDown=false) since the inline-tools logic is
+// boolean-simple.
+vi.mock('vuetify', () => ({
+    useDisplay: () => ({ smAndDown: ref(false) }),
+}))
 
 import AppBar from '@/components/layout/AppBar.vue'
 import { i18n } from '@/i18n'
 
 interface MountOpts {
-    layout?: 'login' | 'main' | 'admin'
+    sidebar?: 'main' | 'admin' | 'none'
 }
 
 async function mountAppBar(opts: MountOpts = {}) {
@@ -24,10 +32,10 @@ async function mountAppBar(opts: MountOpts = {}) {
             {
                 path: '/',
                 component: { template: '<div />' },
-                // Only set `meta.layout` when the test asked for one; the
+                // Only set `meta.sidebar` when the test asked for one; the
                 // type rejects `undefined` for an exact-optional field, so
                 // either supply the value or leave the key off entirely.
-                meta: opts.layout === undefined ? {} : { layout: opts.layout },
+                meta: opts.sidebar === undefined ? {} : { sidebar: opts.sidebar },
             },
             { path: '/auth/sign-in', component: { template: '<div />' } },
         ],
@@ -60,20 +68,25 @@ describe('AppBar', () => {
     })
 
     it('renders the brand logo, theme toggle, language menu, and account control on every route', async () => {
-        const w = await mountAppBar({ layout: 'login' })
+        const w = await mountAppBar({ sidebar: 'none' })
         expect(w.findAll('[data-testid="brand-logo"]')).toHaveLength(1)
         expect(w.findAll('[data-testid="theme-toggle"]')).toHaveLength(1)
         expect(w.findAll('[data-testid="language-menu"]')).toHaveLength(1)
         expect(w.findAll('[data-testid="user-menu"]')).toHaveLength(1)
     })
 
-    it('hides the hamburger on the chromeless login layout', async () => {
-        const w = await mountAppBar({ layout: 'login' })
+    it('hides the hamburger on routes without a sidebar', async () => {
+        const w = await mountAppBar({ sidebar: 'none' })
         expect(w.find('[data-testid="nav-toggle"]').exists()).toBe(false)
     })
 
-    it('shows the hamburger on the default (main) layout', async () => {
-        const w = await mountAppBar({ layout: 'main' })
+    it('shows the hamburger on routes that mount the main sidebar', async () => {
+        const w = await mountAppBar({ sidebar: 'main' })
+        expect(w.find('[data-testid="nav-toggle"]').exists()).toBe(true)
+    })
+
+    it('shows the hamburger on admin-variant routes too', async () => {
+        const w = await mountAppBar({ sidebar: 'admin' })
         expect(w.find('[data-testid="nav-toggle"]').exists()).toBe(true)
     })
 })

@@ -62,7 +62,7 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await expect(page.getByTestId('person-detail-title')).toContainText('AuditTarget', { timeout: 10_000 })
 })
 
-test('admin layout drops the main nav drawer and exposes only the back-to-tree link', async ({ page }) => {
+test('admin sidebar swaps in the admin items + back-to-tree link', async ({ page }) => {
     const stamp = Date.now()
     await signIn(page, `admin-nav-owner-${stamp}@example.com`)
     await createFamily(page, `AdminNav-${stamp}`)
@@ -70,10 +70,11 @@ test('admin layout drops the main nav drawer and exposes only the back-to-tree l
     await page.goto('/admin/audit')
     await expect(page.getByTestId('admin-audit-page')).toBeVisible()
 
-    // The admin surface deliberately omits the global nav drawer — two
-    // competing nav columns confused users. The dedicated rail
-    // back-to-tree link is the canonical escape hatch.
-    await expect(page.getByTestId('nav-drawer')).toHaveCount(0)
+    // The sidebar is the SAME `<v-navigation-drawer>` as on /tree —
+    // only the items inside swap based on `route.meta.sidebar`. So the
+    // drawer is still present, and its first row is the back-to-tree
+    // escape hatch (admin variant first item).
+    await expect(page.getByTestId('nav-drawer')).toHaveCount(1)
 
     const back = page.getByTestId('admin-rail-back')
     await expect(back).toBeVisible()

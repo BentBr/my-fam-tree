@@ -34,8 +34,11 @@ const outDir = path.join(feRoot, 'public', 'brand')
 // sloth — favicons + the in-app icon all derive from it so the head
 // stays in frame at every size. The family group lives in
 // `sloth-family.png` (used for the Home hero + the OG card).
+// `example.png` is a real screenshot of the tree view, used to anchor
+// the marketing page's "this is what you get" slot.
 const SLOTH = path.join(assetsDir, 'sloth-center.png')
 const SLOTH_FAMILY = path.join(assetsDir, 'sloth-family.png')
+const TREE_EXAMPLE = path.join(assetsDir, 'example.png')
 
 async function ensureDir(dir) {
     await fs.mkdir(dir, { recursive: true })
@@ -103,6 +106,16 @@ async function generateHeroImage() {
     console.log('  sloth-family-960.webp')
 }
 
+async function generateTreeExample() {
+    // Two widths so retina screens get a crisper render. Source is
+    // 1245 × 732, so both targets stay within the source resolution.
+    for (const width of [960, 1280]) {
+        const out = path.join(outDir, `tree-example-${width}.webp`)
+        await sharp(TREE_EXAMPLE).resize(width, null, { withoutEnlargement: true }).webp({ quality: 90 }).toFile(out)
+        console.log(`  tree-example-${width}.webp`)
+    }
+}
+
 async function main() {
     console.log('Generating brand assets into fe/public/brand/ …')
     await ensureDir(outDir)
@@ -110,6 +123,7 @@ async function main() {
     await generateSlothResponsive()
     await generateOgImage()
     await generateHeroImage()
+    await generateTreeExample()
     console.log('Done.')
 }
 

@@ -470,7 +470,8 @@
                 }
             },
             "screenshot": {
-                "caption": "Screenshot coming soon — see the tree in your own family once you sign in."
+                "alt": "A family tree rendered in My Family Tree — parents at the top, children below, partner pairs joined with a soft heart connector.",
+                "caption": "A real family tree, rendered from real records. Click any person to open their full profile; hover to trace inheritance."
             },
             "cta": {
                 "title": "Ready to map your family?",
@@ -509,56 +510,51 @@
             "footerNote": "© 2026 Slothlike. All rights reserved. Built with Rust and Vue.js."
         },
         "dataPolicy": {
-            "title": "Privacy policy",
+            "title": "Privacy Policy",
             "sections": {
-                "intro": {
+                "introduction": {
                     "heading": "Introduction",
-                    "body": "Your privacy matters. My Family Tree is built privacy-first: no analytics, no third-party trackers, no marketing cookies. The only data we hold is the data you choose to put into your own family tree, and the minimum required to keep you signed in."
+                    "body": "Your privacy is important to us. My Family Tree is built privacy-first — we collect only what you ask the app to hold for you, and the minimum required to keep you signed in. No analytics, no trackers, no marketing cookies."
                 },
-                "publicSite": {
-                    "heading": "The public website",
-                    "body": "When you browse my-fam-tree.eu without signing in (the home page, the imprint, and this privacy policy), we collect nothing. No cookies, no storage, no logging beyond the access logs the hosting infrastructure keeps for security and rate limiting (IP + timestamp, retained 14 days, purged afterwards)."
-                },
-                "whatWeStore": {
-                    "heading": "What we store once you sign up",
-                    "body": "When you create an account, My Family Tree stores the data you give it: your email address, the people you add to your family tree (names, dates, places, the relationships between them, photos you upload, contact details), and your reminder preferences. This data lives on our infrastructure inside the EU. We do not share it with third parties. We do not sell it. We do not use it to train anything.",
-                    "deletion": "You can delete your account at any time, which removes your data along with it."
+                "dataCollection": {
+                    "heading": "Data Collection",
+                    "publicBody": "When you browse our public pages (home, imprint, this policy) without signing in, we do not collect personal data. No cookies are set, no information is logged in our application beyond what the hosting infrastructure keeps for security (IP plus timestamp, retained 14 days, then purged).",
+                    "appBody": "When you create an account, we store the data you give the app: your email address, the people you add to your tree (names, dates, places, relationships, photos you upload, contact details), and your reminder preferences. This data lives on our infrastructure inside the EU. We do not share it with third parties, we do not sell it, and we do not use it to train anything. You can delete your account at any time, which removes your data with it."
                 },
                 "cookies": {
-                    "heading": "Cookies — the only ones we use",
-                    "body": "My Family Tree uses two strictly-necessary cookies, both for authentication, both HttpOnly (your browser never exposes them to JavaScript), both flagged Secure in production:",
+                    "heading": "Cookies",
+                    "intro": "My Family Tree uses two strictly-necessary cookies, both for authentication, both HttpOnly (your browser never exposes them to JavaScript), both flagged Secure in production. We use no other cookies — no tracking, no marketing, no preference cookies. Your theme and language choices stay in your browser's localStorage and never reach our server.",
                     "access": "access — a short-lived JSON Web Token (about 15 minutes). Sent on every API request to prove who you are.",
-                    "refresh": "refresh — a longer-lived opaque token (about 30 days). Scoped to /auth/refresh only. When the access token expires, the browser swaps the refresh token for a fresh access token silently so you don't get signed out mid-action.",
-                    "rationale": "Why both? The short access token limits the blast radius if a token ever leaks — anything an attacker could do with it expires inside a few minutes. The refresh token only travels on the renewal request, never on a normal API call, so it's exposed to a far narrower attack surface.",
-                    "noOthers": "That's the whole list. We do not set tracking cookies, marketing cookies, or preference cookies. Your theme (light/dark) and language choice are stored in your browser's localStorage and never reach our server."
+                    "refresh": "refresh — a longer-lived opaque token (about 30 days). Scoped to /auth/refresh only. When the access token expires, the browser silently swaps the refresh token for a fresh one so you are not signed out mid-action.",
+                    "rationale": "The short-lived access token limits the damage if a token ever leaks; the refresh token only travels on the renewal request, never on a normal API call, so its attack surface is narrow."
                 },
-                "noAnalytics": {
-                    "heading": "No analytics, no third parties",
-                    "body": "We do not run Google Analytics, Plausible, Matomo, Sentry, or any other analytics or error-reporting service. We do not embed YouTube, Vimeo, social-media widgets, or fonts hosted elsewhere. Every asset the public site loads comes from our own servers."
+                "analytics": {
+                    "heading": "Analytics",
+                    "body": "We do not use any analytics, tracking tools or third-party services on this site. No Google Analytics, no Plausible, no Matomo, no Sentry. No embedded YouTube, Vimeo, social widgets or externally-hosted fonts. Every asset the site loads is served from our own infrastructure."
                 },
                 "rights": {
-                    "heading": "Your rights under GDPR",
-                    "lead": "You can ask us, at any time, for:",
+                    "heading": "Your Rights",
+                    "lead": "You have the following rights regarding your personal data:",
                     "items": [
-                        "access to the personal data we hold about you",
-                        "correction of inaccurate data",
-                        "deletion of your data",
-                        "restriction of how we process it",
-                        "portability — a copy of your data in a machine-readable format"
+                        "Right to information about stored data",
+                        "Right to correction of incorrect data",
+                        "Right to deletion of data",
+                        "Right to restriction of processing",
+                        "Right to data portability"
                     ],
-                    "trail": "Send any of these requests to hello@my-fam-tree.eu. You also have the right to complain to your local data-protection authority."
+                    "trail": "Send any such request to hello@my-fam-tree.eu. You also have the right to complain to your local data-protection authority."
                 },
                 "security": {
-                    "heading": "Data security",
-                    "body": "We use technical and organisational measures to protect your data against accidental loss, unauthorised access, and modification. In plain terms: encrypted transport (TLS), encrypted backups, role-based access on the server side, and the cookie discipline above. No system is perfect; we report breaches inside 72 hours of discovery as required by Art. 33 GDPR."
+                    "heading": "Data Security",
+                    "body": "We use technical and organizational security measures to protect your data against accidental or intentional manipulation, loss, destruction, or access by unauthorized persons. In practical terms: TLS-encrypted transport, encrypted backups, role-based server-side access, and the cookie discipline described above. We report breaches within 72 hours of discovery as required by Art. 33 GDPR."
                 },
                 "changes": {
-                    "heading": "Changes to this policy",
-                    "body": "We may update this policy to reflect changes in our practices or in applicable law. When we do, the new version replaces this one in place; the change date below tells you when it last moved."
+                    "heading": "Changes to this Privacy Policy",
+                    "body": "We reserve the right to update this privacy policy to reflect changes in our data processing practices or legal requirements. The new version replaces this one in place; the change date below shows when it last moved."
                 },
                 "contact": {
                     "heading": "Contact",
-                    "body": "For questions about this policy or your data, write to hello@my-fam-tree.eu, or use the postal contact on the imprint page."
+                    "body": "If you have any questions about this privacy policy or data protection, please write to hello@my-fam-tree.eu, or use the postal address given in the imprint."
                 }
             },
             "lastUpdated": "Last updated: 2026-05-30."

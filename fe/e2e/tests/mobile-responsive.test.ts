@@ -86,23 +86,22 @@ test.describe('mobile responsiveness', () => {
         )
         expect(horizontallyScrollable).toBe(false)
 
-        // --- Part 3: admin layout collapses its sidebar on mobile ------------
-        // /admin/audit (owner role can reach it). The fixed 220px rail would
-        // eat almost half the viewport on a phone, squashing the content into
-        // an unreadable column — the responsive layout collapses it to an
-        // icon-only rail (~56px wide) so the audit table has room to render.
+        // --- Part 3: admin pages reuse the same drawer chrome on mobile ------
+        // The `/admin/*` routes now share `AppSidebar` with the rest of the
+        // app — only the items inside swap. On a phone the drawer parks
+        // off-canvas (same `<v-navigation-drawer temporary>`) and only the
+        // hamburger toggles it open. Audit table thus reads at full width.
         await page.goto('/admin/audit')
+        // The audit page body is reachable (full content width, no rail
+        // squeezing it into a column).
+        await expect(page.getByTestId('admin-audit-page')).toBeVisible()
+        // The drawer itself sits off-canvas until the hamburger fires.
+        expect(await drawerRight()).toBeLessThanOrEqual(0)
+        await expect(page.locator('.v-navigation-drawer__scrim')).toHaveCount(0)
+        // Tapping the hamburger surfaces the admin-variant items — the back
+        // link is the first row of the list.
+        await page.getByTestId('nav-toggle').click()
         await expect(page.getByTestId('admin-rail-audit')).toBeVisible()
-        const railWidth = await page
-            .locator('[data-testid="admin-rail"]')
-            .evaluate((el) => el.getBoundingClientRect().width)
-        expect(railWidth).toBeLessThan(90)
-        // Item titles in the rail are hidden on mobile — the icon stands alone.
-        // Vuetify renders the title in a `.v-list-item-title` span; assert it
-        // has no rendered width (display:none from our scoped style).
-        const titleWidth = await page
-            .locator('[data-testid="admin-rail-audit"] .v-list-item-title')
-            .evaluate((el) => el.getBoundingClientRect().width)
-        expect(titleWidth).toBe(0)
+        await expect(page.getByTestId('admin-rail-back')).toBeVisible()
     })
 })

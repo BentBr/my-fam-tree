@@ -42,5 +42,3 @@ Thumbs.db
 !.claude/skills/
 !.claude/agents/
 
-# Design-handoff bundle — extracted to /tmp at session start; not source
-assets/family-handoff.zip

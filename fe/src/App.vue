@@ -4,12 +4,11 @@ import { useRoute } from 'vue-router'
 
 import ToastContainer from '@/components/common/ToastContainer.vue'
 import { useThemeMode } from '@/composables/useThemeMode'
-import AdminLayout from '@/layouts/AdminLayout.vue'
 import LoginLayout from '@/layouts/LoginLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 
-type Layout = 'login' | 'main' | 'admin' | 'public'
+type Layout = 'login' | 'main' | 'public'
 
 const route = useRoute()
 const layout = computed<Layout>(() => (route.meta.layout as Layout | undefined) ?? 'main')
@@ -24,7 +23,6 @@ useThemeMode()
     <v-app>
         <PublicLayout v-if="layout === 'public'" />
         <LoginLayout v-else-if="layout === 'login'" />
-        <AdminLayout v-else-if="layout === 'admin'" />
         <MainLayout v-else />
         <!-- ToastContainer lives outside the layout switch so toasts persist
              across login/main transitions. -->

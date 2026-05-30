@@ -20,6 +20,7 @@
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
 
 import AccountControl from '@/components/common/AccountControl.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
@@ -33,13 +34,21 @@ import FamilySwitcher from './FamilySwitcher.vue'
 const auth = useAuthStore()
 const ui = useUiStore()
 const route = useRoute()
+const { smAndDown } = useDisplay()
 
-// The login / sign-up / consume / invite-accept flow uses a chromeless
-// layout (no NavDrawer mounted): the hamburger + family switcher would
-// reference things that don't exist. The public marketing pages have
-// no sidebar either. Hide both controls in those cases.
-const layout = computed(() => route.meta['layout'])
-const hasSidebar = computed(() => layout.value === 'main' || layout.value === 'admin')
+// On phones the right-side cluster has very little room. Theme +
+// language fold into the AccountControl dropdown instead so the
+// AppBar stays uncrowded. Both controls remain always-available,
+// they just live one tap deeper.
+const showInlineTools = computed(() => !smAndDown.value)
+
+// The hamburger only makes sense when a sidebar is mounted; the family
+// switcher only when the caller is signed in and the chrome carries a
+// sidebar to scope into. Both gate on `meta.sidebar` — public pages,
+// the login / consume / invite-accept flow, and the family-picker
+// pre-tree leave `meta.sidebar` undefined or `'none'`.
+const sidebar = computed(() => route.meta['sidebar'])
+const hasSidebar = computed(() => sidebar.value === 'main' || sidebar.value === 'admin')
 const showSidebarToggle = computed(() => hasSidebar.value)
 const showFamilySwitcher = computed(() => auth.status === 'authenticated' && hasSidebar.value)
 </script>
@@ -56,8 +65,8 @@ const showFamilySwitcher = computed(() => auth.status === 'authenticated' && has
         <BrandLogo to="/" size="md" />
         <v-spacer />
         <FamilySwitcher v-if="showFamilySwitcher" class="mr-2" />
-        <ThemeToggle class="mr-1" />
-        <LanguageMenu class="mr-1" />
+        <ThemeToggle v-if="showInlineTools" class="mr-1" />
+        <LanguageMenu v-if="showInlineTools" class="mr-1" />
         <AccountControl />
     </v-app-bar>
 </template>

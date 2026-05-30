@@ -51,22 +51,23 @@ const midY = computed(() => (props.ay + props.by) / 2)
     fill: none;
 }
 .edge-group.parent .edge {
-    /* NB: avoid `rgb(var(--v-theme-on-surface) / α)` — Vuetify's theme tokens
-     * are emitted as `R, G, B` (comma-separated), and the CSS slash-alpha
-     * syntax requires SPACE-separated channels. The mixed form silently
-     * resolves to `stroke: none` and the edges vanish. A concrete neutral
-     * grey is fine for the parent-link visual treatment. */
-    stroke: #94a3b8;
+    /* Warm-neutral connector. The token (`--edge`) flips between
+     * light + dark in lock-step with the rest of the palette so the
+     * tree reads correctly in both themes. */
+    stroke: var(--edge);
     stroke-width: 2;
     stroke-linecap: round;
 }
 .edge-group.partner .edge {
-    stroke: rgb(var(--v-theme-secondary));
+    /* Rose-pink relationship colour — same token as the heart glyph
+     * below so partner edges + the heart at the midpoint visually
+     * agree. */
+    stroke: var(--rel);
     stroke-width: 2;
     stroke-dasharray: 6 4;
 }
 .heart path {
-    fill: rgb(var(--v-theme-secondary));
+    fill: var(--rel);
     opacity: 0.85;
 }
 
@@ -80,9 +81,9 @@ const midY = computed(() => (props.ay + props.by) / 2)
     opacity: 1;
 }
 .edge-group.highlighted.partner .edge {
-    /* Keep the warm secondary fill but drop the dash so the line connects
-     * the hovered partner pair without visual chopping. */
-    stroke: rgb(var(--v-theme-secondary));
+    /* Keep the rose relationship colour but drop the dash so the line
+     * connects the hovered partner pair without visual chopping. */
+    stroke: var(--rel);
 }
 .edge-group.highlighted .heart path {
     opacity: 1;

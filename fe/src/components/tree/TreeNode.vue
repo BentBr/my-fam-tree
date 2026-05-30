@@ -336,14 +336,20 @@ const STAR_POINTS = (() => {
 /* Outer card rect. The first <rect> child is the card itself — the
  * later <rect> inside `.favourite` is the transparent hit target for
  * the star and must NOT inherit these styles. We scope via the
- * direct-child selector. */
+ * direct-child selector.
+ *
+ * NB: avoid `rgb(var(--v-theme-…) / α)` for fills/strokes here. Vuetify
+ * emits `--v-theme-*` as comma-separated RGB triplets, so the
+ * slash-alpha CSS syntax (which requires SPACE-separated channels) is
+ * INVALID and silently drops the declaration — the SVG element then
+ * falls back to its default (black for text, none for fills). The
+ * cards used to render with near-invisible dates in dark mode for
+ * exactly that reason. Use the design-system tokens from
+ * `tokens.css` (`--text`, `--text-2`, `--text-3`, `--acc`, etc.) so
+ * the values are plain hex and flip light/dark in lock-step. */
 .tree-node > rect {
-    fill: rgb(var(--v-theme-surface));
-    /* Stronger border + heavier shadow so the cards pop on the grey
-     * canvas. Was: 1px @ 0.18 alpha + a soft 0.08 shadow. Replaced
-     * with a 1.5px @ 0.20 stroke; shadow strength is controlled by
-     * the SVG filter defs in FamilyTree.vue. */
-    stroke: rgb(var(--v-theme-on-surface) / 0.2);
+    fill: var(--surface);
+    stroke: var(--border-2);
     stroke-width: 1.5;
     transition:
         stroke 150ms ease-in-out,
@@ -351,19 +357,37 @@ const STAR_POINTS = (() => {
 }
 .tree-node.selected > rect,
 .tree-node:focus-visible > rect {
-    stroke: rgb(var(--v-theme-primary));
+    stroke: var(--acc);
     stroke-width: 2;
-}
-.tree-node.hovered > rect {
-    stroke: rgb(var(--v-theme-primary) / 0.6);
 }
 
-/* Direct relation of the hovered node: thicker blue-tinted stroke so the
- * "this person is connected to who you're pointing at" reads without
- * stealing the hovered card's own emphasis. */
-.tree-node.related > rect {
-    stroke: rgb(var(--v-theme-primary) / 0.75);
+/* Hovered node: stronger accent stroke + an orange-tinted drop shadow
+ * that radiates a few pixels past the card. CSS `filter: drop-shadow`
+ * on the <g> wrapper is the only SVG-safe way to glow without a
+ * <filter> def (we already define one on FamilyTree.vue, but reusing
+ * it would burn an extra layer per card; the cheap drop-shadow is fine
+ * for the few cards in the related subset). The transition makes the
+ * glow build up smoothly when the pointer enters / leaves. */
+.tree-node {
+    transition: filter 150ms ease-in-out;
+}
+.tree-node.hovered > rect {
+    stroke: var(--acc-strong);
     stroke-width: 2;
+}
+.tree-node.hovered {
+    filter: drop-shadow(0 0 6px var(--acc));
+}
+
+/* Lineage relation of the hovered node — same accent stroke as
+ * `.hovered` but a softer glow so the hover-focus card still reads as
+ * the centre of attention. */
+.tree-node.related > rect {
+    stroke: var(--acc);
+    stroke-width: 2;
+}
+.tree-node.related {
+    filter: drop-shadow(0 0 4px var(--acc-soft));
 }
 
 /* Anything that's not the hovered node + not a direct relation fades
@@ -376,29 +400,29 @@ const STAR_POINTS = (() => {
 }
 
 .avatar {
-    fill: rgb(var(--v-theme-primary) / 0.12);
-    stroke: rgb(var(--v-theme-primary) / 0.35);
+    fill: var(--acc-soft);
+    stroke: var(--acc);
     stroke-width: 1;
 }
 .initials {
     font:
         600 14px system-ui,
         sans-serif;
-    fill: rgb(var(--v-theme-primary));
+    fill: var(--acc-strong);
     pointer-events: none;
 }
 .name {
     font:
         600 13px system-ui,
         sans-serif;
-    fill: rgb(var(--v-theme-on-surface));
+    fill: var(--text);
     pointer-events: none;
 }
 .dates {
     font:
         11px system-ui,
         sans-serif;
-    fill: rgb(var(--v-theme-on-surface) / 0.6);
+    fill: var(--text-2);
     pointer-events: none;
 }
 /* Death date sits on its own row below birth and reads smaller + fainter
@@ -407,7 +431,7 @@ const STAR_POINTS = (() => {
     font:
         9.5px system-ui,
         sans-serif;
-    fill: rgb(var(--v-theme-on-surface) / 0.45);
+    fill: var(--text-3);
 }
 
 /* Age cell shares the birth row but sits on the right margin, in a
@@ -416,18 +440,18 @@ const STAR_POINTS = (() => {
     font:
         600 11px system-ui,
         sans-serif;
-    fill: rgb(var(--v-theme-on-surface) / 0.7);
+    fill: var(--text-2);
     font-variant-numeric: tabular-nums;
 }
 
-/* Baseline "this is you" treatment: warm amber ring + soft amber wash,
- * distinct from the primary-blue used for selected/hovered cards so the
- * user marker doesn't read as a transient state. The final design will
- * iterate; this only needs to be unmistakable at a glance. */
+/* Baseline "this is you" treatment: a star-amber ring + soft acc-soft
+ * wash so the user marker reads as an identity badge rather than a
+ * transient selection state. Tokens come from the design system so
+ * the values flip in dark mode automatically. */
 .tree-node.current-user > rect {
-    stroke: #f59e0b;
+    stroke: var(--star);
     stroke-width: 2.5;
-    fill: #fffbeb;
+    fill: var(--acc-soft);
 }
 .tree-node.current-user.selected > rect,
 .tree-node.current-user:focus-visible > rect {
@@ -435,23 +459,26 @@ const STAR_POINTS = (() => {
 }
 
 /* Deceased cards get a soft grey wash so they read as historical at a
- * glance. The avatar+text inside the SVG can't use `filter: grayscale` —
- * SVG filters require a <filter> def — so we tint the rect fill and the
- * stroke instead, and lighten the text/initials. */
+ * glance. The avatar+text inside the SVG can't use `filter: grayscale`
+ * (SVG filters require a <filter> def), so we tint the rect fill and
+ * the stroke instead, and lighten the text/initials. All four values
+ * come from `tokens.css` so the dark-mode variant is automatic. The
+ * card joins the lineage glow when hovered or in the focus set via
+ * the unmodified `.hovered` / `.related` rules above. */
 .tree-node.deceased > rect {
-    fill: #f1f5f9;
-    stroke: #cbd5e1;
+    fill: var(--surface-2);
+    stroke: var(--border);
 }
 .tree-node.deceased .avatar {
-    fill: #e2e8f0;
-    stroke: #94a3b8;
+    fill: var(--av-dead-bg);
+    stroke: var(--border-2);
 }
 .tree-node.deceased .initials {
-    fill: #64748b;
+    fill: var(--av-dead-fg);
 }
 .tree-node.deceased .name,
 .tree-node.deceased .dates {
-    fill: #64748b;
+    fill: var(--text-3);
 }
 
 /* Favourite star — outline-only when unset (subtle dark stroke so it
@@ -480,12 +507,12 @@ const STAR_POINTS = (() => {
 }
 .favourite:hover polygon,
 .favourite:focus-visible polygon {
-    stroke: #f59e0b;
+    stroke: var(--star);
     opacity: 1;
 }
 .favourite.filled polygon {
-    fill: #f59e0b;
-    stroke: #d97706;
+    fill: var(--star);
+    stroke: var(--acc-strong);
     opacity: 1;
 }
 </style>

@@ -26,8 +26,8 @@ useHead({
 })
 
 // `tm()` returns the raw catalogue value for a key — we use it to read
-// the GDPR-rights array as a list, then `rt()` translates each entry
-// through the same interpolation pipeline as `t()`.
+// the rights array as a list, then `rt()` translates each entry through
+// the same interpolation pipeline as `t()`.
 const rights = tm('public.dataPolicy.sections.rights.items') as string[]
 </script>
 
@@ -36,35 +36,29 @@ const rights = tm('public.dataPolicy.sections.rights.items') as string[]
         <h1 class="legal__title display">{{ t('public.dataPolicy.title') }}</h1>
 
         <section class="legal__section">
-            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.intro.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.intro.body') }}</p>
+            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.introduction.heading') }}</h2>
+            <p>{{ t('public.dataPolicy.sections.introduction.body') }}</p>
         </section>
 
         <section class="legal__section">
-            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.publicSite.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.publicSite.body') }}</p>
-        </section>
-
-        <section class="legal__section">
-            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.whatWeStore.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.whatWeStore.body') }}</p>
-            <p>{{ t('public.dataPolicy.sections.whatWeStore.deletion') }}</p>
+            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.dataCollection.heading') }}</h2>
+            <p>{{ t('public.dataPolicy.sections.dataCollection.publicBody') }}</p>
+            <p>{{ t('public.dataPolicy.sections.dataCollection.appBody') }}</p>
         </section>
 
         <section class="legal__section">
             <h2 class="legal__heading">{{ t('public.dataPolicy.sections.cookies.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.cookies.body') }}</p>
+            <p>{{ t('public.dataPolicy.sections.cookies.intro') }}</p>
             <ul class="legal__cookies">
                 <li>{{ t('public.dataPolicy.sections.cookies.access') }}</li>
                 <li>{{ t('public.dataPolicy.sections.cookies.refresh') }}</li>
             </ul>
             <p>{{ t('public.dataPolicy.sections.cookies.rationale') }}</p>
-            <p>{{ t('public.dataPolicy.sections.cookies.noOthers') }}</p>
         </section>
 
         <section class="legal__section">
-            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.noAnalytics.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.noAnalytics.body') }}</p>
+            <h2 class="legal__heading">{{ t('public.dataPolicy.sections.analytics.heading') }}</h2>
+            <p>{{ t('public.dataPolicy.sections.analytics.body') }}</p>
         </section>
 
         <section class="legal__section">

@@ -5,7 +5,15 @@ import { useAuthStore } from '@/stores/auth'
 
 declare module 'vue-router' {
     interface RouteMeta {
-        layout?: 'login' | 'main' | 'admin' | 'public'
+        layout?: 'login' | 'main' | 'public'
+        /**
+         * Drives `AppSidebar`'s visible variant. `'main'` shows the
+         * tree-side nav, `'admin'` shows the admin items, `'none'`
+         * hides the drawer entirely. Defaults to `'none'` so any
+         * unmarked route gets the chromeless behaviour by accident
+         * rather than a half-rendered sidebar.
+         */
+        sidebar?: 'main' | 'admin' | 'none'
         requiresAuth?: boolean
         requiresAdmin?: boolean
         /**
@@ -53,13 +61,13 @@ const routes: RouteRecordRaw[] = [
         path: '/families/create',
         name: 'family-create',
         component: () => import('@/views/families/FamilyCreate.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/families/pick',
         name: 'family-pick',
         component: () => import('@/views/families/FamilyPicker.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/invite/accept',
@@ -71,37 +79,37 @@ const routes: RouteRecordRaw[] = [
         path: '/health',
         name: 'health',
         component: () => import('@/views/HealthView.vue'),
-        meta: { layout: 'main', requiresAuth: false },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: false },
     },
     {
         path: '/account',
         name: 'account',
         component: () => import('@/views/account/AccountView.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/account/email-change/consume',
         name: 'email-change-consume',
         component: () => import('@/views/account/EmailChangeConsumeView.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/account/owner-transfer/confirm',
         name: 'owner-transfer-confirm',
         component: () => import('@/views/account/OwnerTransferConfirm.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/tree',
         name: 'tree',
         component: () => import('@/views/tree/TreeView.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/upcoming',
         name: 'upcoming',
         component: () => import('@/views/upcoming/UpcomingView.vue'),
-        meta: { layout: 'main', requiresAuth: true },
+        meta: { layout: 'main', sidebar: 'main', requiresAuth: true },
     },
     {
         path: '/admin',
@@ -111,19 +119,19 @@ const routes: RouteRecordRaw[] = [
         path: '/admin/audit',
         name: 'admin-audit',
         component: () => import('@/views/admin/AdminAudit.vue'),
-        meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
+        meta: { layout: 'main', sidebar: 'admin', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/admin/members',
         name: 'admin-members',
         component: () => import('@/views/admin/AdminMembers.vue'),
-        meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
+        meta: { layout: 'main', sidebar: 'admin', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/admin/invites',
         name: 'admin-invites',
         component: () => import('@/views/admin/AdminInvites.vue'),
-        meta: { layout: 'admin', requiresAuth: true, requiresAdmin: true },
+        meta: { layout: 'main', sidebar: 'admin', requiresAuth: true, requiresAdmin: true },
     },
     // /reminders/* etc. are added in Phase 4b.
 ]

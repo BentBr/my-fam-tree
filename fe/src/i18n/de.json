@@ -470,7 +470,8 @@
                 }
             },
             "screenshot": {
-                "caption": "Screenshot in Kürze — siehe Deinen Baum, sobald Du angemeldet bist."
+                "alt": "Ein in My Family Tree dargestellter Stammbaum — Eltern oben, Kinder unten, Partner durch einen weichen Herz-Connector verbunden.",
+                "caption": "Ein echter Stammbaum aus echten Daten. Klicke eine Person für ihr volles Profil; bewege die Maus über sie, um die Linie zu verfolgen."
             },
             "cta": {
                 "title": "Bereit, Deine Familie zu erfassen?",
@@ -511,54 +512,49 @@
         "dataPolicy": {
             "title": "Datenschutzerklärung",
             "sections": {
-                "intro": {
+                "introduction": {
                     "heading": "Einleitung",
-                    "body": "Deine Privatsphäre zählt. My Family Tree ist auf Privatsphäre ausgelegt: keine Analyse-Tools, keine Drittanbieter-Tracker, keine Marketing-Cookies. Die einzigen Daten, die wir halten, sind die, die Du selbst in Deinen Stammbaum einträgst, und das Minimum, das nötig ist, um Dich angemeldet zu halten."
+                    "body": "Deine Privatsphäre ist uns wichtig. My Family Tree ist mit Fokus auf Datenschutz entwickelt — wir erfassen nur das, was Du der App selbst gibst, plus das Minimum, das nötig ist, um Dich angemeldet zu halten. Keine Analyse-Tools, kein Tracking, keine Marketing-Cookies."
                 },
-                "publicSite": {
-                    "heading": "Die öffentliche Website",
-                    "body": "Wenn Du my-fam-tree.eu besuchst, ohne Dich anzumelden (die Startseite, das Impressum und diese Datenschutzerklärung), sammeln wir nichts. Keine Cookies, kein Speicher, keine Protokollierung über die Zugriffsprotokolle hinaus, die die Hosting-Infrastruktur aus Sicherheits- und Rate-Limiting-Gründen führt (IP-Adresse + Zeitstempel, 14 Tage Aufbewahrung, danach gelöscht)."
-                },
-                "whatWeStore": {
-                    "heading": "Was wir speichern, sobald Du Dich anmeldest",
-                    "body": "Wenn Du ein Konto erstellst, speichert My Family Tree die Daten, die Du angibst: Deine E-Mail-Adresse, die Personen, die Du Deinem Stammbaum hinzufügst (Namen, Daten, Orte, Beziehungen zwischen ihnen, hochgeladene Fotos, Kontaktdaten) und Deine Erinnerungs-Einstellungen. Diese Daten liegen auf unserer Infrastruktur innerhalb der EU. Wir geben sie nicht an Dritte weiter. Wir verkaufen sie nicht. Wir verwenden sie nicht, um etwas zu trainieren.",
-                    "deletion": "Du kannst Dein Konto jederzeit löschen — Deine Daten werden dabei mitgelöscht."
+                "dataCollection": {
+                    "heading": "Datenerfassung",
+                    "publicBody": "Wenn Du unsere öffentlichen Seiten besuchst (Startseite, Impressum, diese Datenschutzerklärung), ohne Dich anzumelden, erfassen wir keine personenbezogenen Daten. Es werden keine Cookies gesetzt, und unsere Anwendung protokolliert nichts über das hinaus, was die Hosting-Infrastruktur aus Sicherheitsgründen führt (IP und Zeitstempel, 14 Tage Aufbewahrung, danach gelöscht).",
+                    "appBody": "Wenn Du ein Konto erstellst, speichern wir die Daten, die Du der App gibst: Deine E-Mail-Adresse, die Personen, die Du Deinem Baum hinzufügst (Namen, Daten, Orte, Beziehungen, hochgeladene Fotos, Kontaktdaten) und Deine Erinnerungs-Einstellungen. Diese Daten liegen auf unserer Infrastruktur innerhalb der EU. Wir geben sie nicht an Dritte weiter, verkaufen sie nicht und verwenden sie nicht, um etwas zu trainieren. Du kannst Dein Konto jederzeit löschen — Deine Daten werden dabei mitgelöscht."
                 },
                 "cookies": {
-                    "heading": "Cookies — die einzigen, die wir verwenden",
-                    "body": "My Family Tree verwendet zwei zwingend erforderliche Cookies, beide für die Authentifizierung, beide HttpOnly (Dein Browser stellt sie niemals JavaScript zur Verfügung), beide in Produktion mit dem Secure-Flag:",
+                    "heading": "Cookies",
+                    "intro": "My Family Tree verwendet zwei zwingend erforderliche Cookies, beide für die Authentifizierung, beide HttpOnly (Dein Browser stellt sie nie JavaScript zur Verfügung), beide in Produktion mit dem Secure-Flag. Andere Cookies setzen wir nicht — kein Tracking, kein Marketing, keine Präferenz-Cookies. Theme-Wahl und Sprache liegen im localStorage Deines Browsers und erreichen unseren Server nie.",
                     "access": "access — ein kurzlebiges JSON Web Token (etwa 15 Minuten). Wird bei jeder API-Anfrage gesendet, um zu beweisen, wer Du bist.",
-                    "refresh": "refresh — ein länger lebendes opakes Token (etwa 30 Tage). Eingeschränkt auf den Endpunkt /auth/refresh. Sobald das Access-Token abläuft, tauscht der Browser das Refresh-Token im Hintergrund gegen ein frisches Access-Token, damit Du nicht mitten in einer Aktion abgemeldet wirst.",
-                    "rationale": "Warum beide? Das kurzlebige Access-Token begrenzt den Schaden, falls ein Token jemals austritt — alles, was ein Angreifer damit anstellen könnte, läuft binnen weniger Minuten ab. Das Refresh-Token wird ausschließlich beim Erneuerungs-Endpunkt übertragen, nie bei einer gewöhnlichen API-Anfrage — die Angriffsfläche bleibt damit weit schmaler.",
-                    "noOthers": "Das ist die vollständige Liste. Wir setzen keine Tracking-Cookies, Marketing-Cookies oder Präferenz-Cookies. Deine Theme-Wahl (hell/dunkel) und Sprachwahl liegen im localStorage Deines Browsers und erreichen unseren Server nie."
+                    "refresh": "refresh — ein länger lebendes opakes Token (etwa 30 Tage). Eingeschränkt auf /auth/refresh. Sobald das Access-Token abläuft, tauscht der Browser das Refresh-Token im Hintergrund gegen ein frisches, damit Du nicht mitten in einer Aktion abgemeldet wirst.",
+                    "rationale": "Das kurzlebige Access-Token begrenzt den Schaden, falls ein Token jemals austritt; das Refresh-Token reist nur auf dem Erneuerungs-Endpunkt, nie bei einer gewöhnlichen API-Anfrage — die Angriffsfläche bleibt schmal."
                 },
-                "noAnalytics": {
-                    "heading": "Keine Analyse-Tools, keine Drittanbieter",
-                    "body": "Wir betreiben kein Google Analytics, kein Plausible, kein Matomo, kein Sentry und keinen anderen Analyse- oder Fehlerberichts-Dienst. Wir binden weder YouTube, Vimeo, Social-Media-Widgets noch extern gehostete Schriftarten ein. Jede Datei, die die öffentliche Seite lädt, kommt von unseren eigenen Servern."
+                "analytics": {
+                    "heading": "Analyse-Tools",
+                    "body": "Wir verwenden keine Analyse-Tools, Tracking-Tools oder Drittanbieter-Dienste auf dieser Seite. Kein Google Analytics, kein Plausible, kein Matomo, kein Sentry. Kein eingebettetes YouTube, Vimeo, keine Social-Widgets, keine extern gehosteten Schriftarten. Jede Datei der Seite kommt von unserer eigenen Infrastruktur."
                 },
                 "rights": {
-                    "heading": "Deine Rechte nach DSGVO",
-                    "lead": "Du kannst jederzeit verlangen:",
+                    "heading": "Deine Rechte",
+                    "lead": "Du hast folgende Rechte bezüglich Deiner personenbezogenen Daten:",
                     "items": [
-                        "Auskunft über die personenbezogenen Daten, die wir über Dich halten",
-                        "Berichtigung unrichtiger Daten",
-                        "Löschung Deiner Daten",
-                        "Einschränkung der Verarbeitung",
-                        "Übertragbarkeit — eine Kopie Deiner Daten in einem maschinenlesbaren Format"
+                        "Recht auf Auskunft über gespeicherte Daten",
+                        "Recht auf Berichtigung falscher Daten",
+                        "Recht auf Löschung von Daten",
+                        "Recht auf Einschränkung der Verarbeitung",
+                        "Recht auf Datenübertragbarkeit"
                     ],
-                    "trail": "Sende jede dieser Anfragen an hello@my-fam-tree.eu. Du hast außerdem das Recht, Beschwerde bei der für Dich zuständigen Datenschutzaufsichtsbehörde einzulegen."
+                    "trail": "Sende solche Anfragen an hello@my-fam-tree.eu. Du hast außerdem das Recht, Beschwerde bei der für Dich zuständigen Datenschutzaufsichtsbehörde einzulegen."
                 },
                 "security": {
                     "heading": "Datensicherheit",
-                    "body": "Wir setzen technische und organisatorische Maßnahmen ein, um Deine Daten gegen versehentlichen Verlust, unbefugten Zugriff und Manipulation zu schützen. Im Klartext: verschlüsselter Transport (TLS), verschlüsselte Backups, rollenbasierter Zugriff auf der Server-Seite und die oben genannte Cookie-Disziplin. Kein System ist perfekt; wir melden Vorfälle gemäß Art. 33 DSGVO innerhalb von 72 Stunden nach Entdeckung."
+                    "body": "Wir verwenden technische und organisatorische Sicherheitsmaßnahmen, um Deine Daten gegen zufällige oder vorsätzliche Manipulationen, Verlust, Zerstörung oder den Zugriff unberechtigter Personen zu schützen. Im Klartext: TLS-verschlüsselter Transport, verschlüsselte Backups, rollenbasierter Zugriff auf der Server-Seite und die oben beschriebene Cookie-Disziplin. Vorfälle melden wir gemäß Art. 33 DSGVO innerhalb von 72 Stunden nach Entdeckung."
                 },
                 "changes": {
                     "heading": "Änderungen dieser Datenschutzerklärung",
-                    "body": "Wir behalten uns vor, diese Erklärung zu aktualisieren, wenn sich unsere Praktiken oder rechtliche Vorgaben ändern. Die neue Fassung ersetzt dann diese hier; das Datum unten zeigt Dir, wann zuletzt geändert wurde."
+                    "body": "Wir behalten uns vor, diese Datenschutzerklärung zu aktualisieren, um Änderungen in unseren Datenverarbeitungspraktiken oder rechtlichen Anforderungen widerzuspiegeln. Die neue Fassung ersetzt dann diese; das Datum unten zeigt, wann zuletzt geändert wurde."
                 },
                 "contact": {
                     "heading": "Kontakt",
-                    "body": "Bei Fragen zu dieser Erklärung oder zu Deinen Daten schreibe an hello@my-fam-tree.eu, oder nutze die postalische Anschrift auf der Impressum-Seite."
+                    "body": "Wenn Du Fragen zu dieser Datenschutzerklärung oder zum Datenschutz hast, schreibe an hello@my-fam-tree.eu, oder nutze die postalische Anschrift auf der Impressum-Seite."
                 }
             },
             "lastUpdated": "Zuletzt aktualisiert: 30.05.2026."

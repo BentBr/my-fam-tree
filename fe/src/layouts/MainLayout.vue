@@ -3,23 +3,22 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import AppBar from '@/components/layout/AppBar.vue'
-import NavDrawer from '@/components/layout/NavDrawer.vue'
+import AppSidebar from '@/components/layout/AppSidebar.vue'
 
 const route = useRoute()
 
-// Pages that need the full canvas width opt out of the 1200px clamp.
-// `/tree` is the only one for now — the SVG layout fills horizontal
-// space and the cards would feel cramped if we squeezed them into the
-// reading-text gutter. New full-width surfaces (a future kanban, a
-// timeline) get listed here too. Auth views never reach this layout,
-// so they don't need an entry.
+// Pages that need the full canvas width opt out of the 1200 px reading
+// clamp. The tree SVG fills its column; the admin tables read better
+// without the gutter. New full-width surfaces add their path here OR
+// flip their route's `meta.sidebar` to `'admin'` (admin-sidebar routes
+// are already considered wide).
 const WIDE_ROUTES = new Set(['/tree'])
-const isWide = computed(() => WIDE_ROUTES.has(route.path))
+const isWide = computed(() => WIDE_ROUTES.has(route.path) || route.meta.sidebar === 'admin')
 </script>
 
 <template>
     <AppBar />
-    <NavDrawer />
+    <AppSidebar />
     <v-main>
         <v-container fluid class="fade-router-view page-container" :class="{ 'page-container--wide': isWide }">
             <router-view v-slot="{ Component, route: r }">
@@ -38,12 +37,12 @@ const isWide = computed(() => WIDE_ROUTES.has(route.path))
 </template>
 
 <style scoped>
-/* Text-heavy pages clamp to 1200px on md+ breakpoints so paragraphs and
- * forms stay within a comfortable reading width on ultrawide displays.
- * Pages that need the full canvas (the tree SVG) opt out via the
- * `--wide` modifier set in script-setup above. The base padding is
- * preserved at all widths — v-container's own padding handles the
- * narrow side. */
+/* Text-heavy pages clamp to 1200 px on md+ breakpoints so paragraphs
+ * and forms stay within a comfortable reading width on ultrawide
+ * displays. Pages that need the full canvas (the tree SVG, admin
+ * tables) opt out via the `--wide` modifier set in script-setup
+ * above. The base padding is preserved at all widths — v-container's
+ * own padding handles the narrow side. */
 .page-container {
     width: 100%;
 }

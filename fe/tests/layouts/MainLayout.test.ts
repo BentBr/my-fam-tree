@@ -9,7 +9,7 @@ import { i18n } from '@/i18n'
 import MainLayout from '@/layouts/MainLayout.vue'
 
 describe('MainLayout', () => {
-    it('mounts AppBar + NavDrawer + router-view container', async () => {
+    it('mounts AppBar + AppSidebar + router-view container', async () => {
         const router = createRouter({
             history: createMemoryHistory(),
             routes: [{ path: '/', component: { template: '<div>content</div>' } }],
@@ -22,7 +22,7 @@ describe('MainLayout', () => {
                 plugins: [createPinia(), i18n, router],
                 stubs: {
                     AppBar: { template: '<div class="appbar-stub" />' },
-                    NavDrawer: { template: '<div class="nav-stub" />' },
+                    AppSidebar: { template: '<div class="sidebar-stub" />' },
                     'v-main': { template: '<main><slot /></main>' },
                     'v-container': { template: '<div><slot /></div>' },
                     'router-view': { template: '<div class="rv-stub" />' },
@@ -30,13 +30,12 @@ describe('MainLayout', () => {
             },
         })
         expect(wrapper.find('.appbar-stub').exists()).toBe(true)
-        expect(wrapper.find('.nav-stub').exists()).toBe(true)
+        expect(wrapper.find('.sidebar-stub').exists()).toBe(true)
     })
 
     it('renders the routed component inside the router-view default slot', async () => {
         // Without stubbing router-view we exercise the v-slot binding that
-        // keys the inner component on `route.path` (covers MainLayout.vue
-        // template lines 11-19).
+        // keys the inner component on `route.path`.
         const Routed = { template: '<div class="routed-stub">hello</div>' }
         const router = createRouter({
             history: createMemoryHistory(),
@@ -49,7 +48,7 @@ describe('MainLayout', () => {
                 plugins: [createPinia(), i18n, router],
                 stubs: {
                     AppBar: { template: '<div class="appbar-stub" />' },
-                    NavDrawer: { template: '<div class="nav-stub" />' },
+                    AppSidebar: { template: '<div class="sidebar-stub" />' },
                     'v-main': { template: '<main><slot /></main>' },
                     'v-container': { template: '<div><slot /></div>' },
                 },

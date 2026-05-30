@@ -44,25 +44,69 @@ const layout = computed(() => layoutTree(props.tree))
 const hoverId = ref<string | null>(null)
 
 /**
- * Direct-relation id set for the hovered node — union of:
- *   - the hovered person's `parent_ids` (their parents),
- *   - the persons whose `parent_ids` include the hovered person (their children),
- *   - the hovered person's `partner_ids` (their partners).
+ * Lineage-relation id set for the hovered node. Walks the parent_ids
+ * graph upward to gather every ancestor and downward to gather every
+ * descendant, then folds in partners (just the direct ones — a
+ * spouse's lineage is their own story). The hovered node itself is
+ * excluded from the set so it can still get the `.hovered` treatment
+ * separately from `.related`.
  *
- * Empty when nothing is hovered. The set never includes the hovered node
- * itself; that one gets the `.hovered` treatment instead of `.related`.
+ * Inputs the layout already gives us:
+ *   - `n.parent_ids`  → walk up
+ *   - persons whose `parent_ids.includes(id)` → walk down
+ *   - `n.partner_ids` → adjacent
+ *
+ * Cycle-safe: the visited set short-circuits any back-edges so a
+ * malformed graph can never spin forever.
  */
 const relatedIds = computed<Set<string>>(() => {
     const id = hoverId.value
     if (id === null) return new Set<string>()
     const target = props.tree.nodes.find((n) => n.id === id)
     if (target === undefined) return new Set<string>()
-    const out = new Set<string>()
-    for (const pid of target.parent_ids) out.add(pid)
-    for (const pid of target.partner_ids) out.add(pid)
+
+    // Build a quick parent → child index once so the descendant walk is
+    // linear per node, not O(N) per step.
+    const childrenOf = new Map<string, string[]>()
     for (const n of props.tree.nodes) {
-        if (n.parent_ids.includes(id)) out.add(n.id)
+        for (const p of n.parent_ids) {
+            const bucket = childrenOf.get(p)
+            if (bucket === undefined) {
+                childrenOf.set(p, [n.id])
+            } else {
+                bucket.push(n.id)
+            }
+        }
     }
+    const nodeById = new Map(props.tree.nodes.map((n) => [n.id, n]))
+
+    const visited = new Set<string>([id])
+    const out = new Set<string>()
+
+    // Ancestors — repeated `parent_ids` until exhausted.
+    const upQueue: string[] = [...target.parent_ids]
+    while (upQueue.length > 0) {
+        const cur = upQueue.shift() as string
+        if (visited.has(cur)) continue
+        visited.add(cur)
+        out.add(cur)
+        const node = nodeById.get(cur)
+        if (node !== undefined) upQueue.push(...node.parent_ids)
+    }
+
+    // Descendants — BFS over the parent→child index.
+    const downQueue: string[] = [...(childrenOf.get(id) ?? [])]
+    while (downQueue.length > 0) {
+        const cur = downQueue.shift() as string
+        if (visited.has(cur)) continue
+        visited.add(cur)
+        out.add(cur)
+        downQueue.push(...(childrenOf.get(cur) ?? []))
+    }
+
+    // Direct partners (not their lineage — that's a different family).
+    for (const pid of target.partner_ids) out.add(pid)
+
     out.delete(id)
     return out
 })
@@ -72,15 +116,18 @@ function onNodeHover(id: string | null): void {
 }
 
 /**
- * Whether an edge connects the hovered node to one of its direct relations.
- * Parent edges: hovered node is either the child or the parent and the
- * counterpart is the hovered node's parent / child respectively. Partner
- * edges: hovered node is one of the two members.
+ * Whether an edge connects two nodes inside the hovered lineage —
+ * i.e. both endpoints are either the hovered node itself or in the
+ * related-id set (ancestors, descendants, or partners). That way the
+ * full chain of inheritance highlights together, not just the single
+ * hop next to the hovered card.
  */
 function isEdgeHighlighted(aId: string, bId: string): boolean {
     const id = hoverId.value
     if (id === null) return false
-    return aId === id || bId === id
+    const aIn = aId === id || relatedIds.value.has(aId)
+    const bIn = bId === id || relatedIds.value.has(bId)
+    return aIn && bIn
 }
 
 function nodeCenter(id: string): { x: number; y: number } | null {

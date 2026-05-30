@@ -100,12 +100,24 @@ const features: Feature[] = [
             </div>
         </section>
 
-        <!-- Tree screenshot placeholder — swap to a real PNG once one
-             ships under /brand/tree-screenshot.png. -->
+        <!-- Real tree-view screenshot — rendered from
+             `assets/example.png` by `pnpm generate:images`. -->
         <section class="home__screenshot">
-            <div class="ph-img home__screenshot-placeholder">
-                {{ t('public.home.screenshot.caption') }}
-            </div>
+            <figure class="home__screenshot-figure">
+                <img
+                    src="/brand/tree-example-960.webp"
+                    srcset="/brand/tree-example-960.webp 960w, /brand/tree-example-1280.webp 1280w"
+                    sizes="(max-width: 768px) 100vw, 1100px"
+                    width="1245"
+                    height="732"
+                    loading="lazy"
+                    decoding="async"
+                    :alt="t('public.home.screenshot.alt')"
+                />
+                <figcaption class="home__screenshot-caption">
+                    {{ t('public.home.screenshot.caption') }}
+                </figcaption>
+            </figure>
         </section>
 
         <!-- Final CTA -->
@@ -207,16 +219,31 @@ const features: Feature[] = [
 
 /* ---- Screenshot slot ---- */
 .home__screenshot {
-    border-radius: var(--r-lg);
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
 }
-.home__screenshot-placeholder {
-    aspect-ratio: 16 / 9;
+.home__screenshot-figure {
+    margin: 0;
     width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.home__screenshot-figure img {
+    width: 100%;
+    height: auto;
     border-radius: var(--r-lg);
     border: 1px solid var(--border);
-    padding: 24px;
+    box-shadow: var(--shadow-lg);
+    display: block;
+}
+.home__screenshot-caption {
+    color: var(--text-3);
+    font-size: 13px;
     text-align: center;
+    max-width: 58ch;
 }
 
 /* ---- Footer CTA ---- */
