@@ -80,6 +80,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(persons::get_one)
                 .service(persons::update)
                 .service(persons::delete)
+                .service(persons::claim)
                 .service(person_favourites::set_favourite)
                 .service(person_photos::upload)
                 .service(person_photos::clear)

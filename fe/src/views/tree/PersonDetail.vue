@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCreateInvite } from '@/api/hooks/invites'
 import {
+    useClaimPerson,
     useClearPersonPhoto,
     useDeletePerson,
     useGetPerson,
@@ -83,6 +84,32 @@ const canInvite = computed(() => {
     if (person.value?.linked_user_id !== null && person.value?.linked_user_id !== undefined) return false
     return true
 })
+
+// "Claim as me" — direct self-link, skipping the email round-trip the
+// invite flow forces. Surface conditions:
+//   - admin/owner (regular `user` members onboard via invite-email; the
+//     consent round-trip is the gate. The shortcut is for the family
+//     owner/admins who created a person row representing themselves);
+//   - the person row isn't already linked (would be a no-op / 409);
+//   - we know the caller's identity (auth.user.id present).
+// We deliberately do NOT also check "caller isn't already linked to
+// another person in this family" client-side — that requires walking
+// the full persons list and the BE rejects it with a 409 + toast
+// anyway, so the rare double-claim flow gets clear server feedback
+// without bloating this computed.
+const claim = useClaimPerson()
+const canClaim = computed(() => {
+    const role = family.activeFamily?.role ?? null
+    if (role !== 'admin' && role !== 'owner') return false
+    if (auth.user === null) return false
+    if (person.value?.linked_user_id !== null && person.value?.linked_user_id !== undefined) return false
+    return true
+})
+
+async function claimAsMe(): Promise<void> {
+    if (person.value === null) return
+    await claim.mutateAsync(person.value.id)
+}
 
 function openInvite(): void {
     inviteEmail.value = ''
@@ -338,6 +365,17 @@ const isMe = computed(() => {
             <div v-if="canEdit" class="d-flex ga-2 flex-wrap">
                 <v-btn variant="outlined" data-testid="person-edit-button" @click="editing = true">
                     {{ t('common.edit') }}
+                </v-btn>
+                <v-btn
+                    v-if="canClaim"
+                    variant="outlined"
+                    color="success"
+                    prepend-icon="mdi-account-check"
+                    :loading="claim.isPending.value"
+                    data-testid="person-claim-cta"
+                    @click="claimAsMe"
+                >
+                    {{ t('person.claim.cta') }}
                 </v-btn>
                 <v-btn
                     v-if="canInvite"

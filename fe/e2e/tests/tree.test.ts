@@ -321,8 +321,9 @@ test('hovering Klaus highlights his lineage and dims the rest', async ({ page })
     const relatedIds = [otto, hannelore, peter, felix, lina, max, emma, anna, brigitte]
     await page.waitForFunction(
         (ids: string[]) =>
-            ids.every((id) =>
-                document.querySelector(`[data-testid="tree-node-${id}"]`)?.classList.contains('related') ?? false,
+            ids.every(
+                (id) =>
+                    document.querySelector(`[data-testid="tree-node-${id}"]`)?.classList.contains('related') ?? false,
             ),
         relatedIds,
         { timeout: 10_000 },

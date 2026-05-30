@@ -114,6 +114,25 @@ export function useDeletePerson() {
 }
 
 /**
+ * Self-claim a person row. The BE always links the calling user, never
+ * anyone else — see the route doc on `crates/api/src/routes/persons.rs`
+ * for the consent rationale (PATCH /persons/{id} would allow linking any
+ * user, which is fine for admin self-management but leaks consent for
+ * other users; this endpoint is the consent-safe shortcut).
+ *
+ * Invalidates the same caches as `useUpdatePerson` so the linked-account
+ * chip, the tree's "this is you" highlight, and the per-person GET all
+ * refresh in one tick.
+ */
+export function useClaimPerson() {
+    return useApiMutation({
+        mutationFn: (id: string) => unwrap(client.POST('/api/v1/persons/{id}/claim', { params: { path: { id } } })),
+        success: 'toasts.person_claimed',
+        invalidate: (id) => [['persons'], ['tree'], ['person', id]],
+    })
+}
+
+/**
  * Upload a new photo for a person. `file` is the raw File from an
  * `<input type="file">`; we wrap it in a FormData under the single field
  * name `file` (the BE accepts exactly that, see `routes/person_photos.rs`).

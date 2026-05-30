@@ -196,6 +196,9 @@
             "roleLabel": "Role",
             "submit": "Send invite"
         },
+        "claim": {
+            "cta": "This is me"
+        },
         "linkedAccount": "Has account",
         "itsYou": "It's you!",
         "favourite": {
@@ -269,6 +272,7 @@
         "person_created": "Person added",
         "person_updated": "Person updated",
         "person_deleted": "Person removed",
+        "person_claimed": "Linked to your account",
         "person_photo_set": "Photo updated",
         "person_photo_cleared": "Photo removed",
         "user_avatar_set": "Avatar updated",

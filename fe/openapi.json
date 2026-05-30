@@ -1626,6 +1626,57 @@
         ]
       }
     },
+    "/api/v1/persons/{id}/claim": {
+      "post": {
+        "tags": [
+          "persons"
+        ],
+        "summary": "Self-claim a person row.",
+        "description": "The signed-in caller links `person.linked_user_id` to themselves. The\nexisting PATCH `/persons/{id}` already accepts an arbitrary\n`linked_user_id` payload, but that path leaks consent: an admin can\nsilently bind any person row to any user with no notification on the\nlinked user's side. This dedicated endpoint is the consent-safe\nvariant — it only ever links the *caller*, never anyone else, and is\nthe back-end for the \"Claim as me\" button in `PersonDetail`.\n\nGated to admin / owner: regular `user`s onboard via the invite-email\nround-trip (which doubles as cross-mailbox consent), so they don't need\nthis shortcut. Admins / owners who created a person row for themselves\ncan claim it in one click.\n\nRejects (409 [`ApiError::ConflictStale`]) when the person is already\nlinked to anyone (including the caller — a re-claim is a no-op rather\nthan an error worth surfacing to the user), or when the caller is\nalready linked to a different person in this family (the schema\nenforces uniqueness `(family_id, linked_user_id)`; checking here gives\na clean error path instead of the bare\n[`PersonRepoError::LinkedUserConflict`] mapping).",
+        "operationId": "persons_claim",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Person id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person claimed by caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonViewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Admin or owner required"
+          },
+          "404": {
+            "description": "Not found in this family"
+          },
+          "409": {
+            "description": "Already linked, or caller already linked to another person in this family"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/persons/{id}/contacts": {
       "get": {
         "tags": [

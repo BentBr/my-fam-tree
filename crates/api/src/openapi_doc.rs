@@ -84,6 +84,7 @@ use crate::services::upcoming::UpcomingEvent;
         persons::get_one,
         persons::update,
         persons::delete,
+        persons::claim,
         person_favourites::set_favourite,
         person_photos::upload,
         person_photos::clear,
