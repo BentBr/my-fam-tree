@@ -74,7 +74,13 @@ test.describe('FE account flow', () => {
         await page.getByTestId('account-email-change-submit').click()
         await expect(page.getByTestId('email-change-pending')).toBeVisible()
 
-        const mail = await waitForEmail((s) => /Confirm your email change|Bestätige deine E-Mail-Änderung/.test(s))
+        // The confirmation link is sent to the CURRENT mailbox (security:
+        // proves the requester still controls the original address), not
+        // the new one. Filter accordingly — otherwise waitForEmail times
+        // out because no email is ever delivered to `toEmail`.
+        const mail = await waitForEmail((s) => /Confirm your email change|Bestätige deine E-Mail-Änderung/.test(s), {
+            recipient: fromEmail,
+        })
         const linkMatch = mail.text.match(/https?:\/\/\S+\/account\/email-change\/consume\?token=\S+/)
         if (linkMatch === null) {
             throw new Error('email-change link not in body')

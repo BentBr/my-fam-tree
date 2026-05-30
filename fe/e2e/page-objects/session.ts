@@ -16,7 +16,9 @@ export async function signIn(page: Page, email: string): Promise<void> {
     await login.goto()
     await login.signIn(email)
     await expect(login.sent).toBeVisible()
-    const mail = await waitForEmail((s) => /Sign in to my-fam-tree|Anmeldung bei my-fam-tree/.test(s))
+    const mail = await waitForEmail((s) => /Sign in to my-fam-tree|Anmeldung bei my-fam-tree/.test(s), {
+        recipient: email,
+    })
     const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
     if (match === null) throw new Error('consume link not in email body')
     const link = match[0]

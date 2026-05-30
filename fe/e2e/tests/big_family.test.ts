@@ -122,7 +122,9 @@ test.describe('big family stress test', () => {
         await login.goto()
         await login.signIn(email)
         await expect(login.sent).toBeVisible()
-        const mail = await waitForEmail((s) => /Sign in to my-fam-tree|Anmeldung bei my-fam-tree/.test(s))
+        const mail = await waitForEmail((s) => /Sign in to my-fam-tree|Anmeldung bei my-fam-tree/.test(s), {
+            recipient: email,
+        })
         const match = mail.text.match(/https?:\/\/\S+\/auth\/consume\?token=\S+/)
         if (match === null || match[0] === undefined) throw new Error('consume link missing')
         await page.goto(rewriteEmailLink(match[0]))

@@ -41,7 +41,9 @@ test('owner signs in, creates family, invites a guest, guest joins', async ({ br
 
     // 3. Pull the invite link out of mailpit BEFORE the guest signs in
     //    (guest's sign-in will clear and replace the latest message).
-    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s), {
+        recipient: 'guest@example.com',
+    })
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) {
         throw new Error('invite link not in email body')

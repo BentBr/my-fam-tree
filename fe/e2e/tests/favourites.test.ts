@@ -65,7 +65,9 @@ test('two users see independent favourite state on the same person', async ({ br
         data: { email: adminEmail, role: 'admin' },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s), {
+        recipient: adminEmail,
+    })
     const inviteLink = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)?.[0]
     if (inviteLink === undefined) throw new Error('invite link not in email body')
 

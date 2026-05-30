@@ -34,7 +34,9 @@ async function inviteAndAccept(
         data: { email: inviteeEmail, role },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const mail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
+    const mail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s), {
+        recipient: inviteeEmail,
+    })
     const m = mail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (m === null) throw new Error('invite link not in email')
     const link = m[0]

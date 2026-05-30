@@ -20,7 +20,7 @@ test('anonymous invite click signs the recipient in and joins the family in one 
     })
     expect(inviteRes.ok()).toBeTruthy()
 
-    const inviteMail = await waitForEmail((s) => /invit/i.test(s))
+    const inviteMail = await waitForEmail((s) => /invit/i.test(s), { recipient: inviteeEmail })
     const inviteLinkMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteLinkMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteLinkMatch[0]

@@ -10,7 +10,8 @@ const WORKER_URL = process.env['WORKER_TEST_URL'] ?? 'http://localhost:9091'
 
 test('a daily digest email fires 7 days before a birthday when reminders are on', async ({ page }) => {
     const stamp = Date.now()
-    await signIn(page, `reminders-${stamp}@example.com`)
+    const userEmail = `reminders-${stamp}@example.com`
+    await signIn(page, userEmail)
     await createFamily(page, `Reminders-${stamp}`)
 
     const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
@@ -56,6 +57,12 @@ test('a daily digest email fires 7 days before a birthday when reminders are on'
     expect(advance.ok(), 'worker advance-clock should succeed').toBeTruthy()
 
     // Within the dispatcher's poll window the digest email lands in Mailpit.
-    const digest = await waitForEmail((s) => /In 7 days|In 7 Tagen|🎂/.test(s), 30_000)
+    // The digest is sent to the signed-in user. `timeoutMs` is now an option
+    // rather than the positional second arg (was `30_000` before the recipient
+    // filter landed).
+    const digest = await waitForEmail((s) => /In 7 days|In 7 Tagen|🎂/.test(s), {
+        recipient: userEmail,
+        timeoutMs: 30_000,
+    })
     expect(digest.text).toMatch(/Birthday Person/)
 })

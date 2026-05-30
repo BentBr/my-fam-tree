@@ -18,7 +18,9 @@ async function inviteAndAccept(
         data: { email: inviteeEmail, role },
     })
     expect(inviteRes.ok()).toBeTruthy()
-    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s))
+    const inviteMail = await waitForEmail((s) => /Join the .+ family on my-fam-tree|Einladung zur Familie/.test(s), {
+        recipient: inviteeEmail,
+    })
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
@@ -60,8 +62,12 @@ test('owner transfers ownership to admin; both sides confirm; roles swap', async
     await expect(owner.getByTestId('admin-members-transfer-banner')).toBeVisible()
 
     // Two emails sent — one for each side.
-    const ownerMail = await waitForEmail((s) => /Confirm ownership|Eigentumsübertragung bestätigen/i.test(s))
-    const adminMail = await waitForEmail((s) => /offered ownership|Eigentumsübertragung für/i.test(s))
+    const ownerMail = await waitForEmail((s) => /Confirm ownership|Eigentumsübertragung bestätigen/i.test(s), {
+        recipient: ownerEmail,
+    })
+    const adminMail = await waitForEmail((s) => /offered ownership|Eigentumsübertragung für/i.test(s), {
+        recipient: adminEmail,
+    })
     const linkRe = /https?:\/\/\S+\/account\/owner-transfer\/confirm\?token=\S+/
     const ownerLink = ownerMail.text.match(linkRe)?.[0]
     const adminLink = adminMail.text.match(linkRe)?.[0]
