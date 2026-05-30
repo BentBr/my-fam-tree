@@ -542,7 +542,7 @@
                         "Recht auf Einschränkung der Verarbeitung",
                         "Recht auf Datenübertragbarkeit"
                     ],
-                    "trail": "Sende solche Anfragen an hello@my-fam-tree.eu. Du hast außerdem das Recht, Beschwerde bei der für Dich zuständigen Datenschutzaufsichtsbehörde einzulegen."
+                    "trail": "Sende solche Anfragen an {email}. Du hast außerdem das Recht, Beschwerde bei der für Dich zuständigen Datenschutzaufsichtsbehörde einzulegen."
                 },
                 "security": {
                     "heading": "Datensicherheit",
@@ -554,7 +554,7 @@
                 },
                 "contact": {
                     "heading": "Kontakt",
-                    "body": "Wenn Du Fragen zu dieser Datenschutzerklärung oder zum Datenschutz hast, schreibe an hello@my-fam-tree.eu, oder nutze die postalische Anschrift auf der Impressum-Seite."
+                    "body": "Wenn Du Fragen zu dieser Datenschutzerklärung oder zum Datenschutz hast, schreibe an {email}, oder nutze die postalische Anschrift auf der Impressum-Seite."
                 }
             },
             "lastUpdated": "Zuletzt aktualisiert: 30.05.2026."

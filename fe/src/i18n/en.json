@@ -542,7 +542,7 @@
                         "Right to restriction of processing",
                         "Right to data portability"
                     ],
-                    "trail": "Send any such request to hello@my-fam-tree.eu. You also have the right to complain to your local data-protection authority."
+                    "trail": "Send any such request to {email}. You also have the right to complain to your local data-protection authority."
                 },
                 "security": {
                     "heading": "Data Security",
@@ -554,7 +554,7 @@
                 },
                 "contact": {
                     "heading": "Contact",
-                    "body": "If you have any questions about this privacy policy or data protection, please write to hello@my-fam-tree.eu, or use the postal address given in the imprint."
+                    "body": "If you have any questions about this privacy policy or data protection, please write to {email}, or use the postal address given in the imprint."
                 }
             },
             "lastUpdated": "Last updated: 2026-05-30."

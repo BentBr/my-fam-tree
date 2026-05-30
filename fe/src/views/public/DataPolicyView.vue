@@ -29,6 +29,13 @@ useHead({
 // the rights array as a list, then `rt()` translates each entry through
 // the same interpolation pipeline as `t()`.
 const rights = tm('public.dataPolicy.sections.rights.items') as string[]
+
+// vue-i18n reserves `@` as the linked-message sigil (`@:other.key`), so
+// any literal `@` inside a translation string trips the message
+// compiler with "Invalid linked format". The contact email therefore
+// stays out of the catalogue and reaches each affected line via a
+// named-interpolation slot `{email}`.
+const contactEmail = 'hello@my-fam-tree.eu'
 </script>
 
 <template>
@@ -67,7 +74,7 @@ const rights = tm('public.dataPolicy.sections.rights.items') as string[]
             <ul>
                 <li v-for="(item, i) in rights" :key="i">{{ rt(item) }}</li>
             </ul>
-            <p>{{ t('public.dataPolicy.sections.rights.trail') }}</p>
+            <p>{{ t('public.dataPolicy.sections.rights.trail', { email: contactEmail }) }}</p>
         </section>
 
         <section class="legal__section">
@@ -82,7 +89,7 @@ const rights = tm('public.dataPolicy.sections.rights.items') as string[]
 
         <section class="legal__section">
             <h2 class="legal__heading">{{ t('public.dataPolicy.sections.contact.heading') }}</h2>
-            <p>{{ t('public.dataPolicy.sections.contact.body') }}</p>
+            <p>{{ t('public.dataPolicy.sections.contact.body', { email: contactEmail }) }}</p>
         </section>
 
         <p class="legal__footer">{{ t('public.dataPolicy.lastUpdated') }}</p>
