@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.8](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.7...core-v0.1.8) (2026-05-30)
+
+
+### Features
+
+* **persons:** self-claim — admin/owner can link a person row to themselves in one click ([14c24a4](https://github.com/BentBr/my-fam-tree/commit/14c24a42bc129c9f4d20c7a8d61323b119351601))
+
+
+### Bug Fixes
+
+* **api:** close the consent hole on persons CREATE / PATCH ([bb23753](https://github.com/BentBr/my-fam-tree/commit/bb2375370f4fd2a954649ad2a191aa7534bb46a5))
+* **api:** CORS — allow PUT method + decorate 401s from the auth middleware ([5809fe1](https://github.com/BentBr/my-fam-tree/commit/5809fe1260774334973b6dc513b85d59c7455b05))
+* **api:** make memberships.insert idempotent — re-accepting an invite is a no-op ([6ef9e1c](https://github.com/BentBr/my-fam-tree/commit/6ef9e1c4d89e567a9565fa37dc590046af7bca54))
+
 ## [0.1.7](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.6...core-v0.1.7) (2026-05-30)
 
 
