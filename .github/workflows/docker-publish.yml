@@ -81,9 +81,14 @@ jobs:
                     tags: ${{ steps.meta.outputs.tags }}
                     labels: ${{ steps.meta.outputs.labels }}
                     # OCI args consumed by each Dockerfile's runtime stage
-                    # (see ARG OCI_SOURCE / OCI_REVISION + LABEL).
+                    # (see ARG OCI_SOURCE / OCI_REVISION + LABEL). The
+                    # `VITE_API_BASE_URL` arg only affects the fe image
+                    # (Vite bakes it into the bundle at `pnpm build`);
+                    # the api / worker Dockerfiles don't declare the
+                    # ARG and silently ignore it.
                     build-args: |
                         OCI_SOURCE=https://github.com/${{ github.repository }}
                         OCI_REVISION=${{ github.sha }}
+                        VITE_API_BASE_URL=https://api.my-fam-tree.eu
                     cache-from: type=gha,scope=${{ matrix.image }}
                     cache-to: type=gha,mode=max,scope=${{ matrix.image }}
