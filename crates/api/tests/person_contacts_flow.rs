@@ -23,7 +23,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
-use my_fam_tree_domain::{FamilyId, Role};
+use my_fam_tree_domain::{FamilyId, PersonId, Role};
 use uuid::Uuid;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -209,6 +209,12 @@ async fn person_contacts_admins_only_visibility_hidden_from_user_role() {
     assert_eq!(rows[0]["visibility"], "family");
 }
 
+// Multi-actor fixture (owner + guest user + linked person + contact +
+// gate exercise + privileged owner assertion) naturally runs long; the
+// 101-line body sits one above the lint default. The flow reads
+// top-to-bottom and splitting it into helpers would scatter the
+// assertions across the file. Keep it inline.
+#[allow(clippy::too_many_lines)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn person_contacts_user_role_edit_gate() {
     let stack = ephemeral_stack().await;
@@ -240,19 +246,34 @@ async fn person_contacts_user_role_edit_gate() {
         .await
         .expect("membership insert");
 
-    // Owner creates a person linked to the guest user.
+    // Owner creates a person, then we wire `linked_user_id` to the guest
+    // via the repo directly. The API path used to accept `linked_user_id`
+    // in the CREATE body, but that's now blocked by the consent gate
+    // (`check_link_consent` in `routes::persons`) — an admin can't
+    // silently bind a row to another user's id. For real flows the link
+    // happens via the invite-email round-trip (consent gate) or POST
+    // /persons/{id}/claim (self-claim). For test fixtures the repo
+    // bypass is fine; we're setting up a precondition, not testing the
+    // link path itself.
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
         .cookie(Cookie::new("access", owner_access.clone()))
         .insert_header(("X-Family-Id", family_id.clone()))
-        .set_json(serde_json::json!({
-            "given_name": "Guest Person",
-            "linked_user_id": guest_user.id.into_uuid(),
-        }))
+        .set_json(serde_json::json!({ "given_name": "Guest Person" }))
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
     let guest_person_id = body["data"]["id"].as_str().unwrap().to_string();
+    stack
+        .state
+        .persons
+        .set_linked_user_id(
+            FamilyId::from_uuid(fam_uuid),
+            PersonId::from_uuid(Uuid::parse_str(&guest_person_id).expect("person uuid")),
+            Some(guest_user.id),
+        )
+        .await
+        .expect("repo set_linked_user_id fixture");
 
     // Owner seeds a contact on the OWNER person so the guest has something
     // to be blocked from editing.

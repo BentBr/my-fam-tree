@@ -24,7 +24,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
-use my_fam_tree_domain::{FamilyId, Role};
+use my_fam_tree_domain::{FamilyId, PersonId, Role};
 use uuid::Uuid;
 
 fn person_create_body(given_name: &str) -> serde_json::Value {
@@ -276,20 +276,32 @@ async fn persons_role_gating_user_cannot_create_or_delete_or_edit_others() {
     assert_eq!(body["code"], "family_insufficient_role");
 
     // Now link a person row to the regular user — they should then be able
-    // to PATCH that row but still NOT someone else's.
+    // to PATCH that row but still NOT someone else's. The consent gate on
+    // POST /persons (see `check_link_consent` in `routes::persons`) blocks
+    // admins from binding a row to another user's id in one call; the
+    // real-world path is the invite-email round-trip. For this test we
+    // only need the linked-row precondition, so create + repo-link in
+    // two steps.
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
         .cookie(Cookie::new("access", owner_access))
         .insert_header(("X-Family-Id", family_id.clone()))
-        .set_json(serde_json::json!({
-            "given_name": "Self",
-            "linked_user_id": user.id.into_uuid().to_string(),
-        }))
+        .set_json(serde_json::json!({ "given_name": "Self" }))
         .to_request();
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
     let self_person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    stack
+        .state
+        .persons
+        .set_linked_user_id(
+            FamilyId::from_uuid(fam_uuid),
+            PersonId::from_uuid(Uuid::parse_str(&self_person_id).expect("person uuid")),
+            Some(user.id),
+        )
+        .await
+        .expect("repo set_linked_user_id fixture");
     // Belt-and-braces: confirm the repo agrees.
     let by_link = stack
         .state
