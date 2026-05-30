@@ -115,7 +115,9 @@ test.describe('FE account flow', () => {
         await signOut.click()
         await expect(page).toHaveURL(/\/auth\/sign-in$/)
 
-        const localKeys = await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('my-fam-tree:')))
+        const localKeys = await page.evaluate(() =>
+            Object.keys(localStorage).filter((k) => k.startsWith('my-fam-tree:')),
+        )
         const sessionKeys = await page.evaluate(() =>
             Object.keys(sessionStorage).filter((k) => k.startsWith('my-fam-tree:')),
         )

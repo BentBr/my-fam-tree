@@ -9,6 +9,21 @@ export interface Toast {
     requestId?: string
 }
 
+/**
+ * Theme mode persisted to localStorage. `'system'` follows the OS via
+ * `prefers-color-scheme`; `'light'` / `'dark'` are explicit overrides
+ * a user has clicked. Resolved-to-light-or-dark logic + the
+ * `<html data-theme>` write live in `useThemeMode`.
+ */
+export type ThemeMode = 'system' | 'light' | 'dark'
+
+const THEME_KEY = 'my-fam-tree:theme'
+
+function loadInitialTheme(): ThemeMode {
+    const v = localStorage.getItem(THEME_KEY)
+    return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+}
+
 // Monotonic counter for toast IDs. `crypto.randomUUID()` is gated behind a
 // secure context (HTTPS / localhost / 127.0.0.1) and throws on plain-HTTP
 // dev domains like `http://my-fam-tree.docker`. Toast IDs only need to be
@@ -18,10 +33,16 @@ let toastIdSeq = 0
 export const useUiStore = defineStore('ui', () => {
     const sidebarCollapsed = ref(localStorage.getItem('my-fam-tree:sidebar') === '1')
     const toasts = ref<Toast[]>([])
+    const theme = ref<ThemeMode>(loadInitialTheme())
 
     function toggleSidebar(): void {
         sidebarCollapsed.value = !sidebarCollapsed.value
         localStorage.setItem('my-fam-tree:sidebar', sidebarCollapsed.value ? '1' : '0')
+    }
+
+    function setTheme(next: ThemeMode): void {
+        theme.value = next
+        localStorage.setItem(THEME_KEY, next)
     }
 
     function pushToast(t: Omit<Toast, 'id'>): void {
@@ -34,9 +55,7 @@ export const useUiStore = defineStore('ui', () => {
         // by auto-timeout), a fresh failure can surface again.
         const duplicate = toasts.value.some(
             (existing) =>
-                existing.kind === t.kind &&
-                existing.message === t.message &&
-                (existing.code ?? '') === (t.code ?? ''),
+                existing.kind === t.kind && existing.message === t.message && (existing.code ?? '') === (t.code ?? ''),
         )
         if (duplicate) return
         toastIdSeq += 1
@@ -47,5 +66,5 @@ export const useUiStore = defineStore('ui', () => {
         toasts.value = toasts.value.filter((t) => t.id !== id)
     }
 
-    return { sidebarCollapsed, toasts, toggleSidebar, pushToast, dismissToast }
+    return { sidebarCollapsed, toasts, theme, toggleSidebar, setTheme, pushToast, dismissToast }
 })

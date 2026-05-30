@@ -1,0 +1,211 @@
+/*
+ * Slothlike design tokens.
+ *
+ * Single source of truth for the colour palette, radii, shadows, easing,
+ * and font stacks. Imported once from `main.ts`; consumed by Vue
+ * components via `var(--token)` and by Vuetify via the `--v-…` aliases
+ * mapped at the bottom of each block.
+ *
+ * Origin: the design handoff bundle (`assets/family-handoff.zip` →
+ * `family/project/styles.css`). Hex values match the handoff bit-for-bit
+ * so the Vuetify-rendered surfaces and the design's HTML mockups stay
+ * visually identical.
+ *
+ * Theme switching is driven by `[data-theme="light"]` / `[data-theme="dark"]`
+ * on the `<html>` element, written by `composables/useThemeMode.ts`.
+ * `:root` carries the light defaults so the page paints correctly before
+ * the composable runs (no FOUC on first paint).
+ */
+
+:root {
+    /* ---- Accent ramp (overridable by future "Tweaks" UI via JS) ---- */
+    --acc: #f26a1f;
+    --acc-strong: #dd5a12;
+    --acc-soft: #fbeadf;
+    --acc-on: #ffffff;
+
+    /* ---- Radii ---- */
+    --r-xs: 6px;
+    --r-sm: 9px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --r-pill: 999px;
+
+    /* ---- Elevations (warm-tinted in light, neutral black in dark) ---- */
+    --shadow-sm: 0 1px 2px rgba(60, 40, 20, 0.1), 0 1px 3px rgba(60, 40, 20, 0.06);
+    --shadow-md: 0 3px 8px rgba(60, 40, 20, 0.1), 0 2px 5px rgba(60, 40, 20, 0.07);
+    --shadow-lg: 0 12px 28px rgba(40, 26, 12, 0.16), 0 6px 14px rgba(40, 26, 12, 0.1);
+    --shadow-xl: 0 22px 56px rgba(40, 26, 12, 0.22), 0 10px 24px rgba(40, 26, 12, 0.14);
+
+    /* ---- Motion ---- */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* ---- Font stacks ---- */
+    --font-ui: 'Roboto', system-ui, -apple-system, sans-serif;
+    --font-display: 'Roboto', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+/* ---- Light (default; mirrored on :root so first paint is correct) ---- */
+:root,
+[data-theme='light'] {
+    --bg: #fbf8f4;
+    --bg-grid: #efe7dd;
+    --surface: #ffffff;
+    --surface-2: #f6f1eb;
+    --surface-3: #efe8df;
+    --border: #e9dfd3;
+    --border-2: #dccfbf;
+    --text: #241e18;
+    --text-2: #5c5247;
+    --text-3: #938679;
+    --on-acc: #ffffff;
+    --good: #2e7d5b;
+    --warn: #c2622d;
+    --danger: #c4452f;
+    --danger-soft: #fbe7e2;
+    --star: #f2a11f;
+    --rel: #d9568b;
+    --edge: #c9bbaa;
+    --av-dead-bg: #dcd5cc;
+    --av-dead-fg: #6e665c;
+    --sec: #7a4a2b;
+    --sec-soft: #f0e5da;
+    --info: #2e6f9e;
+    --shadow-color: rgba(60, 40, 20, 1);
+
+    /* Vuetify-role aliases. Components that read `rgb(var(--v-theme-…))`
+       resolve through these so a single token edit moves both worlds. */
+    --v-primary: var(--acc);
+    --v-on-primary: var(--on-acc);
+    --v-secondary: var(--sec);
+    --v-on-secondary: #fff;
+    --v-surface: var(--surface);
+    --v-on-surface: var(--text);
+    --v-background: var(--bg);
+    --v-on-background: var(--text);
+    --v-error: var(--danger);
+    --v-success: var(--good);
+    --v-warning: var(--warn);
+    --v-info: var(--info);
+    --v-outline: var(--border-2);
+}
+
+/* ---- Dark ---- */
+[data-theme='dark'] {
+    --bg: #100d0a;
+    --bg-grid: #1b1611;
+    --surface: #1a1511;
+    --surface-2: #221c16;
+    --surface-3: #2a231c;
+    --border: #322a22;
+    --border-2: #45392e;
+    --text: #f4ece3;
+    --text-2: #baac9e;
+    --text-3: #8c7e70;
+    --acc-soft: #3a2415;
+    --on-acc: #1a0e05;
+    --good: #4fb088;
+    --warn: #e0894a;
+    --danger: #e66a53;
+    --danger-soft: #3a1c16;
+    --star: #f2a93f;
+    --rel: #e27ca6;
+    --edge: #4a3e32;
+    --av-dead-bg: #3a332b;
+    --av-dead-fg: #9b9085;
+    --sec: #c99a6f;
+    --sec-soft: #2e2218;
+    --info: #5b9bc9;
+    --shadow-color: rgba(0, 0, 0, 1);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 22px 56px rgba(0, 0, 0, 0.6), 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Base body styles ---- */
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition:
+        background 0.35s var(--ease),
+        color 0.35s var(--ease);
+}
+
+/* ---- Typography utilities (from the handoff) ---- */
+.display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.mono {
+    font-family: var(--font-mono);
+}
+
+::selection {
+    background: var(--acc);
+    color: #fff;
+}
+
+/* ---- Scrollbar polish ---- */
+*::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--border-2);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ---- Focus ring (a11y) ----
+ * Applied to buttons, links, and any custom interactive element. Form
+ * controls inside Vuetify's `v-input` (text fields, selects, textareas)
+ * are exempted: Vuetify draws its own outlined focus ring on the
+ * `.v-field` wrapper, and stacking ours on top of it produced a visible
+ * double border.
+ */
+:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.v-input :focus-visible {
+    outline: none;
+}
+
+/* ---- Warm placeholder image pattern (used by the screenshot slot) ---- */
+.ph-img {
+    background-color: var(--surface-2);
+    background-image: repeating-linear-gradient(45deg, transparent 0 9px, rgba(0, 0, 0, 0.025) 9px 18px);
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+}
+[data-theme='dark'] .ph-img {
+    background-image: repeating-linear-gradient(45deg, transparent 0 9px, rgba(255, 255, 255, 0.03) 9px 18px);
+}

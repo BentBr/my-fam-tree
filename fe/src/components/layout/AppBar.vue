@@ -1,81 +1,78 @@
 <script setup lang="ts">
+/**
+ * Unified application bar — used on every route, public and
+ * authenticated. The layout is identical in both modes:
+ *
+ *   [nav toggle] [brand lockup]    [family switcher]    [theme] [lang] [account]
+ *                                       ↑ auth only      ↑ always   ↑ always   ↑ flips by auth
+ *
+ * The brand lockup is a single shared atom (`BrandLogo`), the right-
+ * side controls are three more atoms, all in `components/common/`.
+ * Nothing here owns geometry beyond the v-app-bar wrapper — the atoms
+ * own their own styling against the design tokens. That gives the
+ * "no visual hop between public + authenticated" promise from the
+ * plan.
+ *
+ * The hamburger / `nav-toggle` only renders when the sidebar exists
+ * for the current route (authenticated views). On the public + auth-
+ * gate views the toggle is hidden because there is no sidebar to
+ * toggle.
+ */
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
-import { useMe } from '@/api/hooks/users'
-import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import AccountControl from '@/components/common/AccountControl.vue'
+import BrandLogo from '@/components/common/BrandLogo.vue'
+import LanguageMenu from '@/components/common/LanguageMenu.vue'
+import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
 import FamilySwitcher from './FamilySwitcher.vue'
-import LangSwitcher from './LangSwitcher.vue'
 
-const { t } = useI18n()
 const auth = useAuthStore()
 const ui = useUiStore()
-const router = useRouter()
+const route = useRoute()
 
-// Profile fetch — gated on authenticated state so we don't hammer
-// /users/me on every render of the splash / sign-in page where the
-// store is still 'unauthenticated'.
-const me = useMe()
-const avatarUrl = computed(() => me.data.value?.avatar_url ?? null)
-const displayName = computed(() => me.data.value?.display_name ?? auth.user?.email ?? '')
-
-// `auth.logout()` clears the store but does not navigate. We always send the
-// user to /auth/sign-in afterwards so the FE never leaves them on a now-empty
-// authenticated page where the router guard would re-bounce on the next nav.
-async function signOut(): Promise<void> {
-    await auth.logout()
-    await router.replace('/auth/sign-in')
-}
+// The login / sign-up / consume / invite-accept flow uses a chromeless
+// layout (no NavDrawer mounted): the hamburger + family switcher would
+// reference things that don't exist. Hide them there. Every other
+// layout (Main, Admin) carries the drawer — so the hamburger renders
+// and the family switcher follows when the caller is signed in.
+//
+// Phase E will refine this to read `route.meta.sidebar` once every
+// route opts in explicitly; for now `meta.layout` is the boundary
+// that already exists and that AdminLayout / MainLayout / LoginLayout
+// already agree on.
+const isLoginLayout = computed(() => route.meta['layout'] === 'login')
+const showSidebarToggle = computed(() => !isLoginLayout.value)
+const showFamilySwitcher = computed(() => auth.status === 'authenticated' && !isLoginLayout.value)
 </script>
 
 <template>
-    <v-app-bar elevation="1" density="comfortable" data-testid="app-bar">
-        <v-app-bar-nav-icon icon="menu" data-testid="nav-toggle" @click="ui.toggleSidebar" />
-        <v-app-bar-title>{{ t('app.title') }}</v-app-bar-title>
+    <!--
+        `padding-inline` lives on the deep `.v-toolbar__content` slot
+        (see <style> below) so the brand on the left and the controls
+        on the right have breathing room from the viewport edges —
+        matches the handoff's `clamp(14px, 3vw, 22px)` rule.
+    -->
+    <v-app-bar elevation="1" density="comfortable" data-testid="app-bar" class="app-bar app-bar--padded">
+        <v-app-bar-nav-icon v-if="showSidebarToggle" icon="menu" data-testid="nav-toggle" @click="ui.toggleSidebar" />
+        <BrandLogo to="/" size="md" />
         <v-spacer />
-        <FamilySwitcher class="mr-2" />
-        <LangSwitcher class="mr-2" />
-        <v-menu v-if="auth.status === 'authenticated'" location="bottom end">
-            <template #activator="{ props: activatorProps }">
-                <!--
-                    `title` keeps the tooltip on hover, but the accessible
-                    name for a11y + Playwright's `getByRole({ name })` is
-                    set explicitly via `aria-label` — `title` only wins when
-                    nothing else contributes, and the inner DefaultAvatar's
-                    `?` placeholder (for a user without a display name)
-                    outranks it. The wrapper span uses `aria-hidden` so the
-                    initials/placeholder text doesn't drown out the label.
-                -->
-                <v-btn
-                    icon
-                    :title="auth.user?.email ?? ''"
-                    :aria-label="auth.user?.email ?? ''"
-                    data-testid="user-menu"
-                    v-bind="activatorProps"
-                >
-                    <span aria-hidden="true">
-                        <DefaultAvatar :src="avatarUrl" :name="displayName" :size="36" />
-                    </span>
-                </v-btn>
-            </template>
-            <v-list density="comfortable">
-                <v-list-item
-                    to="/account"
-                    prepend-icon="user"
-                    :title="t('account.menu.openAccount')"
-                    data-testid="user-menu-account"
-                />
-                <v-list-item
-                    prepend-icon="log-out"
-                    :title="t('account.menu.signOut')"
-                    data-testid="sign-out"
-                    @click="signOut"
-                />
-            </v-list>
-        </v-menu>
+        <FamilySwitcher v-if="showFamilySwitcher" class="mr-2" />
+        <ThemeToggle class="mr-1" />
+        <LanguageMenu class="mr-1" />
+        <AccountControl />
     </v-app-bar>
 </template>
+
+<style scoped>
+/* `v-app-bar` ships with its own internal flex container; we hook the
+   horizontal padding onto its deep `.v-toolbar__content` slot rather
+   than the outer wrapper so Vuetify's own padding rules don't take
+   precedence. Values mirror the design handoff. */
+.app-bar--padded :deep(.v-toolbar__content) {
+    padding-inline: clamp(14px, 3vw, 22px);
+}
+</style>

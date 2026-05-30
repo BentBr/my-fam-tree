@@ -1,15 +1,12 @@
-import { config, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
-import LoginLayout from '@/layouts/LoginLayout.vue'
+vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 
 import { i18n } from '@/i18n'
-
-// All v-* components are stubbed since they require Vuetify's full plugin
-// init; we only verify the template renders + child layout exists.
-config.global.stubs = {}
+import LoginLayout from '@/layouts/LoginLayout.vue'
 
 function makeRouter() {
     return createRouter({
@@ -19,7 +16,7 @@ function makeRouter() {
 }
 
 describe('LoginLayout', () => {
-    it('mounts and renders the language switcher container', async () => {
+    it('mounts the unified AppBar above the sign-in card', async () => {
         const router = makeRouter()
         await router.push('/')
         await router.isReady()
@@ -30,12 +27,15 @@ describe('LoginLayout', () => {
                     'v-main': { template: '<main><slot /></main>' },
                     'v-container': { template: '<div><slot /></div>' },
                     'router-view': { template: '<div />' },
-                    LangSwitcher: { template: '<div class="lang-stub" />' },
+                    AppBar: { template: '<div class="appbar-stub" data-testid="app-bar" />' },
                 },
             },
         })
-        expect(wrapper.find('h1').exists()).toBe(true)
-        expect(wrapper.find('.lang-stub').exists()).toBe(true)
+        // The AppBar carries the brand + theme + language + account controls
+        // for every layout. Its presence here proves LoginLayout no longer
+        // hand-rolls its own header (the language switcher used to live
+        // inline; it's now an atom inside the shared chrome).
+        expect(wrapper.find('[data-testid="app-bar"]').exists()).toBe(true)
     })
 
     it('renders the routed component inside the router-view default slot', async () => {
@@ -55,7 +55,7 @@ describe('LoginLayout', () => {
                 stubs: {
                     'v-main': { template: '<main><slot /></main>' },
                     'v-container': { template: '<div><slot /></div>' },
-                    LangSwitcher: { template: '<div class="lang-stub" />' },
+                    AppBar: { template: '<div class="appbar-stub" />' },
                 },
             },
         })

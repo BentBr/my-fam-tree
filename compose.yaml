@@ -326,6 +326,13 @@ services:
             PATH: /pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         volumes:
             - ./fe:/app
+            # `fe/scripts/generate-images.js` reads the source PNGs from the
+            # repo-root `assets/` directory (the script-relative path resolves
+            # to `<repoRoot>/assets` in CI; we expose the same layout inside
+            # the container so the same script works locally without a code
+            # path split). Read-only — the script only writes into
+            # `fe/public/brand/`.
+            - ./assets:/assets:ro
         depends_on:
             # `service_started` (not `service_healthy`): the Vite dev server can
             # come up before the API is fully ready — its proxy resolves

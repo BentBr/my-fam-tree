@@ -1,5 +1,5 @@
 {
-    "app": { "title": "my-fam-tree", "tagline": "Stammbaum, Kontakte, Erinnerungen." },
+    "app": { "title": "My Family Tree", "tagline": "Stammbaum, Kontakte, Erinnerungen." },
     "nav": {
         "tree": "Stammbaum",
         "upcoming": "Anstehende Termine",
@@ -230,6 +230,20 @@
         }
     },
     "language": { "label": "Sprache", "en": "Englisch", "de": "Deutsch" },
+    "chrome": {
+        "theme": {
+            "switchToLight": "Zum hellen Modus wechseln",
+            "switchToDark": "Zum dunklen Modus wechseln"
+        },
+        "language": {
+            "label": "Sprache"
+        },
+        "account": {
+            "label": "Konto-Menü",
+            "login": "Anmelden",
+            "register": "Registrieren"
+        }
+    },
     "reminderPrefs": {
         "heading": "E-Mail-Erinnerungen",
         "subtitle": "Erhalte eine tägliche E-Mail zu anstehenden Familien-Terminen.",

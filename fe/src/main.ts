@@ -8,6 +8,9 @@ import { queryClient } from './api/queryClient'
 import App from './App.vue'
 import SmartIcon from './components/common/SmartIcon.vue'
 import { vuetifyDefaults, vuetifyTheme } from './design-system'
+// Tokens.css first so the `:root` palette is applied before Vuetify's
+// own styles paint — prevents a flash of the un-themed blue defaults.
+import './design-system/tokens.css'
 import './design-system/transitions.css'
 import { i18n } from './i18n'
 import { router } from './router'

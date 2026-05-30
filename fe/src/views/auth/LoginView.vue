@@ -41,8 +41,17 @@ async function submit(): Promise<void> {
                     autocomplete="email"
                     data-testid="sign-in-email"
                 />
+                <!--
+                    Primary CTA on the page — `color="primary" variant="flat"`
+                    gives it the signature sloth-orange fill. Vuetify's
+                    `VBtn` defaults intentionally leave colour unset so
+                    most buttons stay neutral; the page's CTA is the one
+                    that opts in.
+                -->
                 <v-btn
                     type="submit"
+                    color="primary"
+                    variant="flat"
                     :loading="mutation.isPending.value"
                     block
                     size="large"

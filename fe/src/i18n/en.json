@@ -1,5 +1,5 @@
 {
-    "app": { "title": "my-fam-tree", "tagline": "Family tree, contacts, reminders." },
+    "app": { "title": "My Family Tree", "tagline": "Family tree, contacts, reminders." },
     "nav": {
         "tree": "Tree",
         "upcoming": "Upcoming dates",
@@ -230,6 +230,20 @@
         }
     },
     "language": { "label": "Language", "en": "English", "de": "German" },
+    "chrome": {
+        "theme": {
+            "switchToLight": "Switch to light mode",
+            "switchToDark": "Switch to dark mode"
+        },
+        "language": {
+            "label": "Language"
+        },
+        "account": {
+            "label": "Account menu",
+            "login": "Login",
+            "register": "Register"
+        }
+    },
     "reminderPrefs": {
         "heading": "Email reminders",
         "subtitle": "Get one daily email about upcoming family dates.",

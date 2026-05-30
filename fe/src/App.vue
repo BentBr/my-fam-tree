@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import ToastContainer from '@/components/common/ToastContainer.vue'
+import { useThemeMode } from '@/composables/useThemeMode'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import LoginLayout from '@/layouts/LoginLayout.vue'
 import MainLayout from '@/layouts/MainLayout.vue'
@@ -11,6 +12,11 @@ const route = useRoute()
 const layout = computed<'login' | 'main' | 'admin'>(
     () => (route.meta.layout as 'login' | 'main' | 'admin' | undefined) ?? 'main',
 )
+
+// Single owner of the `<html data-theme>` attribute + Vuetify theme
+// sync; reads the persisted ThemeMode from `useUiStore`. Mounted at
+// the root so the side effect is process-wide.
+useThemeMode()
 </script>
 
 <template>

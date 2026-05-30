@@ -5,7 +5,8 @@
     "type": "module",
     "scripts": {
         "dev": "vite --port 5173",
-        "build": "vue-tsc --noEmit && vite build",
+        "generate:images": "node scripts/generate-images.js",
+        "build": "pnpm run generate:images && vue-tsc --noEmit && vite build",
         "preview": "vite preview",
         "lint": "eslint .",
         "format": "prettier --write .",
@@ -53,11 +54,17 @@
         "pg": "^8.21.0",
         "prettier": "^3.3.0",
         "sass-embedded": "^1.100.0",
+        "sharp": "^0.34.0",
         "typescript": "^6.0.3",
         "vite": "^8.0.14",
         "vite-plugin-vuetify": "^2.0.4",
         "vitest": "^4.1.7",
         "vue-tsc": "^3.3.2"
     },
-    "packageManager": "pnpm@10.33.4"
+    "packageManager": "pnpm@10.33.4",
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "sharp"
+        ]
+    }
 }

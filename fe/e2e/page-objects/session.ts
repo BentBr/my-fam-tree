@@ -40,6 +40,10 @@ export async function createFamily(page: Page, name: string): Promise<string> {
     await page.goto('/families/create')
     await page.getByTestId('family-name').locator('input').fill(name)
     await page.getByTestId('family-create-submit').click()
-    await expect(page).toHaveURL(/\/tree$/)
+    // Same redirect-chain bump as the consume helpers: form submit →
+    // `useCreateFamily` mutation → `family.setActive` → `nextTick` →
+    // router push to `/tree`. CI runners sometimes need >5 s for the
+    // chain to land; 15 s leaves plenty of room without masking a hang.
+    await expect(page).toHaveURL(/\/tree$/, { timeout: 15_000 })
     return page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
 }

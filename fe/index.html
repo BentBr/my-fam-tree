@@ -2,8 +2,47 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>my-fam-tree</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <!--
+            Tab title — keeps the brand subline so the browser tab
+            reads "my-family · by Slothlike". Public + authenticated
+            views all sit under this same tab title; per-route titles
+            (Phase B) refine it via `@unhead/vue`.
+        -->
+        <title>My Family Tree · by Slothlike</title>
+
+        <!--
+            Favicon stack — every entry resolves to a raster generated
+            from `assets/sloth-center.png` by `pnpm generate:images`.
+            No SVG vector logo is shipped; the design's vector glyphs
+            were a poor likeness of the brand sloth.
+        -->
+        <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png" />
+        <link rel="icon" type="image/x-icon" href="/brand/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+
+        <!--
+            `theme-color` paints the mobile browser chrome to match the
+            app's accent. Two entries so iOS / Android render the
+            correct value per the user's OS-level light/dark choice.
+        -->
+        <meta name="theme-color" content="#F26A1F" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1A0E05" media="(prefers-color-scheme: dark)" />
+
+        <!--
+            Fonts — Roboto (UI + display) and Roboto Mono (numbers /
+            placeholder labels). `preconnect` lets the browser open
+            the TLS handshake before the CSS is parsed. The font CSS
+            itself is `display=swap` so the page paints with the
+            system fallback first and reflows when Roboto arrives.
+        -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500&display=swap"
+        />
     </head>
     <body>
         <div id="app"></div>

@@ -83,6 +83,11 @@ no_docker_compose = true
         "alias" = "deny"
         "execution"  = "cargo deny check && cargo machete"
 
+    [commands.build]
+        "description" = "Rebuild local setup with clock enabled for testing"
+        "alias" = "build"
+        "execution"  = "WORKER_FEATURES=test-fixtures docker compose up -d --build"
+
     [commands.trigger-clock]
         "description" = "Advance the reminder worker test clock to 06:00 Berlin + tick (see Mailpit). Optional date arg YYYY-MM-DD. Clears that day's digest first so re-runs resend with current data (TRIGGER_CLOCK_KEEP=1 to keep). Needs the worker built with WORKER_FEATURES=test-fixtures."
         "alias" = "trigger-clock"

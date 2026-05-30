@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
-import LangSwitcher from '@/components/layout/LangSwitcher.vue'
-
-const { t } = useI18n()
+/**
+ * Sign-in / magic-link / invite-accept layout.
+ *
+ * Same `AppBar` as the rest of the app — the brand block + theme
+ * toggle + language menu live at the top of every screen, including
+ * the unauthenticated ones. The auth-state-aware `AccountControl`
+ * renders the Login/Register CTAs when the user isn't signed in, so
+ * the right-side cluster stays full even here.
+ *
+ * The `<v-main>` body itself keeps the radial-gradient backdrop +
+ * 480 px-wide centred card that the sign-in / consume / invite views
+ * expect — that's still the right look for a focused single-form
+ * surface.
+ */
+import AppBar from '@/components/layout/AppBar.vue'
 </script>
 
 <template>
+    <AppBar />
     <v-main class="login-main">
         <v-container class="d-flex align-center justify-center" fluid>
             <div class="login-frame">
-                <header class="d-flex align-center justify-space-between mb-6">
-                    <h1 class="text-h5">{{ t('app.title') }}</h1>
-                    <LangSwitcher />
-                </header>
                 <div class="fade-router-view">
                     <router-view v-slot="{ Component, route }">
                         <transition name="fade" mode="out-in" appear>
