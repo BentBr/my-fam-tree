@@ -198,6 +198,110 @@ async fn accept_links_user_to_person_when_invite_carries_person_id() {
     );
 }
 
+/// Regression: a second invite-accept for a user who already has a
+/// membership in this family used to 500 on the `family_memberships_pkey`
+/// duplicate-key constraint, and (worse) the request failed BEFORE the
+/// person-link write — so a re-invite that carried `person_id` never
+/// actually wired the link. After making `memberships.insert` idempotent
+/// (`ON CONFLICT DO NOTHING`), the re-accept is a graceful no-op on
+/// membership and still runs the person-link side-effect.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn second_accept_is_idempotent_on_membership_and_still_wires_person_link() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let stamp = u128::from(rand::random::<u32>());
+    let (owner_access, family_id_str, klaus_id) =
+        seed_admin_family_with_person(&stack, &app, stamp).await;
+    let family_uuid: Uuid = family_id_str.parse().unwrap();
+    let family_id = FamilyId::from_uuid(family_uuid);
+
+    let invitee_email = format!("idem-{stamp}@example.com");
+    let (invitee_access, _r) = sign_in(&stack, &app, &invitee_email).await;
+    let invitee_user = stack
+        .state
+        .users
+        .find_by_email(&invitee_email)
+        .await
+        .expect("user lookup")
+        .expect("invitee user");
+
+    // First invite: plain family-level, no person_id. Invitee accepts → has
+    // a `user` membership.
+    let req = test::TestRequest::post()
+        .uri(&format!("/api/v1/families/{family_id_str}/invites"))
+        .cookie(Cookie::new("access", owner_access.clone()))
+        .set_json(serde_json::json!({
+            "email": invitee_email,
+            "role": "user",
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200);
+    let first_token = {
+        let captured = stack.fake_email.drain();
+        let mail = captured.iter().find(|m| m.to_addr == invitee_email).expect("first email");
+        extract_token_from_link(&mail.text_body)
+    };
+    let req = test::TestRequest::post()
+        .uri("/api/v1/invites/accept")
+        .cookie(Cookie::new("access", invitee_access.clone()))
+        .set_json(serde_json::json!({ "token": first_token }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200, "first accept should succeed");
+
+    // Sanity: membership exists.
+    let m = stack
+        .state
+        .memberships
+        .find(family_id, invitee_user.id)
+        .await
+        .expect("memberships.find");
+    assert!(m.is_some(), "membership should exist after first accept");
+
+    // Second invite: person-targeted, same email, same role. Without
+    // `ON CONFLICT DO NOTHING` on `memberships.insert`, the accept below
+    // would 500 here.
+    let req = test::TestRequest::post()
+        .uri(&format!("/api/v1/families/{family_id_str}/invites"))
+        .cookie(Cookie::new("access", owner_access))
+        .set_json(serde_json::json!({
+            "email": invitee_email,
+            "role": "user",
+            "person_id": klaus_id.into_uuid(),
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200, "second invite POST should succeed");
+    let second_token = {
+        let captured = stack.fake_email.drain();
+        let mail = captured.iter().find(|m| m.to_addr == invitee_email).expect("second email");
+        extract_token_from_link(&mail.text_body)
+    };
+    let req = test::TestRequest::post()
+        .uri("/api/v1/invites/accept")
+        .cookie(Cookie::new("access", invitee_access))
+        .set_json(serde_json::json!({ "token": second_token }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status().as_u16(), 200, "second accept must be idempotent on membership");
+
+    // The whole point: the person-link side-effect still runs, even though
+    // the membership insert was a no-op. Klaus is now linked to invitee.
+    let klaus = stack
+        .state
+        .persons
+        .find_in_family(family_id, klaus_id)
+        .await
+        .expect("find klaus")
+        .expect("klaus row");
+    assert_eq!(
+        klaus.linked_user_id,
+        Some(invitee_user.id),
+        "second accept must wire person.linked_user_id"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn cancel_invite_removes_row_and_audits() {
     let stack = ephemeral_stack().await;

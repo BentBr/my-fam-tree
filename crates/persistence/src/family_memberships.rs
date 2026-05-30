@@ -88,9 +88,34 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         user_id: UserId,
         role: Role,
     ) -> Result<(), MembershipRepoError> {
+        // `ON CONFLICT (family_id, user_id) DO NOTHING` makes re-accepting
+        // an invite a graceful no-op rather than a 500.
+        //
+        // The previous shape (plain INSERT) failed on the duplicate-key
+        // constraint when the same user re-clicked their invite link, or
+        // when a second invite arrived (e.g. owner sends a person-targeted
+        // invite to a user who already has a family-level membership). The
+        // 500 surfaced as "Sign-in failed. The link may have expired." in
+        // the FE — misleading, since the real meaning is "you're already
+        // in this family".
+        //
+        // We deliberately do NOT do `ON CONFLICT ... DO UPDATE SET role =
+        // EXCLUDED.role`: a re-accept must NOT silently change the role.
+        // Role changes go through the dedicated `/families/{id}/members/
+        // {user_id}/role` endpoint (which audits the change and enforces
+        // owner-cannot-demote-self rules). Re-accepting with a higher
+        // `invited_role` than the current membership would otherwise be a
+        // sneaky self-promotion vector for anyone who can craft an invite.
+        //
+        // The owner-existence partial-unique constraint
+        // (`family_memberships_one_owner`) is on a different column set
+        // than the PK and is NOT silenced by this `ON CONFLICT`. Attempts
+        // to insert a SECOND owner for the same family still error out,
+        // and the explicit match below maps that to `OwnerExists`.
         let res = sqlx::query!(
             r#"INSERT INTO family_memberships (family_id, user_id, role)
-               VALUES ($1, $2, ($3::text)::family_role)"#,
+               VALUES ($1, $2, ($3::text)::family_role)
+               ON CONFLICT (family_id, user_id) DO NOTHING"#,
             family_id.into_uuid(),
             user_id.into_uuid(),
             role_db(role)

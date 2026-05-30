@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO family_memberships (family_id, user_id, role)\n               VALUES ($1, $2, ($3::text)::family_role)\n               ON CONFLICT (family_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ebcb7486794b4b7522c8e52e38632e69f4ee6e4f5b1fc11545e4ab58c9e2fa08"
+}
