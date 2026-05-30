@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.6...core-v0.1.7) (2026-05-30)
+
+
+### Bug Fixes
+
+* **fe:** split mutation / navigation try-catch in token-consume views ([d2ba9ff](https://github.com/BentBr/my-fam-tree/commit/d2ba9ffac3612856c2c5b8e4c231430b4e46a6cb))
+
 ## [0.1.6](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.5...core-v0.1.6) (2026-05-30)
 
 
