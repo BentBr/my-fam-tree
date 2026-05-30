@@ -251,12 +251,8 @@ async fn second_accept_is_idempotent_on_membership_and_still_wires_person_link()
     assert_eq!(res.status().as_u16(), 200, "first accept should succeed");
 
     // Sanity: membership exists.
-    let m = stack
-        .state
-        .memberships
-        .find(family_id, invitee_user.id)
-        .await
-        .expect("memberships.find");
+    let m =
+        stack.state.memberships.find(family_id, invitee_user.id).await.expect("memberships.find");
     assert!(m.is_some(), "membership should exist after first accept");
 
     // Second invite: person-targeted, same email, same role. Without
