@@ -41,9 +41,15 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
     await expect(page.getByTestId('person-edit-button')).toBeVisible()
 
     // Reload + re-open the drawer to assert the date persisted server-side.
+    // Use `dispatchEvent('click')` on the SVG tree node (same pattern as
+    // sibling tests, e.g. contacts.test.ts): Vuetify's PersonDetail drawer
+    // mounts a `v-navigation-drawer__scrim` that fades in over the tree
+    // when the drawer opens, and Playwright's normal `.click()` retries
+    // until "stable + no overlay" — the scrim mid-transition intercepts
+    // pointer events and the click never lands. The dispatched event
+    // bypasses actionability and goes straight to the node's handler.
     await page.reload()
-    const node = page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first()
-    await node.click()
+    await page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first().dispatchEvent('click')
     await expect(page.getByTestId('person-field-death-date')).toContainText('2024-06-15')
 
     // ----- 3. Edit again → uncheck deceased, save. -----
@@ -63,8 +69,10 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
     // Reload + re-open is what makes this an honest round-trip: a save
     // that only updated the local form (without persisting the NULL)
     // would show "—" until refetch, then snap back to the date.
+    // Same `dispatchEvent('click')` as step 2 — see comment there for
+    // the v-navigation-drawer__scrim rationale.
     await page.reload()
-    await page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first().click()
+    await page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first().dispatchEvent('click')
     await expect(page.getByTestId('person-detail')).toBeVisible()
     // The view-mode list renders `—` (em-dash) for unset dates, not "2024-...".
     const deathRow = page.getByTestId('person-field-death-date')
