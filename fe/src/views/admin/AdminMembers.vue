@@ -29,8 +29,26 @@ function canTransferTo(r: MemberRow): boolean {
     return r.user_id !== myUserId.value
 }
 
+/**
+ * Resolve a member row to a single display string, falling back in
+ * order: account `display_name` → linked-person name (in this family)
+ * → email → user_id. Each non-empty step short-circuits. Empty / null
+ * intermediate values fall through. Used in BOTH the members table
+ * row label AND every dialog / confirmation that quotes a member's
+ * name so the entire admin Members surface stays consistent.
+ */
+function memberLabel(r: MemberRow): string {
+    const dn = r.display_name.trim()
+    if (dn !== '') return dn
+    const lp = (r.linked_person_name ?? '').trim()
+    if (lp !== '') return lp
+    if (r.email.trim() !== '') return r.email
+    return r.user_id
+}
+
 function nameOf(userId: string): string {
-    return rows.value.find((r) => r.user_id === userId)?.display_name ?? userId
+    const r = rows.value.find((row) => row.user_id === userId)
+    return r === undefined ? userId : memberLabel(r)
 }
 
 const transferTarget = ref<MemberRow | null>(null)
@@ -181,7 +199,7 @@ function roleColor(role: MemberRow['role']): string | undefined {
                         </td>
                     </tr>
                     <tr v-for="r in rows" :key="r.user_id" :data-testid="`admin-members-row-${r.user_id}`">
-                        <td>{{ r.display_name }}</td>
+                        <td>{{ memberLabel(r) }}</td>
                         <td>{{ r.email }}</td>
                         <td>
                             <v-chip size="small" :color="roleColor(r.role)">
@@ -236,10 +254,10 @@ function roleColor(role: MemberRow['role']): string | undefined {
         <v-dialog v-model="transferDialogOpen" max-width="480">
             <v-card v-if="transferTarget !== null" data-testid="admin-members-transfer-dialog">
                 <v-card-title>
-                    {{ t('admin.transfer.modalTitle', { name: transferTarget.display_name }) }}
+                    {{ t('admin.transfer.modalTitle', { name: memberLabel(transferTarget) }) }}
                 </v-card-title>
                 <v-card-text>
-                    {{ t('admin.transfer.modalText', { name: transferTarget.display_name }) }}
+                    {{ t('admin.transfer.modalText', { name: memberLabel(transferTarget) }) }}
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
@@ -265,7 +283,7 @@ function roleColor(role: MemberRow['role']): string | undefined {
                         confirmTarget.kind === 'revoke'
                             ? t('admin.members.confirm.revokeTitle')
                             : t('admin.members.confirm.demoteTitle', {
-                                  name: confirmTarget.row.display_name,
+                                  name: memberLabel(confirmTarget.row),
                               })
                     }}
                 </v-card-title>
@@ -273,10 +291,10 @@ function roleColor(role: MemberRow['role']): string | undefined {
                     {{
                         confirmTarget.kind === 'revoke'
                             ? t('admin.members.confirm.revokeText', {
-                                  name: confirmTarget.row.display_name,
+                                  name: memberLabel(confirmTarget.row),
                               })
                             : t('admin.members.confirm.demoteText', {
-                                  name: confirmTarget.row.display_name,
+                                  name: memberLabel(confirmTarget.row),
                               })
                     }}
                 </v-card-text>

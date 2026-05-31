@@ -71,6 +71,7 @@ function row(over: Partial<MemberRow> = {}): MemberRow {
         user_id: 'u-other',
         email: 'other@x.com',
         display_name: 'Other Person',
+        linked_person_name: null,
         role: 'user',
         joined_at: '2025-01-01T00:00:00Z',
         ...over,

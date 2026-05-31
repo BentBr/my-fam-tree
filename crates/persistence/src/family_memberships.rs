@@ -226,6 +226,16 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         // stable across reloads. `users.email` is a CITEXT domain — the
         // explicit `::text` cast keeps SQLx's prepare step happy and
         // produces a plain `String` instead of an opaque type.
+        // LEFT JOIN to persons so we surface the user's "name in this
+        // family" when their account `display_name` is empty: most
+        // members never set a display name, but they DO have a person
+        // row (created by an admin during seeding / invite) that
+        // everyone in the family already knows them by. The COALESCE
+        // turns ' ' (which `given || ' ' || family` would yield for a
+        // row with empty both halves) into NULL so the FE can clean-
+        // fall through to email. The sort key still uses display_name
+        // first then linked-person name so the rendered order matches
+        // the rendered label.
         let rows = sqlx::query!(
             r#"
             SELECT
@@ -233,9 +243,13 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
                 fm.role::text  AS "role!",
                 fm.joined_at,
                 u.email::text  AS "email!",
-                u.display_name AS "display_name!"
+                u.display_name AS "display_name!",
+                NULLIF(TRIM(BOTH FROM COALESCE(p.given_name, '') || ' ' || COALESCE(p.family_name, '')), '')
+                    AS "linked_person_name?"
             FROM family_memberships fm
             JOIN users u ON u.id = fm.user_id
+            LEFT JOIN persons p
+                   ON p.linked_user_id = fm.user_id AND p.family_id = fm.family_id
             WHERE fm.family_id = $1
             ORDER BY
                 CASE fm.role
@@ -243,7 +257,9 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
                     WHEN 'admin' THEN 1
                     ELSE 2
                 END,
-                u.display_name
+                NULLIF(u.display_name, ''),
+                NULLIF(TRIM(BOTH FROM COALESCE(p.given_name, '') || ' ' || COALESCE(p.family_name, '')), ''),
+                u.email
             "#,
             family_id.into_uuid(),
         )
@@ -259,6 +275,7 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
                 display_name: r.display_name,
                 role: role_from_db(&r.role),
                 joined_at: r.joined_at,
+                linked_person_name: r.linked_person_name,
             })
             .collect())
     }

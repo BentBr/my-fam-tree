@@ -64,6 +64,13 @@ pub struct AuditRow {
     pub actor_user_id: Option<UserId>,
     pub actor_display_name: Option<String>,
     pub actor_email: Option<String>,
+    /// Name of the `persons` row (in this family) the actor is
+    /// linked to via `linked_user_id`, if any. The FE falls back to
+    /// this when the actor's account `display_name` is empty so a
+    /// brand-new member's audit rows still surface a meaningful
+    /// name (the family already knows them by the linked-person
+    /// name).
+    pub actor_person_name: Option<String>,
     pub entity_person_id: Option<Uuid>,
     pub entity_person_name: Option<String>,
 }

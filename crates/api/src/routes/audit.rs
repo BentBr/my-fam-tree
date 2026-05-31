@@ -52,6 +52,11 @@ pub struct AuditRowDto {
     pub actor_user_id: Option<Uuid>,
     pub actor_display_name: Option<String>,
     pub actor_email: Option<String>,
+    /// Name of the `persons` row (in this family) the actor is
+    /// linked to via `linked_user_id`, if any. The FE renders this
+    /// when the actor's account `display_name` is empty so brand-new
+    /// members still show a meaningful actor.
+    pub actor_person_name: Option<String>,
     pub entity_person_id: Option<Uuid>,
     pub entity_person_name: Option<String>,
 }
@@ -138,6 +143,7 @@ pub async fn list_audit(
             actor_user_id: r.actor_user_id.map(UserId::into_uuid),
             actor_display_name: r.actor_display_name,
             actor_email: r.actor_email,
+            actor_person_name: r.actor_person_name,
             entity_person_id: r.entity_person_id,
             entity_person_name: r.entity_person_name,
         })

@@ -345,6 +345,13 @@ impl PersonRepo for PgPersonRepo {
         family_id: FamilyId,
         limit: u32,
     ) -> Result<Vec<Person>, PersonRepoError> {
+        // `ORDER BY created_at DESC, id DESC` matches the
+        // composite index `persons_family_created_at_idx
+        // (family_id, created_at DESC, id DESC)` from migration
+        // 0013, so Postgres can satisfy the order directly from
+        // the index. The trailing `id DESC` is a deterministic
+        // tiebreak (two persons created in the same microsecond
+        // would otherwise reshuffle across queries).
         let lim = i64::from(limit.clamp(1, 100));
         let rows = sqlx::query_as!(
             PersonRow,
@@ -352,7 +359,7 @@ impl PersonRepo for PgPersonRepo {
                       gender, birth_date, birth_place, death_date, notes,
                       linked_user_id, photo_key, created_at, updated_at
                  FROM persons WHERE family_id = $1
-                 ORDER BY created_at DESC LIMIT $2"#,
+                 ORDER BY created_at DESC, id DESC LIMIT $2"#,
             family_id.into_uuid(),
             lim,
         )

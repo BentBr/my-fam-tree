@@ -2511,6 +2511,13 @@
               "null"
             ]
           },
+          "actor_person_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the `persons` row (in this family) the actor is\nlinked to via `linked_user_id`, if any. The FE renders this\nwhen the actor's account `display_name` is empty so brand-new\nmembers still show a meaningful actor."
+          },
           "actor_user_id": {
             "type": [
               "string",
@@ -3095,20 +3102,18 @@
         ],
         "properties": {
           "db_latency_ms": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Round-trip duration of the DB probe in milliseconds.",
-            "minimum": 0
+            "type": "number",
+            "format": "double",
+            "description": "Round-trip duration of the DB probe in milliseconds. Carries\nsub-millisecond precision (f64) — a warm Postgres pool returns\n`SELECT 1` in hundreds of microseconds, which rounded to whole\nms looked like a fake \"0 ms\" on the status page."
           },
           "db_ok": {
             "type": "boolean",
             "description": "`true` when the DB answered the reachability probe."
           },
           "server_duration_ms": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total handler duration in milliseconds. Includes the DB probe\nplus any framework / serialization overhead inside actix-web.\nUseful for distinguishing \"DB is slow\" (`db_latency_ms` close\nto `server_duration_ms`) from \"API is slow elsewhere\" (the gap\nbetween the two is dominated by other work).",
-            "minimum": 0
+            "type": "number",
+            "format": "double",
+            "description": "Total handler duration in milliseconds. Includes the DB probe\nplus any framework / serialization overhead inside actix-web.\nUseful for distinguishing \"DB is slow\" (`db_latency_ms` close\nto `server_duration_ms`) from \"API is slow elsewhere\" (the gap\nbetween the two is dominated by other work).\n\nFloat ms with sub-ms precision — handler total can run under\n1 ms on a warm process and the integer-ms display rounded\neverything to 0. Note this is the IN-HANDLER duration only:\nnetwork RTT, TLS, Nginx, geographic distance and actix's\nmiddleware chain BEFORE the handler are all outside this\nmeasurement, which is why the browser's network panel will\nshow a much larger number than this field."
           },
           "status": {
             "type": "string"
@@ -3462,6 +3467,13 @@
           "joined_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "linked_person_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the `persons` row (in the active family) this user is\nlinked to via `linked_user_id`, if any. The FE uses this as a\nfallback when the account's `display_name` is empty — most\nmembers never set a display name and the family already knows\nthem by their linked-person name."
           },
           "role": {
             "$ref": "#/components/schemas/Role"

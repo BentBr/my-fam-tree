@@ -15,6 +15,14 @@ export interface MemberRow {
     user_id: string
     email: string
     display_name: string
+    /**
+     * Name of the persons-row the user is linked to in the active
+     * family, if any. The FE renders this as a fallback when
+     * `display_name` is empty (most members never set one). Null when
+     * the user has no linked person in this family — the FE falls
+     * further through to `email` in that case.
+     */
+    linked_person_name: string | null
     role: 'user' | 'admin' | 'owner'
     joined_at: string
 }

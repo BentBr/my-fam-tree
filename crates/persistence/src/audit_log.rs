@@ -92,6 +92,22 @@ impl AuditLogRepo for PgAuditLogRepo {
                     al.actor_user_id,
                     u.display_name AS actor_display_name,
                     u.email::text  AS actor_email,
+                    -- Linked-person name (in this family) for the
+                    -- audit row's actor — used by the FE as the
+                    -- display fallback when the actor's account
+                    -- display_name is empty. Same `NULLIF(TRIM('a' || ' ' || 'b'), '')`
+                    -- pattern as `family_memberships::list_with_users`
+                    -- so an empty given/family pair collapses to NULL
+                    -- and the FE falls through to email.
+                    (
+                        SELECT NULLIF(TRIM(BOTH FROM
+                            COALESCE(p.given_name, '') || ' ' || COALESCE(p.family_name, '')
+                        ), '')
+                        FROM persons p
+                        WHERE p.family_id = al.family_id
+                          AND p.linked_user_id = al.actor_user_id
+                        LIMIT 1
+                    ) AS actor_person_name,
                     CASE al.entity_kind
                         WHEN 'person'       THEN al.entity_id
                         WHEN 'contact'      THEN (al.metadata->>'person_id')::uuid
@@ -131,6 +147,7 @@ impl AuditLogRepo for PgAuditLogRepo {
                 f.actor_user_id,
                 f.actor_display_name,
                 f.actor_email,
+                f.actor_person_name,
                 f.entity_person_id,
                 f.total_count,
                 CASE
@@ -168,6 +185,7 @@ impl AuditLogRepo for PgAuditLogRepo {
                 actor_user_id: r.get::<Option<Uuid>, _>("actor_user_id").map(UserId::from_uuid),
                 actor_display_name: r.get::<Option<String>, _>("actor_display_name"),
                 actor_email: r.get::<Option<String>, _>("actor_email"),
+                actor_person_name: r.get::<Option<String>, _>("actor_person_name"),
                 entity_person_id: r.get::<Option<Uuid>, _>("entity_person_id"),
                 entity_person_name: r.get::<Option<String>, _>("entity_person_name"),
             })

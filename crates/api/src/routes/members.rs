@@ -32,6 +32,12 @@ pub struct MemberDto {
     pub display_name: String,
     pub role: Role,
     pub joined_at: DateTime<Utc>,
+    /// Name of the `persons` row (in the active family) this user is
+    /// linked to via `linked_user_id`, if any. The FE uses this as a
+    /// fallback when the account's `display_name` is empty — most
+    /// members never set a display name and the family already knows
+    /// them by their linked-person name.
+    pub linked_person_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -159,6 +165,7 @@ pub async fn list_members(
             display_name: m.display_name,
             role: m.role,
             joined_at: m.joined_at,
+            linked_person_name: m.linked_person_name,
         })
         .collect();
     Ok(ApiResponse::ok(MembersList { data: dtos }))
@@ -246,6 +253,7 @@ pub async fn set_member_role(
         display_name: updated.display_name,
         role: updated.role,
         joined_at: updated.joined_at,
+        linked_person_name: updated.linked_person_name,
     }))
 }
 

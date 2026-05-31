@@ -12,6 +12,16 @@ const requestId = computed(() => data.value?.meta?.request_id ?? '')
 const dbOk = computed(() => data.value?.data.db_ok ?? false)
 const dbLatency = computed(() => data.value?.data.db_latency_ms ?? 0)
 const serverLatency = computed(() => data.value?.data.server_duration_ms ?? 0)
+// Show one decimal so sub-millisecond DB pings ("0.3 ms") don't render
+// as a misleading "0 ms". The BE returns float ms; we just format
+// here. Network panel's reported request time will always be larger
+// than these in-handler values — TLS, Nginx, geographic distance,
+// actix's pre-handler middleware all sit outside this measurement.
+function fmtMs(ms: number): string {
+    if (!Number.isFinite(ms)) return '0'
+    if (ms < 10) return ms.toFixed(1)
+    return Math.round(ms).toString()
+}
 // Worker lease: the BE probes Redis for the reminder-leader key. The
 // chip flips green when held, red when the lease has expired (worker
 // is down or hasn't been deployed yet). No latency dimension — it's a
@@ -29,8 +39,10 @@ function colourFor(ms: number, ok = true): 'success' | 'warning' | 'error' {
 const dbColor = computed(() => colourFor(dbLatency.value, dbOk.value))
 const serverColor = computed(() => colourFor(serverLatency.value))
 const workerColor = computed<'success' | 'error'>(() => (workerOk.value ? 'success' : 'error'))
-const dbText = computed(() => (dbOk.value ? t('health.dbLatency', { ms: dbLatency.value }) : t('health.dbDown')))
-const serverText = computed(() => t('health.serverLatency', { ms: serverLatency.value }))
+const dbText = computed(() =>
+    dbOk.value ? t('health.dbLatency', { ms: fmtMs(dbLatency.value) }) : t('health.dbDown'),
+)
+const serverText = computed(() => t('health.serverLatency', { ms: fmtMs(serverLatency.value) }))
 const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t('health.workerDown')))
 </script>
 

@@ -35,6 +35,14 @@ pub struct MemberWithUser {
     pub display_name: String,
     pub role: Role,
     pub joined_at: DateTime<Utc>,
+    /// Name of the `persons` row (in this family) that this user has
+    /// been linked to via `linked_user_id`, if any. The admin Members
+    /// view falls back to this when the user's account `display_name`
+    /// is empty — most members never bother to set a display name and
+    /// the linked-person name is what the family already knows them
+    /// as. `None` when the user has no linked person in this family
+    /// (the FE then falls back to the raw email).
+    pub linked_person_name: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]

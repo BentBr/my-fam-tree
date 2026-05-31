@@ -31,8 +31,11 @@ pub struct Health {
     pub version: &'static str,
     /// `true` when the DB answered the reachability probe.
     pub db_ok: bool,
-    /// Round-trip duration of the DB probe in milliseconds.
-    pub db_latency_ms: u64,
+    /// Round-trip duration of the DB probe in milliseconds. Carries
+    /// sub-millisecond precision (f64) — a warm Postgres pool returns
+    /// `SELECT 1` in hundreds of microseconds, which rounded to whole
+    /// ms looked like a fake "0 ms" on the status page.
+    pub db_latency_ms: f64,
     /// `true` when the worker currently holds its Redis leader-lease
     /// (`<prefix>reminder:leader`). The lease has a short TTL and is
     /// refreshed each tick, so this signal flips false within ~30 s
@@ -44,7 +47,15 @@ pub struct Health {
     /// Useful for distinguishing "DB is slow" (`db_latency_ms` close
     /// to `server_duration_ms`) from "API is slow elsewhere" (the gap
     /// between the two is dominated by other work).
-    pub server_duration_ms: u64,
+    ///
+    /// Float ms with sub-ms precision — handler total can run under
+    /// 1 ms on a warm process and the integer-ms display rounded
+    /// everything to 0. Note this is the IN-HANDLER duration only:
+    /// network RTT, TLS, Nginx, geographic distance and actix's
+    /// middleware chain BEFORE the handler are all outside this
+    /// measurement, which is why the browser's network panel will
+    /// show a much larger number than this field.
+    pub server_duration_ms: f64,
 }
 
 response_body!(pub HealthResponseBody, Health);
@@ -79,9 +90,16 @@ pub async fn health(
 
     // Time the DB probe. A failure is NOT an error response — we report it in
     // the body and keep the endpoint at 200 (the API process is alive).
+    // Sub-millisecond precision (warm-pool pings take ~300 µs) is the
+    // whole point of float ms here — integer ms would round to 0 and
+    // look like a measurement bug on the status page. Localised
+    // `float_arithmetic` allow: workspace clippy denies float ops by
+    // default to keep money / count math integer-only; for a latency
+    // gauge this is exactly the kind of place floats belong.
     let started_db = Instant::now();
     let db_ok = state.health.ping().await.is_ok();
-    let db_latency_ms = u64::try_from(started_db.elapsed().as_millis()).unwrap_or(u64::MAX);
+    #[allow(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
+    let db_latency_ms = started_db.elapsed().as_secs_f64() * 1000.0;
 
     // Worker liveness — does it currently hold the Redis leader lease?
     // Redis-unreachable maps to `worker_ok: false` (worker liveness
@@ -90,7 +108,8 @@ pub async fn health(
     // Redis itself is the wedge.
     let worker_ok = worker_leader_alive(&state).await;
 
-    let server_duration_ms = u64::try_from(started_total.elapsed().as_millis()).unwrap_or(u64::MAX);
+    #[allow(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
+    let server_duration_ms = started_total.elapsed().as_secs_f64() * 1000.0;
 
     let mut resp = ApiResponse::ok(Health {
         status: "ok",

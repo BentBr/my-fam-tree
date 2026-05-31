@@ -116,6 +116,32 @@ function entityKindLabel(slug: string): string {
     return t(`admin.audit.entityKind.${slug}`)
 }
 
+/**
+ * Resolve the actor column to a single display string. The BE returns
+ * `actor_display_name` (account `users.display_name`), `actor_person_name`
+ * (linked-person name in this family, if any), and `actor_email`, plus
+ * a nullable `actor_user_id` (system actions have no actor). The chain:
+ *   display_name → linked-person name → email → '—'
+ * Empty strings count as missing (the BE sends `display_name: ''` when
+ * the user never set one rather than null). System rows (no actor) end
+ * up at '—'.
+ */
+function actorLabel(row: {
+    actor_user_id?: string | null
+    actor_display_name?: string | null
+    actor_person_name?: string | null
+    actor_email?: string | null
+}): string {
+    if ((row.actor_user_id ?? '') === '') return '—'
+    const dn = (row.actor_display_name ?? '').trim()
+    if (dn !== '') return dn
+    const pn = (row.actor_person_name ?? '').trim()
+    if (pn !== '') return pn
+    const em = (row.actor_email ?? '').trim()
+    if (em !== '') return em
+    return '—'
+}
+
 // Pull the invitee email + role out of the audit row's metadata blob so
 // `(invite, membership)` rows can render a "Invited {email} as {role}"
 // secondary line. The BE writes both fields (families::invite) but
@@ -206,7 +232,7 @@ function inviteMetadata(metadata: unknown): InviteMetadata | null {
                     </tr>
                     <tr v-for="row in rows" :key="row.id" :data-testid="`admin-audit-row-${row.id}`">
                         <td>{{ fmtDate(row.created_at) }}</td>
-                        <td>{{ row.actor_display_name ?? row.actor_email ?? '—' }}</td>
+                        <td>{{ actorLabel(row) }}</td>
                         <td>
                             {{ actionLabel(row.action) }}
                             <span class="text-medium-emphasis"> · {{ entityKindLabel(row.entity_kind) }} </span>
