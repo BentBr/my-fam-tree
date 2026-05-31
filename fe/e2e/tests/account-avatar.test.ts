@@ -5,30 +5,21 @@
 // changes from initial to <img>-bearing on upload, and reverts on
 // remove).
 
-import { Buffer } from 'node:buffer'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn } from '../page-objects/session'
 
-// Tiny 1x1 PNG — the canonical smallest valid PNG (8-bit grayscale+alpha,
-// transparent pixel). 67 bytes. CRCs verified — Rust's `image` crate
-// validates PNG chunk CRCs strictly on decode; the previous hand-written
-// hex blob had a bad IHDR CRC (0x7bfd4da8 vs the correct 0x907753de) and
-// every upload returned 422 ImageInvalid. This canonical sequence is the
-// version recommended by https://garethrees.org/2007/11/14/pngcrush/ and
-// the GitHub-cited "smallest possible PNG". Kept inline so the fixture
-// stays self-contained.
-const TINY_PNG = Buffer.from(
-    '89504E470D0A1A0A0000000D49484452' + // signature + IHDR chunk header
-        '00000001000000010804000000' + // 1x1, 8-bit grayscale+alpha
-        'B51C0C02' + // IHDR CRC
-        '0000000B49444154' + // IDAT chunk header (11 bytes data)
-        '789C636000000002000100' + // IDAT compressed data (deflate of one transparent pixel)
-        'E221BC33' + // IDAT CRC
-        '0000000049454E44' + // IEND chunk header
-        'AE426082', // IEND CRC
-    'hex',
-)
+// Read the production favicon as our test PNG. Avoids the trap of
+// hand-rolling tiny PNG hex blobs whose chunk CRCs are easy to get
+// wrong — Rust's `image` crate validates them strictly on decode and
+// every prior hand-crafted attempt failed at either IHDR-CRC or
+// IDAT-CRC verification. The 16x16 favicon is a real PNG built by
+// the same pipeline that ships to production, so we know it round-
+// trips through every consumer (image::load_from_memory → resize →
+// re-encode → S3 → presigned URL → <img> render).
+const TINY_PNG = readFileSync(fileURLToPath(new URL('../../public/brand/favicon-16.png', import.meta.url)))
 
 test('owner uploads an avatar then clears it; the account card reflects both states', async ({ page }) => {
     const stamp = Date.now()

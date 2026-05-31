@@ -26,11 +26,14 @@ use crate::ids::{
     SEED_ADMIN_USER_ID, SEED_ALICE_USER_ID, SEED_BOB_USER_ID, SEED_FAMILY_ID, SEED_PERSON_ANNA_ID,
     SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
     SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID,
-    SEED_PERSON_KARIN_ID, SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID,
-    SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID,
-    SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
-    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID,
-    SEED_PERSON_URSULA_ID, SEED_PERSON_WERNER_ID, SEED_PERSON_YUKI_ID,
+    SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_GRETA_ID,
+    SEED_PERSON_K_HELGA_ID, SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID, SEED_PERSON_K_MARIE_ID,
+    SEED_PERSON_K_MIA_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID, SEED_PERSON_KARIN_ID,
+    SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
+    SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID,
+    SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
+    SEED_PERSON_SABINE_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
+    SEED_PERSON_WERNER_ID, SEED_PERSON_YUKI_ID,
 };
 
 /// Static seed of every person field.
@@ -69,9 +72,9 @@ const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT … DO
 /// UPDATE` statements.
-#[allow(clippy::too_many_lines, reason = "static table of 28 persons; splitting hurts readability")]
+#[allow(clippy::too_many_lines, reason = "static table of 38 persons; splitting hurts readability")]
 pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
-    let rows: [PersonSeed; 28] = [
+    let rows: [PersonSeed; 38] = [
         // -------------------------------------------------------------
         // G1 — Müller line.
         // -------------------------------------------------------------
@@ -478,6 +481,147 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
             birth_place: "Aarhus",
             death_date: None,
             notes: "Separated from Lars 2018 (non-marriage partnership).",
+            linked_user_id: None,
+        },
+        // -------------------------------------------------------------
+        // Krause subtree — fixtures for the layout edge cases tracked
+        // in fe/tests/components/tree/layout.crossing.test.ts and the
+        // `upcoming-tree-layout-rules` memory. Two unpartnered
+        // great-grandmothers at the top, two middle-row couples below
+        // them, and one in-married couple at the bottom (Tim + Mia)
+        // joining the two branches.
+        // -------------------------------------------------------------
+        PersonSeed {
+            id: SEED_PERSON_K_GRETA_ID,
+            given: "Greta",
+            family: "Krause",
+            name_at_birth: "Wendland",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1912, 3, 29),
+            birth_place: "Königsberg",
+            death_date: Some(ymd(2011, 3, 27)),
+            notes: "Krause subtree, Edge-case fixture: top-row mother of Hubert.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_ANNELIESE_ID,
+            given: "Anneliese",
+            family: "Krause",
+            name_at_birth: "Schumann",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1921, 3, 25),
+            birth_place: "Breslau",
+            death_date: Some(ymd(2005, 3, 28)),
+            notes: "Krause subtree, Edge-case fixture: top-row mother of Bernhard.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_HUBERT_ID,
+            given: "Hubert",
+            family: "Krause",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1947, 11, 7),
+            birth_place: "Hamburg",
+            death_date: None,
+            notes: "Krause subtree: Greta's son; married Sara; father of Mia.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_SARA_ID,
+            given: "Sara",
+            family: "Krause",
+            name_at_birth: "Tanaka",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1956, 11, 22),
+            birth_place: "Tokio",
+            death_date: None,
+            notes: "Krause subtree: married Hubert; mother of Mia.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_BERNHARD_ID,
+            given: "Bernhard",
+            family: "Krause",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1942, 11, 25),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Krause subtree: Anneliese's son; married Helga; father of Lars, Marie, Tim.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_HELGA_ID,
+            given: "Helga",
+            family: "Krause",
+            name_at_birth: "Bornemann",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1958, 9, 12),
+            birth_place: "Bremen",
+            death_date: None,
+            notes: "Krause subtree: married Bernhard; mother of Lars, Marie, Tim.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_LARS_ID,
+            given: "Lars",
+            family: "Krause",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1985, 1, 14),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Krause subtree: ELDEST of three siblings — must stay LEFT on the row.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_MARIE_ID,
+            given: "Marie",
+            family: "Krause",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1987, 6, 15),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Krause subtree: MIDDLE sibling — must stay between Lars and Tim.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_TIM_ID,
+            given: "Tim",
+            family: "Krause",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1989, 3, 22),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Krause subtree: YOUNGEST sibling, married to Mia. \
+                    Sibling-order regression target: Tim's couple block must \
+                    not push Tim left of Marie.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_K_MIA_ID,
+            given: "Mia",
+            family: "Krause",
+            name_at_birth: "Krause",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1988, 5, 10),
+            birth_place: "Hamburg",
+            death_date: None,
+            notes: "Krause subtree: Hubert + Sara's daughter, married Tim. \
+                    In-married-couple-side regression target: Mia RIGHT, Tim LEFT.",
             linked_user_id: None,
         },
     ];

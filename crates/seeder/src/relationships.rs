@@ -11,13 +11,17 @@ use uuid::Uuid;
 
 use crate::ids::{
     SEED_FAMILY_ID, SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID, SEED_PARTNERSHIP_HEINZ_URSULA_ID,
-    SEED_PARTNERSHIP_KLAUS_ANNA_ID, SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID,
-    SEED_PARTNERSHIP_KLAUS_KARIN_ID, SEED_PARTNERSHIP_KLAUS_YUKI_ID,
-    SEED_PARTNERSHIP_LARS_METTE_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
-    SEED_PARTNERSHIP_SABINE_JULIA_ID, SEED_PARTNERSHIP_SVEN_MAREN_ID,
-    SEED_PARTNERSHIP_WERNER_GRETA_ID, SEED_PERSON_ANNA_ID, SEED_PERSON_BRIGITTE_ID,
-    SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID, SEED_PERSON_GRETA_ID,
-    SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
+    SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID, SEED_PARTNERSHIP_K_HUBERT_SARA_ID,
+    SEED_PARTNERSHIP_K_TIM_MIA_ID, SEED_PARTNERSHIP_KLAUS_ANNA_ID,
+    SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID, SEED_PARTNERSHIP_KLAUS_KARIN_ID,
+    SEED_PARTNERSHIP_KLAUS_YUKI_ID, SEED_PARTNERSHIP_LARS_METTE_ID,
+    SEED_PARTNERSHIP_OTTO_HANNELORE_ID, SEED_PARTNERSHIP_SABINE_JULIA_ID,
+    SEED_PARTNERSHIP_SVEN_MAREN_ID, SEED_PARTNERSHIP_WERNER_GRETA_ID, SEED_PERSON_ANNA_ID,
+    SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
+    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID,
+    SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_GRETA_ID,
+    SEED_PERSON_K_HELGA_ID, SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID, SEED_PERSON_K_MARIE_ID,
+    SEED_PERSON_K_MIA_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID, SEED_PERSON_KARIN_ID,
     SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
     SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID,
     SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
@@ -43,10 +47,10 @@ struct ParentLinkSeed {
 /// UPDATE` statements.
 #[allow(
     clippy::too_many_lines,
-    reason = "static table of 22 parent-link rows; splitting hurts readability"
+    reason = "static table of 32 parent-link rows; splitting hurts readability"
 )]
 pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
-    let rows: [ParentLinkSeed; 22] = [
+    let rows: [ParentLinkSeed; 32] = [
         // Klaus + Anna lineage.
         ParentLinkSeed {
             child: SEED_PERSON_KLAUS_ID,
@@ -162,6 +166,61 @@ pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
             parent: SEED_PERSON_LINA_ID,
             kind: "biological",
         },
+        // Krause subtree parent links (fixtures for layout edge cases).
+        //   K_Greta     → K_Hubert (one mother → one son)
+        //   K_Anneliese → K_Bernhard (one mother → one son)
+        //   K_Hubert + K_Sara → K_Mia
+        //   K_Bernhard + K_Helga → K_Lars, K_Marie, K_Tim
+        ParentLinkSeed {
+            child: SEED_PERSON_K_HUBERT_ID,
+            parent: SEED_PERSON_K_GRETA_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_BERNHARD_ID,
+            parent: SEED_PERSON_K_ANNELIESE_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_MIA_ID,
+            parent: SEED_PERSON_K_HUBERT_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_MIA_ID,
+            parent: SEED_PERSON_K_SARA_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_LARS_ID,
+            parent: SEED_PERSON_K_BERNHARD_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_LARS_ID,
+            parent: SEED_PERSON_K_HELGA_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_MARIE_ID,
+            parent: SEED_PERSON_K_BERNHARD_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_MARIE_ID,
+            parent: SEED_PERSON_K_HELGA_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_TIM_ID,
+            parent: SEED_PERSON_K_BERNHARD_ID,
+            kind: "biological",
+        },
+        ParentLinkSeed {
+            child: SEED_PERSON_K_TIM_ID,
+            parent: SEED_PERSON_K_HELGA_ID,
+            kind: "biological",
+        },
     ];
     for r in rows {
         sqlx::query(
@@ -222,7 +281,7 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     // `partnerships_unique_open (a, b, kind) WHERE ended_on IS NULL`. The
     // DELETE also nukes any user-added partnerships on a `seeder` re-run
     // — that's deliberate, the seeder is a reset.
-    let seed_ids: [Uuid; 11] = [
+    let seed_ids: [Uuid; 14] = [
         SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
         SEED_PARTNERSHIP_WERNER_GRETA_ID,
         SEED_PARTNERSHIP_KLAUS_ANNA_ID,
@@ -234,6 +293,9 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
         SEED_PARTNERSHIP_SVEN_MAREN_ID,
         SEED_PARTNERSHIP_HEINZ_URSULA_ID,
         SEED_PARTNERSHIP_LARS_METTE_ID,
+        SEED_PARTNERSHIP_K_HUBERT_SARA_ID,
+        SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID,
+        SEED_PARTNERSHIP_K_TIM_MIA_ID,
     ];
     sqlx::query("DELETE FROM partnerships WHERE family_id = $1 AND id <> ALL($2)")
         .bind(SEED_FAMILY_ID)
@@ -254,8 +316,11 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     let (sven, maren) = order_pair(SEED_PERSON_SVEN_ID, SEED_PERSON_MAREN_ID);
     let (heinz, ursula) = order_pair(SEED_PERSON_HEINZ_ID, SEED_PERSON_URSULA_ID);
     let (lars, mette) = order_pair(SEED_PERSON_LARS_ID, SEED_PERSON_METTE_ID);
+    let (k_hubert, k_sara) = order_pair(SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_SARA_ID);
+    let (k_bernhard, k_helga) = order_pair(SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_HELGA_ID);
+    let (k_tim, k_mia) = order_pair(SEED_PERSON_K_TIM_ID, SEED_PERSON_K_MIA_ID);
 
-    let rows: [PartnershipSeed; 11] = [
+    let rows: [PartnershipSeed; 14] = [
         PartnershipSeed {
             id: SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
             partner_a: otto,
@@ -385,6 +450,39 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
             ended_on: Some(ymd(2018, 9, 30)),
             end_reason: Some("separation"),
             note: "Separated non-marriage partnership demo (Lars + Mette).",
+        },
+        // Krause subtree partnerships (fixtures for layout edge cases).
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_K_HUBERT_SARA_ID,
+            partner_a: k_hubert,
+            partner_b: k_sara,
+            kind: "marriage",
+            started_on: Some(ymd(1985, 6, 14)),
+            ended_on: None,
+            end_reason: None,
+            note: "Krause subtree: Hubert + Sara; parents of Mia.",
+        },
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID,
+            partner_a: k_bernhard,
+            partner_b: k_helga,
+            kind: "marriage",
+            started_on: Some(ymd(1983, 5, 21)),
+            ended_on: None,
+            end_reason: None,
+            note: "Krause subtree: Bernhard + Helga; parents of Lars, Marie, Tim.",
+        },
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_K_TIM_MIA_ID,
+            partner_a: k_tim,
+            partner_b: k_mia,
+            kind: "marriage",
+            started_on: Some(ymd(2018, 9, 15)),
+            ended_on: None,
+            end_reason: None,
+            note: "Krause subtree: Tim + Mia in-married couple; the layout \
+                   should put Tim LEFT (his parents on the left) and Mia \
+                   RIGHT (her parents on the right) to avoid crossing parent edges.",
         },
     ];
     for p in rows {

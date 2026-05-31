@@ -98,22 +98,23 @@ compose.yaml    Postgres, Redis, Mailpit, api, worker, migrator, fe
 
 ## Common commands (via `rdt`)
 
-| Command | What it does |
-|---|---|
-| `rdt start` | `docker compose up -d` (fe container auto-installs deps on first boot) |
-| `rdt stop` | `docker compose down` |
-| `rdt shell` | Open a shell in the api container |
-| `rdt migrate` / `rdt m` | Apply pending DB migrations |
-| `rdt migrate-status` | Show applied vs pending |
-| `rdt openapi` | Dump OpenAPI spec + regenerate FE types (routed through the fe container) |
-| `rdt openapi-check` | Fail if the committed spec drifted |
-| `rdt lint` / `rdt l` | All linters (rust + fe + file-size); FE checks run inside the fe container |
-| `rdt test` / `rdt t` | All unit tests |
-| `rdt test-e2e` | Playwright E2E against the running stack |
-| `rdt coverage` | Coverage report |
-| `rdt gen-jwt-keys` | Print a fresh Ed25519 keypair for .env |
-| `rdt seed` | Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs) |
-| `rdt reset` | Drop dev DB volume, re-migrate, and re-seed |
+| Command                 | What it does                                                               |
+|-------------------------|----------------------------------------------------------------------------|
+| `rdt start`             | `docker compose up -d` (fe container auto-installs deps on first boot)     |
+| `rdt stop`              | `docker compose down`                                                      |
+| `rdt shell`             | Open a shell in the api container                                          |
+| `rdt migrate` / `rdt m` | Apply pending DB migrations                                                |
+| `rdt migrate-status`    | Show applied vs pending                                                    |
+| `rdt openapi`           | Dump OpenAPI spec + regenerate FE types (routed through the fe container)  |
+| `rdt openapi-check`     | Fail if the committed spec drifted                                         |
+| `rdt lint` / `rdt l`    | All linters (rust + fe + file-size); FE checks run inside the fe container |
+| `rdt test` / `rdt t`    | All unit tests                                                             |
+| `rdt test-e2e`          | Playwright E2E against the running stack                                   |
+| `rdt coverage`          | Coverage report                                                            |
+| `rdt gen-jwt-keys`      | Print a fresh Ed25519 keypair for .env                                     |
+| `rdt seed`              | Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs)    |
+| `rdt build`             | Rebuild the local stack with test features                                 |
+| `rdt reset`             | Drop dev DB volume, re-migrate, and re-seed                                |
 
 Run `rdt help` for the full list. FE commands (`pnpm lint`, `pnpm test`, codegen) are always dispatched via `scripts/fe-in-container.sh` — you never invoke pnpm on the host.
 

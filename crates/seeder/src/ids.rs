@@ -95,6 +95,33 @@ pub const SEED_PERSON_URSULA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_00
 pub const SEED_PERSON_LARS_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001b);
 pub const SEED_PERSON_METTE_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001c);
 
+// "Krause" subtree — 8 persons that reproduce the layout edge cases
+// the user pointed out from his real family tree. Pinned in the seed so
+// he can sign in, view /tree, and visually confirm the current
+// (broken) layout vs the expected one after the layout pipeline is
+// updated. The cases:
+//   1. Three siblings (Lars 1985, Marie 1987, Tim 1989) where adding
+//      Tim's spouse (Mia) currently shuffles Tim out of the right end
+//      of the sibling row.
+//   2. Two unpartnered mothers (Greta 1912, Anneliese 1921) whose
+//      children (Hubert, Bernhard) sit on opposite sides of the row
+//      below — their cross order causes the parent edges to cross.
+//   3. An in-married couple (Tim + Mia) where each spouse has parents
+//      on opposite sides; the couple's own order on its row should
+//      put each spouse closer to their own parents to avoid crossings.
+pub const SEED_PERSON_K_GRETA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001d);
+pub const SEED_PERSON_K_ANNELIESE_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001e);
+pub const SEED_PERSON_K_HUBERT_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001f);
+pub const SEED_PERSON_K_SARA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0020);
+pub const SEED_PERSON_K_BERNHARD_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0021);
+pub const SEED_PERSON_K_HELGA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0022);
+pub const SEED_PERSON_K_LARS_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0023);
+pub const SEED_PERSON_K_MARIE_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0024);
+pub const SEED_PERSON_K_TIM_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0025);
+pub const SEED_PERSON_K_MIA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0026);
+
 // ---------------------------------------------------------------------------
 // Partnerships — hardcoded so the seed can keep `ON CONFLICT (id) DO UPDATE`
 // semantics for closed (ended_on IS NOT NULL) rows too.
@@ -128,7 +155,14 @@ pub const SEED_PARTNERSHIP_HEINZ_URSULA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000a);
 pub const SEED_PARTNERSHIP_LARS_METTE_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000b);
+// Krause subtree partnerships — see the K_* person ids above.
+pub const SEED_PARTNERSHIP_K_HUBERT_SARA_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000c);
+pub const SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000d);
+pub const SEED_PARTNERSHIP_K_TIM_MIA_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000e);
 
 /// Expected counts for the deterministic seed — surfaced for the test
 /// asserts so they don't drift from the actual data.
-pub const SEED_PERSON_COUNT: usize = 28;
+pub const SEED_PERSON_COUNT: usize = 38;
