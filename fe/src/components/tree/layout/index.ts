@@ -154,13 +154,43 @@ export function layoutTree(input: TreeInput): LayoutResult {
 
     rootBlocks.sort((a, b) => compareBlockKeys(blockSortKey(a, byId), blockSortKey(b, byId)))
 
-    const placed = new Map<string, PositionedBlock>()
-    const cursor = { x: 0 }
-    for (let i = 0; i < rootBlocks.length; i += 1) {
-        if (i > 0) cursor.x += CLUSTER_GAP
-        const root = rootBlocks[i]
-        if (root === undefined) continue
-        layoutSubtree(root, childrenOfBlock, byId, bioParents, placed, cursor)
+    // Two-pass layout to eliminate avoidable parent / partner edge crossings:
+    //   1. First pass uses the default ordering (root blocks sorted by their
+    //      oldest member's birth date; 2-person couples sorted alphabetically
+    //      by id) and gives us a first-cut position for every block.
+    //   2. From the first-pass positions we compute, per root block, the
+    //      descendant barycenter (mean x of all descendants) — that's the
+    //      column the root WOULD naturally sit above if it had to balance
+    //      the centre of mass below it. We then re-sort root blocks by
+    //      barycenter so each ends up directly above its descendants instead
+    //      of being forced into a birth-date order that drags the children
+    //      sideways.
+    //   3. Same idea for 2-person in-married couples that join two parent
+    //      blocks on opposite sides of the row above. We compute each
+    //      member's canonical parent-block x from pass 1; if reversing the
+    //      members puts each one closer to their own parents, we swap.
+    //   4. A second placement pass redraws everything against the new
+    //      orderings. The function is idempotent — running pass 2 again on
+    //      the new positions wouldn't change anything as long as no further
+    //      swaps are needed.
+    //
+    // Targeted cases (see `upcoming-tree-layout-rules` memory + the Krause
+    // subtree in the seed):
+    //   - Two unpartnered top-row mothers whose children sit on opposite
+    //     sides of the row below (Greta + Anneliese).
+    //   - In-married couples whose spouses come from parent blocks on
+    //     opposite sides (Tim + Mia).
+    const placed = runPlacement(rootBlocks, childrenOfBlock, byId, bioParents)
+
+    // Pass 2 reorderings driven by pass-1 positions.
+    let changed = false
+    if (reorderRootsByBarycenter(rootBlocks, placed, childrenOfBlock)) changed = true
+    if (swapTwoPersonCouplesByParentX(blocksByRow, placed, byId, parentsOfPerson)) changed = true
+    if (changed) {
+        placed.clear()
+        for (const next of runPlacement(rootBlocks, childrenOfBlock, byId, bioParents).entries()) {
+            placed.set(next[0], next[1])
+        }
     }
 
     // Per-row separation pass. The recursive layout guarantees no overlap
@@ -308,4 +338,145 @@ export function layoutTree(input: TreeInput): LayoutResult {
         width: maxX - minX + NODE_W,
         height: maxY + NODE_H,
     }
+}
+
+/**
+ * Internal: run a single placement pass against the current root order and
+ * each block's current `members` shape. Returns the freshly placed map so
+ * the outer function can compare passes / iterate.
+ */
+function runPlacement(
+    rootBlocks: Block[],
+    childrenOfBlock: Map<string, Block[]>,
+    byId: Map<string, TreeInput['nodes'][number]>,
+    bioParents: Map<string, Set<string>>,
+): Map<string, PositionedBlock> {
+    const placed = new Map<string, PositionedBlock>()
+    const cursor = { x: 0 }
+    for (let i = 0; i < rootBlocks.length; i += 1) {
+        if (i > 0) cursor.x += CLUSTER_GAP
+        const root = rootBlocks[i]
+        if (root === undefined) continue
+        layoutSubtree(root, childrenOfBlock, byId, bioParents, placed, cursor)
+    }
+    return placed
+}
+
+/**
+ * Re-sort `rootBlocks` so each root sits above its descendants' centre of
+ * mass (the "barycenter heuristic" from layered graph drawing). Returns
+ * `true` when the order changed so the caller can decide whether to re-run
+ * placement. The new order preserves the default ordering as a tie-breaker
+ * — equal barycenters fall back to birth-date / id sort.
+ */
+function reorderRootsByBarycenter(
+    rootBlocks: Block[],
+    placed: Map<string, PositionedBlock>,
+    childrenOfBlock: Map<string, Block[]>,
+): boolean {
+    if (rootBlocks.length < 2) return false
+    const before = rootBlocks.map((b) => b.id).join('|')
+    const barycenters = new Map<string, number>()
+    for (const root of rootBlocks) {
+        const descendants = collectDescendantBlocks(root, childrenOfBlock)
+        let sum = 0
+        let count = 0
+        for (const d of descendants) {
+            const p = placed.get(d.id)
+            if (p === undefined) continue
+            sum += p.x + p.pixelWidth / 2
+            count += 1
+        }
+        // Roots with NO descendants (orphan leaves) keep their existing x as
+        // the barycenter so they don't all collapse to 0 and reshuffle the
+        // surviving roots.
+        if (count === 0) {
+            const own = placed.get(root.id)
+            sum = own === undefined ? 0 : own.x + own.pixelWidth / 2
+            count = 1
+        }
+        barycenters.set(root.id, sum / count)
+    }
+    rootBlocks.sort((a, b) => {
+        const ba = barycenters.get(a.id) ?? 0
+        const bb = barycenters.get(b.id) ?? 0
+        return ba - bb
+    })
+    return rootBlocks.map((b) => b.id).join('|') !== before
+}
+
+function collectDescendantBlocks(root: Block, childrenOfBlock: Map<string, Block[]>): Block[] {
+    const out: Block[] = []
+    const stack = [...(childrenOfBlock.get(root.id) ?? [])]
+    while (stack.length > 0) {
+        const next = stack.pop()
+        if (next === undefined) continue
+        out.push(next)
+        for (const c of childrenOfBlock.get(next.id) ?? []) stack.push(c)
+    }
+    return out
+}
+
+/**
+ * For each 2-person couple block whose members come from DIFFERENT parent
+ * blocks placed on opposite sides of the row above, reverse the member
+ * order so each spouse sits closer to their own parents. Mutates the
+ * blocks in place. Returns `true` if any block was reversed so the caller
+ * can re-run placement.
+ */
+function swapTwoPersonCouplesByParentX(
+    blocksByRow: Map<number, Block[]>,
+    placed: Map<string, PositionedBlock>,
+    byId: Map<string, TreeInput['nodes'][number]>,
+    parentsOfPerson: Map<string, string[]>,
+): boolean {
+    let any = false
+    for (const list of blocksByRow.values()) {
+        for (const block of list) {
+            if (block.members.length !== 2) continue
+            const aId = block.members[0]
+            const bId = block.members[1]
+            if (aId === undefined || bId === undefined) continue
+            const aParentX = canonicalParentBlockX(aId, parentsOfPerson, placed, byId)
+            const bParentX = canonicalParentBlockX(bId, parentsOfPerson, placed, byId)
+            // Only act when BOTH spouses have a parent block placed AND
+            // those parents differ in x. Either missing → no information to
+            // act on, keep the default id-sorted order.
+            if (aParentX === null || bParentX === null) continue
+            if (Math.abs(aParentX - bParentX) < 1) continue
+            // If `b`'s parent is to the LEFT of `a`'s parent, the right-
+            // hand member (`b`) should be on the LEFT of the couple →
+            // swap. Otherwise leave it.
+            if (bParentX < aParentX) {
+                block.members = [bId, aId]
+                any = true
+            }
+        }
+    }
+    return any
+}
+
+/**
+ * Centre x of the parent BLOCK containing the canonical (smallest-id)
+ * parent of `personId`. `null` when the person has no parents in the
+ * data or the parent block hasn't been placed yet.
+ */
+function canonicalParentBlockX(
+    personId: string,
+    parentsOfPerson: Map<string, string[]>,
+    placed: Map<string, PositionedBlock>,
+    byId: Map<string, TreeInput['nodes'][number]>,
+): number | null {
+    const parents = parentsOfPerson.get(personId) ?? []
+    if (parents.length === 0) return null
+    const sortedParents = [...parents].sort()
+    for (const pid of sortedParents) {
+        if (!byId.has(pid)) continue
+        for (const pb of placed.values()) {
+            if (pb.members.includes(pid)) {
+                return pb.x + pb.pixelWidth / 2
+            }
+        }
+    }
+    return null
 }
