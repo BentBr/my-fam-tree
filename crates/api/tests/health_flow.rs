@@ -36,6 +36,13 @@ async fn health_reports_ok_version_and_reachable_db() {
     assert_eq!(body["data"]["status"], "ok");
     assert!(body["data"]["version"].is_string(), "version present (cargo version)");
     assert_eq!(body["data"]["db_ok"], true, "migrated DB is reachable");
-    assert!(body["data"]["db_latency_ms"].is_number(), "latency measured");
+    assert!(body["data"]["db_latency_ms"].is_number(), "DB latency measured");
+    // Server-side total handler duration. Always present, always >=
+    // db_latency_ms (the DB probe runs inside the handler timer).
+    let server = body["data"]["server_duration_ms"]
+        .as_u64()
+        .expect("server_duration_ms is a u64 in the response");
+    let db = body["data"]["db_latency_ms"].as_u64().expect("db_latency_ms is a u64");
+    assert!(server >= db, "server_duration_ms ({server}) must be >= db_latency_ms ({db})");
     assert_eq!(body["meta"]["request_id"], "rid-test", "request id echoed to meta");
 }

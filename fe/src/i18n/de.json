@@ -58,7 +58,8 @@
         "requestId": "Request-ID: {id}",
         "error": "API konnte nicht erreicht werden.",
         "dbLatency": "Datenbank {ms} ms",
-        "dbDown": "Datenbank nicht erreichbar"
+        "dbDown": "Datenbank nicht erreichbar",
+        "serverLatency": "Server {ms} ms"
     },
     "account": {
         "avatar": {

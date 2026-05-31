@@ -15,6 +15,7 @@ interface HealthData {
     version: string
     db_ok?: boolean
     db_latency_ms?: number
+    server_duration_ms?: number
 }
 interface HealthRef {
     data: { value: { data?: HealthData; meta?: { request_id: string } } | undefined }
@@ -68,7 +69,10 @@ describe('HealthView', () => {
 
     it('renders the success state with a green DB chip for fast latency', () => {
         const w = mountView({
-            data: ref({ data: { version: '9.9', db_ok: true, db_latency_ms: 42 }, meta: { request_id: 'req-1' } }),
+            data: ref({
+                data: { version: '9.9', db_ok: true, db_latency_ms: 42, server_duration_ms: 55 },
+                meta: { request_id: 'req-1' },
+            }),
             isLoading: ref(false),
             error: ref(null),
         } as never)
@@ -78,14 +82,20 @@ describe('HealthView', () => {
 
     it('colours the DB chip yellow for borderline latency and red when slow', () => {
         const yellow = mountView({
-            data: ref({ data: { version: '9.9', db_ok: true, db_latency_ms: 150 }, meta: {} }),
+            data: ref({
+                data: { version: '9.9', db_ok: true, db_latency_ms: 150, server_duration_ms: 160 },
+                meta: {},
+            }),
             isLoading: ref(false),
             error: ref(null),
         } as never)
         expect(yellow.find('[data-testid="health-db"]').attributes('data-color')).toBe('warning')
 
         const red = mountView({
-            data: ref({ data: { version: '9.9', db_ok: true, db_latency_ms: 250 }, meta: {} }),
+            data: ref({
+                data: { version: '9.9', db_ok: true, db_latency_ms: 250, server_duration_ms: 260 },
+                meta: {},
+            }),
             isLoading: ref(false),
             error: ref(null),
         } as never)
@@ -94,10 +104,29 @@ describe('HealthView', () => {
 
     it('shows an unreachable DB as red', () => {
         const w = mountView({
-            data: ref({ data: { version: '9.9', db_ok: false, db_latency_ms: 5 }, meta: {} }),
+            data: ref({
+                data: { version: '9.9', db_ok: false, db_latency_ms: 5, server_duration_ms: 12 },
+                meta: {},
+            }),
             isLoading: ref(false),
             error: ref(null),
         } as never)
         expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('error')
+    })
+
+    it('shows the server-latency chip alongside the DB chip with its own threshold colour', () => {
+        // server_duration_ms uses the same three-tier scale as the DB
+        // chip but is independent: a fast DB + slow API still flags
+        // red on the server chip without dragging the DB chip down.
+        const w = mountView({
+            data: ref({
+                data: { version: '9.9', db_ok: true, db_latency_ms: 5, server_duration_ms: 250 },
+                meta: {},
+            }),
+            isLoading: ref(false),
+            error: ref(null),
+        } as never)
+        expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('success')
+        expect(w.find('[data-testid="health-server"]').attributes('data-color')).toBe('error')
     })
 })

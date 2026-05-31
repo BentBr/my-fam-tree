@@ -58,7 +58,8 @@
         "requestId": "Request id: {id}",
         "error": "Could not reach the API.",
         "dbLatency": "Database {ms} ms",
-        "dbDown": "Database unreachable"
+        "dbDown": "Database unreachable",
+        "serverLatency": "Server {ms} ms"
     },
     "account": {
         "title": "Account",
