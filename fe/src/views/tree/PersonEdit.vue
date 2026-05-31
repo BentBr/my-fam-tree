@@ -68,6 +68,16 @@ watch(deceased, (v) => {
 // Canonical gender options as v-combobox items. `combobox` (not `select`)
 // keeps the field free-text-capable: the user can type something the
 // dropdown doesn't list and it goes to the backend verbatim.
+//
+// `inputmode="none"` is set on the inner input (below) to suppress
+// the iOS soft keyboard when the field is tapped. iOS otherwise opens
+// the keyboard for any editable input, shrinks the visual viewport,
+// and the Vuetify menu overlay — anchored against the layout viewport
+// — ends up visually misaligned (lands over the next field instead of
+// under the gender chip). With `inputmode="none"` the keyboard stays
+// down on tap-to-open, but free-text entry still works via paste or
+// an external/Bluetooth keyboard, which is the rare case this combobox
+// exists to support in the first place.
 const genderOptions = computed(() => [t('person.gender.male'), t('person.gender.female'), t('person.gender.diverse')])
 
 const create = useCreatePerson()
@@ -141,6 +151,7 @@ async function submit(): Promise<void> {
             v-model="form.gender"
             :items="genderOptions"
             :label="t('person.fields.gender')"
+            inputmode="none"
             data-testid="person-gender"
         />
         <v-textarea
