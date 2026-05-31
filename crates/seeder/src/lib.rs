@@ -194,8 +194,8 @@ mod tests {
     // Expected row counts mirror the canonical seed shape. Update these
     // numbers whenever the persons / parent_links / partnerships tables in
     // the corresponding seed module grow or shrink.
-    const EXPECTED_PARENT_LINKS: i64 = 32;
-    const EXPECTED_PARTNERSHIPS: i64 = 14;
+    const EXPECTED_PARENT_LINKS: i64 = 46;
+    const EXPECTED_PARTNERSHIPS: i64 = 20;
     const EXPECTED_CONTACTS: i64 = 9;
 
     struct Harness {

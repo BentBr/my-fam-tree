@@ -24,16 +24,22 @@ use uuid::Uuid;
 
 use crate::ids::{
     SEED_ADMIN_USER_ID, SEED_ALICE_USER_ID, SEED_BOB_USER_ID, SEED_FAMILY_ID, SEED_PERSON_ANNA_ID,
-    SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
-    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID,
-    SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_GRETA_ID,
-    SEED_PERSON_K_HELGA_ID, SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID, SEED_PERSON_K_MARIE_ID,
-    SEED_PERSON_K_MIA_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID, SEED_PERSON_KARIN_ID,
-    SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
-    SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID,
-    SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
-    SEED_PERSON_SABINE_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
-    SEED_PERSON_WERNER_ID, SEED_PERSON_YUKI_ID,
+    SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FLK_ALINA_ID,
+    SEED_PERSON_FLK_DIRK_ID, SEED_PERSON_FLK_EDGAR_ID, SEED_PERSON_FLK_GISELA_ID,
+    SEED_PERSON_FLK_LIYAH_ID, SEED_PERSON_FLK_ROLAND_ID, SEED_PERSON_FLK_SABINE_ID,
+    SEED_PERSON_FRIEDRICH_ID, SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID,
+    SEED_PERSON_JULIA_ID, SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_BERNHARD_ID,
+    SEED_PERSON_K_GRETA_ID, SEED_PERSON_K_HELGA_ID, SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID,
+    SEED_PERSON_K_MARIE_ID, SEED_PERSON_K_MIA_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID,
+    SEED_PERSON_KARIN_ID, SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID,
+    SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID,
+    SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
+    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_STB_BEATE_ID, SEED_PERSON_STB_CARLA_ID,
+    SEED_PERSON_STB_FELIX_ID, SEED_PERSON_STB_HARTMUT_ID, SEED_PERSON_STB_LUKAS_ID,
+    SEED_PERSON_STB_MARGARETE_ID, SEED_PERSON_STB_NINA_ID, SEED_PERSON_STB_STEFAN_ID,
+    SEED_PERSON_STB_TOBIAS_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
+    SEED_PERSON_WERNER_ID, SEED_PERSON_WGN_HELMUT_ID, SEED_PERSON_WGN_INGRID_ID,
+    SEED_PERSON_WGN_RENATE_ID, SEED_PERSON_YUKI_ID,
 };
 
 /// Static seed of every person field.
@@ -72,9 +78,9 @@ const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT … DO
 /// UPDATE` statements.
-#[allow(clippy::too_many_lines, reason = "static table of 38 persons; splitting hurts readability")]
+#[allow(clippy::too_many_lines, reason = "static table of 57 persons; splitting hurts readability")]
 pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
-    let rows: [PersonSeed; 38] = [
+    let rows: [PersonSeed; 57] = [
         // -------------------------------------------------------------
         // G1 — Müller line.
         // -------------------------------------------------------------
@@ -481,6 +487,285 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
             birth_place: "Aarhus",
             death_date: None,
             notes: "Separated from Lars 2018 (non-marriage partnership).",
+            linked_user_id: None,
+        },
+        // -------------------------------------------------------------
+        // Steinbach subtree — sibling-by-age violation. The in-married
+        // spouses (Tobias, Beate) have UUIDs LOWER than their blood
+        // partners, so the layout's `members[0]` block-sort uses the
+        // spouse's birth_date as the key. Tobias 1969 < Lukas 1972
+        // pushes the Carla+Tobias couple LEFT of Lukas instead of
+        // slotting right after him.
+        // -------------------------------------------------------------
+        PersonSeed {
+            id: SEED_PERSON_STB_HARTMUT_ID,
+            given: "Hartmut",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1940, 3, 12),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach patriarch; sibling-sort layout repro.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_MARGARETE_ID,
+            given: "Margarete",
+            family: "Steinbach",
+            name_at_birth: "Reuther",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1948, 7, 25),
+            birth_place: "Gießen",
+            death_date: None,
+            notes: "Steinbach matriarch.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_TOBIAS_ID,
+            given: "Tobias",
+            family: "Brandt",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            // Born BEFORE the eldest blood-sibling Lukas — this is the
+            // trigger: block-sort by `members[0]` (Tobias, smaller
+            // UUID) uses 1969, pushing the Carla+Tobias couple to the
+            // very leftmost of the sibling row.
+            birth_date: ymd(1969, 8, 22),
+            birth_place: "Kassel",
+            death_date: None,
+            notes: "In-married to Carla Steinbach. UUID < Carla's by design.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_CARLA_ID,
+            given: "Carla",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1974, 11, 30),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach daughter; married Tobias Brandt.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_LUKAS_ID,
+            given: "Lukas",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1972, 2, 8),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach son; eldest blood-sibling (single).",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_BEATE_ID,
+            given: "Beate",
+            family: "Voigt",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            // Born AFTER her blood-sibling-partner Felix; UUID is
+            // still less than Felix's so the layout uses 1985 as the
+            // block sort key, pushing Felix+Beate to the end of the
+            // sibling row instead of slotting by Felix's 1977.
+            birth_date: ymd(1985, 4, 10),
+            birth_place: "Frankfurt",
+            death_date: None,
+            notes: "In-married to Felix Steinbach. UUID < Felix's by design.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_FELIX_ID,
+            given: "Felix",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1977, 1, 15),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach son; married Beate Voigt.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_STEFAN_ID,
+            given: "Stefan",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1978, 11, 4),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach son.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_STB_NINA_ID,
+            given: "Nina",
+            family: "Steinbach",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1983, 9, 19),
+            birth_place: "Marburg",
+            death_date: None,
+            notes: "Steinbach daughter; youngest blood-sibling.",
+            linked_user_id: None,
+        },
+        // -------------------------------------------------------------
+        // Wagner subtree — anchor-in-middle violation. Helmut has TWO
+        // concurrent OPEN partnerships (marriage + civil_union). The
+        // layout's `threadComponent` only puts the anchor in the
+        // middle when at least one partner is ended; with both open,
+        // it currently builds [anchor, open1, open2] — Helmut leftmost.
+        // -------------------------------------------------------------
+        PersonSeed {
+            id: SEED_PERSON_WGN_HELMUT_ID,
+            given: "Helmut",
+            family: "Wagner",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1942, 5, 30),
+            birth_place: "Stuttgart",
+            death_date: None,
+            notes: "Wagner anchor — has two concurrent open partnerships.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_WGN_INGRID_ID,
+            given: "Ingrid",
+            family: "Wagner",
+            name_at_birth: "Berger",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1945, 1, 14),
+            birth_place: "Tübingen",
+            death_date: None,
+            notes: "Helmut's open marriage partner.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_WGN_RENATE_ID,
+            given: "Renate",
+            family: "Wagner",
+            name_at_birth: "Fuchs",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1948, 6, 3),
+            birth_place: "Ulm",
+            death_date: None,
+            notes: "Helmut's open civil_union partner (concurrent with the marriage).",
+            linked_user_id: None,
+        },
+        // -------------------------------------------------------------
+        // Falke subtree — Lau-like multi-row crossing repro. Roland
+        // Falke (only Falke with parents in the seed) marries into a
+        // sibling row whose other members are partnerless roots. His
+        // parents (Edgar + Gisela Falke) sit in the parent row but
+        // the layout doesn't re-align them above Roland — they end
+        // up rightmost while Roland is mid-row, so the parent-edge
+        // crosses Sabine's column.
+        // -------------------------------------------------------------
+        PersonSeed {
+            id: SEED_PERSON_FLK_EDGAR_ID,
+            given: "Edgar",
+            family: "Falke",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1944, 10, 5),
+            birth_place: "Hannover",
+            death_date: None,
+            notes: "Falke patriarch; multi-row barycenter layout repro.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_GISELA_ID,
+            given: "Gisela",
+            family: "Falke",
+            name_at_birth: "Weber",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1947, 2, 18),
+            birth_place: "Bielefeld",
+            death_date: None,
+            notes: "Falke matriarch.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_ROLAND_ID,
+            given: "Roland",
+            family: "Falke",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1973, 6, 21),
+            birth_place: "Hannover",
+            death_date: None,
+            notes: "Edgar + Gisela's son; the middle-row anchor whose parents drift right.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_SABINE_ID,
+            given: "Sabine",
+            family: "Hahn",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1972, 4, 18),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Falke-row sibling (partnerless root); leftmost in the row.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_DIRK_ID,
+            given: "Dirk",
+            family: "Sommer",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1975, 9, 7),
+            birth_place: "Bonn",
+            death_date: None,
+            notes: "Falke-row sibling (partnerless root); rightmost.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_LIYAH_ID,
+            given: "Liyah",
+            family: "Falke",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(2017, 1, 23),
+            birth_place: "Hannover",
+            death_date: None,
+            notes: "Roland's daughter.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_FLK_ALINA_ID,
+            given: "Alina",
+            family: "Hahn",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(2000, 4, 5),
+            birth_place: "Köln",
+            death_date: None,
+            notes: "Sabine Hahn's daughter (single-parent, no Falke partnership).",
             linked_user_id: None,
         },
         // -------------------------------------------------------------

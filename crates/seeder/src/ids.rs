@@ -123,6 +123,88 @@ pub const SEED_PERSON_K_MARIE_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0
 pub const SEED_PERSON_K_TIM_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0025);
 pub const SEED_PERSON_K_MIA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0026);
 
+// Layout-bug repro sub-trees.
+//
+// Three sub-trees that surface the three known-broken layout cases the
+// user pointed out on his real tree. UUIDs are deliberately allocated
+// so the BUG manifests deterministically (the layout's existing
+// `members[0]` sort uses the smaller UUID as the block's "left" id,
+// so an in-married spouse with a smaller UUID short-circuits the
+// sibling birth-date sort). Each sub-tree uses DISTINCT surnames so
+// it never collides with the Müller / Schmidt / Krause / Hoffmann /
+// Becker / Andersen names already in the seed.
+//
+// ── Steinbach (sibling-by-age violation) ──────────────────────────
+// Six siblings of Hartmut + Margarete. Two of them married in
+// spouses whose UUIDs are LOWER than their own (Tobias < Carla;
+// Beate < Felix), which makes the layout use the SPOUSE's
+// birth_date as the block sort key. Tobias is born 1969 — older
+// than the eldest blood-sibling Lukas (1972) — so the
+// Carla+Tobias couple block gets sorted LEFT of Lukas instead
+// of slotting after him by Carla's real 1974 birth. Visible
+// symptom: sibling row reads [Carla+Tobias, Lukas, Felix+Beate,
+// Stefan, Nina] instead of [Lukas, Carla+Tobias, Felix+Beate,
+// Stefan, Nina].
+pub const SEED_PERSON_STB_HARTMUT_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0027);
+pub const SEED_PERSON_STB_MARGARETE_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0028);
+pub const SEED_PERSON_STB_TOBIAS_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0029);
+pub const SEED_PERSON_STB_CARLA_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002a);
+pub const SEED_PERSON_STB_LUKAS_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002b);
+pub const SEED_PERSON_STB_BEATE_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002c);
+pub const SEED_PERSON_STB_FELIX_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002d);
+pub const SEED_PERSON_STB_STEFAN_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002e);
+pub const SEED_PERSON_STB_NINA_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002f);
+
+// ── Wagner (anchor-in-middle violation for two concurrent open
+//    partnerships) ──────────────────────────────────────────────────
+// Helmut Wagner has TWO concurrent open partnerships (marriage +
+// civil_union). Layout's `threadComponent` only puts the anchor in
+// the middle when at least one partner is ended; with both open,
+// the chain currently builds as [anchor, open1, open2] —
+// Helmut sits leftmost instead of between the two partners.
+// Bug analog of the user's image #59 (Hubert leftmost between
+// Viola and Sri).
+pub const SEED_PERSON_WGN_HELMUT_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0030);
+pub const SEED_PERSON_WGN_INGRID_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0031);
+pub const SEED_PERSON_WGN_RENATE_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0032);
+
+// ── Falke (Lau-like multi-row crossing) ──────────────────────────
+// Roland Falke marries into a sibling row whose other members have
+// no parents in the seed (Sabine X, Dirk Y). Roland's own parents
+// (Edgar + Gisela Falke) sit one row above. The middle row's
+// blocks are sorted by their leftmost member's birth date, but
+// Edgar+Gisela's parent block doesn't get to influence the row
+// above (no descendant-barycenter pass for non-root blocks), so
+// Edgar+Gisela land at the RIGHT of the parents' row while
+// Roland is in the MIDDLE of the children's row. The parent-edge
+// crosses Sabine's column.
+pub const SEED_PERSON_FLK_EDGAR_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0033);
+pub const SEED_PERSON_FLK_GISELA_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0034);
+pub const SEED_PERSON_FLK_ROLAND_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0035);
+pub const SEED_PERSON_FLK_SABINE_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0036);
+pub const SEED_PERSON_FLK_DIRK_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0037);
+pub const SEED_PERSON_FLK_LIYAH_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0038);
+pub const SEED_PERSON_FLK_ALINA_ID: Uuid =
+    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0039);
+
 // ---------------------------------------------------------------------------
 // Partnerships — hardcoded so the seed can keep `ON CONFLICT (id) DO UPDATE`
 // semantics for closed (ended_on IS NOT NULL) rows too.
@@ -163,7 +245,20 @@ pub const SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000d);
 pub const SEED_PARTNERSHIP_K_TIM_MIA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000e);
+// Layout-bug repro partnerships — see the STB / WGN / FLK persons above.
+pub const SEED_PARTNERSHIP_STB_HARTMUT_MARGARETE_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000f);
+pub const SEED_PARTNERSHIP_STB_CARLA_TOBIAS_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0010);
+pub const SEED_PARTNERSHIP_STB_FELIX_BEATE_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0011);
+pub const SEED_PARTNERSHIP_WGN_HELMUT_INGRID_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0012);
+pub const SEED_PARTNERSHIP_WGN_HELMUT_RENATE_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0013);
+pub const SEED_PARTNERSHIP_FLK_EDGAR_GISELA_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0014);
 
 /// Expected counts for the deterministic seed — surfaced for the test
 /// asserts so they don't drift from the actual data.
-pub const SEED_PERSON_COUNT: usize = 38;
+pub const SEED_PERSON_COUNT: usize = 57;
