@@ -80,6 +80,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(families::list_mine)
                 .service(families::create)
                 .service(families::rename)
+                .service(families::admin_overview)
                 .service(families::delete_family)
                 .service(families::invite)
                 .service(invites::list_invites)

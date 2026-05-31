@@ -57,6 +57,65 @@ export function useCreateFamily() {
     })
 }
 
+/**
+ * `GET /api/v1/admin/family/overview` — aggregated stats for the
+ * admin "Family" page. One round-trip returns the active family's
+ * name, role, member count, person count, and the 3 most recently
+ * added persons. Admin / owner only (BE enforces; the route guard
+ * does too).
+ */
+export function useFamilyOverview() {
+    const auth = useAuthStore()
+    return useQuery({
+        queryKey: ['admin', 'family', 'overview'] as const,
+        enabled: computed(() => auth.status === 'authenticated'),
+        queryFn: async () => {
+            return await unwrap(client.GET('/api/v1/admin/family/overview'))
+        },
+    })
+}
+
+/**
+ * `PATCH /api/v1/families/{id}` — rename. The path id is the active
+ * family. Admin / owner only (BE enforces). On success we invalidate
+ * the families list + the overview query and refresh the auth claims
+ * so the switcher / header pick up the new name immediately.
+ */
+export function useRenameFamily() {
+    const auth = useAuthStore()
+    const qc = useQueryClient()
+    const ui = useUiStore()
+    return useMutation({
+        mutationFn: async (input: { id: string; name: string }) => {
+            return await unwrap(
+                client.PATCH('/api/v1/families/{id}', {
+                    params: { path: { id: input.id } },
+                    body: { name: input.name },
+                }),
+            )
+        },
+        onSuccess: (_, vars) => {
+            // Rebuild the auth-store family list manually so the switcher's
+            // current selection picks up the new name before any background
+            // refetch lands. The BE doesn't reissue the JWT on rename (the
+            // name isn't in the access token), so this is the only update
+            // path for the in-memory store.
+            const families = auth.families.map((f) =>
+                f.id === vars.id ? { ...f, name: vars.name } : f,
+            )
+            auth.applyClaimsPayload({
+                user_id: auth.user?.id ?? '',
+                email: auth.user?.email ?? '',
+                locale: auth.user?.locale ?? 'en',
+                families,
+            } as never)
+            void qc.invalidateQueries({ queryKey: ['families', 'me'] })
+            void qc.invalidateQueries({ queryKey: ['admin', 'family', 'overview'] })
+            ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_renamed') })
+        },
+    })
+}
+
 export function useAcceptInvite() {
     const auth = useAuthStore()
     const qc = useQueryClient()

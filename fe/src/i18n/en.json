@@ -270,6 +270,7 @@
         "email_change_sent": "Confirmation email sent to your current address",
         "email_changed": "Email address updated",
         "family_created": "Family created",
+        "family_renamed": "Family renamed",
         "invite_accepted": "You joined the family",
         "signin_link_sent": "Sign-in link sent",
         "person_created": "Person added",
@@ -298,10 +299,23 @@
     },
     "admin": {
         "nav": {
+            "family": "Family",
             "members": "Members",
             "invites": "Pending invites",
             "audit": "Audit log",
             "back": "Back to tree"
+        },
+        "family": {
+            "title": "Family",
+            "nameLabel": "Family name",
+            "rename": "Rename",
+            "members": "Members",
+            "membersOpen": "Open the members list",
+            "persons": "Persons in the tree",
+            "personsOpen": "Open the family tree",
+            "latestTitle": "Latest additions",
+            "latestEmpty": "No persons added yet.",
+            "addedOn": "Added on {date}"
         },
         "audit": {
             "title": "Audit log",

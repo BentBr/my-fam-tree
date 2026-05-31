@@ -262,4 +262,15 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
             })
             .collect())
     }
+
+    async fn count_in_family(&self, family_id: FamilyId) -> Result<u64, MembershipRepoError> {
+        let row = sqlx::query!(
+            r#"SELECT COUNT(*) AS "count!: i64" FROM family_memberships WHERE family_id = $1"#,
+            family_id.into_uuid(),
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| MembershipRepoError::Db(e.to_string()))?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
 }

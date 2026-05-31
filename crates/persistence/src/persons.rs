@@ -328,4 +328,37 @@ impl PersonRepo for PgPersonRepo {
             Some(r) => Ok(r.previous),
         }
     }
+
+    async fn count_in_family(&self, family_id: FamilyId) -> Result<u64, PersonRepoError> {
+        let row = sqlx::query!(
+            r#"SELECT COUNT(*) AS "count!: i64" FROM persons WHERE family_id = $1"#,
+            family_id.into_uuid(),
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| PersonRepoError::Db(e.to_string()))?;
+        Ok(u64::try_from(row.count).unwrap_or(0))
+    }
+
+    async fn list_latest_in_family(
+        &self,
+        family_id: FamilyId,
+        limit: u32,
+    ) -> Result<Vec<Person>, PersonRepoError> {
+        let lim = i64::from(limit.clamp(1, 100));
+        let rows = sqlx::query_as!(
+            PersonRow,
+            r#"SELECT id, family_id, given_name, family_name, name_at_birth, nickname,
+                      gender, birth_date, birth_place, death_date, notes,
+                      linked_user_id, photo_key, created_at, updated_at
+                 FROM persons WHERE family_id = $1
+                 ORDER BY created_at DESC LIMIT $2"#,
+            family_id.into_uuid(),
+            lim,
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| PersonRepoError::Db(e.to_string()))?;
+        Ok(rows.into_iter().map(Into::into).collect())
+    }
 }

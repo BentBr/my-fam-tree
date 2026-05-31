@@ -16,6 +16,40 @@
     }
   ],
   "paths": {
+    "/api/v1/admin/family/overview": {
+      "get": {
+        "tags": [
+          "families"
+        ],
+        "operationId": "admin_overview",
+        "responses": {
+          "200": {
+            "description": "Active family overview (admin+owner only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyOverviewResponseBody"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No session"
+          },
+          "403": {
+            "description": "Insufficient role"
+          },
+          "422": {
+            "description": "Missing X-Family-Id header"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
     "/api/v1/auth/consume": {
       "post": {
         "tags": [
@@ -2888,6 +2922,68 @@
           }
         }
       },
+      "FamilyOverview": {
+        "type": "object",
+        "description": "Aggregated stats for the admin \"Family\" overview page.\n\nSingle round-trip so the page doesn't need to fan out to three\nseparate endpoints (count members, count persons, fetch latest 3\npersons). Returned by `GET /admin/family/overview`.",
+        "required": [
+          "id",
+          "name",
+          "role",
+          "member_count",
+          "person_count",
+          "latest_persons"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "latest_persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LatestPersonView"
+            },
+            "description": "At most 3 entries, ordered newest-first by `created_at`."
+          },
+          "member_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "person_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        }
+      },
+      "FamilyOverviewResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FamilyOverview"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ]
+          }
+        }
+      },
       "FamilyView": {
         "type": "object",
         "required": [
@@ -3220,6 +3316,31 @@
             "type": "string"
           },
           "sub": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LatestPersonView": {
+        "type": "object",
+        "required": [
+          "id",
+          "given_name",
+          "family_name",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "family_name": {
+            "type": "string"
+          },
+          "given_name": {
+            "type": "string"
+          },
+          "id": {
             "type": "string",
             "format": "uuid"
           }

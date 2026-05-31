@@ -113,7 +113,13 @@ const routes: RouteRecordRaw[] = [
     },
     {
         path: '/admin',
-        redirect: '/admin/audit',
+        redirect: '/admin/family',
+    },
+    {
+        path: '/admin/family',
+        name: 'admin-family',
+        component: () => import('@/views/admin/AdminFamily.vue'),
+        meta: { layout: 'main', sidebar: 'admin', requiresAuth: true, requiresAdmin: true },
     },
     {
         path: '/admin/audit',

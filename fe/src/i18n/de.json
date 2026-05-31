@@ -270,6 +270,7 @@
         "email_change_sent": "Bestätigungs-E-Mail an deine aktuelle Adresse gesendet",
         "email_changed": "E-Mail-Adresse aktualisiert",
         "family_created": "Familie angelegt",
+        "family_renamed": "Familie umbenannt",
         "invite_accepted": "Du bist der Familie beigetreten",
         "signin_link_sent": "Anmeldelink gesendet",
         "person_created": "Person hinzugefügt",
@@ -298,10 +299,23 @@
     },
     "admin": {
         "nav": {
+            "family": "Familie",
             "members": "Mitglieder",
             "invites": "Offene Einladungen",
             "audit": "Audit-Log",
             "back": "Zurück zum Stammbaum"
+        },
+        "family": {
+            "title": "Familie",
+            "nameLabel": "Familienname",
+            "rename": "Umbenennen",
+            "members": "Mitglieder",
+            "membersOpen": "Mitgliederliste öffnen",
+            "persons": "Personen im Stammbaum",
+            "personsOpen": "Stammbaum öffnen",
+            "latestTitle": "Zuletzt hinzugefügt",
+            "latestEmpty": "Noch keine Personen angelegt.",
+            "addedOn": "Hinzugefügt am {date}"
         },
         "audit": {
             "title": "Audit-Log",

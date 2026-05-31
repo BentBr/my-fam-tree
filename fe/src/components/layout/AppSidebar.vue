@@ -56,6 +56,7 @@ const mainItems = computed<SidebarItem[]>(() => {
 
 const adminItems = computed<SidebarItem[]>(() => [
     { to: '/tree', title: t('admin.nav.back'), icon: 'arrow-left', testId: 'admin-rail-back' },
+    { to: '/admin/family', title: t('admin.nav.family'), icon: 'home', testId: 'admin-rail-family' },
     { to: '/admin/members', title: t('admin.nav.members'), icon: 'users', testId: 'admin-rail-members' },
     { to: '/admin/invites', title: t('admin.nav.invites'), icon: 'mail', testId: 'admin-rail-invites' },
     { to: '/admin/audit', title: t('admin.nav.audit'), icon: 'list', testId: 'admin-rail-audit' },

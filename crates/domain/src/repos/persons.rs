@@ -126,4 +126,18 @@ pub trait PersonRepo: Send + Sync {
         user_id: UserId,
         photo_key: Option<String>,
     ) -> Result<u64, PersonRepoError>;
+
+    /// Total number of persons in `family_id`. Used by the admin family-
+    /// overview endpoint to surface a single headline number without
+    /// pulling the full person list across the wire.
+    async fn count_in_family(&self, family_id: FamilyId) -> Result<u64, PersonRepoError>;
+
+    /// The most recently created persons in `family_id`, newest first.
+    /// `limit` is clamped (1..=100). Used by the admin overview to show
+    /// the "latest additions" rail with deep links back into the tree.
+    async fn list_latest_in_family(
+        &self,
+        family_id: FamilyId,
+        limit: u32,
+    ) -> Result<Vec<Person>, PersonRepoError>;
 }

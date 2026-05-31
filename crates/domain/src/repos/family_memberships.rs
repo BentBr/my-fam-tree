@@ -79,4 +79,9 @@ pub trait FamilyMembershipRepo: Send + Sync {
         &self,
         family_id: FamilyId,
     ) -> Result<Vec<MemberWithUser>, MembershipRepoError>;
+
+    /// Total number of members in `family_id`. Used by the admin
+    /// family-overview endpoint to surface a single headline number
+    /// without pulling the full member list across the wire.
+    async fn count_in_family(&self, family_id: FamilyId) -> Result<u64, MembershipRepoError>;
 }
