@@ -405,24 +405,22 @@ pub async fn refresh(
 
 /// POST `/auth/logout` — clear the session.
 ///
-/// PUBLIC by design: this endpoint is mounted OUTSIDE the required-auth
-/// scope (see `routes::mod`). The FE needs to call it AFTER a session
-/// has already collapsed server-side (e.g., when the refresh token is
-/// revoked or the access cookie expired and the refresh round-trip
-/// failed) — at which point an auth-gated logout would 401 and the
-/// `HttpOnly` cookies would linger in the browser indefinitely.
+/// Public + idempotent: mounted OUTSIDE the required-auth scope (see
+/// `routes::mod`) so the FE can call it on any "session is gone"
+/// signal — including the case where the access cookie has already
+/// expired and an auth-gated logout would 401.
 ///
-/// The handler is idempotent:
+/// Behaviour:
 ///   - if the refresh cookie is present, best-effort revoke the
 ///     matching row in the DB;
 ///   - always emit `Set-Cookie max-age=0` for both cookies so the
 ///     browser drops them;
 ///   - return 200 regardless.
 ///
-/// Reveals no state — the response body is the same fixed
-/// `{ status: "logged out" }` for every caller, so making the endpoint
-/// public exposes nothing an unauthenticated probe could not already
-/// observe (the Set-Cookie clearing headers don't carry session info).
+/// Response body is a fixed `{ status: "logged out" }` for every
+/// caller and the Set-Cookie clearing headers carry no session
+/// information, so public access reveals nothing an unauthenticated
+/// probe could not already observe.
 //
 // The doc above intentionally runs long — the security rationale for
 // "why public" lives at the call site so future reviewers can audit

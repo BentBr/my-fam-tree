@@ -50,14 +50,15 @@ pub fn api_scope() -> actix_web::Scope<
         .service(auth::magic_link)
         .service(auth::consume)
         .service(auth::refresh)
-        // `auth::logout` is mounted OUTSIDE the required-auth scope:
-        // the FE may need to clear HttpOnly cookies AFTER the session
-        // has already collapsed server-side (refresh failed, etc.) —
-        // at which point the access cookie is gone and an auth-gated
-        // logout would 401. The handler is idempotent: it best-effort
-        // revokes the refresh row keyed on the cookie (if present) and
-        // always emits `Set-Cookie max-age=0` for both cookies. Public
-        // access reveals nothing — the response carries no state.
+        // `auth::logout` is mounted OUTSIDE the required-auth scope so
+        // the FE can clear HttpOnly cookies on any "session is gone"
+        // signal — including the case where the access cookie has
+        // already expired and an auth-gated logout would 401. The
+        // handler is idempotent: best-effort revoke the refresh row
+        // keyed on the cookie (if present) and always emit
+        // `Set-Cookie max-age=0` for both cookies. The response body
+        // is the same fixed shape for every caller, so public access
+        // reveals no session state.
         .service(auth::logout)
         // `invites::accept` is mounted OUTSIDE the required-auth scope:
         // the invite token itself is the auth factor. The handler

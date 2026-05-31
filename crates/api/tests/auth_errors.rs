@@ -18,7 +18,7 @@ mod common;
 
 use actix_web::cookie::Cookie;
 use actix_web::test;
-use common::{ephemeral_stack, extract_token_from_link, sign_in, try_call};
+use common::{ephemeral_stack, extract_token_from_link, sign_in};
 use my_fam_tree_api::build_app;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -112,15 +112,6 @@ async fn refresh_rejects_missing_and_bogus_cookies() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["code"], "auth_refresh_invalid");
 }
-
-// `logout_without_session_returns_unauthenticated` used to live here,
-// pinning the old "logout requires a session" shape (401 with
-// `auth_unauthenticated`). The new contract — public + idempotent so
-// the FE can clear stale HttpOnly cookies AFTER a server-side
-// session collapse — is pinned by
-// `logout_is_idempotent_and_reachable_without_session` in
-// `auth_flow.rs`. See the doc comment on `routes::auth::logout` for
-// why the gate was lifted.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn logout_with_session_clears_cookies_and_revokes_refresh() {

@@ -247,14 +247,12 @@ async fn person_contacts_user_role_edit_gate() {
         .expect("membership insert");
 
     // Owner creates a person, then we wire `linked_user_id` to the guest
-    // via the repo directly. The API path used to accept `linked_user_id`
-    // in the CREATE body, but that's now blocked by the consent gate
-    // (`check_link_consent` in `routes::persons`) — an admin can't
-    // silently bind a row to another user's id. For real flows the link
-    // happens via the invite-email round-trip (consent gate) or POST
-    // /persons/{id}/claim (self-claim). For test fixtures the repo
-    // bypass is fine; we're setting up a precondition, not testing the
-    // link path itself.
+    // via the repo directly. The consent gate (`check_link_consent` in
+    // `routes::persons`) rejects an admin POSTing `linked_user_id`
+    // pointing at another user's id — real flows route through the
+    // invite-email round-trip or `POST /persons/{id}/claim`. Test
+    // fixtures bypass via the repo: we're setting up a precondition,
+    // not exercising the link path.
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
         .cookie(Cookie::new("access", owner_access.clone()))

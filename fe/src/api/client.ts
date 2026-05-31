@@ -9,17 +9,17 @@ import { useUiStore } from '@/stores/ui'
 import { ApiClientError, type ApiErrorBody, type Warning } from './errors'
 import type { paths } from './schema'
 
-// When the api hands back a 401 that can't be silently refreshed (refresh
-// itself failed too), clear the in-memory session, drop the HttpOnly
-// cookies server-side, and bounce to sign-in.
+// On any 401 the FE cannot silently refresh (refresh itself failed
+// too), clear the in-memory session, drop the HttpOnly cookies
+// server-side, and bounce to sign-in.
 //
-// HttpOnly cookies CANNOT be cleared from JavaScript — only the BE's
-// `Set-Cookie max-age=0` response can drop them from the browser. So we
-// POST `/auth/logout` (now mounted OUTSIDE the required-auth scope —
-// see `crates/api/src/routes/mod.rs`) which is idempotent + public and
-// always emits the clearing headers. Without this, stale refresh
-// cookies linger in the browser until their natural TTL (30 days) and
-// a returning user would keep hitting the same failure loop.
+// HttpOnly cookies cannot be cleared from JavaScript — only the BE's
+// `Set-Cookie max-age=0` response drops them from the browser. We
+// POST `/auth/logout` (public + idempotent — see
+// `crates/api/src/routes/mod.rs`) which always emits the clearing
+// headers; without this, stale refresh cookies would sit in the
+// browser until their 30-day TTL and a returning user would keep
+// hitting the same failure loop.
 //
 // The user-facing "session expired" toast is owned by `reportError`
 // in queryClient.ts so all error messaging lives in exactly one
@@ -28,12 +28,11 @@ import type { paths } from './schema'
 // authenticated UI doesn't linger.
 function endSession(): void {
     const auth = useAuthStore()
-    // If we're already anonymous, this is either initial hydrate or the
-    // user is mid-sign-in. The router guards handle that flow on their
-    // own and we must not race them by triggering a second navigation.
-    // We also skip the BE cookie wipe in this branch — a never-signed-
-    // in caller has no cookies to clear (rare-but-possible cross-tab
-    // staleness is handled by the cookie's natural TTL).
+    // Already-anonymous callers (initial hydrate, mid-sign-in flows)
+    // skip everything: there's no session for the route guards to
+    // race against, and a never-signed-in caller has no cookies for
+    // the BE wipe to clear (any cross-tab staleness rides out the
+    // cookie's natural TTL).
     if (auth.status === 'anonymous') return
     // Sync local-state flip so route guards on the next tick see
     // `anonymous` immediately and don't race with the async BE call.
@@ -41,9 +40,9 @@ function endSession(): void {
     // Async BE cookie wipe via the public /auth/logout endpoint. The
     // store's `logout()` wraps the BE call with the localStorage /
     // sessionStorage cleanup so app-owned state goes too. Fire-and-
-    // forget: a network failure must not block the redirect, and we
-    // don't want to make the in-flight request's response wait on
-    // this side-effect. The double `applyClaimsPayload(null)` inside
+    // forget: a network failure must not block the redirect, and the
+    // in-flight request's response doesn't need to wait on this
+    // side-effect. The redundant `applyClaimsPayload(null)` inside
     // `auth.logout()` is a harmless idempotent safety net.
     void auth.logout()
     // `replace` (not `push`) so the expired page never sits in history.
@@ -110,30 +109,28 @@ const authRefresh: Middleware = {
         } catch {
             return response
         }
-        // Try refresh on ANY 401, not just `auth_token_expired`.
-        //
-        // The narrower "only on auth_token_expired" check fails the
-        // common case where the access cookie has expired wall-clock-
-        // wise: the BROWSER drops expired cookies, so the request
-        // arrives at the BE with NO cookie at all — the BE answers
-        // `auth_unauthenticated`, not `auth_token_expired`. The refresh
-        // cookie has a separate, longer TTL and a narrower path
+        // Try refresh on ANY 401 (except `/auth/refresh` itself, handled
+        // above). The access cookie's TTL is short and the BROWSER drops
+        // expired cookies from outgoing requests, so a 401 here can mean
+        // "no cookie at all" (BE returns `auth_unauthenticated`) just
+        // as easily as "JWT expired" (`auth_token_expired`). The refresh
+        // cookie has a longer TTL and a narrower path
         // (`/api/v1/auth/refresh`), so it survives the access cookie's
         // expiry and is still available for the refresh round-trip.
         //
-        // For genuinely-anonymous callers (no refresh cookie either),
-        // the refresh attempt below itself returns 401 — we fall
-        // through to `endSession()`, which is a no-op when the auth
-        // store is already in the `anonymous` state, so the user just
-        // sees a normal anonymous page instead of being bounced.
+        // Genuinely-anonymous callers (no refresh cookie either) get a
+        // 401 on the refresh attempt itself and fall through to
+        // `endSession()` — which short-circuits when the auth store is
+        // already `anonymous`, so a never-signed-in visitor on a
+        // public page stays put instead of being bounced.
         //
-        // The cost is one extra `/auth/refresh` round-trip on the very
-        // first 401 of an anonymous session — fine for the
-        // "session-resume-after-cold-tab" UX win it buys us.
+        // Cost: one extra `/auth/refresh` round-trip on the first 401
+        // of a cold session — small price for the session-resume-
+        // after-cold-tab UX win.
         //
-        // `body` is retained so we can rethrow it verbatim if the
-        // refresh path fails — preserves the original error semantics
-        // for `reportError`'s toast pipeline.
+        // `body` is retained so the refresh-fail path can rethrow it
+        // verbatim, preserving the original error semantics for
+        // `reportError`'s toast pipeline.
         const auth = useAuthStore()
         refreshing ??= auth
             .refresh()

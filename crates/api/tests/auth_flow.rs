@@ -113,18 +113,14 @@ async fn magic_link_then_consume_then_me_then_create_family_then_refresh() {
     assert!(res.response().cookies().any(|c| c.name() == "refresh"));
 }
 
-/// Regression: `POST /auth/logout` MUST be reachable without any cookies
-/// and MUST still emit clear-cookie headers. The FE relies on this to
-/// drop stale `HttpOnly` cookies AFTER a session has already collapsed
-/// server-side (e.g. refresh failed) — at that point the access cookie
-/// is gone, so an auth-gated logout would 401 and the browser would
-/// keep the cookies until their natural TTL.
+/// `POST /auth/logout` is reachable without any cookies and still
+/// emits clear-cookie headers. The FE calls it on any "session is
+/// gone" signal to drop stale `HttpOnly` cookies — including the
+/// case where the access cookie has already expired and an auth-
+/// gated logout would 401.
 ///
-/// The previous shape mounted logout INSIDE the required-auth scope; a
-/// no-cookie POST returned 401. After moving the registration up
-/// alongside the other public auth endpoints, it now returns 200 + the
-/// `Set-Cookie max-age=0` pair for both cookies. Body is the fixed
-/// `LogoutRes`, no session info leaked.
+/// Contract pinned here: 200 + `Set-Cookie max-age=0` for both
+/// cookies + fixed `LogoutRes` body that carries no session info.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn logout_is_idempotent_and_reachable_without_session() {
     let stack = ephemeral_stack().await;

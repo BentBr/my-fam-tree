@@ -32,12 +32,10 @@ use uuid::Uuid;
 /// | `{ "death_date": "..." }`| `Some(Some)`  | set to the given value |
 ///
 /// Plain `Option<T>` collapses the first two cases into the same
-/// `None`, which is why `PATCH /persons/{id}` with
-/// `death_date: null` used to silently preserve the existing date
-/// instead of clearing it. Wrapping in `Option<Option<T>>` + this
-/// deserializer keeps the wire format identical (still
-/// `T | null | absent`) while letting the handler tell the three
-/// cases apart.
+/// `None`, so a handler can't tell "preserve" from "clear". Wrapping
+/// in `Option<Option<T>>` + this deserializer keeps the wire format
+/// identical (still `T | null | absent`) while letting the handler
+/// distinguish the three cases.
 ///
 /// Apply via:
 ///
@@ -144,10 +142,9 @@ pub struct PersonCreateReq {
 //
 // `birth_date` and `death_date` use the triple-state pattern
 // `Option<Option<NaiveDate>>` + `deserialize_optional_field` so a PATCH
-// carrying `"death_date": null` actually clears the column. Plain
-// `Option<NaiveDate>` collapses absent vs explicit-null into the same
-// `None`, and `merge_update`'s `.or(existing)` then preserved the
-// value on null — the "uncheck deceased" UI was inert until this fix.
+// carrying `"death_date": null` clears the column rather than
+// preserving the existing value. See the helper's doc for the wire-
+// format vs handler-semantics mapping.
 //
 // `clippy::option_option` is silenced for the date fields here — see
 // the comment on `deserialize_optional_field` for why.
@@ -891,10 +888,10 @@ mod tests {
 
     #[test]
     fn patch_with_null_death_date_clears_existing() {
-        // The bug-fix this test pins. Before the deserializer change, a
-        // JSON null collapsed into outer None, indistinguishable from
-        // "absent", and `merge_update`'s `.or(existing)` then preserved
-        // the date forever — the "uncheck deceased" UI was inert.
+        // The split between absent and explicit-null is the whole point
+        // of the triple-state pattern: a JSON `null` here deserializes
+        // to outer `Some(None)`, which `merge_update` reads as "clear"
+        // and writes NULL to the column.
         let existing_date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
         let existing = fixture_person_with_death_date(Some(existing_date));
         let patch: PersonUpdateReq = serde_json::from_str(r#"{ "death_date": null }"#).unwrap();

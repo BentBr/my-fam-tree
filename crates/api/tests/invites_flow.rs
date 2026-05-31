@@ -198,13 +198,15 @@ async fn accept_links_user_to_person_when_invite_carries_person_id() {
     );
 }
 
-/// Regression: a second invite-accept for a user who already has a
-/// membership in this family used to 500 on the `family_memberships_pkey`
-/// duplicate-key constraint, and (worse) the request failed BEFORE the
-/// person-link write — so a re-invite that carried `person_id` never
-/// actually wired the link. After making `memberships.insert` idempotent
-/// (`ON CONFLICT DO NOTHING`), the re-accept is a graceful no-op on
-/// membership and still runs the person-link side-effect.
+/// A second invite-accept for a user who already has a membership in
+/// this family is idempotent on the membership row AND still runs the
+/// person-link side-effect. Two scenarios this covers:
+///   - a user re-clicking the same invite link (sessionStorage dedup
+///     covers a tight double-mount; this catches the slower paths);
+///   - a follow-up person-targeted invite to a member who already
+///     has a family-level membership — the invite-accept handler
+///     no-ops the membership insert and wires `persons.linked_user_id`
+///     for the bound person.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn second_accept_is_idempotent_on_membership_and_still_wires_person_link() {
     let stack = ephemeral_stack().await;

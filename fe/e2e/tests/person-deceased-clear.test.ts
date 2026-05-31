@@ -57,9 +57,9 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
     await page.getByTestId('person-submit').click()
 
     // ----- 4. Reload and verify the BE actually NULL'd the column. -----
-    // Pre-fix this was the failure: the UI looked clean post-save (the
-    // form was reset and re-fetched) but the DB still held the date,
-    // and the next refetch put it back.
+    // The reload + re-open is what makes this an honest round-trip:
+    // a save that only updated the local form (without persisting the
+    // NULL) would show "—" until refetch, then snap back to the date.
     await page.reload()
     await page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first().click()
     await expect(page.getByTestId('person-detail')).toBeVisible()

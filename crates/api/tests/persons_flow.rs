@@ -275,13 +275,12 @@ async fn persons_role_gating_user_cannot_create_or_delete_or_edit_others() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["code"], "family_insufficient_role");
 
-    // Now link a person row to the regular user — they should then be able
-    // to PATCH that row but still NOT someone else's. The consent gate on
-    // POST /persons (see `check_link_consent` in `routes::persons`) blocks
-    // admins from binding a row to another user's id in one call; the
-    // real-world path is the invite-email round-trip. For this test we
-    // only need the linked-row precondition, so create + repo-link in
-    // two steps.
+    // Link a person row to the regular user so they can PATCH that row
+    // but not someone else's. The consent gate (`check_link_consent` in
+    // `routes::persons`) rejects an admin POSTing `linked_user_id`
+    // pointing at another user's id; the real flow is the invite-email
+    // round-trip. This test only needs the linked-row precondition, so
+    // create via the API + wire the link via the repo in two steps.
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
         .cookie(Cookie::new("access", owner_access))

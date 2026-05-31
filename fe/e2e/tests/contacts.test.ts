@@ -19,20 +19,17 @@ test('contact role + visibility gates', async ({ browser }) => {
     await signIn(guest, guestEmail)
 
     // ----- Owner creates two persons: one unlinked, one to be linked to guest. -----
-    // The guest-link path must respect the consent gate (`check_link_consent`
-    // in the BE): an admin can't POST /persons with `linked_user_id: <guest>`
-    // anymore — that was the silent-bind hole. Two consent-safe paths
-    // exist; we use the person-targeted invite (BE's invite-accept handler
-    // atomically sets `linked_user_id` when the recipient clicks the link).
-    // The `claim` endpoint is self-link only and would need admin/owner
-    // role on the guest's side, so it doesn't fit this scenario.
+    // The guest-link path respects the consent gate (`check_link_consent`
+    // in the BE) — an admin can't POST `/persons` with `linked_user_id`
+    // pointing at someone else. Two consent-safe paths exist; this
+    // setup uses the person-targeted invite (the BE's invite-accept
+    // handler atomically sets `linked_user_id` when the recipient
+    // clicks the link). The `claim` endpoint is self-link only and
+    // role-gated to admin/owner, so it doesn't fit a `user`-role guest.
     //
-    // The earlier version of this test ran TWO invite cycles — a
-    // family-level invite (membership) followed by a person-targeted
-    // invite (link). That broke after the consent fix because
-    // `memberships.insert` 500s on a duplicate-key — the second invite's
-    // accept failed before `set_linked_user_id` could run. One invite
-    // covers both (membership + link), so we collapse to that.
+    // One invite covers both membership AND link: the same accept call
+    // creates the family_memberships row and wires
+    // `persons.linked_user_id` in a single round-trip.
 
     const ownerPersonRes = await owner.request.post('/api/v1/persons', {
         headers: { 'X-Family-Id': familyId, 'content-type': 'application/json' },

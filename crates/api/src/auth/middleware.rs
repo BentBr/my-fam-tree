@@ -103,20 +103,17 @@ where
                     svc.call(req).await.map(ServiceResponse::map_into_boxed_body)
                 }
                 (None, true) => {
-                    // CRITICAL: do NOT `Err(Error::from(ApiError::Unauthenticated))`
-                    // here. `actix-cors`'s response-decoration path runs AFTER
-                    // its `let res = fut.await?` line, so an `Err` propagates
-                    // up the chain WITHOUT going through CORS's header
-                    // injection. The browser then receives the 401 with no
-                    // `Access-Control-Allow-Origin` and reports it as a CORS
-                    // failure — masking the real 401 and breaking cross-origin
-                    // auth probes from the SPA.
-                    //
-                    // Synthesising an `Ok(ServiceResponse)` keeps the 401 body
-                    // identical (same `ApiError::Unauthenticated.error_response()`,
-                    // same `application/problem+json` shape) but lets CORS see
-                    // it as a normal response and decorate it. Same body, same
-                    // status, correct headers.
+                    // Synthesise an `Ok(ServiceResponse)` carrying the
+                    // 401 body rather than returning `Err`. `actix-cors`
+                    // decorates responses inside its own `onResponse`
+                    // step after `let res = fut.await?` — an `Err`
+                    // bubble-up bypasses that step and the browser sees
+                    // the 401 with no `Access-Control-Allow-Origin`,
+                    // surfacing as a CORS error that masks the real
+                    // status. The synthesised response carries the
+                    // same `application/problem+json` body the error
+                    // path would produce, so CORS can decorate it and
+                    // the SPA sees the correct 401.
                     let resp = ApiError::Unauthenticated.error_response();
                     Ok(req.into_response(resp))
                 }
@@ -272,14 +269,14 @@ mod tests {
         HttpResponse::Ok().body("ok")
     }
 
-    /// Regression: a missing-cookie request to a guarded route MUST resolve
-    /// to an `Ok(ServiceResponse)` with status 401, not `Err`. The previous
-    /// `Err(Error::from(ApiError::Unauthenticated))` shape short-circuited
-    /// `actix-cors`'s response-decoration path (its `let res = fut.await?`),
-    /// so the 401 reached the browser without `Access-Control-Allow-Origin`
-    /// and surfaced as a misleading "CORS error" instead of the real 401.
-    /// Asserting `Ok` here pins the contract — if a future refactor reverts
-    /// to `Err`, this test fails before the SPA does.
+    /// A missing-cookie request to a guarded route resolves to an
+    /// `Ok(ServiceResponse)` with status 401, NOT `Err`. The `Ok`
+    /// shape is required for `actix-cors` to decorate the response
+    /// with `Access-Control-Allow-Origin` — its decoration step sits
+    /// after `let res = fut.await?` and bypasses an `Err`. Without
+    /// that shape the SPA sees a CORS error instead of the real 401.
+    /// Asserting `Ok` here pins the contract so a refactor can't
+    /// silently revert.
     #[actix_web::test]
     async fn missing_cookie_returns_ok_401_so_cors_can_decorate() {
         let app = actix_test::init_service(App::new().service(
@@ -287,9 +284,9 @@ mod tests {
         ))
         .await;
         let req = actix_test::TestRequest::get().uri("/p").to_request();
-        // `try_call_service` returns `Err` only when the inner Service errors;
-        // an `Ok` with a 401 status passes through as `Ok`. The bug we're
-        // guarding against would return `Err` here.
+        // `try_call_service` returns `Err` only when the inner Service
+        // errors; an `Ok` with a 401 status passes through as `Ok`.
+        // The `Err` shape is what would skip the CORS decoration.
         let resp = actix_test::try_call_service(&app, req)
             .await
             .expect("auth middleware must return Ok(401), not Err — CORS would skip the response");

@@ -88,30 +88,32 @@ impl FamilyMembershipRepo for PgFamilyMembershipRepo {
         user_id: UserId,
         role: Role,
     ) -> Result<(), MembershipRepoError> {
-        // `ON CONFLICT (family_id, user_id) DO NOTHING` makes re-accepting
-        // an invite a graceful no-op rather than a 500.
+        // `ON CONFLICT (family_id, user_id) DO NOTHING` makes the insert
+        // idempotent on the membership row — a no-op when the user is
+        // already a member of this family. Two scenarios this covers
+        // both come down to "the invite-accept handler ran twice for
+        // the same (family, user) pair":
+        //   1. the same invite link is re-clicked;
+        //   2. a follow-up person-targeted invite arrives for a user
+        //      who already has a family-level membership.
+        // In both cases the post-membership side-effects in
+        // `routes::invites::accept` (audit row + `set_linked_user_id`
+        // on `invite.person_id`) still need to run, so the membership
+        // insert must succeed-quietly rather than reject.
         //
-        // The previous shape (plain INSERT) failed on the duplicate-key
-        // constraint when the same user re-clicked their invite link, or
-        // when a second invite arrived (e.g. owner sends a person-targeted
-        // invite to a user who already has a family-level membership). The
-        // 500 surfaced as "Sign-in failed. The link may have expired." in
-        // the FE — misleading, since the real meaning is "you're already
-        // in this family".
-        //
-        // We deliberately do NOT do `ON CONFLICT ... DO UPDATE SET role =
-        // EXCLUDED.role`: a re-accept must NOT silently change the role.
-        // Role changes go through the dedicated `/families/{id}/members/
-        // {user_id}/role` endpoint (which audits the change and enforces
-        // owner-cannot-demote-self rules). Re-accepting with a higher
-        // `invited_role` than the current membership would otherwise be a
-        // sneaky self-promotion vector for anyone who can craft an invite.
+        // Deliberately NOT `DO UPDATE SET role = EXCLUDED.role`: a
+        // re-accept MUST NOT silently change the role. Role changes
+        // route through the dedicated members endpoint, which audits
+        // the change and enforces owner-cannot-self-demote. Letting a
+        // re-accept upgrade `role` would be a self-promotion vector
+        // for anyone who can craft an invite for themselves.
         //
         // The owner-existence partial-unique constraint
-        // (`family_memberships_one_owner`) is on a different column set
-        // than the PK and is NOT silenced by this `ON CONFLICT`. Attempts
-        // to insert a SECOND owner for the same family still error out,
-        // and the explicit match below maps that to `OwnerExists`.
+        // (`family_memberships_one_owner`) is on a different column
+        // set than the PK and is NOT silenced by this `ON CONFLICT`.
+        // Attempts to insert a SECOND owner for the same family still
+        // error out, and the explicit match below maps that to
+        // `OwnerExists`.
         let res = sqlx::query!(
             r#"INSERT INTO family_memberships (family_id, user_id, role)
                VALUES ($1, $2, ($3::text)::family_role)
