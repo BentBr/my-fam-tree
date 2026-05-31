@@ -1,5 +1,17 @@
 import { test as baseTest, expect, type ConsoleMessage } from '@playwright/test'
 
+import { flushRedis } from './redis.fixture'
+
+// Reset the BE's per-IP rate-limit buckets before each test. CI runs all
+// requests from 127.0.0.1; the api's `rate_limit_ip` cap (120/hour at
+// `/auth/consume`, `/auth/refresh`, `/invite/accept`,
+// `/owner-transfer/confirm`) accumulates across the suite and a fresh
+// test that legitimately needs to refresh ends up getting a 429 that
+// looks like a session-expiry bug. Same `FLUSHDB` helper as
+// `global-setup`. Gated on `CI === 'true'` (or the explicit opt-in
+// env var) so local dev runs don't slow down per-test.
+const flushBetweenTests = process.env['CI'] === 'true' || process.env['E2E_FLUSH_REDIS'] === 'true'
+
 // Console messages we explicitly tolerate. Each entry is a substring match
 // against the raw text — if it's in here, we don't fail. Keep this list
 // small and reviewed; the goal is zero noise, not zero failure.
@@ -23,6 +35,12 @@ function isAllowed(text: string): boolean {
  * found" misroutes and Vuetify "UPGRADE" deprecations that would
  * otherwise slip through manual testing.
  */
+if (flushBetweenTests) {
+    baseTest.beforeEach(async () => {
+        await flushRedis()
+    })
+}
+
 export const test = baseTest.extend<{ consoleErrors: string[] }>({
     consoleErrors: async ({ page }, use, testInfo) => {
         const errors: string[] = []

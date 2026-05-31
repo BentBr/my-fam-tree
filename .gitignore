@@ -22,6 +22,8 @@ playwright-report/
 
 # Coverage
 coverage/
+fe-coverage/
+rust-coverage/
 
 # Env
 .env
