@@ -131,10 +131,12 @@ pub struct PersonCreateReq {
     pub linked_user_id: Option<Uuid>,
 }
 
-/// Partial update. Every field is optional; only fields present in the
-/// request body overwrite the corresponding column. An empty body is
-/// rejected as `validation.value_required`. Send `null` on `birth_date`
-/// or `death_date` to clear; send an empty string on string fields to
+/// Partial update.
+///
+/// Every field is optional; only fields present in the request body
+/// overwrite the corresponding column. An empty body is rejected as
+/// `validation.value_required`. Send `null` on `birth_date` or
+/// `death_date` to clear; send an empty string on string fields to
 /// clear those.
 //
 // Implementation note (NOT exposed in OpenAPI — kept as a `//` comment

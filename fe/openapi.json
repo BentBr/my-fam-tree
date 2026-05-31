@@ -54,10 +54,12 @@
         "tags": [
           "auth"
         ],
+        "summary": "POST `/auth/logout` — clear the session.",
+        "description": "PUBLIC by design: this endpoint is mounted OUTSIDE the required-auth\nscope (see `routes::mod`). The FE needs to call it AFTER a session\nhas already collapsed server-side (e.g., when the refresh token is\nrevoked or the access cookie expired and the refresh round-trip\nfailed) — at which point an auth-gated logout would 401 and the\n`HttpOnly` cookies would linger in the browser indefinitely.\n\nThe handler is idempotent:\n  - if the refresh cookie is present, best-effort revoke the\n    matching row in the DB;\n  - always emit `Set-Cookie max-age=0` for both cookies so the\n    browser drops them;\n  - return 200 regardless.\n\nReveals no state — the response body is the same fixed\n`{ status: \"logged out\" }` for every caller, so making the endpoint\npublic exposes nothing an unauthenticated probe could not already\nobserve (the Set-Cookie clearing headers don't carry session info).",
         "operationId": "logout",
         "responses": {
           "200": {
-            "description": "Logged out",
+            "description": "Logged out (or no session to begin with)",
             "content": {
               "application/json": {
                 "schema": {
@@ -66,12 +68,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "cookie_access": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/auth/magic-link": {
@@ -3825,7 +3822,7 @@
       },
       "PersonUpdateReq": {
         "type": "object",
-        "description": "Partial update. Every field is optional; only fields present in the\nrequest body overwrite the corresponding column. An empty body is\nrejected as `validation.value_required`. Send `null` on `birth_date`\nor `death_date` to clear; send an empty string on string fields to\nclear those.",
+        "description": "Partial update.\n\nEvery field is optional; only fields present in the request body\noverwrite the corresponding column. An empty body is rejected as\n`validation.value_required`. Send `null` on `birth_date` or\n`death_date` to clear; send an empty string on string fields to\nclear those.",
         "properties": {
           "birth_date": {
             "type": [

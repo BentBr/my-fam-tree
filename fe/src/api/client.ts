@@ -10,20 +10,42 @@ import { ApiClientError, type ApiErrorBody, type Warning } from './errors'
 import type { paths } from './schema'
 
 // When the api hands back a 401 that can't be silently refreshed (refresh
-// itself failed, or the code isn't `auth_token_expired` because the cookie
-// was dropped server-side), clear the in-memory session and bounce to
-// sign-in. This is the REDIRECT side-effect only — the user-facing
-// "session expired" toast is owned by `reportError` in queryClient.ts so
-// all error messaging lives in exactly one place. The route guard would
-// catch them on the next navigation anyway; we redirect on the failed
-// request itself so the stale authenticated UI doesn't linger.
+// itself failed too), clear the in-memory session, drop the HttpOnly
+// cookies server-side, and bounce to sign-in.
+//
+// HttpOnly cookies CANNOT be cleared from JavaScript — only the BE's
+// `Set-Cookie max-age=0` response can drop them from the browser. So we
+// POST `/auth/logout` (now mounted OUTSIDE the required-auth scope —
+// see `crates/api/src/routes/mod.rs`) which is idempotent + public and
+// always emits the clearing headers. Without this, stale refresh
+// cookies linger in the browser until their natural TTL (30 days) and
+// a returning user would keep hitting the same failure loop.
+//
+// The user-facing "session expired" toast is owned by `reportError`
+// in queryClient.ts so all error messaging lives in exactly one
+// place. The route guard would catch them on the next navigation
+// anyway; we redirect on the failed request itself so the stale
+// authenticated UI doesn't linger.
 function endSession(): void {
     const auth = useAuthStore()
     // If we're already anonymous, this is either initial hydrate or the
     // user is mid-sign-in. The router guards handle that flow on their
     // own and we must not race them by triggering a second navigation.
+    // We also skip the BE cookie wipe in this branch — a never-signed-
+    // in caller has no cookies to clear (rare-but-possible cross-tab
+    // staleness is handled by the cookie's natural TTL).
     if (auth.status === 'anonymous') return
+    // Sync local-state flip so route guards on the next tick see
+    // `anonymous` immediately and don't race with the async BE call.
     auth.applyClaimsPayload(null)
+    // Async BE cookie wipe via the public /auth/logout endpoint. The
+    // store's `logout()` wraps the BE call with the localStorage /
+    // sessionStorage cleanup so app-owned state goes too. Fire-and-
+    // forget: a network failure must not block the redirect, and we
+    // don't want to make the in-flight request's response wait on
+    // this side-effect. The double `applyClaimsPayload(null)` inside
+    // `auth.logout()` is a harmless idempotent safety net.
+    void auth.logout()
     // `replace` (not `push`) so the expired page never sits in history.
     // Don't await — middleware must finish before the caller awaits and
     // unmounts the source view. `void` satisfies `no-floating-promises`.

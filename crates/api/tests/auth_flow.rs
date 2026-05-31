@@ -112,3 +112,47 @@ async fn magic_link_then_consume_then_me_then_create_family_then_refresh() {
     assert!(res.response().cookies().any(|c| c.name() == "access"));
     assert!(res.response().cookies().any(|c| c.name() == "refresh"));
 }
+
+/// Regression: `POST /auth/logout` MUST be reachable without any cookies
+/// and MUST still emit clear-cookie headers. The FE relies on this to
+/// drop stale `HttpOnly` cookies AFTER a session has already collapsed
+/// server-side (e.g. refresh failed) — at that point the access cookie
+/// is gone, so an auth-gated logout would 401 and the browser would
+/// keep the cookies until their natural TTL.
+///
+/// The previous shape mounted logout INSIDE the required-auth scope; a
+/// no-cookie POST returned 401. After moving the registration up
+/// alongside the other public auth endpoints, it now returns 200 + the
+/// `Set-Cookie max-age=0` pair for both cookies. Body is the fixed
+/// `LogoutRes`, no session info leaked.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn logout_is_idempotent_and_reachable_without_session() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+
+    let req = test::TestRequest::post().uri("/api/v1/auth/logout").to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200, "logout must succeed even without a session");
+
+    // The response carries Set-Cookie clearing headers for BOTH cookies
+    // (so the browser drops whatever it still has) with max-age=0.
+    let cookies: Vec<_> = res.response().cookies().collect();
+    let access = cookies.iter().find(|c| c.name() == "access").expect("access clear cookie");
+    let refresh = cookies.iter().find(|c| c.name() == "refresh").expect("refresh clear cookie");
+    assert_eq!(access.value(), "", "cleared access cookie is empty");
+    assert_eq!(refresh.value(), "", "cleared refresh cookie is empty");
+    assert_eq!(
+        access.max_age().expect("access cookie has Max-Age"),
+        actix_web::cookie::time::Duration::seconds(0),
+        "access cookie must have Max-Age=0"
+    );
+    assert_eq!(
+        refresh.max_age().expect("refresh cookie has Max-Age"),
+        actix_web::cookie::time::Duration::seconds(0),
+        "refresh cookie must have Max-Age=0"
+    );
+
+    // Body shape: fixed status string, no session info.
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["data"]["status"], "logged out");
+}
