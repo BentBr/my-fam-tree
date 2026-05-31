@@ -158,16 +158,21 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
                 {{ pageTitle }}
             </v-toolbar-title>
             <v-spacer />
+            <!-- Fit-to-view is desktop-only. On mobile the toolbar is too
+                 cramped, and the icon-only variant rendered against the dark
+                 background as a near-invisible dark circle that competed
+                 visually with the FAB — better to drop it entirely on
+                 smAndDown and let users use the canvas's own pinch-to-fit
+                 gesture (which they already do on touch). -->
             <v-btn
-                v-if="tree.data.value !== undefined && tree.data.value.nodes.length > 0"
-                :icon="smAndDown ? 'maximize' : undefined"
-                :prepend-icon="smAndDown ? undefined : 'maximize'"
+                v-if="!smAndDown && tree.data.value !== undefined && tree.data.value.nodes.length > 0"
+                prepend-icon="maximize"
                 variant="text"
                 :title="t('tree.fitToView')"
                 data-testid="tree-fit-to-view"
                 @click="onFit"
             >
-                <template v-if="!smAndDown">{{ t('tree.fitToView') }}</template>
+                {{ t('tree.fitToView') }}
             </v-btn>
             <!-- Desktop / tablet: the labelled add-person button sits in
                  the toolbar next to fit-to-view. On smAndDown the toolbar
@@ -308,13 +313,16 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
 }
 /* Mobile FAB — overlays the tree canvas with the primary "add person"
  * affordance. `position: fixed` keeps it anchored as the user pans the
- * SVG; `z-index` clears the d3-zoom drag layer and the v-navigation-
- * drawer's scrim. Sized large for a thumb-friendly hit target. */
+ * SVG; `z-index: 1100` clears the v-navigation-drawer's scrim (Vuetify
+ * uses ~1006 for drawer overlays) so the FAB stays clickable above
+ * any persistent layer. `bottom` uses `safe-area-inset-bottom` so the
+ * iOS home indicator doesn't sit on top of the button on full-screen
+ * mobile browsers. Sized large for a thumb-friendly hit target. */
 .tree-add-fab {
     position: fixed;
     right: 16px;
-    bottom: 16px;
-    z-index: 10;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    z-index: 1100;
 }
 .canvas {
     flex: 1;
