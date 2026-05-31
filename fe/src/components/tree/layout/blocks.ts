@@ -134,13 +134,26 @@ function collectComponent(
  * Plain couple: 2 persons, 1 edge → `members: [smallerId, largerId]`, one
  *   `couple` entry covering the pair. Matches the v2 stable visual.
  *
- * Multi-couple chain: pick the anchor (highest-degree person inside the
- *   component, ties → smallest id). Partition the anchor's same-row
- *   partners into open vs ended; ended partners thread to the LEFT (oldest
- *   ended_on furthest from the anchor), open partners thread to the RIGHT.
+ * Multi-couple chain (≥3 members): pick the anchor (highest-degree person
+ *   inside the component, ties → smallest id). Then thread the anchor's
+ *   same-row partners around it:
+ *     - ENDED partners thread to the LEFT of the anchor (oldest ended_on
+ *       furthest left) so "time direction" reads past-to-present.
+ *     - OPEN partners split EVENLY around the anchor — the anchor sits in
+ *       the MIDDLE of its open relationships rather than leftmost. With
+ *       two concurrent open partners (Wagner-like case: Helmut + Ingrid +
+ *       Renate) the chain reads [Ingrid, Helmut, Renate] instead of
+ *       [Helmut, Ingrid, Renate].
+ *   `floor(N_open/2)` open partners go left of the anchor (just right of
+ *   any ended partners), `ceil(N_open/2)` go right. With one open partner
+ *   the floor is 0 so the anchor stays left of it — that matches the
+ *   v3.1 [ended, anchor, open] shape covered by the existing exspouse
+ *   tests (Klaus + Brigitte + Anna).
+ *
  *   Any component members not directly adjacent to the anchor land beyond
- *   the open side in stable id order — a safety net for unusual topologies
- *   (multi-hub components); the seed and the common case never hit it.
+ *   the right-open side in stable id order — a safety net for unusual
+ *   topologies (multi-hub components); the seed and the common case
+ *   never hit it.
  */
 function threadComponent(component: Set<string>, fallbackSeed: string, edgesByPerson: Map<string, RowEdge[]>): Block {
     const ids = [...component]
@@ -188,16 +201,25 @@ function threadComponent(component: Set<string>, fallbackSeed: string, edgesByPe
     }))
     const open = directPartners.filter((p) => p.ended_on === null)
     const ended = directPartners.filter((p) => p.ended_on !== null)
-    const leftOrdered = sortPartners(ended) // oldest ended_on first → leftmost
-    const rightOrdered = sortPartners(open)
+    const endedOrdered = sortPartners(ended) // oldest ended_on first → leftmost
+    const openOrdered = sortPartners(open)
 
-    const placed = new Set<string>([anchor, ...leftOrdered.map((p) => p.id), ...rightOrdered.map((p) => p.id)])
+    // Split the open partners so the anchor sits in the middle of them.
+    // floor on the left + ceil on the right means: 1 open → [anchor, open]
+    // (matches the existing 1-ended-1-open exspouse layout, plus the
+    // size==2 branch above which handles single-couple blocks); 2 open →
+    // [open, anchor, open] (the Wagner anchor-in-middle case); 3 open →
+    // [open, anchor, open, open].
+    const openSplit = Math.floor(openOrdered.length / 2)
+    const openLeftOfAnchor = openOrdered.slice(0, openSplit).map((p) => p.id)
+    const openRightOfAnchor = openOrdered.slice(openSplit).map((p) => p.id)
+
+    const placed = new Set<string>([anchor, ...endedOrdered.map((p) => p.id), ...openOrdered.map((p) => p.id)])
     const stragglers = ids.filter((id) => !placed.has(id)).sort()
 
-    // `leftOrdered` ascending by ended_on (oldest first). Placed left-to-
-    // right that puts the oldest ex at the leftmost slot and the most-recent
-    // ex immediately left of the anchor.
-    const members = [...leftOrdered.map((p) => p.id), anchor, ...rightOrdered.map((p) => p.id), ...stragglers]
+    // Left-to-right: ended (oldest first), open partners that split left,
+    // anchor, open partners that split right, stragglers.
+    const members = [...endedOrdered.map((p) => p.id), ...openLeftOfAnchor, anchor, ...openRightOfAnchor, ...stragglers]
 
     const couples: BlockCouple[] = []
     for (let i = 0; i < members.length - 1; i += 1) {
@@ -255,10 +277,15 @@ export function chooseParentBlock(
 }
 
 /**
- * Compute the natural sort key for a block — used to order both root blocks
- * and sibling blocks (children of the same parent). Couples sort by their
- * left member's birth_date so the *oldest* of the pair anchors the order;
- * within ties we fall back to the left member's id for stability.
+ * Compute the natural sort key for a block — used to order ROOT blocks.
+ * Couples sort by their left member's birth_date so the *oldest* of the
+ * pair anchors the order; within ties we fall back to the left member's
+ * id for stability.
+ *
+ * For SIBLING blocks (children of the same parent block), use
+ * `siblingSortKey` instead — `members[0]` is the threaded leftmost id
+ * which can be an in-married spouse with no genealogical claim on the
+ * sibling row's ordering.
  */
 export function blockSortKey(block: Block, nodeById: Map<string, BackendNode>): [number, string, string] {
     const leftId = block.members[0]
@@ -266,6 +293,52 @@ export function blockSortKey(block: Block, nodeById: Map<string, BackendNode>): 
     const n = nodeById.get(leftId)
     const [yr, iso] = birthSortKey(n?.birth_date)
     return [yr, iso, block.id]
+}
+
+/**
+ * Sort key for SIBLING blocks (children of `parentBlock`).
+ *
+ * The block-builder threads each block as
+ * `[smallestId, …, largestId]`, so `members[0]` is whichever same-row
+ * partner happens to have the smallest UUID. When that leftmost member
+ * is an IN-MARRIED spouse (Tobias Brandt sitting left of Carla because
+ * his UUID < hers, even though only Carla is blood-related to the
+ * Steinbach parents), sorting by `members[0]`'s birth_date prices the
+ * spouse's birth date into the sibling row — pushing the couple block
+ * to whatever slot the spouse's year demands instead of the blood
+ * sibling's year. That broke the user-visible "siblings sort by age"
+ * invariant in cases like Carla 1974 + Tobias 1969 vs Lukas 1972.
+ *
+ * Fix: find the FIRST block member whose biological parents intersect
+ * `parentBlock.members` and use THAT member's birth_date as the sort
+ * key. Falls back to `blockSortKey` when no such member exists (e.g. an
+ * adoptive-only link, or a block hanging off a step parent — both rare
+ * enough that the leftmost-id behaviour stays a sane default).
+ */
+export function siblingSortKey(
+    block: Block,
+    parentBlock: Block,
+    nodeById: Map<string, BackendNode>,
+    bioParents: Map<string, Set<string>>,
+): [number, string, string] {
+    const parentMembers = new Set(parentBlock.members)
+    for (const m of block.members) {
+        const bp = bioParents.get(m)
+        if (bp === undefined) continue
+        let bloodRelative = false
+        for (const p of bp) {
+            if (parentMembers.has(p)) {
+                bloodRelative = true
+                break
+            }
+        }
+        if (bloodRelative) {
+            const n = nodeById.get(m)
+            const [yr, iso] = birthSortKey(n?.birth_date)
+            return [yr, iso, block.id]
+        }
+    }
+    return blockSortKey(block, nodeById)
 }
 
 export function compareBlockKeys(a: [number, string, string], b: [number, string, string]): number {

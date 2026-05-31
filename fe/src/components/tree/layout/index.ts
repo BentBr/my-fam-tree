@@ -14,7 +14,7 @@
 
 import { blockSortKey, buildBlocks, chooseParentBlock, compareBlockKeys } from './blocks'
 import { computeGenerations, promoteEldestOrphans } from './generations'
-import { layoutSubtree, shiftSubtree } from './subtree'
+import { centerLeftOver, layoutSubtree, shiftSubtree } from './subtree'
 import {
     type Block,
     CLUSTER_GAP,
@@ -208,24 +208,30 @@ export function layoutTree(input: TreeInput): LayoutResult {
         row.push(pb)
         rowBlocks.set(pb.y, row)
     }
-    for (const row of rowBlocks.values()) {
-        row.sort((a, b) => a.x - b.x)
-        for (let i = 1; i < row.length; i += 1) {
-            const prev = row[i - 1]
-            const curr = row[i]
-            if (prev === undefined || curr === undefined) continue
-            const prevWidth = prev.pixelWidth
-            const sameParent =
-                parentOfBlock.get(prev.id) !== undefined &&
-                parentOfBlock.get(prev.id) === parentOfBlock.get(curr.id) &&
-                parentOfBlock.get(prev.id) !== null
-            const gap = sameParent ? COL_GAP : CLUSTER_GAP
-            const floor = prev.x + prevWidth + gap
-            if (curr.x < floor) {
-                const delta = floor - curr.x
-                shiftSubtree(curr, childrenOfBlock, placed, delta)
-            }
-        }
+    runRowSeparation(rowBlocks, parentOfBlock, childrenOfBlock, placed)
+
+    // Bottom-up parent recenter. The row-separation pass above shifts a
+    // colliding block + its DESCENDANTS right by a delta — but it does
+    // NOT touch the block's ANCESTORS. A child that gets pushed right by
+    // a sibling collision therefore drifts out from under its parent
+    // block, and the parent edge ends up diagonal / crossing the row above.
+    // Bug-3 (Lau-style multi-row crossing) symptom.
+    //
+    // Fix: after row separation, walk each parent block bottom-up and
+    // shift it horizontally so it sits centred over its children's
+    // midpoint. That can in turn collide the parent with its OWN row
+    // neighbours, so we re-run row separation and iterate to a fixed
+    // point. Cap at a small number of rounds — the heuristic provably
+    // converges for acyclic block graphs and a cap keeps a worst-case
+    // pathological input from blowing through the frame budget.
+    //
+    // Roots are intentionally exempt: their order is fixed by
+    // `reorderRootsByBarycenter` above and shifting them here would
+    // undo that pass's work for marginal gain. Recentering children
+    // alone is enough to straighten the typical parent-edge cross.
+    for (let pass = 0; pass < 4; pass += 1) {
+        if (!recenterParentsOverChildren(placed, childrenOfBlock, parentOfBlock)) break
+        runRowSeparation(rowBlocks, parentOfBlock, childrenOfBlock, placed)
     }
 
     // Materialize positioned persons. Each block carries its own per-member
@@ -454,6 +460,112 @@ function swapTwoPersonCouplesByParentX(
         }
     }
     return any
+}
+
+/**
+ * Bottom-up parent-over-children recentering. For each non-root parent
+ * block, recompute the children's midpoint from their CURRENT positions
+ * (post row-separation) and shift the parent block so it sits centred
+ * above that midpoint. Roots are exempt (their order belongs to the
+ * `reorderRootsByBarycenter` pass).
+ *
+ * Returns `true` when at least one block was shifted by > 0.5 px so the
+ * caller can decide whether to re-run row separation + iterate. The
+ * sub-px deadband keeps a successful recenter from being re-detected as
+ * "still drifting" forever due to floating-point round-trips.
+ *
+ * Only the parent block itself moves — NOT its descendants. That's
+ * deliberate: the children are the basis for the recompute, shifting them
+ * would defeat the purpose. The next row-separation pass picks up any
+ * collisions the parent shift created in its own row.
+ */
+function recenterParentsOverChildren(
+    placed: Map<string, PositionedBlock>,
+    childrenOfBlock: Map<string, Block[]>,
+    parentOfBlock: Map<string, string | null>,
+): boolean {
+    // Process bottom rows first (higher y) so each parent's recompute sees
+    // the most-recent positions of its children. Roots stay put — the
+    // `reorderRootsByBarycenter` pass already placed them.
+    const candidates: PositionedBlock[] = []
+    for (const pb of placed.values()) {
+        const kids = childrenOfBlock.get(pb.id) ?? []
+        if (kids.length === 0) continue
+        if (parentOfBlock.get(pb.id) === undefined) continue // not in map ⇒ root
+        candidates.push(pb)
+    }
+    candidates.sort((a, b) => b.y - a.y)
+
+    let any = false
+    for (const pb of candidates) {
+        const kids = childrenOfBlock.get(pb.id) ?? []
+        let firstL = Number.POSITIVE_INFINITY
+        let lastR = Number.NEGATIVE_INFINITY
+        for (const k of kids) {
+            const cp = placed.get(k.id)
+            if (cp === undefined) continue
+            if (cp.x < firstL) firstL = cp.x
+            const r = cp.x + cp.pixelWidth
+            if (r > lastR) lastR = r
+        }
+        if (!Number.isFinite(firstL)) continue
+        // Shared with `layoutSubtree`'s initial-placement centering —
+        // the math for "place a block of width W so its centre sits at
+        // (L + R) / 2" lives in `centerLeftOver` so a future tweak
+        // (different centering rule, weighted midpoint, …) updates both.
+        const targetL = centerLeftOver(firstL, lastR, pb.pixelWidth)
+        const delta = targetL - pb.x
+        if (Math.abs(delta) > 0.5) {
+            placed.set(pb.id, { ...pb, x: pb.x + delta })
+            any = true
+        }
+    }
+    return any
+}
+
+/**
+ * Run a single per-row separation pass against the current placement.
+ * Walks each row left-to-right and shifts a block (plus its descendants)
+ * right by whatever delta is needed to satisfy the COL_GAP /
+ * CLUSTER_GAP floor against its left neighbour.
+ *
+ * Extracted from the inline loop in `layoutTree` so the recenter +
+ * row-sep iteration can call it more than once.
+ */
+function runRowSeparation(
+    rowBlocks: Map<number, PositionedBlock[]>,
+    parentOfBlock: Map<string, string | null>,
+    childrenOfBlock: Map<string, Block[]>,
+    placed: Map<string, PositionedBlock>,
+): void {
+    for (const row of rowBlocks.values()) {
+        // Re-read each block's CURRENT x (a recenter pass may have shifted
+        // a parent in this row since the last sort).
+        const sorted = [...row]
+            .map((b) => placed.get(b.id))
+            .filter((b): b is PositionedBlock => b !== undefined)
+            .sort((a, b) => a.x - b.x)
+        for (let i = 1; i < sorted.length; i += 1) {
+            const prev = sorted[i - 1]
+            const curr = sorted[i]
+            if (prev === undefined || curr === undefined) continue
+            const prevWidth = prev.pixelWidth
+            const sameParent =
+                parentOfBlock.get(prev.id) !== undefined &&
+                parentOfBlock.get(prev.id) === parentOfBlock.get(curr.id) &&
+                parentOfBlock.get(prev.id) !== null
+            const gap = sameParent ? COL_GAP : CLUSTER_GAP
+            const floor = prev.x + prevWidth + gap
+            if (curr.x < floor) {
+                const delta = floor - curr.x
+                shiftSubtree(curr, childrenOfBlock, placed, delta)
+                // Keep the local snapshot in sync with the canonical map
+                // for subsequent comparisons in this pass.
+                const refreshed = placed.get(curr.id)
+                if (refreshed !== undefined) sorted[i] = refreshed
+            }
+        }
+    }
 }
 
 /**

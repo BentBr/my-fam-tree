@@ -12,7 +12,7 @@
 // if the natural inter-couple spacing isn't enough to fit both sub-clusters
 // without overlap, the block's internal gaps widen to compensate.
 
-import { blockSortKey, compareBlockKeys } from './blocks'
+import { compareBlockKeys, siblingSortKey } from './blocks'
 import {
     type BackendNode,
     type Block,
@@ -46,6 +46,27 @@ function blockPixelWidth(memberOffsets: number[]): number {
     if (memberOffsets.length === 0) return 0
     const last = memberOffsets[memberOffsets.length - 1] ?? 0
     return last + NODE_W
+}
+
+/**
+ * Compute the x-coordinate of a block's LEFT edge so it sits centred
+ * over the midpoint of a children span.
+ *
+ * Used by:
+ *   - `layoutSubtree` during initial placement (children span comes from
+ *     the recursive `layoutSubtree` xL/xR return values),
+ *   - `recenterParentsOverChildren` in `./index.ts` after row separation
+ *     may have shifted children sideways (children span comes from the
+ *     children blocks' current x + pixelWidth in `placed`).
+ *
+ * Pure math — no map access, no I/O — so both call sites compute their
+ * own children-extent under their own convention and then share the
+ * single midpoint→leftEdge step. Keeps the centering rule in one place
+ * so a future change (e.g. weighted midpoint) updates both paths at once.
+ */
+export function centerLeftOver(childrenL: number, childrenR: number, blockWidth: number): number {
+    const childrenMid = (childrenL + childrenR) / 2
+    return childrenMid - blockWidth / 2
 }
 
 /**
@@ -124,8 +145,15 @@ export function layoutSubtree(
     }
 
     // Sort children left-to-right by birth date (oldest first) then id.
+    // Use the BLOOD-RELATIVE member's birth date (see `siblingSortKey`)
+    // rather than `members[0]`'s — an in-married spouse with a smaller
+    // UUID would otherwise hijack the sibling-row order with their own
+    // birth year.
     const sortedChildren = [...children].sort((a, b) =>
-        compareBlockKeys(blockSortKey(a, nodeById), blockSortKey(b, nodeById)),
+        compareBlockKeys(
+            siblingSortKey(a, block, nodeById, bioParents),
+            siblingSortKey(b, block, nodeById, bioParents),
+        ),
     )
 
     let firstL = Number.POSITIVE_INFINITY
@@ -145,8 +173,7 @@ export function layoutSubtree(
         return { xL, xR: cursor.x }
     }
 
-    const childrenMid = (firstL + lastR) / 2
-    let blockL = childrenMid - defaultWidth / 2
+    let blockL = centerLeftOver(firstL, lastR, defaultWidth)
     if (blockL < firstL) {
         const delta = firstL - blockL
         for (const child of sortedChildren) {
@@ -215,8 +242,13 @@ function layoutMultiCouple(
             subs.push({ plan, cluster: { couple: plan.couple, childIds: [], width: 0 } })
             continue
         }
+        // Same blood-relative sort rule as the single-couple path —
+        // each sub-cluster's children are siblings of `block`.
         const sorted = [...plan.children].sort((a, b) =>
-            compareBlockKeys(blockSortKey(a, nodeById), blockSortKey(b, nodeById)),
+            compareBlockKeys(
+                siblingSortKey(a, block, nodeById, bioParents),
+                siblingSortKey(b, block, nodeById, bioParents),
+            ),
         )
         const subCursor = { x: 0 }
         let firstL = Number.POSITIVE_INFINITY
