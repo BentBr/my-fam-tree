@@ -3019,7 +3019,7 @@ checksum = "e94e1e6445d314f972ff7395df2de295fe51b71821694f0b0e1e79c4f12c8577"
 
 [[package]]
 name = "my-fam-tree-api"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "actix-cors",
  "actix-http",
@@ -3060,7 +3060,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-cache"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3075,7 +3075,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-config"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "figment",
  "serde",
@@ -3085,7 +3085,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-domain"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3099,7 +3099,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-email"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "askama",
  "async-trait",
@@ -3116,7 +3116,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-migrator"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "anyhow",
  "clap",
@@ -3128,7 +3128,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-openapi"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "anyhow",
  "my-fam-tree-api",
@@ -3137,7 +3137,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-persistence"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "async-trait",
  "chrono",
@@ -3154,7 +3154,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-seeder"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3173,7 +3173,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-storage"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "async-trait",
  "aws-credential-types",
@@ -3187,7 +3187,7 @@ dependencies = [
 
 [[package]]
 name = "my-fam-tree-worker"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "actix-web",
  "anyhow",

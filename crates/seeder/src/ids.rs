@@ -125,14 +125,22 @@ pub const SEED_PERSON_K_MIA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_000
 
 // Layout-bug repro sub-trees.
 //
-// Three sub-trees that surface the three known-broken layout cases the
-// user pointed out on his real tree. UUIDs are deliberately allocated
-// so the BUG manifests deterministically (the layout's existing
-// `members[0]` sort uses the smaller UUID as the block's "left" id,
-// so an in-married spouse with a smaller UUID short-circuits the
-// sibling birth-date sort). Each sub-tree uses DISTINCT surnames so
-// it never collides with the Müller / Schmidt / Krause / Hoffmann /
-// Becker / Andersen names already in the seed.
+// Sub-trees that surface broken layout cases the user pointed out on his
+// real tree. UUIDs are deliberately allocated so each BUG manifests
+// deterministically (the layout's existing `members[0]` sort uses the
+// smaller UUID as the block's "left" id, so an in-married spouse with a
+// smaller UUID short-circuits the sibling birth-date sort). Each sub-tree
+// uses DISTINCT surnames so it never collides with the Müller / Schmidt /
+// Krause / Hoffmann / Becker / Andersen names already in the seed.
+//
+// History: an earlier revision also seeded a Wagner trio (Helmut with two
+// concurrent OPEN partnerships) and a Falke side-branch (Sabine Hahn +
+// Dirk Sommer + Alina Hahn). Both produced visibly orphaned cards / floating
+// partnership glyphs in the tree canvas because the layout placed each
+// floater on a different row than its partners (Wagner) or as a standalone
+// G1 root with one G2 child (Sabine/Alina). They were removed — the
+// anchor-in-middle and multi-row-crossing repros will be replaced by
+// CONNECTED fixtures grafted into the existing genealogy.
 //
 // ── Steinbach (sibling-by-age violation) ──────────────────────────
 // Six siblings of Hartmut + Margarete. Two of them married in
@@ -164,46 +172,21 @@ pub const SEED_PERSON_STB_STEFAN_ID: Uuid =
 pub const SEED_PERSON_STB_NINA_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_002f);
 
-// ── Wagner (anchor-in-middle violation for two concurrent open
-//    partnerships) ──────────────────────────────────────────────────
-// Helmut Wagner has TWO concurrent open partnerships (marriage +
-// civil_union). Layout's `threadComponent` only puts the anchor in
-// the middle when at least one partner is ended; with both open,
-// the chain currently builds as [anchor, open1, open2] —
-// Helmut sits leftmost instead of between the two partners.
-// Bug analog of the user's image #59 (Hubert leftmost between
-// Viola and Sri).
-pub const SEED_PERSON_WGN_HELMUT_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0030);
-pub const SEED_PERSON_WGN_INGRID_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0031);
-pub const SEED_PERSON_WGN_RENATE_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0032);
-
-// ── Falke (Lau-like multi-row crossing) ──────────────────────────
-// Roland Falke marries into a sibling row whose other members have
-// no parents in the seed (Sabine X, Dirk Y). Roland's own parents
-// (Edgar + Gisela Falke) sit one row above. The middle row's
-// blocks are sorted by their leftmost member's birth date, but
-// Edgar+Gisela's parent block doesn't get to influence the row
-// above (no descendant-barycenter pass for non-root blocks), so
-// Edgar+Gisela land at the RIGHT of the parents' row while
-// Roland is in the MIDDLE of the children's row. The parent-edge
-// crosses Sabine's column.
+// ── Falke (lineage chain) ────────────────────────────────────────
+// Three generations on a single blood line: Edgar + Gisela →
+// Roland → (no children yet, intentional dead-end). Keeps the seed
+// with a clean three-gen example that lives entirely on its own
+// without floating any orphan G1/G2/G3 fixtures. The earlier
+// Lau-like multi-row crossing repro relied on partnerless siblings
+// (Sabine Hahn / Dirk Sommer) and a single-parent G3 child
+// (Alina) that all rendered as floaters in the canvas — replaced
+// with a connected fixture in a follow-up.
 pub const SEED_PERSON_FLK_EDGAR_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0033);
 pub const SEED_PERSON_FLK_GISELA_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0034);
 pub const SEED_PERSON_FLK_ROLAND_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0035);
-pub const SEED_PERSON_FLK_SABINE_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0036);
-pub const SEED_PERSON_FLK_DIRK_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0037);
-pub const SEED_PERSON_FLK_LIYAH_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0038);
-pub const SEED_PERSON_FLK_ALINA_ID: Uuid =
-    Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0039);
 
 // ---------------------------------------------------------------------------
 // Partnerships — hardcoded so the seed can keep `ON CONFLICT (id) DO UPDATE`
@@ -245,20 +228,16 @@ pub const SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000d);
 pub const SEED_PARTNERSHIP_K_TIM_MIA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000e);
-// Layout-bug repro partnerships — see the STB / WGN / FLK persons above.
+// Layout-bug repro partnerships — see the STB / FLK persons above.
 pub const SEED_PARTNERSHIP_STB_HARTMUT_MARGARETE_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000f);
 pub const SEED_PARTNERSHIP_STB_CARLA_TOBIAS_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0010);
 pub const SEED_PARTNERSHIP_STB_FELIX_BEATE_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0011);
-pub const SEED_PARTNERSHIP_WGN_HELMUT_INGRID_ID: Uuid =
-    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0012);
-pub const SEED_PARTNERSHIP_WGN_HELMUT_RENATE_ID: Uuid =
-    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0013);
 pub const SEED_PARTNERSHIP_FLK_EDGAR_GISELA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0014);
 
 /// Expected counts for the deterministic seed — surfaced for the test
 /// asserts so they don't drift from the actual data.
-pub const SEED_PERSON_COUNT: usize = 57;
+pub const SEED_PERSON_COUNT: usize = 50;
