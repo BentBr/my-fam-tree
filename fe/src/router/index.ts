@@ -173,41 +173,53 @@ router.beforeEach((to) => {
     const auth = useAuthStore()
     const family = useActiveFamilyStore()
     if (auth.status !== 'authenticated') return true
-    // Public + auth + family-picker + invite-accept routes don't require an
-    // active family in scope. The picker itself selects it; the marketing
-    // pages don't care.
+    // Reconcile stale active-family BEFORE the exempt check: localStorage
+    // may carry an `activeFamilyId` from a previous session whose
+    // membership no longer exists in `auth.families` (the user got
+    // removed, the family was deleted, or the run signed in as a
+    // different identity on the same browser). Letting the tree query
+    // fire with that stale id triggers a 422 X-Family-Id validation on
+    // the API, surfacing as the toast "Validation failed" — and the
+    // switcher shows the raw UUID because no item title matches. Wipe
+    // it here so even exempt routes (e.g. `/account`, `/health`) don't
+    // leak the stale id into their FamilySwitcher render.
+    if (family.activeFamilyId !== null && !auth.families.some((f) => f.id === family.activeFamilyId)) {
+        family.clearOnLogout()
+    }
+    // Routes that don't need an active family:
+    //   - `meta.public` marketing / legal pages
+    //   - `/auth/*` — sign-in / consume / refresh flows
+    //   - `/families/*` — picker / create themselves resolve the family
+    //   - `/invite/*` — token redemption may happen before the user has any
+    //     family at all
+    //   - `/account` — user-scoped profile / locale / avatar; no family
+    //     context needed and a fresh user (zero families) must be able to
+    //     reach it directly without being bounced through /families/create
+    //   - `/health` — status page, no family context
+    //
+    // Auto-select-when-sole-family runs BEFORE the exempt check too: even
+    // routes that don't *require* an active family still want one set so
+    // the AppBar's FamilySwitcher reflects the user's family on /account
+    // / /health renders.
+    if (family.activeFamilyId === null && auth.families.length === 1) {
+        const sole = auth.families[0]
+        if (sole !== undefined) {
+            family.setActive(sole.id)
+        }
+    }
     const isExempt =
         to.meta.public === true ||
         to.path.startsWith('/auth/') ||
         to.path.startsWith('/families/') ||
-        to.path.startsWith('/invite/')
+        to.path.startsWith('/invite/') ||
+        to.path.startsWith('/account') ||
+        to.path === '/health'
     if (isExempt) return true
-    // Reconcile stale active-family: localStorage may carry an
-    // `activeFamilyId` from a previous session whose membership no longer
-    // exists in `auth.families` (the user got removed, the family was
-    // deleted, or the run signed in as a different identity on the same
-    // browser). Letting the tree query fire with that stale id triggers
-    // a 422 X-Family-Id validation on the API, surfacing as the toast
-    // "Validation failed" — and the switcher shows the raw UUID because
-    // no item title matches. Wipe it here; the next branches will
-    // bounce / auto-select / pick fresh.
-    if (family.activeFamilyId !== null && !auth.families.some((f) => f.id === family.activeFamilyId)) {
-        family.clearOnLogout()
-    }
     if (family.activeFamilyId !== null) return true
-    // Auto-select when the user belongs to exactly one family — there's nothing
-    // to pick, sending them through the picker just adds an extra click. Two or
-    // more families still go through the picker; zero families fall through to
-    // /families/create. Persisted activeFamilyId in localStorage is honoured
-    // first (the `!== null` short-circuit above) so a returning user keeps
-    // their last selection even with multiple families.
-    if (auth.families.length === 1) {
-        const sole = auth.families[0]
-        if (sole !== undefined) {
-            family.setActive(sole.id)
-            return true
-        }
-    }
+    // Non-exempt routes need an active family. A zero-family user falls
+    // through to /families/create; the multi-family case sends them to
+    // the picker. The sole-family auto-select above already handled the
+    // common single-family path.
     return auth.families.length === 0 ? '/families/create' : '/families/pick'
 })
 
