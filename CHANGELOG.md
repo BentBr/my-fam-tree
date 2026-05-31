@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.15](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.14...core-v0.1.15) (2026-05-31)
+
+
+### Features
+
+* **fe:** add Ferris + Vue.js icons to public footer tagline ([1a161a6](https://github.com/BentBr/my-fam-tree/commit/1a161a69cf048a3bbc3836990afbec18f23fb64b))
+
+
+### Bug Fixes
+
+* **fe:** root recenter over parent-edge child + single-parent couple fallback ([ac6c7dc](https://github.com/BentBr/my-fam-tree/commit/ac6c7dc2c5a261eed9750dd664e9362b9ffc41bd))
+
 ## [0.1.14](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.13...core-v0.1.14) (2026-05-31)
 
 
