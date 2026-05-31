@@ -10,16 +10,19 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::ids::{
-    SEED_FAMILY_ID, SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID, SEED_PARTNERSHIP_KLAUS_ANNA_ID,
-    SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID, SEED_PARTNERSHIP_KLAUS_KARIN_ID,
-    SEED_PARTNERSHIP_KLAUS_YUKI_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
-    SEED_PARTNERSHIP_SABINE_JULIA_ID, SEED_PARTNERSHIP_WERNER_GRETA_ID, SEED_PERSON_ANNA_ID,
-    SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
-    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
-    SEED_PERSON_KLAUS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID,
-    SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
-    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
-    SEED_PERSON_YUKI_ID,
+    SEED_FAMILY_ID, SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID, SEED_PARTNERSHIP_HEINZ_URSULA_ID,
+    SEED_PARTNERSHIP_KLAUS_ANNA_ID, SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID,
+    SEED_PARTNERSHIP_KLAUS_KARIN_ID, SEED_PARTNERSHIP_KLAUS_YUKI_ID,
+    SEED_PARTNERSHIP_LARS_METTE_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
+    SEED_PARTNERSHIP_SABINE_JULIA_ID, SEED_PARTNERSHIP_SVEN_MAREN_ID,
+    SEED_PARTNERSHIP_WERNER_GRETA_ID, SEED_PERSON_ANNA_ID, SEED_PERSON_BRIGITTE_ID,
+    SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID, SEED_PERSON_GRETA_ID,
+    SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
+    SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
+    SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID,
+    SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
+    SEED_PERSON_SABINE_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
+    SEED_PERSON_WERNER_ID, SEED_PERSON_YUKI_ID,
 };
 
 /// One `(child, parent)` row plus the relationship kind.
@@ -219,7 +222,7 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     // `partnerships_unique_open (a, b, kind) WHERE ended_on IS NULL`. The
     // DELETE also nukes any user-added partnerships on a `seeder` re-run
     // — that's deliberate, the seeder is a reset.
-    let seed_ids: [Uuid; 8] = [
+    let seed_ids: [Uuid; 11] = [
         SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
         SEED_PARTNERSHIP_WERNER_GRETA_ID,
         SEED_PARTNERSHIP_KLAUS_ANNA_ID,
@@ -228,6 +231,9 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
         SEED_PARTNERSHIP_SABINE_JULIA_ID,
         SEED_PARTNERSHIP_KLAUS_KARIN_ID,
         SEED_PARTNERSHIP_KLAUS_YUKI_ID,
+        SEED_PARTNERSHIP_SVEN_MAREN_ID,
+        SEED_PARTNERSHIP_HEINZ_URSULA_ID,
+        SEED_PARTNERSHIP_LARS_METTE_ID,
     ];
     sqlx::query("DELETE FROM partnerships WHERE family_id = $1 AND id <> ALL($2)")
         .bind(SEED_FAMILY_ID)
@@ -245,8 +251,11 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     let (sabine, julia) = order_pair(SEED_PERSON_SABINE_ID, SEED_PERSON_JULIA_ID);
     let (klaus_k, karin) = order_pair(SEED_PERSON_KLAUS_ID, SEED_PERSON_KARIN_ID);
     let (klaus_y, yuki) = order_pair(SEED_PERSON_KLAUS_ID, SEED_PERSON_YUKI_ID);
+    let (sven, maren) = order_pair(SEED_PERSON_SVEN_ID, SEED_PERSON_MAREN_ID);
+    let (heinz, ursula) = order_pair(SEED_PERSON_HEINZ_ID, SEED_PERSON_URSULA_ID);
+    let (lars, mette) = order_pair(SEED_PERSON_LARS_ID, SEED_PERSON_METTE_ID);
 
-    let rows: [PartnershipSeed; 8] = [
+    let rows: [PartnershipSeed; 11] = [
         PartnershipSeed {
             id: SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
             partner_a: otto,
@@ -334,6 +343,48 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
             ended_on: None,
             end_reason: None,
             note: "Klaus's concurrent open partner since 2015.",
+        },
+        // Standalone active-marriage demo couple (no shared children
+        // in the seed). Surfaces the gold interlocking-rings glyph on
+        // its own row of the tree canvas, isolated from the Müller
+        // graph context.
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_SVEN_MAREN_ID,
+            partner_a: sven,
+            partner_b: maren,
+            kind: "marriage",
+            started_on: Some(ymd(2007, 8, 18)),
+            ended_on: None,
+            end_reason: None,
+            note: "Active marriage demo (Sven + Maren Hoffmann).",
+        },
+        // Standalone divorced-marriage demo couple. Same isolation
+        // intent as Sven + Maren above, but ended_on is set so the
+        // canvas shows the greyed-out treatment for the line + glyph.
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_HEINZ_URSULA_ID,
+            partner_a: heinz,
+            partner_b: ursula,
+            kind: "marriage",
+            started_on: Some(ymd(1995, 5, 27)),
+            ended_on: Some(ymd(2010, 11, 12)),
+            end_reason: Some("divorce"),
+            note: "Divorced-marriage demo (Heinz Becker + Ursula Schwarz).",
+        },
+        // Standalone broken non-marriage partnership. Surfaces the
+        // greyed-out HEART glyph (the counterpart to Heinz + Ursula's
+        // greyed-out rings) so the seed shows every glyph state
+        // without graph context: active heart, active rings, ended
+        // heart, ended rings.
+        PartnershipSeed {
+            id: SEED_PARTNERSHIP_LARS_METTE_ID,
+            partner_a: lars,
+            partner_b: mette,
+            kind: "partnership",
+            started_on: Some(ymd(2010, 4, 2)),
+            ended_on: Some(ymd(2018, 9, 30)),
+            end_reason: Some("separation"),
+            note: "Separated non-marriage partnership demo (Lars + Mette).",
         },
     ];
     for p in rows {

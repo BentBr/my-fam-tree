@@ -180,6 +180,9 @@ function editingInitial(id: string): {
 </template>
 
 <style scoped>
+/* Theme-aware tokens throughout — the previous version hardcoded
+ * `rgba(0, 0, 0, …)` which faded to invisible against the dark
+ * surface. Every colour now flips with the active theme. */
 .contacts {
     margin-top: 0.5rem;
 }
@@ -196,7 +199,7 @@ function editingInitial(id: string): {
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.35rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid var(--border);
 }
 .contact-summary {
     display: flex;
@@ -205,24 +208,36 @@ function editingInitial(id: string): {
     flex-wrap: wrap;
 }
 .kind {
+    /* The uppercase kind label (EMAIL / PHONE / ADDRESS) — readable
+     * but still subordinate to the value. `--text-2` rather than the
+     * dimmer `--text-3` so the label-vs-value hierarchy stays clear
+     * without the label disappearing on dark backgrounds. */
     font-size: 0.78rem;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--text-2);
     text-transform: uppercase;
     letter-spacing: 0.02em;
+    font-weight: 600;
 }
 .label {
+    /* The optional user-chosen label (Private / Work / Mobile) — slightly
+     * more prominent than the kind glyph but still secondary to the value. */
     font-size: 0.85rem;
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--text-2);
 }
 .value {
+    color: var(--text);
     font-weight: 500;
 }
 .vis-pill {
+    /* "Admins only" badge. Uses the warm secondary-soft tint so it
+     * registers as a chip in both themes; the soft tone differs from
+     * the surrounding surface enough to read as a pill. */
     font-size: 0.7rem;
     padding: 0.1rem 0.4rem;
     border-radius: 999px;
-    background: rgba(0, 0, 0, 0.08);
-    color: rgba(0, 0, 0, 0.7);
+    background: var(--sec-soft);
+    color: var(--sec);
+    font-weight: 500;
 }
 .contact-actions {
     display: flex;

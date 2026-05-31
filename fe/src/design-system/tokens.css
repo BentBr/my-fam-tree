@@ -63,6 +63,11 @@
     --danger-soft: #fbe7e2;
     --star: #f2a11f;
     --rel: #d9568b;
+    /* Gold for marriage rings on the canvas. Distinct from --star
+       (which is amber/orange) so wedding rings read as "gold" rather
+       than "favourite". Mutes to --text-3 when the partnership ended. */
+    --rings: #c9a227;
+    --rel-muted: #938679;
     --edge: #c9bbaa;
     --av-dead-bg: #dcd5cc;
     --av-dead-fg: #6e665c;
@@ -108,6 +113,11 @@
     --danger-soft: #3a1c16;
     --star: #f2a93f;
     --rel: #e27ca6;
+    /* Dark-theme gold variant — a touch warmer + lighter so it pops
+       against the dark canvas. Matches the --star treatment which is
+       also amber-shifted for dark mode. */
+    --rings: #e3c34a;
+    --rel-muted: #6e655a;
     --edge: #4a3e32;
     --av-dead-bg: #3a332b;
     --av-dead-fg: #9b9085;

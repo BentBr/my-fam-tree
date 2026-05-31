@@ -82,6 +82,19 @@ pub const SEED_PERSON_NOAH_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000
 pub const SEED_PERSON_KARIN_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0015);
 pub const SEED_PERSON_YUKI_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0016);
 
+// Standalone couples — no children, no other relations in the seed — so
+// the tree canvas can show isolated examples of the partnership-glyph
+// treatments without dragging in the Müller / Schmidt graph context.
+//   Sven  + Maren  — active marriage (golden rings glyph)
+//   Heinz + Ursula — divorced marriage (greyed rings + muted line)
+//   Lars  + Mette  — separated non-marriage partnership (greyed heart)
+pub const SEED_PERSON_SVEN_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0017);
+pub const SEED_PERSON_MAREN_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0018);
+pub const SEED_PERSON_HEINZ_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0019);
+pub const SEED_PERSON_URSULA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001a);
+pub const SEED_PERSON_LARS_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001b);
+pub const SEED_PERSON_METTE_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001c);
+
 // ---------------------------------------------------------------------------
 // Partnerships — hardcoded so the seed can keep `ON CONFLICT (id) DO UPDATE`
 // semantics for closed (ended_on IS NOT NULL) rows too.
@@ -105,7 +118,17 @@ pub const SEED_PARTNERSHIP_KLAUS_KARIN_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0007);
 pub const SEED_PARTNERSHIP_KLAUS_YUKI_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0008);
+// Standalone glyph demonstrations: active marriage, divorced marriage,
+// and separated non-marriage partnership. Used by the tree-canvas
+// glyph treatment so the seed can render each state without graph
+// context (no children, no other relations).
+pub const SEED_PARTNERSHIP_SVEN_MAREN_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_0009);
+pub const SEED_PARTNERSHIP_HEINZ_URSULA_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000a);
+pub const SEED_PARTNERSHIP_LARS_METTE_ID: Uuid =
+    Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000b);
 
 /// Expected counts for the deterministic seed — surfaced for the test
 /// asserts so they don't drift from the actual data.
-pub const SEED_PERSON_COUNT: usize = 22;
+pub const SEED_PERSON_COUNT: usize = 28;

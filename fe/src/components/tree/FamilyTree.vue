@@ -329,6 +329,9 @@ defineExpose({ refit: () => fitToView(true) })
                     :ay="e.ay"
                     :bx="e.bx"
                     :by="e.by"
+                    :partnership-kind="e.kind"
+                    :ended="e.ended"
+                    :directly-adjacent="e.directlyAdjacent"
                     :is-highlighted="isEdgeHighlighted(e.aId, e.bId)"
                     :is-dimmed="hoverId !== null && !isEdgeHighlighted(e.aId, e.bId)"
                 />

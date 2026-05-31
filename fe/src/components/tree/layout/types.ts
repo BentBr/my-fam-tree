@@ -91,6 +91,32 @@ export interface PartnerEdge {
     ay: number
     bx: number
     by: number
+    /**
+     * Partnership kind from the BE — `'marriage' | 'civil_union' |
+     * 'partnership'`, or `null` when the wire payload omits it (older
+     * fixtures, test trees). Drives the midpoint glyph: marriage shows
+     * interlocked rings, everything else shows a heart.
+     */
+    kind: string | null
+    /**
+     * `true` when the partnership has an `ended_on` date — divorced,
+     * separated, or ended by death. Greys the connecting line and the
+     * glyph so historical relationships read as "past" without
+     * disappearing from the tree.
+     */
+    ended: boolean
+    /**
+     * `true` when the two partners sit immediately next to each other
+     * on the same row (no other positioned node between them on the
+     * same y). For directly-adjacent pairs the midpoint glyph already
+     * acts as the connector, so the dashed line behind it is redundant
+     * noise and the renderer drops it. For "long" partnerships that
+     * span an intermediate row member (e.g. an ex-spouse routed past
+     * the current spouse), the line is the ONLY visual cue — the
+     * glyph would otherwise sit hidden behind the intermediate node —
+     * so the renderer keeps it.
+     */
+    directlyAdjacent: boolean
 }
 
 export interface LayoutResult {

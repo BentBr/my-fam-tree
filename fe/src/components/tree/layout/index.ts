@@ -257,6 +257,10 @@ export function layoutTree(input: TreeInput): LayoutResult {
         ]
     })
 
+    // Snapshot the positioned values once so the adjacency probe below
+    // doesn't re-allocate per partnership. Cheap O(N·P) overall — at our
+    // family sizes this is fine.
+    const positionedList = Array.from(positioned.values())
     const partnerEdges: PartnerEdge[] = input.partner_edges.flatMap((e) => {
         const a = positioned.get(e.a)
         const b = positioned.get(e.b)
@@ -264,6 +268,24 @@ export function layoutTree(input: TreeInput): LayoutResult {
         const leftIsA = a.x <= b.x
         const left = leftIsA ? a : b
         const right = leftIsA ? b : a
+        // `kind` / `ended` ride the wire payload (see `BackendPartnerEdge`)
+        // and surface to TreeEdge so it can pick glyph + colour. Fixtures
+        // that ship a bare `{a, b}` pair land here as `kind: null` +
+        // `ended: false`, defaulting to "active non-marriage" — the
+        // pre-existing rose-heart treatment.
+        //
+        // `directlyAdjacent` is computed here (not in the renderer) because
+        // it needs the full positioned-nodes set. A pair is "adjacent"
+        // when no other positioned node sits on the same y row strictly
+        // between `left.x` and `right.x` — i.e. the glyph at the midpoint
+        // is visible to the user and the dashed line behind it would be
+        // redundant. "Long" partnerships routed past an intermediate
+        // same-row member (Klaus↔Karin past Brigitte; Klaus↔Yuki past
+        // Anna) need the line because the midpoint glyph hides behind
+        // the intermediate node — only the line conveys the relationship.
+        const directlyAdjacent = !positionedList.some(
+            (n) => n.id !== left.id && n.id !== right.id && n.y === left.y && n.x > left.x && n.x < right.x,
+        )
         return [
             {
                 aId: leftIsA ? e.a : e.b,
@@ -272,6 +294,9 @@ export function layoutTree(input: TreeInput): LayoutResult {
                 ay: left.y + NODE_H / 2,
                 bx: right.x,
                 by: right.y + NODE_H / 2,
+                kind: e.kind ?? null,
+                ended: e.ended_on !== null && e.ended_on !== undefined && e.ended_on !== '',
+                directlyAdjacent,
             },
         ]
     })

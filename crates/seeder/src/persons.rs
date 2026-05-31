@@ -25,11 +25,12 @@ use uuid::Uuid;
 use crate::ids::{
     SEED_ADMIN_USER_ID, SEED_ALICE_USER_ID, SEED_BOB_USER_ID, SEED_FAMILY_ID, SEED_PERSON_ANNA_ID,
     SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FRIEDRICH_ID,
-    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_JULIA_ID, SEED_PERSON_KARIN_ID,
-    SEED_PERSON_KLAUS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID,
-    SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
-    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_TOM_ID, SEED_PERSON_WERNER_ID,
-    SEED_PERSON_YUKI_ID,
+    SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID,
+    SEED_PERSON_KARIN_ID, SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID,
+    SEED_PERSON_LINA_ID, SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID,
+    SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
+    SEED_PERSON_OTTO_ID, SEED_PERSON_SABINE_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID,
+    SEED_PERSON_URSULA_ID, SEED_PERSON_WERNER_ID, SEED_PERSON_YUKI_ID,
 };
 
 /// Static seed of every person field.
@@ -68,9 +69,9 @@ const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT … DO
 /// UPDATE` statements.
-#[allow(clippy::too_many_lines, reason = "static table of 22 persons; splitting hurts readability")]
+#[allow(clippy::too_many_lines, reason = "static table of 28 persons; splitting hurts readability")]
 pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
-    let rows: [PersonSeed; 22] = [
+    let rows: [PersonSeed; 28] = [
         // -------------------------------------------------------------
         // G1 — Müller line.
         // -------------------------------------------------------------
@@ -389,6 +390,94 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
             birth_place: "Berlin",
             death_date: None,
             notes: "Lina's son; G4, born after Emma.",
+            linked_user_id: None,
+        },
+        // -------------------------------------------------------------
+        // Standalone couples — no parents / children in the seeded
+        // family. They exist so the tree canvas has clean isolated
+        // examples of the marriage glyph in both states:
+        //   * Sven + Maren  — active marriage → gold interlocking rings
+        //   * Heinz + Ursula — divorced marriage → greyed rings + line
+        // -------------------------------------------------------------
+        PersonSeed {
+            id: SEED_PERSON_SVEN_ID,
+            given: "Sven",
+            family: "Hoffmann",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1978, 2, 14),
+            birth_place: "Lübeck",
+            death_date: None,
+            notes: "Active-marriage demo couple with Maren (no children in seed).",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_MAREN_ID,
+            given: "Maren",
+            family: "Hoffmann",
+            name_at_birth: "Lindqvist",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1980, 6, 5),
+            birth_place: "Kiel",
+            death_date: None,
+            notes: "Married Sven 2007; no children in seed.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_HEINZ_ID,
+            given: "Heinz",
+            family: "Becker",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1965, 10, 12),
+            birth_place: "Dortmund",
+            death_date: None,
+            notes: "Divorced-marriage demo with Ursula; ended 2010.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_URSULA_ID,
+            given: "Ursula",
+            family: "Schwarz",
+            name_at_birth: "Becker",
+            nickname: "Uschi",
+            gender: "female",
+            birth_date: ymd(1968, 3, 28),
+            birth_place: "Essen",
+            death_date: None,
+            notes: "Divorced from Heinz 2010; kept maiden name Schwarz after divorce.",
+            linked_user_id: None,
+        },
+        // Standalone separated-partnership demo: non-marriage, ended.
+        // Shows the greyed-out HEART (not rings) on the canvas — the
+        // counterpart to Heinz + Ursula's greyed-out rings.
+        PersonSeed {
+            id: SEED_PERSON_LARS_ID,
+            given: "Lars",
+            family: "Andersen",
+            name_at_birth: "",
+            nickname: "",
+            gender: "male",
+            birth_date: ymd(1982, 9, 4),
+            birth_place: "Flensburg",
+            death_date: None,
+            notes: "Separated-partnership demo with Mette; ended 2018.",
+            linked_user_id: None,
+        },
+        PersonSeed {
+            id: SEED_PERSON_METTE_ID,
+            given: "Mette",
+            family: "Jensen",
+            name_at_birth: "",
+            nickname: "",
+            gender: "female",
+            birth_date: ymd(1984, 1, 19),
+            birth_place: "Aarhus",
+            death_date: None,
+            notes: "Separated from Lars 2018 (non-marriage partnership).",
             linked_user_id: None,
         },
     ];
