@@ -78,12 +78,12 @@ describe('layoutTree — barycenter passes for the Brüggemann tree edge cases',
     })
 
     it('reorders top-row roots so each sits closer to its descendants (Krause: Anneliese LEFT, Greta RIGHT)', () => {
-        // Greta is mother of Hubert; Anneliese is mother of Bernhard.
-        // Hubert + Sara have child Mia. Bernhard + Helga have child Tim.
+        // Greta is mother of Hubert; Anneliese is mother of Reinhardt.
+        // Hubert + Sara have child Mia. Reinhardt + Helga have child Tim.
         // Tim + Mia are an in-married couple at the bottom — Tim's
         // siblings (none in this minimal fixture) AND Mia anchor the
         // bottom row. The barycenter pass should put Anneliese (whose
-        // descendant Tim sits on the side of his parents Bernhard +
+        // descendant Tim sits on the side of his parents Reinhardt +
         // Helga) on the same side as her descendants, and Greta on the
         // other side — eliminating the crossing the default
         // birth-date sort produced (Greta 1912 < Anneliese 1921 is the
@@ -94,34 +94,34 @@ describe('layoutTree — barycenter passes for the Brüggemann tree edge cases',
                 person('anneliese', [], [], '1921-03-25'),
                 person('hubert', ['greta'], ['sara'], '1947-11-07'),
                 person('sara', [], ['hubert'], '1956-11-22'),
-                person('bernhard', ['anneliese'], ['helga'], '1942-11-25'),
-                person('helga', [], ['bernhard'], '1958-09-12'),
-                person('tim', ['bernhard', 'helga'], ['mia'], '1989-03-22'),
+                person('reinhardt', ['anneliese'], ['helga'], '1942-11-25'),
+                person('helga', [], ['reinhardt'], '1958-09-12'),
+                person('tim', ['reinhardt', 'helga'], ['mia'], '1989-03-22'),
                 person('mia', ['hubert', 'sara'], ['tim'], '1988-05-10'),
             ],
             parent_edges: [
                 { a: 'hubert', b: 'greta' },
-                { a: 'bernhard', b: 'anneliese' },
+                { a: 'reinhardt', b: 'anneliese' },
                 { a: 'mia', b: 'hubert' },
                 { a: 'mia', b: 'sara' },
-                { a: 'tim', b: 'bernhard' },
+                { a: 'tim', b: 'reinhardt' },
                 { a: 'tim', b: 'helga' },
             ],
             partner_edges: [
                 { a: 'hubert', b: 'sara' },
-                { a: 'bernhard', b: 'helga' },
+                { a: 'reinhardt', b: 'helga' },
                 { a: 'tim', b: 'mia' },
             ] as PartnerEdgeInput[],
         })
         // Top-row roots: descendant centre-of-mass should put each above
         // its own line of descendants. Hubert's branch contains Mia;
-        // Bernhard's branch contains Tim. After the barycenter pass the
+        // Reinhardt's branch contains Tim. After the barycenter pass the
         // mothers stack in the same order as their descendants.
         const aX = xOf(out, 'anneliese')
         const gX = xOf(out, 'greta')
         const hX = xOf(out, 'hubert')
-        const bX = xOf(out, 'bernhard')
-        // If Anneliese ends up above Bernhard and Greta above Hubert,
+        const bX = xOf(out, 'reinhardt')
+        // If Anneliese ends up above Reinhardt and Greta above Hubert,
         // the top-row order matches the middle-row order (no
         // crossings between the two top→middle parent edges).
         if (bX < hX) {

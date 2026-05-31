@@ -11,8 +11,8 @@ use uuid::Uuid;
 
 use crate::ids::{
     SEED_FAMILY_ID, SEED_PARTNERSHIP_FLK_EDGAR_GISELA_ID, SEED_PARTNERSHIP_FRIEDRICH_LOTTE_ID,
-    SEED_PARTNERSHIP_HEINZ_URSULA_ID, SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID,
-    SEED_PARTNERSHIP_K_HUBERT_SARA_ID, SEED_PARTNERSHIP_K_TIM_MIA_ID,
+    SEED_PARTNERSHIP_HEINZ_URSULA_ID, SEED_PARTNERSHIP_K_HUBERT_SARA_ID,
+    SEED_PARTNERSHIP_K_REINHARDT_HELGA_ID, SEED_PARTNERSHIP_K_TIM_MIA_ID,
     SEED_PARTNERSHIP_KLAUS_ANNA_ID, SEED_PARTNERSHIP_KLAUS_BRIGITTE_ID,
     SEED_PARTNERSHIP_KLAUS_KARIN_ID, SEED_PARTNERSHIP_KLAUS_YUKI_ID,
     SEED_PARTNERSHIP_LARS_METTE_ID, SEED_PARTNERSHIP_OTTO_HANNELORE_ID,
@@ -22,9 +22,9 @@ use crate::ids::{
     SEED_PERSON_BRIGITTE_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_FLK_EDGAR_ID,
     SEED_PERSON_FLK_GISELA_ID, SEED_PERSON_FLK_ROLAND_ID, SEED_PERSON_FRIEDRICH_ID,
     SEED_PERSON_GRETA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_HEINZ_ID, SEED_PERSON_JULIA_ID,
-    SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_GRETA_ID,
-    SEED_PERSON_K_HELGA_ID, SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID, SEED_PERSON_K_MARIE_ID,
-    SEED_PERSON_K_MIA_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID, SEED_PERSON_KARIN_ID,
+    SEED_PERSON_K_ANNELIESE_ID, SEED_PERSON_K_GRETA_ID, SEED_PERSON_K_HELGA_ID,
+    SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_LARS_ID, SEED_PERSON_K_MARIE_ID, SEED_PERSON_K_MIA_ID,
+    SEED_PERSON_K_REINHARDT_ID, SEED_PERSON_K_SARA_ID, SEED_PERSON_K_TIM_ID, SEED_PERSON_KARIN_ID,
     SEED_PERSON_KLAUS_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
     SEED_PERSON_LOTTE_ID, SEED_PERSON_MAREN_ID, SEED_PERSON_MARKUS_ID, SEED_PERSON_MAX_ID,
     SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID, SEED_PERSON_OTTO_ID,
@@ -174,16 +174,16 @@ pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
         },
         // Krause subtree parent links (fixtures for layout edge cases).
         //   K_Greta     → K_Hubert (one mother → one son)
-        //   K_Anneliese → K_Bernhard (one mother → one son)
+        //   K_Anneliese → K_Reinhardt (one mother → one son)
         //   K_Hubert + K_Sara → K_Mia
-        //   K_Bernhard + K_Helga → K_Lars, K_Marie, K_Tim
+        //   K_Reinhardt + K_Helga → K_Lars, K_Marie, K_Tim
         ParentLinkSeed {
             child: SEED_PERSON_K_HUBERT_ID,
             parent: SEED_PERSON_K_GRETA_ID,
             kind: "biological",
         },
         ParentLinkSeed {
-            child: SEED_PERSON_K_BERNHARD_ID,
+            child: SEED_PERSON_K_REINHARDT_ID,
             parent: SEED_PERSON_K_ANNELIESE_ID,
             kind: "biological",
         },
@@ -199,7 +199,7 @@ pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
         },
         ParentLinkSeed {
             child: SEED_PERSON_K_LARS_ID,
-            parent: SEED_PERSON_K_BERNHARD_ID,
+            parent: SEED_PERSON_K_REINHARDT_ID,
             kind: "biological",
         },
         ParentLinkSeed {
@@ -209,7 +209,7 @@ pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
         },
         ParentLinkSeed {
             child: SEED_PERSON_K_MARIE_ID,
-            parent: SEED_PERSON_K_BERNHARD_ID,
+            parent: SEED_PERSON_K_REINHARDT_ID,
             kind: "biological",
         },
         ParentLinkSeed {
@@ -219,7 +219,7 @@ pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
         },
         ParentLinkSeed {
             child: SEED_PERSON_K_TIM_ID,
-            parent: SEED_PERSON_K_BERNHARD_ID,
+            parent: SEED_PERSON_K_REINHARDT_ID,
             kind: "biological",
         },
         ParentLinkSeed {
@@ -364,7 +364,7 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
         SEED_PARTNERSHIP_HEINZ_URSULA_ID,
         SEED_PARTNERSHIP_LARS_METTE_ID,
         SEED_PARTNERSHIP_K_HUBERT_SARA_ID,
-        SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID,
+        SEED_PARTNERSHIP_K_REINHARDT_HELGA_ID,
         SEED_PARTNERSHIP_K_TIM_MIA_ID,
         SEED_PARTNERSHIP_STB_HARTMUT_MARGARETE_ID,
         SEED_PARTNERSHIP_STB_CARLA_TOBIAS_ID,
@@ -391,7 +391,7 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
     let (heinz, ursula) = order_pair(SEED_PERSON_HEINZ_ID, SEED_PERSON_URSULA_ID);
     let (lars, mette) = order_pair(SEED_PERSON_LARS_ID, SEED_PERSON_METTE_ID);
     let (k_hubert, k_sara) = order_pair(SEED_PERSON_K_HUBERT_ID, SEED_PERSON_K_SARA_ID);
-    let (k_bernhard, k_helga) = order_pair(SEED_PERSON_K_BERNHARD_ID, SEED_PERSON_K_HELGA_ID);
+    let (k_reinhardt, k_helga) = order_pair(SEED_PERSON_K_REINHARDT_ID, SEED_PERSON_K_HELGA_ID);
     let (k_tim, k_mia) = order_pair(SEED_PERSON_K_TIM_ID, SEED_PERSON_K_MIA_ID);
     let (stb_hartmut, stb_margarete) =
         order_pair(SEED_PERSON_STB_HARTMUT_ID, SEED_PERSON_STB_MARGARETE_ID);
@@ -542,14 +542,14 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
             note: "Krause subtree: Hubert + Sara; parents of Mia.",
         },
         PartnershipSeed {
-            id: SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID,
-            partner_a: k_bernhard,
+            id: SEED_PARTNERSHIP_K_REINHARDT_HELGA_ID,
+            partner_a: k_reinhardt,
             partner_b: k_helga,
             kind: "marriage",
             started_on: Some(ymd(1983, 5, 21)),
             ended_on: None,
             end_reason: None,
-            note: "Krause subtree: Bernhard + Helga; parents of Lars, Marie, Tim.",
+            note: "Krause subtree: Reinhardt + Helga; parents of Lars, Marie, Tim.",
         },
         PartnershipSeed {
             id: SEED_PARTNERSHIP_K_TIM_MIA_ID,
