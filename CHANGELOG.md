@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.9](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.8...core-v0.1.9) (2026-05-31)
+
+
+### Bug Fixes
+
+* **api:** PATCH /persons/{id} actually clears birth_date / death_date on null ([640c372](https://github.com/BentBr/my-fam-tree/commit/640c372ce316e0a98a7d0dfaf367f7758d1b3eb5))
+* **auth:** make /auth/logout public so the FE can drop stale cookies after session collapse ([d92a4f9](https://github.com/BentBr/my-fam-tree/commit/d92a4f987b79a18dddde942ecc397400a27cb5a3))
+* **e2e:** use dispatchEvent('click') on tree-node to bypass v-navigation-drawer scrim ([9f3ccf7](https://github.com/BentBr/my-fam-tree/commit/9f3ccf71da53880221a45396a19e4f3afa6591f9))
+* **fe:** try refresh on any 401, not only `auth_token_expired` ([39e6f18](https://github.com/BentBr/my-fam-tree/commit/39e6f18ce62e1b92a62c05fd49242ebe04180cdd))
+* two follow-ups from the public-logout move ([5c962a5](https://github.com/BentBr/my-fam-tree/commit/5c962a5e7e94cf14c673b7ae0fb9a10e5000cec9))
+
 ## [0.1.8](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.7...core-v0.1.8) (2026-05-30)
 
 
