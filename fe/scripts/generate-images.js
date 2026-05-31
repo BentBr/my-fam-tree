@@ -1,14 +1,30 @@
 #!/usr/bin/env node
-// Generates brand assets from the two source PNGs in repo-root /assets:
+// Generates brand assets from the source PNGs in repo-root /assets:
 //
 //   assets/sloth.png         → favicons + responsive sloth icon
 //   assets/sloth-family.png  → Open Graph image + Home-hero webp
+//   assets/example-*.png     → marketing tree-screenshot webps
 //
 // Run via `pnpm generate:images` (wired before `vite build` in the fe
 // package.json). Idempotent — safe to re-run; sharp overwrites in place.
 //
-// Output landing zone: fe/public/brand/. Vite picks the directory up as
-// static at build time (everything in fe/public/ ships verbatim).
+// Output landing zones:
+//   - fe/public/brand/  — files referenced from index.html (favicons +
+//     apple-touch-icon + favicon.ico). Vite copies these verbatim, with
+//     stable URLs the index.html `<link>` tags point at. nginx serves
+//     them with a 1-day must-revalidate cache (see .docker/fe/nginx.conf).
+//   - fe/src/assets/brand/ — files imported from Vue components (sloth-
+//     128/256/512.webp, sloth-family-960.webp, tree-example-*.webp,
+//     og-1200x630.png). Vite hashes the filename to `[name]-[hash].ext`
+//     and rewrites every import site, so a regenerated image lands at a
+//     new URL → browsers + CDNs fetch fresh automatically without any
+//     cache-control bypass. nginx serves /assets/* with the year-long
+//     immutable cache.
+//
+// The split exists so a brand-asset refresh (`pnpm run generate:images`
+// → commit → deploy) propagates to every user immediately for the
+// component-referenced imagery — the symptom the user hit with the
+// sloth-family.png update where prod kept serving the old cached webp.
 
 import sharp from 'sharp'
 import { promises as fs } from 'fs'
@@ -28,7 +44,8 @@ const __dirname = path.dirname(__filename)
 // in CI where the script runs from a real repo checkout.
 const feRoot = path.resolve(__dirname, '..')
 const assetsDir = path.resolve(feRoot, '..', 'assets')
-const outDir = path.join(feRoot, 'public', 'brand')
+const publicBrandDir = path.join(feRoot, 'public', 'brand')
+const srcBrandDir = path.join(feRoot, 'src', 'assets', 'brand')
 
 // `sloth-center.png` is the centred / tighter crop of the original
 // sloth — favicons + the in-app icon all derive from it so the head
@@ -60,34 +77,38 @@ async function loadSlothSquare() {
 
 async function generateFavicons() {
     // PNG favicons. Browsers prefer the SVG declared in index.html;
-    // these are the legacy/static-tab fallbacks.
+    // these are the legacy/static-tab fallbacks. STAYS in public/ —
+    // index.html `<link rel="icon" href="/brand/favicon-32.png" />`
+    // expects the URL to be stable.
     for (const size of [16, 32, 48]) {
-        const out = path.join(outDir, `favicon-${size}.png`)
+        const out = path.join(publicBrandDir, `favicon-${size}.png`)
         await (await loadSlothSquare()).resize(size, size).png().toFile(out)
-        console.log(`  favicon-${size}.png`)
+        console.log(`  public/brand/favicon-${size}.png`)
     }
 
     // .ico: most browsers (Chromium, Firefox, Safari) accept a PNG body
     // with the .ico extension. Sticking with PNG-as-ICO avoids the
     // sharp-ico devDependency churn for a single artefact.
-    const ico = path.join(outDir, 'favicon.ico')
+    const ico = path.join(publicBrandDir, 'favicon.ico')
     await (await loadSlothSquare()).resize(32, 32).png().toFile(ico)
-    console.log('  favicon.ico (32 × 32 PNG)')
+    console.log('  public/brand/favicon.ico (32 × 32 PNG)')
 
     // Apple touch icon — iOS home-screen tile.
-    const apple = path.join(outDir, 'apple-touch-icon.png')
+    const apple = path.join(publicBrandDir, 'apple-touch-icon.png')
     await (await loadSlothSquare()).resize(180, 180).png().toFile(apple)
-    console.log('  apple-touch-icon.png (180 × 180)')
+    console.log('  public/brand/apple-touch-icon.png (180 × 180)')
 }
 
 async function generateSlothResponsive() {
     // Responsive sloth icon (sidebar, AppBar, anywhere the lockup needs
     // a raster fallback). All from the centre-cropped square so the
-    // shape is consistent at every size.
+    // shape is consistent at every size. Lands in src/assets/ — Vite
+    // hashes the filename so a regenerated sloth busts the browser /
+    // CDN cache automatically.
     for (const size of [128, 256, 512]) {
-        const out = path.join(outDir, `sloth-${size}.webp`)
+        const out = path.join(srcBrandDir, `sloth-${size}.webp`)
         await (await loadSlothSquare()).resize(size, size).webp({ quality: 90 }).toFile(out)
-        console.log(`  sloth-${size}.webp`)
+        console.log(`  src/assets/brand/sloth-${size}.webp`)
     }
 }
 
@@ -95,18 +116,22 @@ async function generateOgImage() {
     // Open Graph spec: 1200 × 630 (ratio 1.91). Source sloth-family is
     // 1536 × 1024 (ratio 1.5). `fit: 'cover'` centre-crops top/bottom
     // off the source — the sloth family stays middle of frame.
-    const out = path.join(outDir, 'og-1200x630.png')
+    //
+    // Hashed via src/assets/ so a refreshed OG image lands at a new URL,
+    // forcing social-media crawlers to re-fetch on the next crawl
+    // instead of serving the prior URL's cached card forever.
+    const out = path.join(srcBrandDir, 'og-1200x630.png')
     await sharp(SLOTH_FAMILY).resize(1200, 630, { fit: 'cover', position: 'centre' }).png({ quality: 92 }).toFile(out)
-    console.log('  og-1200x630.png')
+    console.log('  src/assets/brand/og-1200x630.png')
 }
 
 async function generateHeroImage() {
     // Home hero image. 960 wide is plenty for the half-column slot on
     // desktop; the SrcSet declared in the Home view can ask for 640 +
     // 1280 variants later if needed without touching this script.
-    const out = path.join(outDir, 'sloth-family-960.webp')
+    const out = path.join(srcBrandDir, 'sloth-family-960.webp')
     await sharp(SLOTH_FAMILY).resize(960, null, { withoutEnlargement: true }).webp({ quality: 88 }).toFile(out)
-    console.log('  sloth-family-960.webp')
+    console.log('  src/assets/brand/sloth-family-960.webp')
 }
 
 async function generateTreeExample() {
@@ -120,16 +145,17 @@ async function generateTreeExample() {
     ]
     for (const { src, theme } of variants) {
         for (const width of [960, 1280]) {
-            const out = path.join(outDir, `tree-example-${theme}-${width}.webp`)
+            const out = path.join(srcBrandDir, `tree-example-${theme}-${width}.webp`)
             await sharp(src).resize(width, null, { withoutEnlargement: true }).webp({ quality: 90 }).toFile(out)
-            console.log(`  tree-example-${theme}-${width}.webp`)
+            console.log(`  src/assets/brand/tree-example-${theme}-${width}.webp`)
         }
     }
 }
 
 async function main() {
-    console.log('Generating brand assets into fe/public/brand/ …')
-    await ensureDir(outDir)
+    console.log('Generating brand assets …')
+    await ensureDir(publicBrandDir)
+    await ensureDir(srcBrandDir)
     await generateFavicons()
     await generateSlothResponsive()
     await generateOgImage()

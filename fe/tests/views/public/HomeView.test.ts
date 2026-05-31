@@ -53,13 +53,19 @@ describe('HomeView', () => {
     it('mounts the real screenshot image, picking the variant that matches the resolved theme', async () => {
         const w = await mountHome()
         // The HomeView's screenshot src is now theme-resolved
-        // (`tree-example-{light,dark}-{960,1280}.webp`). The unit test
-        // mounts under the default theme — assert either the light-960
-        // OR the dark-960 src is present so a future default-theme
-        // change doesn't quietly break the assertion.
-        const lightImg = w.find('img[src="/brand/tree-example-light-960.webp"]')
-        const darkImg = w.find('img[src="/brand/tree-example-dark-960.webp"]')
-        expect(lightImg.exists() || darkImg.exists()).toBe(true)
+        // (`tree-example-{light,dark}-{960,1280}.webp`) AND imported
+        // from `@/assets/brand/` so Vite hashes the URL at build time
+        // (cache-busting fix). In Vitest's jsdom env Vite resolves the
+        // import to a `data:` URL via @vitejs/plugin-vue, so we match
+        // on the filename appearing anywhere in the src string instead
+        // of pinning the full path — the URL shape is implementation
+        // detail of the bundler; the visible filename is what proves
+        // the right variant got selected.
+        const imgs = w.findAll('img')
+        const screenshotSrc = imgs
+            .map((i) => i.attributes('src') ?? '')
+            .find((s) => s.includes('tree-example-light-960') || s.includes('tree-example-dark-960'))
+        expect(screenshotSrc).toBeDefined()
     })
 
     it('renders the footer CTA button', async () => {

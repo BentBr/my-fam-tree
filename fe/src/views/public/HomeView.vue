@@ -20,18 +20,32 @@ import { currentResolvedTheme } from '@/composables/useThemeMode'
 import { useLocaleStore } from '@/stores/locale'
 import { useUiStore } from '@/stores/ui'
 
+// Importing the brand imagery from `@/assets/` lets Vite hash the
+// resolved URLs (`/assets/sloth-family-960-[hash].webp`) at build time.
+// A regenerated image lands at a new URL → browsers + CDNs fetch
+// fresh on the next visit, no cache-control bypass needed.
+import slothFamilyHero from '@/assets/brand/sloth-family-960.webp'
+import treeExampleLight960 from '@/assets/brand/tree-example-light-960.webp'
+import treeExampleLight1280 from '@/assets/brand/tree-example-light-1280.webp'
+import treeExampleDark960 from '@/assets/brand/tree-example-dark-960.webp'
+import treeExampleDark1280 from '@/assets/brand/tree-example-dark-1280.webp'
+import ogImage from '@/assets/brand/og-1200x630.png'
+
 const { t } = useI18n()
 const locale = useLocaleStore()
 const ui = useUiStore()
 
-// Tree-screenshot URL prefix — swaps between the light and dark variants
+// Tree-screenshot URL pair — swaps between the light and dark variants
 // emitted by `pnpm generate:images` (the script reads
 // `assets/example-light.png` / `example-dark.png` and writes
-// `tree-example-{light,dark}-{960,1280}.webp`). The variant follows the
-// user's resolved theme so the screenshot's chrome matches the
-// surrounding page, including the system→manual override toggle.
-const treeExamplePrefix = computed(
-    () => `/brand/tree-example-${currentResolvedTheme(ui.theme)}`,
+// `tree-example-{light,dark}-{960,1280}.webp` into src/assets/brand/).
+// The variant follows the user's resolved theme so the screenshot's
+// chrome matches the surrounding page, including the system→manual
+// override toggle.
+const treeExample = computed(() =>
+    currentResolvedTheme(ui.theme) === 'dark'
+        ? { src: treeExampleDark960, srcset: `${treeExampleDark960} 960w, ${treeExampleDark1280} 1280w` }
+        : { src: treeExampleLight960, srcset: `${treeExampleLight960} 960w, ${treeExampleLight1280} 1280w` },
 )
 
 const baseUrl = (import.meta.env['VITE_BASE_URL'] as string | undefined) ?? 'https://my-fam-tree.eu'
@@ -46,7 +60,11 @@ useHead({
         { property: 'og:type', content: 'website' },
         { property: 'og:title', content: () => t('public.home.hero.title') + ' — My Family Tree' },
         { property: 'og:description', content: () => t('public.home.hero.lede') },
-        { property: 'og:image', content: `${baseUrl}/brand/og-1200x630.png` },
+        // `ogImage` resolves at build time to `/assets/og-1200x630-[hash].png`.
+        // Concatenating with `baseUrl` produces the absolute URL Facebook /
+        // Twitter / LinkedIn crawlers need (relative URLs are silently
+        // rejected by most card validators).
+        { property: 'og:image', content: `${baseUrl}${ogImage}` },
         { property: 'og:locale', content: () => ogLocale.value },
         { name: 'twitter:card', content: 'summary_large_image' },
     ],
@@ -94,7 +112,7 @@ const features: Feature[] = [
             </div>
             <div class="home__hero-image">
                 <img
-                    src="/brand/sloth-family-960.webp"
+                    :src="slothFamilyHero"
                     width="960"
                     height="640"
                     loading="eager"
@@ -115,15 +133,16 @@ const features: Feature[] = [
 
         <!-- Real tree-view screenshot. Source PNGs live in
              `assets/example-{light,dark}.png` and are turned into the
-             two WebP sets by `pnpm generate:images`. `treeExamplePrefix`
-             above resolves to whichever variant matches the visitor's
-             current theme, so the screenshot's UI chrome matches the
-             surrounding page on both light + dark backgrounds. -->
+             two WebP sets by `pnpm generate:images` (output under
+             src/assets/brand/). `treeExample` above resolves to
+             whichever variant matches the visitor's current theme, so
+             the screenshot's UI chrome matches the surrounding page on
+             both light + dark backgrounds. -->
         <section class="home__screenshot">
             <figure class="home__screenshot-figure">
                 <img
-                    :src="`${treeExamplePrefix}-960.webp`"
-                    :srcset="`${treeExamplePrefix}-960.webp 960w, ${treeExamplePrefix}-1280.webp 1280w`"
+                    :src="treeExample.src"
+                    :srcset="treeExample.srcset"
                     sizes="(max-width: 768px) 100vw, 1100px"
                     width="1245"
                     height="732"

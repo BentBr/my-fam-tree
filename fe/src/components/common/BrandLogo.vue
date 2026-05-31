@@ -17,6 +17,17 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
+// Importing the brand raster lets Vite rewrite the resolved URL with a
+// content hash (`/assets/sloth-128-[hash].webp`) at build time. A
+// refreshed asset lands at a NEW URL so browsers + CDNs serve it
+// without any cache-control bypass — the symptom the user hit when
+// the updated sloth-family.png stayed cached in prod for a day.
+import sloth128 from '@/assets/brand/sloth-128.webp'
+import sloth256 from '@/assets/brand/sloth-256.webp'
+import sloth512 from '@/assets/brand/sloth-512.webp'
+
+const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
+
 const props = withDefaults(
     defineProps<{
         /** Visual scale. */
@@ -46,8 +57,8 @@ const linked = computed(() => props.to !== null)
             class="brand-lockup__icon"
             :width="iconPx"
             :height="iconPx"
-            src="/brand/sloth-128.webp"
-            srcset="/brand/sloth-128.webp 128w, /brand/sloth-256.webp 256w, /brand/sloth-512.webp 512w"
+            :src="sloth128"
+            :srcset="slothSrcset"
             sizes="48px"
             alt=""
         />
