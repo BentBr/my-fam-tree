@@ -257,7 +257,7 @@ watch(
                     </div>
                 </div>
             </div>
-            <div v-if="canEdit" class="mt-2">
+            <div v-if="canEdit" class="mt-2 relation-add-form">
                 <v-select
                     v-model="partnerToAdd"
                     :items="otherItems"
@@ -315,5 +315,19 @@ watch(
     padding: 8px;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 6px;
+}
+
+/* Same field-gap as PersonEdit — the partner-add form ("Add partner" /
+   "Partnership type" / "Start date") and the inline editor (kind /
+   started_on / ended_on / end_reason) both stack focusable inputs that
+   otherwise overlap the field above with their floated labels. 12 px
+   in the gap lets the label sit cleanly on both desktop and mobile. */
+.relation-add-form > .v-input,
+.relation-add-form > .v-select,
+.relation-add-form > .v-text-field,
+.inline-editor > .v-input,
+.inline-editor > .v-select,
+.inline-editor > .v-text-field {
+    margin-bottom: 12px;
 }
 </style>

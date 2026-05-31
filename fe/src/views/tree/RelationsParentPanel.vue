@@ -171,7 +171,7 @@ watch(
                     </div>
                 </div>
             </div>
-            <div v-if="canEdit" class="mt-2">
+            <div v-if="canEdit" class="mt-2 relation-add-form">
                 <v-select
                     v-model="parentToAdd"
                     :items="otherItems"
@@ -220,5 +220,19 @@ watch(
     padding: 8px;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 6px;
+}
+
+/* Same field-gap as PersonEdit — the "Add as child of" / "Relationship
+   type" stack inside the panel has the same overlap when the focused
+   field's floated label clips the field above. 12 px is the gap that
+   lets the floated label sit cleanly in the space on both desktop and
+   mobile widths. */
+.relation-add-form > .v-input,
+.relation-add-form > .v-select,
+.relation-add-form > .v-text-field,
+.inline-editor > .v-input,
+.inline-editor > .v-select,
+.inline-editor > .v-text-field {
+    margin-bottom: 12px;
 }
 </style>
