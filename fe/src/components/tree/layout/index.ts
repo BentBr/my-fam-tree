@@ -230,7 +230,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
     // undo that pass's work for marginal gain. Recentering children
     // alone is enough to straighten the typical parent-edge cross.
     for (let pass = 0; pass < 4; pass += 1) {
-        if (!recenterParentsOverChildren(placed, childrenOfBlock, parentOfBlock)) break
+        if (!recenterParentsOverChildren(placed, childrenOfBlock, parentOfBlock, childrenOfPerson)) break
         runRowSeparation(rowBlocks, parentOfBlock, childrenOfBlock, placed)
     }
 
@@ -377,21 +377,22 @@ function runPlacement(
  *
  * Descendant collection walks `childrenOfPerson` (the raw parent_edges
  * graph) rather than `childrenOfBlock` (the block tree built from
- * `chooseParentBlock`). The block-tree walk misses the Herta case:
+ * `chooseParentBlock`). The block-tree walk misses the case where two
+ * top-row mothers each have a child INSIDE the same multi-couple chain:
  *
- *   Top row: [Herta (root), Anneliese (root)]
- *   Middle row: chain block [Bernd, Gudrun, Bernhard] where Gudrun is
- *               anchor with Bernd as ENDED partner + Bernhard as OPEN.
- *               `chooseParentBlock` walks the chain in order and picks the
- *               first parent-bearing member → Bernd → Anneliese's block.
- *               Bernhard's actual mother Herta is invisible to the block
- *               tree.
+ *   Top row: [mother_a (root), mother_b (root)]
+ *   Middle row: chain block [son_a, anchor, son_b] where `anchor` is
+ *               the shared spouse with son_a as ENDED partner + son_b
+ *               as OPEN. `chooseParentBlock` walks the chain in order
+ *               and picks the first parent-bearing member → son_a →
+ *               mother_a's block. son_b's actual mother (mother_b)
+ *               is invisible to the block tree.
  *
  * Walking parent_edges-of-persons instead exposes BOTH parental lineages
- * — Herta's barycenter then equals Bernhard's x (the only descendant via
- * parent_edges), Anneliese's equals Bernd's. The pair sorts so each
+ * — mother_b's barycenter then equals son_b's x (her only descendant via
+ * parent_edges), mother_a's equals son_a's. The pair sorts so each
  * mother ends up above her own child, eliminating the crossing parent
- * edge the user reported.
+ * edge.
  */
 function reorderRootsByBarycenter(
     rootBlocks: Block[],
@@ -420,9 +421,7 @@ function reorderRootsByBarycenter(
         // the barycenter so they don't all collapse to 0 and reshuffle the
         // surviving roots.
         const final =
-            sumCount.count === 0
-                ? (personCenterX.get(root.members[0] ?? '') ?? 0)
-                : sumCount.sum / sumCount.count
+            sumCount.count === 0 ? (personCenterX.get(root.members[0] ?? '') ?? 0) : sumCount.sum / sumCount.count
         barycenters.set(root.id, final)
     }
     rootBlocks.sort((a, b) => {
@@ -513,57 +512,72 @@ function swapTwoPersonCouplesByParentX(
 }
 
 /**
- * Bottom-up parent-over-children recentering. For each non-root parent
- * block, recompute the children's midpoint from their CURRENT positions
- * (post row-separation) and shift the parent block so it sits centred
- * above that midpoint. Roots are exempt (their order belongs to the
- * `reorderRootsByBarycenter` pass).
+ * Bottom-up parent-over-children recentering. For each parent block,
+ * recompute the children's midpoint from their CURRENT positions (post
+ * row-separation) and shift the block so it sits centred above that
+ * midpoint.
+ *
+ *   - NON-root blocks: midpoint comes from the direct block-tree
+ *     children (`childrenOfBlock`). Matches the initial-placement
+ *     centering rule in `layoutSubtree`.
+ *   - ROOT blocks: midpoint comes from the direct PARENT-EDGE children
+ *     (`childrenOfPerson` from each block member). The block tree
+ *     misses one parent of a multi-couple chain (the "second mother"
+ *     case — a chain [son_a, anchor, son_b] is owned by son_a's
+ *     mother only, son_b's mother sees no block-tree descendants), so
+ *     a root with no block-tree descendant but a real parent_edge
+ *     descendant ends up marooned at the far edge of the row. Using
+ *     parent-edge children pulls each parent over to sit above their
+ *     own child, and similarly pulls a far-off root cluster (e.g. an
+ *     in-laws couple whose daughter married into the main tree) close
+ *     to its real connection point instead of being banished to an
+ *     arbitrary `cursor + CLUSTER_GAP` slot.
  *
  * Returns `true` when at least one block was shifted by > 0.5 px so the
  * caller can decide whether to re-run row separation + iterate. The
  * sub-px deadband keeps a successful recenter from being re-detected as
  * "still drifting" forever due to floating-point round-trips.
  *
- * Only the parent block itself moves — NOT its descendants. That's
- * deliberate: the children are the basis for the recompute, shifting them
- * would defeat the purpose. The next row-separation pass picks up any
- * collisions the parent shift created in its own row.
+ * Only the parent block itself moves — NOT its descendants. The next
+ * row-separation pass picks up any collisions the parent shift created
+ * in its own row.
  */
 function recenterParentsOverChildren(
     placed: Map<string, PositionedBlock>,
     childrenOfBlock: Map<string, Block[]>,
     parentOfBlock: Map<string, string | null>,
+    childrenOfPerson: Map<string, string[]>,
 ): boolean {
-    // Process bottom rows first (higher y) so each parent's recompute sees
-    // the most-recent positions of its children. Roots stay put — the
-    // `reorderRootsByBarycenter` pass already placed them.
-    const candidates: PositionedBlock[] = []
+    // Snapshot person card-centres once for the root-pass parent-edge
+    // descendant lookup; the non-root pass uses the block extents in
+    // `placed` directly.
+    const personCenterX = new Map<string, number>()
     for (const pb of placed.values()) {
-        const kids = childrenOfBlock.get(pb.id) ?? []
-        if (kids.length === 0) continue
-        if (parentOfBlock.get(pb.id) === undefined) continue // not in map ⇒ root
-        candidates.push(pb)
+        for (let i = 0; i < pb.members.length; i += 1) {
+            const memberId = pb.members[i]
+            if (memberId === undefined) continue
+            const offset = pb.memberOffsets[i] ?? 0
+            personCenterX.set(memberId, pb.x + offset + NODE_W / 2)
+        }
     }
+
+    // Process bottom rows first (higher y) so each parent's recompute sees
+    // the most-recent positions of its children.
+    const candidates: PositionedBlock[] = [...placed.values()]
     candidates.sort((a, b) => b.y - a.y)
 
     let any = false
     for (const pb of candidates) {
-        const kids = childrenOfBlock.get(pb.id) ?? []
-        let firstL = Number.POSITIVE_INFINITY
-        let lastR = Number.NEGATIVE_INFINITY
-        for (const k of kids) {
-            const cp = placed.get(k.id)
-            if (cp === undefined) continue
-            if (cp.x < firstL) firstL = cp.x
-            const r = cp.x + cp.pixelWidth
-            if (r > lastR) lastR = r
-        }
-        if (!Number.isFinite(firstL)) continue
+        const isRoot = parentOfBlock.get(pb.id) === undefined
+        const extent = isRoot
+            ? rootChildExtentByParentEdges(pb, childrenOfPerson, personCenterX)
+            : blockChildExtent(childrenOfBlock.get(pb.id) ?? [], placed)
+        if (extent === null) continue
         // Shared with `layoutSubtree`'s initial-placement centering —
         // the math for "place a block of width W so its centre sits at
         // (L + R) / 2" lives in `centerLeftOver` so a future tweak
         // (different centering rule, weighted midpoint, …) updates both.
-        const targetL = centerLeftOver(firstL, lastR, pb.pixelWidth)
+        const targetL = centerLeftOver(extent.L, extent.R, pb.pixelWidth)
         const delta = targetL - pb.x
         if (Math.abs(delta) > 0.5) {
             placed.set(pb.id, { ...pb, x: pb.x + delta })
@@ -571,6 +585,55 @@ function recenterParentsOverChildren(
         }
     }
     return any
+}
+
+/**
+ * Direct-children L/R extent for a non-root block. Returns `null` when
+ * no children are placed (childless block — caller skips it).
+ */
+function blockChildExtent(kids: Block[], placed: Map<string, PositionedBlock>): { L: number; R: number } | null {
+    let firstL = Number.POSITIVE_INFINITY
+    let lastR = Number.NEGATIVE_INFINITY
+    for (const k of kids) {
+        const cp = placed.get(k.id)
+        if (cp === undefined) continue
+        if (cp.x < firstL) firstL = cp.x
+        const r = cp.x + cp.pixelWidth
+        if (r > lastR) lastR = r
+    }
+    return Number.isFinite(firstL) ? { L: firstL, R: lastR } : null
+}
+
+/**
+ * Parent-edge direct-children L/R extent for a root block. For each
+ * member of the root, looks up its direct children via parent_edges
+ * (`childrenOfPerson`) and accumulates their card-centre positions
+ * into an L/R range (centre ± NODE_W/2). Direct children only — not
+ * grandchildren — because we want the root to sit above its IMMEDIATE
+ * descendants, mirroring the non-root rule that uses direct block-tree
+ * children.
+ *
+ * Returns `null` when the root has no parent-edge children at all
+ * (genuinely childless root — caller skips the recenter).
+ */
+function rootChildExtentByParentEdges(
+    root: PositionedBlock,
+    childrenOfPerson: Map<string, string[]>,
+    personCenterX: Map<string, number>,
+): { L: number; R: number } | null {
+    let firstL = Number.POSITIVE_INFINITY
+    let lastR = Number.NEGATIVE_INFINITY
+    for (const memberId of root.members) {
+        for (const kid of childrenOfPerson.get(memberId) ?? []) {
+            const cx = personCenterX.get(kid)
+            if (cx === undefined) continue
+            const l = cx - NODE_W / 2
+            const r = cx + NODE_W / 2
+            if (l < firstL) firstL = l
+            if (r > lastR) lastR = r
+        }
+    }
+    return Number.isFinite(firstL) ? { L: firstL, R: lastR } : null
 }
 
 /**

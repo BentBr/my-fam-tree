@@ -250,48 +250,146 @@ describe('layoutTree — bug 2: anchor sits in the middle of two concurrent open
     })
 })
 
-describe('layoutTree — parent-edge-aware barycenter (Herta case)', () => {
-    it('reorders top-row roots so each mother sits above her own child in a shared-chain row', () => {
-        // Real prod repro. Top row has Herta + Anneliese (both
-        // roots). Middle row has a 3-person chain [Bernd, Gudrun,
-        // Bernhard] — Gudrun is the anchor with Bernd as ENDED
-        // partner and Bernhard as OPEN. Bernd is Anneliese's son,
-        // Bernhard is Herta's son.
+describe('layoutTree — root recenter over parent-edge descendant', () => {
+    it('positions a top-row root above its only parent-edge descendant', () => {
+        // Stronger version of the root-barycenter test below. The
+        // barycenter-sort pass orders the two top-row mothers
+        // correctly (mother of the left-side chain member sits LEFT,
+        // mother of the right-side member sits RIGHT), but it doesn't
+        // REPOSITION them — runPlacement places the second root at
+        // `cursor + CLUSTER_GAP` after the first root's subtree, so
+        // the right-side mother ends up far right of the chain
+        // instead of directly above her son. The root-recenter pass
+        // fixes that.
         //
-        // The block-tree-based barycenter would attribute the entire
-        // chain to Anneliese (because `chooseParentBlock` picks the
-        // chain's first parent-bearing member → Bernd → Anneliese),
-        // leaving Herta with 0 descendants and keeping her at the
-        // default leftmost slot. Parent-edge-aware barycenter walks
-        // both lineages and pulls Herta over to above Bernhard's
-        // column.
+        // Setup: chain [son_a, anchor, son_b] under mother_a (son_a's
+        // mother) and mother_b (son_b's mother). Anchor is the
+        // shared spouse with one ENDED partner (son_a) + one OPEN
+        // partner (son_b).
         const out = layoutTree({
             nodes: [
-                person('herta', [], [], '1912-03-29'),
-                person('anneliese', [], [], '1921-03-25'),
-                person('bernhard', ['herta'], ['gudrun'], '1942-11-25'),
-                person('bernd', ['anneliese'], ['gudrun'], '1955-06-10'),
-                person('gudrun', [], ['bernd', 'bernhard'], '1958-09-12'),
+                person('mother_a', [], [], '1912-03-29'),
+                person('mother_b', [], [], '1921-03-25'),
+                person('son_b', ['mother_b'], ['anchor'], '1942-11-25'),
+                person('son_a', ['mother_a'], ['anchor'], '1955-06-10'),
+                person('anchor', [], ['son_a', 'son_b'], '1958-09-12'),
             ],
             parent_edges: [
-                { a: 'bernhard', b: 'herta' },
-                { a: 'bernd', b: 'anneliese' },
+                { a: 'son_b', b: 'mother_b' },
+                { a: 'son_a', b: 'mother_a' },
             ],
             partner_edges: [
-                { a: 'gudrun', b: 'bernd', ended_on: '1990-04-12' },
-                { a: 'gudrun', b: 'bernhard' },
+                { a: 'anchor', b: 'son_a', ended_on: '1990-04-12' },
+                { a: 'anchor', b: 'son_b' },
             ] as PartnerEdgeInput[],
         })
-        const herta = xOf(out, 'herta')
-        const anneliese = xOf(out, 'anneliese')
-        const bernd = xOf(out, 'bernd')
-        const bernhard = xOf(out, 'bernhard')
+        // Each mother's card-centre should land approximately on her
+        // son's card-centre (within NODE_W/2 — row separation can
+        // nudge if the parent-row neighbours collide). The tight
+        // tolerance asserts the recenter pass actually FIRED.
+        const motherACenter = xOf(out, 'mother_a') + NODE_W / 2
+        const motherBCenter = xOf(out, 'mother_b') + NODE_W / 2
+        const sonACenter = xOf(out, 'son_a') + NODE_W / 2
+        const sonBCenter = xOf(out, 'son_b') + NODE_W / 2
+        expect(Math.abs(motherACenter - sonACenter)).toBeLessThanOrEqual(NODE_W / 2)
+        expect(Math.abs(motherBCenter - sonBCenter)).toBeLessThanOrEqual(NODE_W / 2)
+    })
+})
+
+describe('layoutTree — single-parent fallback in groupChildrenByCouple', () => {
+    it('groups a single-parent child under the couple containing their listed parent (not the rightmost)', () => {
+        // Multi-couple chain [dad_l, mom, dad_r]. Child A (1984) has
+        // BOTH bio parents recorded (dad_l + mom). Child B (1981)
+        // has ONLY dad_l recorded — a common shape in real family
+        // trees where the user adds one parent_link per child and
+        // forgets the second.
+        //
+        // The legacy "both parents in couple → match, else fallback
+        // to rightmost" rule attached child B to the mom+dad_r
+        // sub-cluster (rightmost), pushing him visually RIGHT of
+        // child A even though they're meant to be siblings of the
+        // dad_l+mom couple. The graceful single-parent match
+        // attaches him to the dad_l+mom couple instead, where
+        // sibling-by-age sorting then places child B 1981 LEFT of
+        // child A 1984.
+        const out = layoutTree({
+            nodes: [
+                person('dad_l', [], ['mom'], '1955-06-10'),
+                person('mom', [], ['dad_l', 'dad_r'], '1958-09-12'),
+                person('dad_r', [], ['mom'], '1942-11-25'),
+                person('child_a', ['dad_l', 'mom'], ['spouse_a'], '1984-06-25'),
+                person('spouse_a', [], ['child_a'], '1985-01-01'),
+                // Child B has ONLY dad_l as bio parent — mom NOT
+                // listed. With the legacy fallback he'd land in the
+                // mom+dad_r sub-cluster on the right.
+                person('child_b', ['dad_l'], [], '1981-09-12'),
+                person('child_c', ['mom', 'dad_r'], [], '1987-03-31'),
+            ],
+            parent_edges: [
+                { a: 'child_a', b: 'dad_l' },
+                { a: 'child_a', b: 'mom' },
+                { a: 'child_b', b: 'dad_l' },
+                { a: 'child_c', b: 'mom' },
+                { a: 'child_c', b: 'dad_r' },
+            ],
+            partner_edges: [
+                { a: 'dad_l', b: 'mom', ended_on: '1990-04-12' },
+                { a: 'mom', b: 'dad_r' },
+                { a: 'child_a', b: 'spouse_a' },
+            ] as PartnerEdgeInput[],
+        })
+        // Child B (1981) must sit LEFT of child A (1984) — they
+        // share the dad_l+mom sub-cluster, sibling-by-age applies.
+        expect(xOf(out, 'child_b')).toBeLessThan(xOf(out, 'child_a'))
+        // Child C — child of mom+dad_r — should sit RIGHT of both
+        // dad_l-line siblings (different sub-cluster, current
+        // partnership goes rightmost).
+        expect(xOf(out, 'child_a')).toBeLessThan(xOf(out, 'child_c'))
+    })
+})
+
+describe('layoutTree — parent-edge-aware barycenter', () => {
+    it('reorders top-row roots so each mother sits above her own child in a shared-chain row', () => {
+        // Top row has mother_a + mother_b (both roots). Middle row
+        // has a 3-person chain [son_a, anchor, son_b] — anchor is
+        // the shared spouse with son_a as ENDED partner and son_b
+        // as OPEN. son_a is mother_a's child, son_b is mother_b's.
+        //
+        // The block-tree-based barycenter would attribute the entire
+        // chain to mother_a (because `chooseParentBlock` picks the
+        // chain's first parent-bearing member → son_a → mother_a),
+        // leaving mother_b with 0 descendants and keeping her at
+        // the default leftmost slot. Parent-edge-aware barycenter
+        // walks both lineages and pulls mother_b over to above
+        // son_b's column.
+        const out = layoutTree({
+            nodes: [
+                person('mother_b', [], [], '1912-03-29'),
+                person('mother_a', [], [], '1921-03-25'),
+                person('son_b', ['mother_b'], ['anchor'], '1942-11-25'),
+                person('son_a', ['mother_a'], ['anchor'], '1955-06-10'),
+                person('anchor', [], ['son_a', 'son_b'], '1958-09-12'),
+            ],
+            parent_edges: [
+                { a: 'son_b', b: 'mother_b' },
+                { a: 'son_a', b: 'mother_a' },
+            ],
+            partner_edges: [
+                { a: 'anchor', b: 'son_a', ended_on: '1990-04-12' },
+                { a: 'anchor', b: 'son_b' },
+            ] as PartnerEdgeInput[],
+        })
+        const motherB = xOf(out, 'mother_b')
+        const motherA = xOf(out, 'mother_a')
+        const sonA = xOf(out, 'son_a')
+        const sonB = xOf(out, 'son_b')
         // Whichever child lands on the left, the matching mother
-        // must be on the same side. The chain rule places ENDED on
-        // the LEFT — so Bernd ends up left of Bernhard, which means
-        // Anneliese (Bernd's mother) must end up LEFT of Herta.
-        expect(bernd).toBeLessThan(bernhard)
-        expect(anneliese).toBeLessThan(herta)
+        // must be on the same side. The chain rule places ENDED
+        // on the LEFT — so son_a (ended) ends up left of son_b
+        // (open), which means mother_a (son_a's mother) must end
+        // up LEFT of mother_b.
+        expect(sonA).toBeLessThan(sonB)
+        expect(motherA).toBeLessThan(motherB)
     })
 })
 

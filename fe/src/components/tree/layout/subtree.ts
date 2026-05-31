@@ -70,17 +70,49 @@ export function centerLeftOver(childrenL: number, childrenR: number, blockWidth:
 }
 
 /**
- * Group a block's children by which internal couple produced them. A child
- * is matched to a couple when BOTH of the couple's members appear in the
- * child's biological parent set. Children that don't match any internal
- * couple — e.g. step-only links, or single-parent children inside a
- * multi-couple block — fall back to the rightmost couple so they sit
- * visually under the current partnership.
+ * Group a block's children by which internal couple produced them.
+ * Three-tier match:
+ *
+ *   1. BOTH of the couple's members appear in the child's bio parents
+ *      (canonical case: both biological parents listed).
+ *   2. EITHER of the couple's members appears (graceful single-parent
+ *      match — covers the very common case where a real family tree
+ *      records only one parent_link per child, especially for in-
+ *      married couples whose spouse the user hasn't added to the
+ *      tree yet).
+ *   3. Neither — fall back to the RIGHTMOST couple so step-only links
+ *      or partnership-less children still sit visually under the
+ *      current relationship.
+ *
+ * The two-pass shape (both, then either) matters because a multi-
+ * couple chain's couples often share an anchor member. Without pass 1
+ * the EITHER match would attach every chain-anchor's child to the
+ * first couple in the chain (anchor sits in BOTH couples — false
+ * positive). Pass 1 first claims children with full both-parent
+ * matches; pass 2 only sees children left over after that.
+ *
+ * Worked example for the Bernd / Gudrun / Bernhard chain (anchor =
+ * Gudrun, couples = [Bernd+Gudrun (ended), Gudrun+Bernhard (open)]):
+ *   - Child with parents [Bernd, Gudrun] → couple 0 (pass 1).
+ *   - Child with parents [Gudrun, Bernhard] → couple 1 (pass 1).
+ *   - Child with parents [Bernd] only → couple 0 (pass 2: Bernd
+ *     appears in couple 0, NOT in couple 1).
+ *   - Child with parents [Gudrun] only → couple 0 (pass 2: Gudrun
+ *     appears in couple 0 first, then in couple 1). Visually grouping
+ *     a Gudrun-only child with her older partnership is the saner
+ *     default than placing her under the most recent one.
+ *   - Child with parents [step-aunt] → couple 1 via rightmost
+ *     fallback (no overlap with the chain).
  */
 function groupChildrenByCouple(block: Block, children: Block[], bioParents: Map<string, Set<string>>): CouplePlan[] {
     if (block.couples.length === 0) return []
     const plans: CouplePlan[] = block.couples.map((c) => ({ couple: c, children: [] }))
     const rightmost = plans[plans.length - 1]
+    const unmatched: Block[] = []
+
+    // Pass 1: full both-parent matches claim children first so a
+    // chain-anchor child doesn't get false-positive-attached to the
+    // first couple via the partial-match pass.
     for (const child of children) {
         const anchor = child.members[0]
         if (anchor === undefined) continue
@@ -96,8 +128,38 @@ function groupChildrenByCouple(block: Block, children: Block[], bioParents: Map<
                 break
             }
         }
-        if (!matched && rightmost !== undefined) rightmost.children.push(child)
+        if (!matched) unmatched.push(child)
     }
+
+    // Pass 2: graceful single-parent match for children left over.
+    // Walks couples left-to-right and claims the first couple that
+    // contains EITHER of the child's bio parents.
+    const stillUnmatched: Block[] = []
+    for (const child of unmatched) {
+        const anchor = child.members[0]
+        if (anchor === undefined) continue
+        const parents = bioParents.get(anchor) ?? new Set<string>()
+        let matched = false
+        for (const plan of plans) {
+            const lId = block.members[plan.couple.leftIdx]
+            const rId = block.members[plan.couple.rightIdx]
+            if (lId === undefined || rId === undefined) continue
+            if (parents.has(lId) || parents.has(rId)) {
+                plan.children.push(child)
+                matched = true
+                break
+            }
+        }
+        if (!matched) stillUnmatched.push(child)
+    }
+
+    // Pass 3 (rightmost fallback): genuinely-no-overlap children
+    // (step-only links, or single-parent children whose parent isn't
+    // in the chain at all). Land under the current relationship.
+    if (rightmost !== undefined) {
+        for (const child of stillUnmatched) rightmost.children.push(child)
+    }
+
     return plans
 }
 
