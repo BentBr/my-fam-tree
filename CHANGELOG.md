@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.12](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.11...core-v0.1.12) (2026-05-31)
+
+
+### Features
+
+* **admin:** /admin/family overview page with rename + stat tiles + latest 3 ([81f5cdb](https://github.com/BentBr/my-fam-tree/commit/81f5cdb5a0a981927db0dbb130a27b18672020ea))
+
+
+### Bug Fixes
+
+* consent bypass on PATCH /persons, retry body re-use, e2e cold-start flakes ([924eff2](https://github.com/BentBr/my-fam-tree/commit/924eff2c0df714222a88b2d07a65631dcc8bc81e))
+* **e2e:** flush redis between tests to drain rate-limit buckets ([0f2b506](https://github.com/BentBr/my-fam-tree/commit/0f2b5067e19d646b1116770b52dca99f176b04c5))
+* linked-person fallback in admin/audit, sub-ms health timings, latest-person index ([9ec3488](https://github.com/BentBr/my-fam-tree/commit/9ec348889af17fb188bc5b7e79ec17f52bd41b04))
+* SQLX_OFFLINE prepare cache + shared form primitives + health network chip + AppBar tree link ([fd2a43d](https://github.com/BentBr/my-fam-tree/commit/fd2a43d65c1760cfe7631349f563b3908e030ae2))
+* **test:** align link_consent unit tests with the tightened 'current.is_none()' semantics ([d5acaf9](https://github.com/BentBr/my-fam-tree/commit/d5acaf95ab2b33473049aa81b3ded25a90104aa9))
+
 ## [0.1.11](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.10...core-v0.1.11) (2026-05-31)
 
 
