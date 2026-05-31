@@ -503,6 +503,8 @@
         },
         "footer": {
             "tagline": "© 2026 Slothlike. Built with Rust and Vue.js.",
+            "taglinePrefix": "© 2026 Slothlike. Built with",
+            "taglineMid": "and",
             "links": {
                 "imprint": "Imprint",
                 "dataPolicy": "Privacy policy",

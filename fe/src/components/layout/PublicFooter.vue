@@ -13,6 +13,14 @@ import { useI18n } from 'vue-i18n'
 
 import { useLocaleStore } from '@/stores/locale'
 
+// Stack icons next to the brand names in the tagline. SVG assets live
+// in src/assets/ so Vite hashes the URLs (cache-busts on swap) and the
+// img-loader picks them up off the year-long immutable /assets/* cache.
+//   Ferris  — CC0 from rustacean.net (official Rust mascot).
+//   Vue.js  — two-triangle official logo, redrawn from the brand guide.
+import ferrisIcon from '@/assets/brand/ferris.svg'
+import vueIcon from '@/assets/brand/vue.svg'
+
 const { t } = useI18n()
 const locale = useLocaleStore()
 const localeLabel = computed(() => (locale.locale === 'de' ? 'Deutsch' : 'English'))
@@ -21,7 +29,20 @@ const localeLabel = computed(() => (locale.locale === 'de' ? 'Deutsch' : 'Englis
 <template>
     <footer class="public-footer" data-testid="public-footer">
         <div class="public-footer__inner">
-            <span class="public-footer__tagline">{{ t('public.footer.tagline') }}</span>
+            <!-- Tagline is split around the two stack brand-icons so
+                 each icon sits inline with its name. We avoid v-html /
+                 i18n-component-interpolation for the simple two-icon
+                 case; instead the i18n strings split at the icon
+                 boundary (prefix + mid). The brand NAMES ("Rust",
+                 "Vue.js") are hardcoded — same in every language. -->
+            <span class="public-footer__tagline" data-testid="public-footer-tagline">
+                {{ t('public.footer.taglinePrefix') }}
+                <img :src="ferrisIcon" class="public-footer__stack-icon public-footer__stack-icon--ferris" alt="" />
+                <span class="public-footer__stack-name">Rust</span>
+                {{ t('public.footer.taglineMid') }}
+                <img :src="vueIcon" class="public-footer__stack-icon" alt="" />
+                <span class="public-footer__stack-name">Vue.js</span>.
+            </span>
             <nav class="public-footer__links" aria-label="legal">
                 <RouterLink to="/imprint" data-testid="footer-imprint">
                     {{ t('public.footer.links.imprint') }}
@@ -86,5 +107,34 @@ const localeLabel = computed(() => (locale.locale === 'de' ? 'Deutsch' : 'Englis
 }
 .public-footer__locale {
     color: var(--text-3);
+}
+.public-footer__tagline {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    line-height: 1.6;
+}
+.public-footer__stack-icon {
+    /* Match the cap height of the surrounding 13 px footer text so
+       the icons sit on the baseline like a glyph would. Width
+       follows the asset's intrinsic aspect ratio. */
+    height: 1.2em;
+    width: auto;
+    vertical-align: middle;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.public-footer__stack-icon--ferris {
+    /* Ferris is wider than tall (3:2 source). Cap the height a touch
+       LARGER than Vue's so the silhouette reads at footer scale —
+       Ferris's distinctive features (eyes + claws) need a few extra
+       px to resolve. */
+    height: 1.6em;
+}
+.public-footer__stack-name {
+    /* Keep "Rust" / "Vue.js" inline with their icons; the parent
+       flex's gap handles spacing between icon + name + connectives. */
+    color: inherit;
 }
 </style>
