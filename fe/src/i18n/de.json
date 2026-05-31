@@ -488,7 +488,9 @@
             "links": {
                 "imprint": "Impressum",
                 "dataPolicy": "Datenschutzerklärung",
-                "language": "Sprache"
+                "language": "Sprache",
+                "sourceLabel": "Open Source",
+                "sourceAria": "Open Source auf GitHub — mit Herzblut von Slothlike"
             }
         },
         "imprint": {

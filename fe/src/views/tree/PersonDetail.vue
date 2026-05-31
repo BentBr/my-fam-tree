@@ -406,7 +406,7 @@ const isMe = computed(() => {
                             })
                         }}
                     </v-card-title>
-                    <v-card-text>
+                    <v-card-text class="invite-form">
                         <v-text-field
                             v-model="inviteEmail"
                             :label="t('person.invite.emailLabel')"
@@ -490,6 +490,16 @@ const isMe = computed(() => {
 </template>
 
 <style scoped>
+/* Invite modal field-gap — same 12 px the PersonEdit / Account /
+   Relations sub-forms use. Without it, Vuetify's floated label on a
+   focused field (e.g., "Rolle" while the role picker is active) clips
+   into the field above ("E-Mail-Adresse"). */
+.invite-form > .v-input,
+.invite-form > .v-text-field,
+.invite-form > .v-select {
+    margin-bottom: 12px;
+}
+
 /* Squared, full-sidebar-width hero photo. The card is 1:1 so the
    aspect ratio matches social-style profile photos; only the corners
    are slightly rounded so it reads as "card" rather than "avatar"

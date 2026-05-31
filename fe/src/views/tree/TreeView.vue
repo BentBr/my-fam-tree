@@ -169,17 +169,43 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
             >
                 <template v-if="!smAndDown">{{ t('tree.fitToView') }}</template>
             </v-btn>
+            <!-- Desktop / tablet: the labelled add-person button sits in
+                 the toolbar next to fit-to-view. On smAndDown the toolbar
+                 is too cramped (long family names truncate and can crowd
+                 the actions off-screen on narrower viewports), so we
+                 render a dedicated FAB instead (below). The two CTAs are
+                 mutually exclusive — one or the other, never both — so
+                 e2e tests can rely on the same `tree-add-person`
+                 testid resolving to the active affordance. -->
             <v-btn
-                :icon="smAndDown ? 'user-plus' : undefined"
-                :prepend-icon="smAndDown ? undefined : 'user-plus'"
+                v-if="!smAndDown"
+                prepend-icon="user-plus"
                 color="primary"
                 :title="t('tree.addPerson')"
                 data-testid="tree-add-person"
                 @click="onCreateClick"
             >
-                <template v-if="!smAndDown">{{ t('tree.addPerson') }}</template>
+                {{ t('tree.addPerson') }}
             </v-btn>
         </v-toolbar>
+
+        <!-- Mobile FAB: floats over the tree canvas in the bottom-right
+             corner so the primary "add person" affordance is always one
+             thumb-tap away, independent of toolbar layout / clipping.
+             Same `data-testid` as the toolbar button so existing e2e
+             tests resolve to whichever variant is active for the
+             current viewport. -->
+        <v-btn
+            v-if="smAndDown"
+            icon="user-plus"
+            color="primary"
+            size="large"
+            class="tree-add-fab"
+            :title="t('tree.addPerson')"
+            :aria-label="t('tree.addPerson')"
+            data-testid="tree-add-person"
+            @click="onCreateClick"
+        />
 
         <div class="tree-row">
             <div class="canvas">
@@ -279,6 +305,16 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
     display: flex;
     flex: 1;
     min-height: 0;
+}
+/* Mobile FAB — overlays the tree canvas with the primary "add person"
+ * affordance. `position: fixed` keeps it anchored as the user pans the
+ * SVG; `z-index` clears the d3-zoom drag layer and the v-navigation-
+ * drawer's scrim. Sized large for a thumb-friendly hit target. */
+.tree-add-fab {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 10;
 }
 .canvas {
     flex: 1;

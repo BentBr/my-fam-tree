@@ -29,6 +29,24 @@ const localeLabel = computed(() => (locale.locale === 'de' ? 'Deutsch' : 'Englis
                 <RouterLink to="/data-policy" data-testid="footer-data-policy">
                     {{ t('public.footer.links.dataPolicy') }}
                 </RouterLink>
+                <!-- GH source link — heart emoji + external repo URL. The
+                     `aria-label` is more descriptive than the visible
+                     content for screen-reader users (the heart on its
+                     own would read as "red heart"). `target="_blank"` +
+                     `rel="noopener"` per the standard external-link
+                     hardening; `noreferrer` is overkill for a public
+                     repo URL. -->
+                <a
+                    href="https://github.com/BentBr/my-fam-tree"
+                    target="_blank"
+                    rel="noopener"
+                    class="public-footer__source"
+                    :aria-label="t('public.footer.links.sourceAria')"
+                    data-testid="footer-source"
+                >
+                    {{ t('public.footer.links.sourceLabel') }}
+                    <span aria-hidden="true">❤</span>
+                </a>
                 <span class="public-footer__locale"> {{ t('public.footer.links.language') }}: {{ localeLabel }} </span>
             </nav>
         </div>

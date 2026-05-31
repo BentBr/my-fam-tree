@@ -16,10 +16,23 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useHead } from '@unhead/vue'
 
+import { currentResolvedTheme } from '@/composables/useThemeMode'
 import { useLocaleStore } from '@/stores/locale'
+import { useUiStore } from '@/stores/ui'
 
 const { t } = useI18n()
 const locale = useLocaleStore()
+const ui = useUiStore()
+
+// Tree-screenshot URL prefix — swaps between the light and dark variants
+// emitted by `pnpm generate:images` (the script reads
+// `assets/example-light.png` / `example-dark.png` and writes
+// `tree-example-{light,dark}-{960,1280}.webp`). The variant follows the
+// user's resolved theme so the screenshot's chrome matches the
+// surrounding page, including the system→manual override toggle.
+const treeExamplePrefix = computed(
+    () => `/brand/tree-example-${currentResolvedTheme(ui.theme)}`,
+)
 
 const baseUrl = (import.meta.env['VITE_BASE_URL'] as string | undefined) ?? 'https://my-fam-tree.eu'
 const ogLocale = computed(() => (locale.locale === 'de' ? 'de_DE' : 'en_US'))
@@ -100,13 +113,17 @@ const features: Feature[] = [
             </div>
         </section>
 
-        <!-- Real tree-view screenshot — rendered from
-             `assets/example.png` by `pnpm generate:images`. -->
+        <!-- Real tree-view screenshot. Source PNGs live in
+             `assets/example-{light,dark}.png` and are turned into the
+             two WebP sets by `pnpm generate:images`. `treeExamplePrefix`
+             above resolves to whichever variant matches the visitor's
+             current theme, so the screenshot's UI chrome matches the
+             surrounding page on both light + dark backgrounds. -->
         <section class="home__screenshot">
             <figure class="home__screenshot-figure">
                 <img
-                    src="/brand/tree-example-960.webp"
-                    srcset="/brand/tree-example-960.webp 960w, /brand/tree-example-1280.webp 1280w"
+                    :src="`${treeExamplePrefix}-960.webp`"
+                    :srcset="`${treeExamplePrefix}-960.webp 960w, ${treeExamplePrefix}-1280.webp 1280w`"
                     sizes="(max-width: 768px) 100vw, 1100px"
                     width="1245"
                     height="732"

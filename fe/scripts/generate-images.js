@@ -34,11 +34,14 @@ const outDir = path.join(feRoot, 'public', 'brand')
 // sloth — favicons + the in-app icon all derive from it so the head
 // stays in frame at every size. The family group lives in
 // `sloth-family.png` (used for the Home hero + the OG card).
-// `example.png` is a real screenshot of the tree view, used to anchor
-// the marketing page's "this is what you get" slot.
+// `example-light.png` / `example-dark.png` are real screenshots of the
+// tree view in the respective theme — the marketing page swaps between
+// them based on the visitor's resolved theme so the screenshot matches
+// the surrounding chrome.
 const SLOTH = path.join(assetsDir, 'sloth-center.png')
 const SLOTH_FAMILY = path.join(assetsDir, 'sloth-family.png')
-const TREE_EXAMPLE = path.join(assetsDir, 'example.png')
+const TREE_EXAMPLE_LIGHT = path.join(assetsDir, 'example-light.png')
+const TREE_EXAMPLE_DARK = path.join(assetsDir, 'example-dark.png')
 
 async function ensureDir(dir) {
     await fs.mkdir(dir, { recursive: true })
@@ -107,12 +110,20 @@ async function generateHeroImage() {
 }
 
 async function generateTreeExample() {
-    // Two widths so retina screens get a crisper render. Source is
-    // 1245 × 732, so both targets stay within the source resolution.
-    for (const width of [960, 1280]) {
-        const out = path.join(outDir, `tree-example-${width}.webp`)
-        await sharp(TREE_EXAMPLE).resize(width, null, { withoutEnlargement: true }).webp({ quality: 90 }).toFile(out)
-        console.log(`  tree-example-${width}.webp`)
+    // Two widths per theme so retina screens get a crisper render AND
+    // the HomeView's `<picture>` can pick the variant that matches the
+    // visitor's resolved theme. Output filenames carry the theme
+    // suffix: `tree-example-light-960.webp`, `tree-example-dark-1280.webp`.
+    const variants = [
+        { src: TREE_EXAMPLE_LIGHT, theme: 'light' },
+        { src: TREE_EXAMPLE_DARK, theme: 'dark' },
+    ]
+    for (const { src, theme } of variants) {
+        for (const width of [960, 1280]) {
+            const out = path.join(outDir, `tree-example-${theme}-${width}.webp`)
+            await sharp(src).resize(width, null, { withoutEnlargement: true }).webp({ quality: 90 }).toFile(out)
+            console.log(`  tree-example-${theme}-${width}.webp`)
+        }
     }
 }
 

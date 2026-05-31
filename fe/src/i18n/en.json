@@ -488,7 +488,9 @@
             "links": {
                 "imprint": "Imprint",
                 "dataPolicy": "Privacy policy",
-                "language": "Language"
+                "language": "Language",
+                "sourceLabel": "Open source",
+                "sourceAria": "Open source on GitHub — heart-coded by Slothlike"
             }
         },
         "imprint": {
