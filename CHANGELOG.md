@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.11](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.10...core-v0.1.11) (2026-05-31)
+
+
+### Features
+
+* **brand:** swap neutral tree-example WebPs for light/dark theme variants ([52fd9d8](https://github.com/BentBr/my-fam-tree/commit/52fd9d8c75291bc6a50009dff7929ac2166e4b1a))
+* **health:** worker liveness probe — API `worker_ok` chip + worker `/health` ([96a3112](https://github.com/BentBr/my-fam-tree/commit/96a31128f5a7b20a24f2cefc3a7e0390656afeae))
+* **mobile:** move add-person CTA into toolbar, collapse family switcher to icon ([c65ac54](https://github.com/BentBr/my-fam-tree/commit/c65ac54b9d7c61ce459f109fe9bb0a8d2d7baadc))
+* **seed:** Krause subtree + layout-edge-case tests; fix avatar e2e PNG ([e5a1a9c](https://github.com/BentBr/my-fam-tree/commit/e5a1a9c405f24d17ca3ae465af8bc009deb08d39))
+* **tree:** marriage rings + ended-state grey-out + adjacency-aware line + contacts contrast ([1971afb](https://github.com/BentBr/my-fam-tree/commit/1971afbd9039712a49af08530253874c6c6a0e9c))
+* **tree:** two-pass barycenter layout — kills avoidable parent-edge crossings ([0283e2f](https://github.com/BentBr/my-fam-tree/commit/0283e2f1d8ecdf50233fd450648a28ba8f000826))
+
+
+### Bug Fixes
+
+* **e2e:** replace test PNG with valid-CRC bytes ([f13569e](https://github.com/BentBr/my-fam-tree/commit/f13569e8e9d3913524ec38d6f6a13e60019206bc))
+* **fe:** mobile add-person FAB + invite padding + GH-source footer link + theme-resolved home screenshot ([962ba1c](https://github.com/BentBr/my-fam-tree/commit/962ba1c0b198eee4af6a4a42a6540da4509bff0f))
+* **fe:** reorder middleware so authRefresh sees 401s before errorTranslator throws ([b2ba37e](https://github.com/BentBr/my-fam-tree/commit/b2ba37e118ea2a777cef8fded387412efab420b4))
+* **fe:** suppress iOS keyboard on gender combobox via inputmode=none ([7994a23](https://github.com/BentBr/my-fam-tree/commit/7994a2372f75c9243266bf1d3031696c47984021))
+* **router:** /account + /health don't require an active family ([ecaa939](https://github.com/BentBr/my-fam-tree/commit/ecaa9391198f306af63db84b236f69094c882b96))
+* **tree:** keep mobile FAB floating on top + hide fit-to-view on mobile ([ea3b349](https://github.com/BentBr/my-fam-tree/commit/ea3b349ef6b243bff9d43f68b1388c9fbfb0a922))
+* **tree:** replace v-btn/v-fab mobile FAB with hand-rolled button ([5898bfe](https://github.com/BentBr/my-fam-tree/commit/5898bfe018bba4e6dbb544a144a76cc2c0d36861))
+* **tree:** teleport mobile add-person FAB to body so it escapes ancestor containing-block traps ([7be6c21](https://github.com/BentBr/my-fam-tree/commit/7be6c21d40f5e8ebe6c2ab3edccbe79641bcf894))
+
 ## [0.1.10](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.9...core-v0.1.10) (2026-05-31)
 
 
