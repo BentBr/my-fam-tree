@@ -113,21 +113,14 @@ async fn refresh_rejects_missing_and_bogus_cookies() {
     assert_eq!(body["code"], "auth_refresh_invalid");
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn logout_without_session_returns_unauthenticated() {
-    // /auth/logout sits behind AuthMiddleware::required, so calling it
-    // without an access cookie is a 401 — not the idempotent 200 you'd get
-    // from a session-less logout endpoint. This pins that behaviour and
-    // exercises the middleware's missing-cookie arm.
-    let stack = ephemeral_stack().await;
-    let app = test::init_service(build_app(stack.state.clone(), None)).await;
-
-    let req = test::TestRequest::post().uri("/api/v1/auth/logout").to_request();
-    let res = try_call(&app, req).await;
-    assert_eq!(res.status(), 401);
-    let body: serde_json::Value = test::read_body_json(res).await;
-    assert_eq!(body["code"], "auth_unauthenticated");
-}
+// `logout_without_session_returns_unauthenticated` used to live here,
+// pinning the old "logout requires a session" shape (401 with
+// `auth_unauthenticated`). The new contract — public + idempotent so
+// the FE can clear stale HttpOnly cookies AFTER a server-side
+// session collapse — is pinned by
+// `logout_is_idempotent_and_reachable_without_session` in
+// `auth_flow.rs`. See the doc comment on `routes::auth::logout` for
+// why the gate was lifted.
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn logout_with_session_clears_cookies_and_revokes_refresh() {

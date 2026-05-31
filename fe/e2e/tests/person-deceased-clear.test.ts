@@ -26,10 +26,13 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
 
     // ----- 2. Edit → mark deceased, fill date, save. -----
     await page.getByTestId('person-edit-button').click()
-    await page.getByTestId('person-deceased').click()
-    // The `<v-checkbox>` toggles via the underlying input; click resolves
-    // through Vuetify's label wrapper. After the click the `deceased` ref
-    // flips true and the date field mounts.
+    // Vuetify v-checkbox: the `data-testid` lands on the OUTER wrapper.
+    // Clicking the wrapper sometimes doesn't propagate to the `<input>`
+    // that drives v-model (depends on the slot/label structure), and
+    // the `deceased` ref then stays false. Target the inner input
+    // directly — its `:checked` flip is what v-model listens to.
+    await page.getByTestId('person-deceased').locator('input').check()
+    // `v-if="deceased"` mounts the date field on the next tick.
     const deathDateInput = page.getByTestId('person-death-date').locator('input')
     await expect(deathDateInput).toBeVisible()
     await deathDateInput.fill('2024-06-15')
@@ -45,10 +48,11 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
     // ----- 3. Edit again → uncheck deceased, save. -----
     await page.getByTestId('person-edit-button').click()
     // The checkbox starts checked (`deceased` ref true from initial load
-    // because death_date is set). One click unchecks; the date field
-    // unmounts AND `form.death_date` is cleared to `null` by the
-    // `watch(deceased)` handler in PersonEdit.
-    await page.getByTestId('person-deceased').click()
+    // because death_date is set). Uncheck the inner input directly (same
+    // reasoning as the `.check()` above); the date field unmounts AND
+    // `form.death_date` is cleared to `null` by the `watch(deceased)`
+    // handler in PersonEdit.
+    await page.getByTestId('person-deceased').locator('input').uncheck()
     await expect(page.getByTestId('person-death-date')).toHaveCount(0)
     await page.getByTestId('person-submit').click()
 
