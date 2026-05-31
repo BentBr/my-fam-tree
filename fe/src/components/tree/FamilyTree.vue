@@ -142,8 +142,23 @@ function nodeCenter(id: string): { x: number; y: number } | null {
  * collapse to ~0.3, which renders the cards as unreadable thumbnails.
  * Clamping at 0.5 keeps the cards legible at the cost of the viewport
  * sometimes clipping the outer cousins — the user can pan to them.
+ *
+ * Used ONLY by `fitToView` and the auto-fit fallback at mount; the user-
+ * driven zoom range (`MIN_USER_SCALE`) goes further so manual zoom-out
+ * isn't artificially capped at the fit-floor.
  */
 const MIN_FIT_SCALE = 0.5
+
+/**
+ * Lower bound on the user-driven zoom (the d3-zoom `scaleExtent`). Below
+ * the fit-clamp so users can intentionally pull back far enough to see a
+ * large family at a glance even when the auto-fit refused to. The
+ * "Fit to view" button keeps `MIN_FIT_SCALE` as its floor — pressing
+ * fit on a huge tree still snaps to a legible scale rather than the
+ * postage-stamp extreme. 0.1 lets a ~200-person tree fit on one
+ * screen at typical desktop widths.
+ */
+const MIN_USER_SCALE = 0.1
 
 /**
  * Initial focus scale when a `currentUserId` resolves to a node on mount.
@@ -232,7 +247,7 @@ onMounted(() => {
     const g = gEl.value
     if (svg === null || g === null) return
     zoomBehavior = d3zoom<SVGSVGElement, unknown>()
-        .scaleExtent([MIN_FIT_SCALE, 3])
+        .scaleExtent([MIN_USER_SCALE, 3])
         .on('zoom', (event: { transform: ZoomTransform }) => {
             g.setAttribute('transform', event.transform.toString())
         })
