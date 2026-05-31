@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.title="my-family-worker" \
       org.opencontainers.image.source="${OCI_SOURCE}" \
       org.opencontainers.image.revision="${OCI_REVISION}" \
       org.opencontainers.image.created="${OCI_CREATED}"
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates wget && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/local/bin
 COPY --from=builder /app/target/release/worker /usr/local/bin/worker
 # Declared so the dinghy reverse-proxy (docker-gen) builds a vhost upstream for
