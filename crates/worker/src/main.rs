@@ -17,10 +17,9 @@ use my_fam_tree_worker::clock::Clock;
 use my_fam_tree_worker::clock::OffsetClock;
 #[cfg(not(feature = "test-fixtures"))]
 use my_fam_tree_worker::clock::SystemClock;
+use my_fam_tree_worker::health::Heartbeat;
 use my_fam_tree_worker::state::WorkerState;
-#[cfg(feature = "test-fixtures")]
-use my_fam_tree_worker::test_clock_http;
-use my_fam_tree_worker::{dispatcher, janitor, leader, outbox, ticker};
+use my_fam_tree_worker::{dispatcher, janitor, leader, ops_http, outbox, ticker};
 use tokio::time::sleep;
 use tracing_subscriber::prelude::*;
 
@@ -30,16 +29,29 @@ const DISPATCHER_POOL: usize = 4;
 /// The leader-locked inner loop: digest ticker + janitor sweeps. Extracted
 /// out of `main` so `main` stays focused on wiring + collaborator setup and
 /// this hot loop is testable / readable on its own.
+///
+/// `heartbeat.beat()` fires on every iteration before the sleep so the
+/// `/health` endpoint can detect "main loop is wedged" (e.g. a blocking
+/// DB call) — a TCP-accept probe alone would still answer 200 in that
+/// case. Heartbeats happen INSIDE the loop, so a worker that hasn't
+/// acquired the leader lock yet (cold start) is correctly reported as
+/// "not yet healthy" until `acquire_blocking` returns and the first tick
+/// runs.
 async fn run_leader_loop(
     worker: WorkerState,
     leader: leader::Leader,
     refresh: Duration,
     tick: Duration,
     janitor_tick: Duration,
+    heartbeat: Arc<Heartbeat>,
 ) -> ! {
     loop {
         leader.acquire_blocking().await;
         tracing::info!("acquired leader lock");
+        // First beat right after acquiring the lock — the loop is now
+        // doing useful work, and the next iteration's `sleep(refresh)`
+        // shouldn't make us look stale before it's even ticked once.
+        heartbeat.beat();
         let mut last_tick =
             std::time::Instant::now().checked_sub(tick).unwrap_or_else(std::time::Instant::now);
         let mut last_janitor = std::time::Instant::now()
@@ -62,11 +74,17 @@ async fn run_leader_loop(
                 janitor::run_sweep(&worker).await;
                 last_janitor = std::time::Instant::now();
             }
+            heartbeat.beat();
             sleep(refresh).await;
         }
     }
 }
 
+// `main` is mostly linear wiring of collaborator deps + the leader-loop
+// launch. Splitting it into a sub-fn just moves the cfg-gated branches
+// to a new boundary without making either side simpler, so we accept
+// the length here.
+#[allow(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {
@@ -149,16 +167,40 @@ async fn main() -> anyhow::Result<()> {
         tokio::spawn(async move { outbox::run_poller(s, outbox_poll).await });
     }
 
+    // Heartbeat shared between the leader loop (writer) and the /health
+    // listener (reader). Created here so we can hand the same Arc to both.
+    let heartbeat = Heartbeat::new();
+
+    // Staleness threshold: 2× the leader-refresh interval, plus a 5 s
+    // jitter margin so a one-cycle blip doesn't flip the probe to red.
+    // The refresh interval is the loop's natural cadence; anything past
+    // two of those is almost certainly a wedged loop, not just slow.
+    let refresh_ms = i64::try_from(cfg.worker.leader_refresh_seconds * 1000).unwrap_or(i64::MAX);
+    let stale_after_ms = refresh_ms.saturating_mul(2).saturating_add(5_000);
+
+    // actix-web's HttpServer future is not Send (Rc internals), so it
+    // can't ride the main multithreaded tokio runtime via tokio::spawn.
+    // Run it on a dedicated thread with its own actix system — same
+    // trick the old test-fixtures listener used; now hosts /health
+    // unconditionally + /__test/advance-clock when the feature is on.
+    let bind = cfg.worker.metrics_bind.clone();
+    let hb_for_http = heartbeat.clone();
+    #[cfg(not(feature = "test-fixtures"))]
+    std::thread::spawn(move || {
+        actix_web::rt::System::new().block_on(ops_http::serve(hb_for_http, stale_after_ms, bind));
+    });
     #[cfg(feature = "test-fixtures")]
     {
-        // actix-web's HttpServer future is not Send (Rc internals), so it can't
-        // ride the main multi-threaded tokio runtime via tokio::spawn. Run it on
-        // a dedicated thread with its own actix system. test-fixtures only.
         let s = worker.clone();
-        let bind = cfg.worker.metrics_bind.clone();
         let fixed_handle = fixed.clone();
         std::thread::spawn(move || {
-            actix_web::rt::System::new().block_on(test_clock_http::serve(s, fixed_handle, bind));
+            actix_web::rt::System::new().block_on(ops_http::serve_with_test_fixtures(
+                hb_for_http,
+                stale_after_ms,
+                bind,
+                s,
+                fixed_handle,
+            ));
         });
     }
 
@@ -170,7 +212,8 @@ async fn main() -> anyhow::Result<()> {
         app_env = %cfg.app_env,
         janitor_interval_s = cfg.janitor.interval_seconds,
         janitor_grace_s = cfg.janitor.grace_seconds,
+        health_stale_after_ms = stale_after_ms,
         "worker started",
     );
-    run_leader_loop(worker, leader, refresh, tick, janitor_tick).await
+    run_leader_loop(worker, leader, refresh, tick, janitor_tick, heartbeat).await
 }

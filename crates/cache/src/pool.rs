@@ -51,4 +51,22 @@ impl RedisPool {
         let _: String = redis::cmd("PING").query_async(&mut conn).await?;
         Ok(())
     }
+
+    /// Check whether a key under our prefix currently exists.
+    ///
+    /// `suffix` is appended to the pool's prefix verbatim — callers pass the
+    /// trailing part (e.g. `"reminder:leader"`) so this method owns the
+    /// prefix-vs-suffix join exactly like the rest of the cache layer.
+    ///
+    /// # Errors
+    /// Returns [`CacheError::Pool`] if no connection can be acquired, or
+    /// [`CacheError::Redis`] if the server rejects the `EXISTS` command.
+    /// A successful `EXISTS` that returns 0 is `Ok(false)`, not an error —
+    /// the absence of a key is a normal state, not a fault.
+    pub async fn exists(&self, suffix: &str) -> Result<bool, CacheError> {
+        let mut conn = self.inner.get().await?;
+        let key = format!("{}{suffix}", self.key_prefix);
+        let count: i64 = redis::cmd("EXISTS").arg(&key).query_async(&mut conn).await?;
+        Ok(count > 0)
+    }
 }

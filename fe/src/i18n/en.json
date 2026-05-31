@@ -59,7 +59,9 @@
         "error": "Could not reach the API.",
         "dbLatency": "Database {ms} ms",
         "dbDown": "Database unreachable",
-        "serverLatency": "Server {ms} ms"
+        "serverLatency": "Server {ms} ms",
+        "workerAlive": "Worker alive",
+        "workerDown": "Worker down"
     },
     "account": {
         "title": "Account",

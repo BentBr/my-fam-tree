@@ -1,6 +1,8 @@
 //! Integration coverage for `GET /api/v1/health` against a real Postgres
 //! (testcontainers): confirms the envelope, the cargo version, the request-id
-//! echo, and the DB reachability probe (`db_ok` + measured `db_latency_ms`).
+//! echo, the DB reachability probe (`db_ok` + measured `db_latency_ms`), and
+//! the worker leader-lease check (`worker_ok` — false when no worker is
+//! running, which is the expected state under the test harness).
 
 #![allow(
     clippy::unwrap_used,
@@ -37,6 +39,12 @@ async fn health_reports_ok_version_and_reachable_db() {
     assert!(body["data"]["version"].is_string(), "version present (cargo version)");
     assert_eq!(body["data"]["db_ok"], true, "migrated DB is reachable");
     assert!(body["data"]["db_latency_ms"].is_number(), "DB latency measured");
+    // worker_ok is a Redis EXISTS check on `<prefix>reminder:leader`.
+    // No worker runs against the test container, so the lease key is
+    // absent and we expect `false` here — the SHAPE is the contract,
+    // the value is incidental.
+    assert!(body["data"]["worker_ok"].is_boolean(), "worker_ok present and boolean");
+    assert_eq!(body["data"]["worker_ok"], false, "no worker → lease absent → worker_ok=false");
     // Server-side total handler duration. Always present, always >=
     // db_latency_ms (the DB probe runs inside the handler timer).
     let server = body["data"]["server_duration_ms"]

@@ -16,10 +16,10 @@ pub mod backoff;
 pub mod clock;
 pub mod digest;
 pub mod dispatcher;
+pub mod health;
 pub mod janitor;
 pub mod leader;
+pub mod ops_http;
 pub mod outbox;
 pub mod state;
-#[cfg(feature = "test-fixtures")]
-pub mod test_clock_http;
 pub mod ticker;

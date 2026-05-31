@@ -59,7 +59,9 @@
         "error": "API konnte nicht erreicht werden.",
         "dbLatency": "Datenbank {ms} ms",
         "dbDown": "Datenbank nicht erreichbar",
-        "serverLatency": "Server {ms} ms"
+        "serverLatency": "Server {ms} ms",
+        "workerAlive": "Worker aktiv",
+        "workerDown": "Worker offline"
     },
     "account": {
         "avatar": {

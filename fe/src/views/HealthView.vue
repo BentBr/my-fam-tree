@@ -12,6 +12,11 @@ const requestId = computed(() => data.value?.meta?.request_id ?? '')
 const dbOk = computed(() => data.value?.data.db_ok ?? false)
 const dbLatency = computed(() => data.value?.data.db_latency_ms ?? 0)
 const serverLatency = computed(() => data.value?.data.server_duration_ms ?? 0)
+// Worker lease: the BE probes Redis for the reminder-leader key. The
+// chip flips green when held, red when the lease has expired (worker
+// is down or hasn't been deployed yet). No latency dimension — it's a
+// pure liveness boolean.
+const workerOk = computed(() => data.value?.data.worker_ok ?? false)
 
 // Latency thresholds: < 100 ms green, < 200 ms yellow, otherwise red. An
 // unreachable DB is always red regardless of the measured time.
@@ -23,8 +28,10 @@ function colourFor(ms: number, ok = true): 'success' | 'warning' | 'error' {
 }
 const dbColor = computed(() => colourFor(dbLatency.value, dbOk.value))
 const serverColor = computed(() => colourFor(serverLatency.value))
+const workerColor = computed<'success' | 'error'>(() => (workerOk.value ? 'success' : 'error'))
 const dbText = computed(() => (dbOk.value ? t('health.dbLatency', { ms: dbLatency.value }) : t('health.dbDown')))
 const serverText = computed(() => t('health.serverLatency', { ms: serverLatency.value }))
+const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t('health.workerDown')))
 </script>
 
 <template>
@@ -40,16 +47,23 @@ const serverText = computed(() => t('health.serverLatency', { ms: serverLatency.
             </v-alert>
             <div v-else data-testid="health-ok">
                 <v-alert type="success" variant="tonal" class="mb-3">{{ t('health.ok') }}</v-alert>
-                <!-- Two latency chips side-by-side: DB on the left, full
-                     handler duration on the right. `server_duration_ms`
-                     is always >= `db_latency_ms` (the DB probe runs
+                <!-- Three liveness chips side-by-side: DB on the left,
+                     worker leader-lease in the middle, full handler
+                     duration on the right. `server_duration_ms` is
+                     always >= `db_latency_ms` (the DB probe runs
                      inside the handler timer); when the gap between the
                      two is large it points at framework / serialisation
-                     overhead rather than the DB. -->
+                     overhead rather than the DB. The worker chip has
+                     no latency dimension — it's a pure boolean from
+                     the Redis lease check. -->
                 <div class="d-flex flex-wrap ga-2 mb-3">
                     <v-chip :color="dbColor" variant="flat" data-testid="health-db">
                         <v-icon start icon="database" />
                         {{ dbText }}
+                    </v-chip>
+                    <v-chip :color="workerColor" variant="flat" data-testid="health-worker">
+                        <v-icon start icon="cog" />
+                        {{ workerText }}
                     </v-chip>
                     <v-chip :color="serverColor" variant="flat" data-testid="health-server">
                         <v-icon start icon="server" />

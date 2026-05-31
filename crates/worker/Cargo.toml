@@ -11,9 +11,11 @@ path = "src/main.rs"
 
 [features]
 default = []
-# Enables an in-process HTTP listener exposing POST /__test/advance-clock so
-# E2E tests can fast-forward the worker's clock. MUST NOT be enabled in prod.
-test-fixtures = ["dep:actix-web"]
+# Adds a `POST /__test/advance-clock` route on the same in-process HTTP
+# listener that already serves `/healthz`, so the E2E suite can fast-
+# forward the worker's clock and run a tick immediately instead of
+# waiting for the real 06:00 window. MUST NOT be enabled in production.
+test-fixtures = []
 
 [dependencies]
 my-fam-tree-config = { path = "../config" }
@@ -34,7 +36,7 @@ tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 uuid = { workspace = true }
-actix-web = { workspace = true, optional = true }
+actix-web = { workspace = true }
 
 [dev-dependencies]
 sqlx.workspace = true
