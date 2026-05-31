@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 
 import { useMyFamilies } from '@/api/hooks/families'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
@@ -23,6 +24,12 @@ const locale = useLocaleStore()
 const router = useRouter()
 const queryClient = useQueryClient()
 const { t } = useI18n()
+// On phones the AppBar's title + sloth + avatar already eat most of the
+// row width; a 220px-wide family-name selector pushes the avatar off
+// the right edge or truncates the title. Collapse to an icon-only
+// `users` button that opens the same family list via a v-menu when the
+// viewport is small.
+const { smAndDown } = useDisplay()
 
 // Pull created_at per family from /families/me to disambiguate same-named
 // families ONLY when the name actually repeats — unique names stay clean.
@@ -77,6 +84,28 @@ const items = computed(() => {
 // user gets auto-picked, or when they have zero families). Localized.
 const placeholder = computed(() => t('family.switcher.placeholder'))
 
+// Vuetify's v-list-item props are strict (no `undefined` allowed when
+// `exactOptionalPropertyTypes` is on). Build a plain bag of bindings
+// per item that only includes optional fields when they're actually
+// strings — then pass the bag via v-bind.
+function bindingsFor(it: { value: string; title: string; props?: Record<string, unknown> }): Record<
+    string,
+    unknown
+> {
+    const bag: Record<string, unknown> = {
+        active: it.value === family.activeFamilyId,
+        title: it.title,
+        onClick: () => {
+            onChange(it.value)
+        },
+    }
+    const prepend = it.props?.['prependIcon']
+    if (typeof prepend === 'string') bag['prependIcon'] = prepend
+    const subtitle = it.props?.['subtitle']
+    if (typeof subtitle === 'string') bag['subtitle'] = subtitle
+    return bag
+}
+
 function onChange(value: unknown): void {
     if (value === CREATE_SENTINEL) {
         void router.push('/families/create')
@@ -95,7 +124,10 @@ function onChange(value: unknown): void {
 </script>
 
 <template>
+    <!-- Desktop / tablet: the wide v-select keeps the current family
+         name visible inline. -->
     <v-select
+        v-if="!smAndDown"
         :model-value="family.activeFamilyId"
         :items="items"
         :placeholder="placeholder"
@@ -107,4 +139,36 @@ function onChange(value: unknown): void {
         data-testid="family-switcher"
         @update:model-value="onChange"
     />
+    <!-- Phone: collapse to a single icon-only activator. The `users`
+         Lucide glyph reads as "family/group" and tapping it opens a
+         v-menu of the exact same items the v-select shows on
+         desktop, including the "Create new family…" trailing entry
+         + divider. `data-testid="family-switcher"` is preserved so
+         existing tests / e2e flows resolve to whichever variant is
+         active for the current viewport. The activator's
+         `aria-label` reads the active family name so screen readers
+         keep parity with the desktop label. -->
+    <v-menu v-else location="bottom end">
+        <template #activator="{ props: activatorProps }">
+            <v-btn
+                v-bind="activatorProps"
+                icon="users"
+                variant="text"
+                density="compact"
+                :title="t('family.switcher.placeholder')"
+                :aria-label="family.activeFamily?.name ?? placeholder"
+                data-testid="family-switcher"
+            />
+        </template>
+        <v-list density="compact" data-testid="family-switcher-menu">
+            <!-- `'value' in it` discriminates the union: divider entries
+                 have only `{ type: 'divider' }`, family + create entries
+                 have `value`/`title`/`props`. TS narrows on this guard
+                 the same way it does for `if (...) {} else {}`. -->
+            <template v-for="(it, i) in items" :key="i">
+                <v-list-item v-if="'value' in it" v-bind="bindingsFor(it)" />
+                <v-divider v-else />
+            </template>
+        </v-list>
+    </v-menu>
 </template>

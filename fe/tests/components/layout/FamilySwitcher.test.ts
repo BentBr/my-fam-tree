@@ -2,9 +2,15 @@ import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
+// Mock Vuetify's `useDisplay` so the component sees a deterministic
+// breakpoint. Default is desktop (smAndDown = false); tests that
+// exercise the icon-only mobile variant flip it to true.
+const smAndDown = ref(false)
+vi.mock('vuetify', () => ({ useDisplay: () => ({ smAndDown }) }))
 
 import FamilySwitcher from '@/components/layout/FamilySwitcher.vue'
 import { i18n } from '@/i18n'
@@ -49,6 +55,30 @@ async function mountSwitcher() {
                     emits: ['update:modelValue'],
                     template: '<div class="select-stub" :data-items="JSON.stringify(items)" />',
                 },
+                // Mobile-variant stubs. The v-menu's activator slot is exposed
+                // so the test can resolve the icon button via `data-testid`,
+                // and the list items render as clickable divs so the click
+                // path lands in `onChange` exactly like the v-select emit.
+                VMenu: {
+                    name: 'VMenuStub',
+                    template: '<div class="menu-stub"><slot name="activator" :props="{}" /><slot /></div>',
+                },
+                VBtn: {
+                    name: 'VBtnStub',
+                    props: ['icon', 'variant', 'density'],
+                    template:
+                        '<button type="button" :data-testid="$attrs[\'data-testid\']" :data-icon="icon" @click="$emit(\'click\', $event)"><slot /></button>',
+                    emits: ['click'],
+                },
+                VList: { template: '<ul class="list-stub" :data-testid="$attrs[\'data-testid\']"><slot /></ul>' },
+                VListItem: {
+                    name: 'VListItemStub',
+                    props: ['active', 'title', 'subtitle', 'prependIcon'],
+                    template:
+                        '<li class="list-item-stub" :data-active="active" :data-title="title" @click="$emit(\'click\', $event)"><slot /></li>',
+                    emits: ['click'],
+                },
+                VDivider: { template: '<li class="divider-stub" />' },
             },
         },
     })
@@ -60,6 +90,9 @@ describe('FamilySwitcher', () => {
         setActivePinia(createPinia())
         vi.stubGlobal('navigator', { language: 'en-US' })
         mockStorage()
+        // Reset to desktop default between tests; the mobile-variant
+        // test flips it explicitly.
+        smAndDown.value = false
     })
 
     it('renders a create-only switcher when the user has no families', async () => {
@@ -135,5 +168,46 @@ describe('FamilySwitcher', () => {
         const family = useActiveFamilyStore()
         await w.findComponent({ name: 'VSelectStub' }).vm.$emit('update:modelValue', 42)
         expect(family.activeFamilyId).toBeNull()
+    })
+
+    it('collapses to an icon-only menu activator on smAndDown', async () => {
+        // On mobile the wide v-select is replaced by an icon-only button
+        // ("users" glyph) that opens a v-menu with the same items list.
+        // Pin the activator presence + icon + that the v-select is NOT
+        // rendered so a future regression that drops one variant surfaces.
+        smAndDown.value = true
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
+        } as never)
+        const { w } = await mountSwitcher()
+        // The icon button replaces the v-select entirely.
+        expect(w.find('.select-stub').exists()).toBe(false)
+        const activator = w.find('[data-testid="family-switcher"]')
+        expect(activator.exists()).toBe(true)
+        expect(activator.attributes('data-icon')).toBe('users')
+    })
+
+    it('on smAndDown, clicking a family list-item switches the active family', async () => {
+        // Same selection contract as the desktop v-select emit, but via
+        // a list-item click inside the v-menu.
+        smAndDown.value = true
+        const auth = useAuthStore()
+        auth.applyClaimsPayload({
+            user_id: 'u',
+            email: 'a@b',
+            locale: 'en',
+            families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
+        } as never)
+        const { w } = await mountSwitcher()
+        const family = useActiveFamilyStore()
+        // First list-item is the F1 family; click it.
+        const items = w.findAll('.list-item-stub')
+        expect(items.length).toBeGreaterThan(0)
+        await items[0]?.trigger('click')
+        expect(family.activeFamilyId).toBe('f-1')
     })
 })

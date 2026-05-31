@@ -174,16 +174,27 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
             >
                 {{ t('tree.fitToView') }}
             </v-btn>
-            <!-- Desktop / tablet: the labelled add-person button sits in
-                 the toolbar next to fit-to-view. On smAndDown the toolbar
-                 is too cramped (long family names truncate and can crowd
-                 the actions off-screen on narrower viewports), so we
-                 render a dedicated FAB instead (below). The two CTAs are
-                 mutually exclusive — one or the other, never both — so
-                 e2e tests can rely on the same `tree-add-person`
-                 testid resolving to the active affordance. -->
+            <!-- Add-person CTA. Single button across breakpoints, sitting
+                 in the toolbar row next to the title:
+                   - smAndDown: orange circular icon-only button (FAB-styled
+                     in place, NOT free-floating). Visually anchored to the
+                     toolbar so it lines up with the rest of the chrome.
+                   - desktop:   labelled outlined-flat button with the
+                     prepended user-plus glyph.
+                 One testid (`tree-add-person`) resolves to whichever
+                 variant is active for the current viewport. -->
             <v-btn
-                v-if="!smAndDown"
+                v-if="smAndDown"
+                icon="user-plus"
+                color="primary"
+                size="default"
+                :title="t('tree.addPerson')"
+                :aria-label="t('tree.addPerson')"
+                data-testid="tree-add-person"
+                @click="onCreateClick"
+            />
+            <v-btn
+                v-else
                 prepend-icon="user-plus"
                 color="primary"
                 :title="t('tree.addPerson')"
@@ -193,24 +204,6 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
                 {{ t('tree.addPerson') }}
             </v-btn>
         </v-toolbar>
-
-        <!-- Mobile FAB: floats over the tree canvas in the bottom-right
-             corner so the primary "add person" affordance is always one
-             thumb-tap away, independent of toolbar layout / clipping.
-             Same `data-testid` as the toolbar button so existing e2e
-             tests resolve to whichever variant is active for the
-             current viewport. -->
-        <v-btn
-            v-if="smAndDown"
-            icon="user-plus"
-            color="primary"
-            size="large"
-            class="tree-add-fab"
-            :title="t('tree.addPerson')"
-            :aria-label="t('tree.addPerson')"
-            data-testid="tree-add-person"
-            @click="onCreateClick"
-        />
 
         <div class="tree-row">
             <div class="canvas">
@@ -311,19 +304,10 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
     flex: 1;
     min-height: 0;
 }
-/* Mobile FAB — overlays the tree canvas with the primary "add person"
- * affordance. `position: fixed` keeps it anchored as the user pans the
- * SVG; `z-index: 1100` clears the v-navigation-drawer's scrim (Vuetify
- * uses ~1006 for drawer overlays) so the FAB stays clickable above
- * any persistent layer. `bottom` uses `safe-area-inset-bottom` so the
- * iOS home indicator doesn't sit on top of the button on full-screen
- * mobile browsers. Sized large for a thumb-friendly hit target. */
-.tree-add-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    z-index: 1100;
-}
+/* No bespoke FAB CSS — the mobile add-person button now lives in the
+ * toolbar row alongside the family-name title, styled as an icon-only
+ * v-btn variant. The earlier floating-at-bottom-right experiment was
+ * dropped per UX feedback (felt detached from the rest of the chrome). */
 .canvas {
     flex: 1;
     min-width: 0;
