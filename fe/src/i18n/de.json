@@ -60,6 +60,7 @@
         "dbLatency": "Datenbank {ms} ms",
         "dbDown": "Datenbank nicht erreichbar",
         "serverLatency": "Server {ms} ms",
+        "networkLatency": "Netzwerk {ms} ms",
         "workerAlive": "Worker aktiv",
         "workerDown": "Worker offline"
     },
@@ -85,6 +86,7 @@
         },
         "menu": {
             "openAccount": "Konto",
+            "openTree": "Stammbaum",
             "signOut": "Abmelden"
         }
     },

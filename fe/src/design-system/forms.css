@@ -1,0 +1,88 @@
+/*
+ * Shared form + label primitives for hand-rolled (non-Vuetify) forms.
+ *
+ * The contact-data display + edit surfaces both render small inline
+ * label/value rows; before this module each component hard-coded
+ * `color: rgba(0, 0, 0, 0.x)` which faded to invisible in dark mode.
+ * The classes below are theme-aware (via `--text` / `--text-2` /
+ * `--border` tokens from tokens.css) so the same markup renders
+ * correctly in light + dark without per-component duplication.
+ *
+ * Naming uses the `ds-` prefix so these globals never collide with
+ * a component's scoped styles. Consumers add the class alongside
+ * whatever component-local layout they need.
+ */
+
+/* The small uppercase metadata label sitting above / next to a
+ * value or input. Used by both the contact list (EMAIL / PHONE /
+ * ADDRESS row) and the contact edit form (Art / Bezeichnung / Wert). */
+.ds-form-label {
+    font-size: 0.78rem;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+}
+
+/* Same role as `.ds-form-label` but slightly less prominent — used
+ * for the per-row user-chosen label (Private / Work / Mobile) that
+ * sits between the kind glyph and the value. Mixed-case, lighter
+ * weight. */
+.ds-form-sublabel {
+    font-size: 0.85rem;
+    color: var(--text-2);
+}
+
+/* The primary value text — name, email address, phone number. The
+ * bold weight is the contract: keep the value the most readable
+ * thing in the row. */
+.ds-form-value {
+    color: var(--text);
+    font-weight: 500;
+}
+
+/* Bordered input / select used by hand-rolled forms (the contact
+ * edit form is the canonical example). Theme-aware border + text
+ * color so it stays readable in both themes; the surface stays
+ * transparent so the form inherits the dialog / card background. */
+.ds-form-input {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font: inherit;
+    color: var(--text);
+    background: transparent;
+}
+.ds-form-input:focus {
+    outline: none;
+    border-color: var(--acc);
+    box-shadow: 0 0 0 2px var(--acc-soft);
+}
+
+/* Grid-row layout for "label | input" pairs. Fixed left column for
+ * the label so multiple rows line up. The breakpoint guard keeps
+ * narrow-viewport rendering compact (column stack on phones). */
+.ds-form-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    gap: 0.5rem;
+}
+@media (max-width: 480px) {
+    .ds-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* The bordered chip used for visibility / access flags ("Admins
+ * only", "Family"). Tinted with the secondary-soft token so it
+ * registers as a chip in both themes. */
+.ds-form-chip {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    background: var(--sec-soft);
+    color: var(--sec);
+    font-weight: 500;
+}

@@ -139,46 +139,83 @@ function submit(): void {
 </script>
 
 <template>
+    <!-- All label / input / row styling comes from the shared
+         `ds-form-*` primitives in `design-system/forms.css` so this
+         form stays readable in both light + dark themes without
+         duplicating the per-component rgba(0,0,0,…) constants that
+         used to fade to invisible on dark surfaces. ContactsSection
+         (the read-only display) uses the same primitives. -->
     <form class="contact-edit" data-testid="contact-edit" @submit.prevent="submit">
-        <label class="row">
-            <span class="lbl">{{ t('contact.kind') }}</span>
-            <select v-model="form.kind" data-testid="contact-kind">
+        <label class="ds-form-row">
+            <span class="ds-form-label">{{ t('contact.kind') }}</span>
+            <select v-model="form.kind" class="ds-form-input" data-testid="contact-kind">
                 <option v-for="k in KINDS" :key="k" :value="k">{{ t(`contact.kinds.${k}`) }}</option>
             </select>
         </label>
-        <label class="row">
-            <span class="lbl">{{ t('contact.label') }}</span>
-            <input v-model="form.label" type="text" data-testid="contact-label" />
+        <label class="ds-form-row">
+            <span class="ds-form-label">{{ t('contact.label') }}</span>
+            <input v-model="form.label" class="ds-form-input" type="text" data-testid="contact-label" />
         </label>
         <template v-if="form.kind === 'address'">
-            <label class="row">
-                <span class="lbl">{{ t('contact.address.street') }}</span>
-                <input v-model="form.address.street" type="text" data-testid="contact-address-street" />
+            <label class="ds-form-row">
+                <span class="ds-form-label">{{ t('contact.address.street') }}</span>
+                <input
+                    v-model="form.address.street"
+                    class="ds-form-input"
+                    type="text"
+                    data-testid="contact-address-street"
+                />
             </label>
-            <label class="row">
-                <span class="lbl">{{ t('contact.address.house_number') }}</span>
-                <input v-model="form.address.house_number" type="text" data-testid="contact-address-house-number" />
+            <label class="ds-form-row">
+                <span class="ds-form-label">{{ t('contact.address.house_number') }}</span>
+                <input
+                    v-model="form.address.house_number"
+                    class="ds-form-input"
+                    type="text"
+                    data-testid="contact-address-house-number"
+                />
             </label>
-            <label class="row">
-                <span class="lbl">{{ t('contact.address.zip') }}</span>
-                <input v-model="form.address.zip" type="text" data-testid="contact-address-zip" />
+            <label class="ds-form-row">
+                <span class="ds-form-label">{{ t('contact.address.zip') }}</span>
+                <input
+                    v-model="form.address.zip"
+                    class="ds-form-input"
+                    type="text"
+                    data-testid="contact-address-zip"
+                />
             </label>
-            <label class="row">
-                <span class="lbl">{{ t('contact.address.city') }}</span>
-                <input v-model="form.address.city" type="text" data-testid="contact-address-city" />
+            <label class="ds-form-row">
+                <span class="ds-form-label">{{ t('contact.address.city') }}</span>
+                <input
+                    v-model="form.address.city"
+                    class="ds-form-input"
+                    type="text"
+                    data-testid="contact-address-city"
+                />
             </label>
-            <label class="row">
-                <span class="lbl">{{ t('contact.address.country') }}</span>
-                <input v-model="form.address.country" type="text" data-testid="contact-address-country" />
+            <label class="ds-form-row">
+                <span class="ds-form-label">{{ t('contact.address.country') }}</span>
+                <input
+                    v-model="form.address.country"
+                    class="ds-form-input"
+                    type="text"
+                    data-testid="contact-address-country"
+                />
             </label>
         </template>
-        <label v-else class="row">
-            <span class="lbl">{{ t('contact.value') }}</span>
-            <input v-model="form.textValue" type="text" required data-testid="contact-value" />
+        <label v-else class="ds-form-row">
+            <span class="ds-form-label">{{ t('contact.value') }}</span>
+            <input
+                v-model="form.textValue"
+                class="ds-form-input"
+                type="text"
+                required
+                data-testid="contact-value"
+            />
         </label>
-        <label class="row">
-            <span class="lbl">{{ t('contact.visibility') }}</span>
-            <select v-model="form.visibility" data-testid="contact-visibility">
+        <label class="ds-form-row">
+            <span class="ds-form-label">{{ t('contact.visibility') }}</span>
+            <select v-model="form.visibility" class="ds-form-input" data-testid="contact-visibility">
                 <option value="family">{{ t('contact.visFamily') }}</option>
                 <option value="admins_only">{{ t('contact.visAdmins') }}</option>
             </select>
@@ -199,24 +236,6 @@ function submit(): void {
     display: grid;
     gap: 0.5rem;
     padding: 0.5rem 0;
-}
-.row {
-    display: grid;
-    grid-template-columns: 110px 1fr;
-    align-items: center;
-    gap: 0.5rem;
-}
-.lbl {
-    font-size: 0.85rem;
-    color: rgba(0, 0, 0, 0.72);
-}
-.row input,
-.row select {
-    width: 100%;
-    padding: 0.35rem 0.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    font: inherit;
 }
 .actions {
     display: flex;

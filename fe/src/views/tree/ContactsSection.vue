@@ -143,10 +143,15 @@ function editingInitial(id: string): {
         <ul v-else-if="list.data.value && list.data.value.length > 0" class="contact-list">
             <li v-for="c in list.data.value" :key="c.id" class="contact-row" :data-testid="`contact-row-${c.id}`">
                 <div class="contact-summary">
-                    <span class="kind">{{ t(`contact.kinds.${c.kind}`) }}</span>
-                    <span v-if="c.label !== ''" class="label">{{ c.label }}</span>
-                    <span class="value">{{ displayValue(c.kind, c.value) }}</span>
-                    <span v-if="c.visibility === 'admins_only'" class="vis-pill" :title="t('contact.visAdmins')">
+                    <!-- Shared `ds-form-*` primitives from
+                         design-system/forms.css so this row and the
+                         contact-edit form share a single source of
+                         truth for theme-aware label / value / chip
+                         colours. -->
+                    <span class="ds-form-label">{{ t(`contact.kinds.${c.kind}`) }}</span>
+                    <span v-if="c.label !== ''" class="ds-form-sublabel">{{ c.label }}</span>
+                    <span class="ds-form-value">{{ displayValue(c.kind, c.value) }}</span>
+                    <span v-if="c.visibility === 'admins_only'" class="ds-form-chip" :title="t('contact.visAdmins')">
                         {{ t('contact.visAdmins') }}
                     </span>
                 </div>
@@ -180,9 +185,10 @@ function editingInitial(id: string): {
 </template>
 
 <style scoped>
-/* Theme-aware tokens throughout — the previous version hardcoded
- * `rgba(0, 0, 0, …)` which faded to invisible against the dark
- * surface. Every colour now flips with the active theme. */
+/* Layout-only styles here — the per-row label/value/chip colouring
+ * lives in the shared `design-system/forms.css` primitives so this
+ * read-only display and the edit form (`ContactEdit.vue`) can't
+ * drift apart. */
 .contacts {
     margin-top: 0.5rem;
 }
@@ -206,38 +212,6 @@ function editingInitial(id: string): {
     align-items: baseline;
     gap: 0.5rem;
     flex-wrap: wrap;
-}
-.kind {
-    /* The uppercase kind label (EMAIL / PHONE / ADDRESS) — readable
-     * but still subordinate to the value. `--text-2` rather than the
-     * dimmer `--text-3` so the label-vs-value hierarchy stays clear
-     * without the label disappearing on dark backgrounds. */
-    font-size: 0.78rem;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    font-weight: 600;
-}
-.label {
-    /* The optional user-chosen label (Private / Work / Mobile) — slightly
-     * more prominent than the kind glyph but still secondary to the value. */
-    font-size: 0.85rem;
-    color: var(--text-2);
-}
-.value {
-    color: var(--text);
-    font-weight: 500;
-}
-.vis-pill {
-    /* "Admins only" badge. Uses the warm secondary-soft tint so it
-     * registers as a chip in both themes; the soft tone differs from
-     * the surrounding surface enough to read as a pill. */
-    font-size: 0.7rem;
-    padding: 0.1rem 0.4rem;
-    border-radius: 999px;
-    background: var(--sec-soft);
-    color: var(--sec);
-    font-weight: 500;
 }
 .contact-actions {
     display: flex;

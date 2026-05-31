@@ -17,13 +17,20 @@ describe('useHealth', () => {
         mocked.GET.mockReset()
     })
 
-    it('runs a query with key ["health"] and unwraps data', async () => {
+    it('runs a query with key ["health"] and returns body + network round-trip', async () => {
         mocked.GET.mockResolvedValueOnce({ data: { data: { version: '1.0' } }, error: undefined })
         const { result } = makeHookWrapper(() => useHealth())
         // Let queryFn settle.
         await new Promise<void>((r) => setTimeout(r, 5))
         expect(mocked.GET).toHaveBeenCalledWith('/api/v1/health')
-        expect(result.data.value).toEqual({ data: { version: '1.0' } })
+        // useHealth now appends a FE-measured `network_round_trip_ms`
+        // alongside the BE envelope. The exact ms is wall-clock-
+        // dependent so we only assert SHAPE: `data` propagated +
+        // `network_round_trip_ms` present + non-negative.
+        const value = result.data.value as { data?: { version?: string }; network_round_trip_ms?: number }
+        expect(value.data).toEqual({ version: '1.0' })
+        expect(typeof value.network_round_trip_ms).toBe('number')
+        expect(value.network_round_trip_ms ?? -1).toBeGreaterThanOrEqual(0)
     })
 
     it('throws when the response is an error', async () => {

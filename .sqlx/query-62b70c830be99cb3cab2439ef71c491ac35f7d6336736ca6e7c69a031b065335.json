@@ -1,0 +1,73 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                fm.user_id,\n                fm.role::text  AS \"role!\",\n                fm.joined_at,\n                u.email::text  AS \"email!\",\n                u.display_name AS \"display_name!\",\n                NULLIF(TRIM(BOTH FROM COALESCE(p.given_name, '') || ' ' || COALESCE(p.family_name, '')), '')\n                    AS \"linked_person_name?\"\n            FROM family_memberships fm\n            JOIN users u ON u.id = fm.user_id\n            LEFT JOIN persons p\n                   ON p.linked_user_id = fm.user_id AND p.family_id = fm.family_id\n            WHERE fm.family_id = $1\n            ORDER BY\n                CASE fm.role\n                    WHEN 'owner' THEN 0\n                    WHEN 'admin' THEN 1\n                    ELSE 2\n                END,\n                NULLIF(u.display_name, ''),\n                NULLIF(TRIM(BOTH FROM COALESCE(p.given_name, '') || ' ' || COALESCE(p.family_name, '')), ''),\n                u.email\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "family_memberships",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "role!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "joined_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "family_memberships",
+            "name": "joined_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "email!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "display_name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "users",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "linked_person_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      false,
+      null,
+      false,
+      null
+    ]
+  },
+  "hash": "62b70c830be99cb3cab2439ef71c491ac35f7d6336736ca6e7c69a031b065335"
+}

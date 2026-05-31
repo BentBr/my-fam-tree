@@ -146,6 +146,17 @@ function goToSignIn(): void {
             </template>
 
             <template v-if="isAuthed">
+                <!-- Tree shortcut for signed-in users coming back to
+                     the marketing landing page (image #59 / #60): the
+                     primary place they want to go is their family
+                     tree, not /account. Put it above Account so it's
+                     the first thing the menu offers when logged in. -->
+                <v-list-item
+                    to="/tree"
+                    prepend-icon="users"
+                    :title="t('account.menu.openTree')"
+                    data-testid="user-menu-tree"
+                />
                 <v-list-item
                     to="/account"
                     prepend-icon="user"

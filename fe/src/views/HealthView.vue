@@ -12,6 +12,12 @@ const requestId = computed(() => data.value?.meta?.request_id ?? '')
 const dbOk = computed(() => data.value?.data.db_ok ?? false)
 const dbLatency = computed(() => data.value?.data.db_latency_ms ?? 0)
 const serverLatency = computed(() => data.value?.data.server_duration_ms ?? 0)
+// FE-measured round-trip including everything outside the in-handler
+// timer: TLS handshake, Nginx, geographic distance, actix middleware
+// before the handler runs. Subtracting `serverLatency` tells the user
+// how much overhead sits "between the wires" (proxy + network). Always
+// >= serverLatency by construction.
+const networkLatency = computed(() => data.value?.network_round_trip_ms ?? 0)
 // Show one decimal so sub-millisecond DB pings ("0.3 ms") don't render
 // as a misleading "0 ms". The BE returns float ms; we just format
 // here. Network panel's reported request time will always be larger
@@ -38,11 +44,13 @@ function colourFor(ms: number, ok = true): 'success' | 'warning' | 'error' {
 }
 const dbColor = computed(() => colourFor(dbLatency.value, dbOk.value))
 const serverColor = computed(() => colourFor(serverLatency.value))
+const networkColor = computed(() => colourFor(networkLatency.value))
 const workerColor = computed<'success' | 'error'>(() => (workerOk.value ? 'success' : 'error'))
 const dbText = computed(() =>
     dbOk.value ? t('health.dbLatency', { ms: fmtMs(dbLatency.value) }) : t('health.dbDown'),
 )
 const serverText = computed(() => t('health.serverLatency', { ms: fmtMs(serverLatency.value) }))
+const networkText = computed(() => t('health.networkLatency', { ms: fmtMs(networkLatency.value) }))
 const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t('health.workerDown')))
 </script>
 
@@ -59,15 +67,17 @@ const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t(
             </v-alert>
             <div v-else data-testid="health-ok">
                 <v-alert type="success" variant="tonal" class="mb-3">{{ t('health.ok') }}</v-alert>
-                <!-- Three liveness chips side-by-side: DB on the left,
-                     worker leader-lease in the middle, full handler
-                     duration on the right. `server_duration_ms` is
-                     always >= `db_latency_ms` (the DB probe runs
-                     inside the handler timer); when the gap between the
-                     two is large it points at framework / serialisation
-                     overhead rather than the DB. The worker chip has
-                     no latency dimension — it's a pure boolean from
-                     the Redis lease check. -->
+                <!-- Four liveness chips side-by-side, ordered by
+                     measurement scope (narrowest first):
+                       DB     — Postgres probe round-trip.
+                       Worker — Redis leader-lease boolean.
+                       Server — total in-handler duration.
+                       Network — FE-measured round-trip (browser timer).
+                     Server <= Network by construction (network covers
+                     server + TLS + Nginx + geographic distance +
+                     pre-handler actix middleware). When the gap is
+                     large the overhead lives "between the wires"
+                     and isn't a server-side issue. -->
                 <div class="d-flex flex-wrap ga-2 mb-3">
                     <v-chip :color="dbColor" variant="flat" data-testid="health-db">
                         <v-icon start icon="database" />
@@ -80,6 +90,10 @@ const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t(
                     <v-chip :color="serverColor" variant="flat" data-testid="health-server">
                         <v-icon start icon="server" />
                         {{ serverText }}
+                    </v-chip>
+                    <v-chip :color="networkColor" variant="flat" data-testid="health-network">
+                        <v-icon start icon="globe" />
+                        {{ networkText }}
                     </v-chip>
                 </div>
                 <v-list density="compact">

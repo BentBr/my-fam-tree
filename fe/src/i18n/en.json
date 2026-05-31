@@ -60,6 +60,7 @@
         "dbLatency": "Database {ms} ms",
         "dbDown": "Database unreachable",
         "serverLatency": "Server {ms} ms",
+        "networkLatency": "Network {ms} ms",
         "workerAlive": "Worker alive",
         "workerDown": "Worker down"
     },
@@ -85,6 +86,7 @@
         },
         "menu": {
             "openAccount": "Account",
+            "openTree": "Family tree",
             "signOut": "Sign out"
         }
     },
