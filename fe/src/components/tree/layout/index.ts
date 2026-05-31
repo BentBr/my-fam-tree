@@ -184,7 +184,7 @@ export function layoutTree(input: TreeInput): LayoutResult {
 
     // Pass 2 reorderings driven by pass-1 positions.
     let changed = false
-    if (reorderRootsByBarycenter(rootBlocks, placed, childrenOfBlock)) changed = true
+    if (reorderRootsByBarycenter(rootBlocks, placed, childrenOfPerson)) changed = true
     if (swapTwoPersonCouplesByParentX(blocksByRow, placed, byId, parentsOfPerson)) changed = true
     if (changed) {
         placed.clear()
@@ -374,34 +374,56 @@ function runPlacement(
  * `true` when the order changed so the caller can decide whether to re-run
  * placement. The new order preserves the default ordering as a tie-breaker
  * — equal barycenters fall back to birth-date / id sort.
+ *
+ * Descendant collection walks `childrenOfPerson` (the raw parent_edges
+ * graph) rather than `childrenOfBlock` (the block tree built from
+ * `chooseParentBlock`). The block-tree walk misses the Herta case:
+ *
+ *   Top row: [Herta (root), Anneliese (root)]
+ *   Middle row: chain block [Bernd, Gudrun, Bernhard] where Gudrun is
+ *               anchor with Bernd as ENDED partner + Bernhard as OPEN.
+ *               `chooseParentBlock` walks the chain in order and picks the
+ *               first parent-bearing member → Bernd → Anneliese's block.
+ *               Bernhard's actual mother Herta is invisible to the block
+ *               tree.
+ *
+ * Walking parent_edges-of-persons instead exposes BOTH parental lineages
+ * — Herta's barycenter then equals Bernhard's x (the only descendant via
+ * parent_edges), Anneliese's equals Bernd's. The pair sorts so each
+ * mother ends up above her own child, eliminating the crossing parent
+ * edge the user reported.
  */
 function reorderRootsByBarycenter(
     rootBlocks: Block[],
     placed: Map<string, PositionedBlock>,
-    childrenOfBlock: Map<string, Block[]>,
+    childrenOfPerson: Map<string, string[]>,
 ): boolean {
     if (rootBlocks.length < 2) return false
     const before = rootBlocks.map((b) => b.id).join('|')
+
+    // Snapshot each positioned person's card-centre x once so the
+    // descendant walk is a cheap O(descendants) per root.
+    const personCenterX = new Map<string, number>()
+    for (const pb of placed.values()) {
+        for (let i = 0; i < pb.members.length; i += 1) {
+            const memberId = pb.members[i]
+            if (memberId === undefined) continue
+            const offset = pb.memberOffsets[i] ?? 0
+            personCenterX.set(memberId, pb.x + offset + NODE_W / 2)
+        }
+    }
+
     const barycenters = new Map<string, number>()
     for (const root of rootBlocks) {
-        const descendants = collectDescendantBlocks(root, childrenOfBlock)
-        let sum = 0
-        let count = 0
-        for (const d of descendants) {
-            const p = placed.get(d.id)
-            if (p === undefined) continue
-            sum += p.x + p.pixelWidth / 2
-            count += 1
-        }
+        const sumCount = sumDescendantsByParentEdges(root, childrenOfPerson, personCenterX)
         // Roots with NO descendants (orphan leaves) keep their existing x as
         // the barycenter so they don't all collapse to 0 and reshuffle the
         // surviving roots.
-        if (count === 0) {
-            const own = placed.get(root.id)
-            sum = own === undefined ? 0 : own.x + own.pixelWidth / 2
-            count = 1
-        }
-        barycenters.set(root.id, sum / count)
+        const final =
+            sumCount.count === 0
+                ? (personCenterX.get(root.members[0] ?? '') ?? 0)
+                : sumCount.sum / sumCount.count
+        barycenters.set(root.id, final)
     }
     rootBlocks.sort((a, b) => {
         const ba = barycenters.get(a.id) ?? 0
@@ -411,16 +433,44 @@ function reorderRootsByBarycenter(
     return rootBlocks.map((b) => b.id).join('|') !== before
 }
 
-function collectDescendantBlocks(root: Block, childrenOfBlock: Map<string, Block[]>): Block[] {
-    const out: Block[] = []
-    const stack = [...(childrenOfBlock.get(root.id) ?? [])]
-    while (stack.length > 0) {
-        const next = stack.pop()
-        if (next === undefined) continue
-        out.push(next)
-        for (const c of childrenOfBlock.get(next.id) ?? []) stack.push(c)
+/**
+ * BFS from each member of `root` through `childrenOfPerson` and accumulate
+ * the descendant card-centre x values. Crucially this walks ALL
+ * parent_edges, not just the canonical block-tree path — so a root whose
+ * only child sits inside a multi-couple chain owned by ANOTHER root's
+ * block tree still gets credit for that child in its barycenter.
+ *
+ * `seen` is shared across the BFS so a person reachable via two roots
+ * (e.g. Bernhard reachable from both Herta and — through Gudrun's chain
+ * neighbour Bernd — indirectly Anneliese) is counted ONCE per root walk.
+ * Double-counting across roots is fine and actually wanted — both Herta
+ * AND Anneliese should see Gudrun's grandchildren as descendants
+ * because both share custody of the children's block.
+ */
+function sumDescendantsByParentEdges(
+    root: Block,
+    childrenOfPerson: Map<string, string[]>,
+    personCenterX: Map<string, number>,
+): { sum: number; count: number } {
+    const seen = new Set<string>(root.members)
+    const queue: string[] = [...root.members]
+    let sum = 0
+    let count = 0
+    while (queue.length > 0) {
+        const cur = queue.pop()
+        if (cur === undefined) continue
+        for (const k of childrenOfPerson.get(cur) ?? []) {
+            if (seen.has(k)) continue
+            seen.add(k)
+            queue.push(k)
+            const x = personCenterX.get(k)
+            if (x !== undefined) {
+                sum += x
+                count += 1
+            }
+        }
     }
-    return out
+    return { sum, count }
 }
 
 /**

@@ -250,6 +250,51 @@ describe('layoutTree — bug 2: anchor sits in the middle of two concurrent open
     })
 })
 
+describe('layoutTree — parent-edge-aware barycenter (Herta case)', () => {
+    it('reorders top-row roots so each mother sits above her own child in a shared-chain row', () => {
+        // Real prod repro. Top row has Herta + Anneliese (both
+        // roots). Middle row has a 3-person chain [Bernd, Gudrun,
+        // Bernhard] — Gudrun is the anchor with Bernd as ENDED
+        // partner and Bernhard as OPEN. Bernd is Anneliese's son,
+        // Bernhard is Herta's son.
+        //
+        // The block-tree-based barycenter would attribute the entire
+        // chain to Anneliese (because `chooseParentBlock` picks the
+        // chain's first parent-bearing member → Bernd → Anneliese),
+        // leaving Herta with 0 descendants and keeping her at the
+        // default leftmost slot. Parent-edge-aware barycenter walks
+        // both lineages and pulls Herta over to above Bernhard's
+        // column.
+        const out = layoutTree({
+            nodes: [
+                person('herta', [], [], '1912-03-29'),
+                person('anneliese', [], [], '1921-03-25'),
+                person('bernhard', ['herta'], ['gudrun'], '1942-11-25'),
+                person('bernd', ['anneliese'], ['gudrun'], '1955-06-10'),
+                person('gudrun', [], ['bernd', 'bernhard'], '1958-09-12'),
+            ],
+            parent_edges: [
+                { a: 'bernhard', b: 'herta' },
+                { a: 'bernd', b: 'anneliese' },
+            ],
+            partner_edges: [
+                { a: 'gudrun', b: 'bernd', ended_on: '1990-04-12' },
+                { a: 'gudrun', b: 'bernhard' },
+            ] as PartnerEdgeInput[],
+        })
+        const herta = xOf(out, 'herta')
+        const anneliese = xOf(out, 'anneliese')
+        const bernd = xOf(out, 'bernd')
+        const bernhard = xOf(out, 'bernhard')
+        // Whichever child lands on the left, the matching mother
+        // must be on the same side. The chain rule places ENDED on
+        // the LEFT — so Bernd ends up left of Bernhard, which means
+        // Anneliese (Bernd's mother) must end up LEFT of Herta.
+        expect(bernd).toBeLessThan(bernhard)
+        expect(anneliese).toBeLessThan(herta)
+    })
+})
+
 describe('layoutTree — bug 3: parent block recentres over a child shifted by row separation', () => {
     it('keeps a parent block centred over its only child in the trivial no-collision case', () => {
         // Baseline: no sibling collision in the child row → parent
