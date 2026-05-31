@@ -337,12 +337,23 @@ fn map_person_repo_err(e: PersonRepoError, id: Option<Uuid>) -> ApiError {
 ///    can't distinguish absent from null, but both mean "no change").
 /// 2. `proposed == current` — defensive echo of the existing value
 ///    from a FE that re-sends every field on save.
-/// 3. `proposed == caller_user_id` — admin self-link at CREATE time
-///    (e.g., the family-owner's first row representing themselves).
-///    Equivalent to `POST /claim` after the fact; allowed inline for
-///    convenience.
+/// 3. `proposed == caller_user_id` AND `current` is `None` — admin
+///    self-link of an UNLINKED row (e.g., the family-owner's first
+///    row representing themselves on CREATE; or an admin staking
+///    claim to a still-orphan row on PATCH). Equivalent to
+///    `POST /claim` after the fact; allowed inline for convenience.
 ///
-/// Anything else (proposed is some *other* user's id) is rejected
+///    The `current.is_none()` guard is load-bearing for the
+///    REASSIGN case: without it, an admin could PATCH an already-
+///    linked row to themselves, bypassing the linked user's
+///    consent (they should have had to use the invite flow). With
+///    the guard, reassign-to-self requires the original linked
+///    user to first clear their own link (via `DELETE /claim`
+///    or an explicit PATCH `linked_user_id: null` from their
+///    session).
+///
+/// Anything else (proposed is some *other* user's id, OR proposed
+/// is self but the row is already linked to someone else) is rejected
 /// with `validation.link_consent_required` so the FE can show a
 /// targeted message and the admin understands they need the invite
 /// flow.
@@ -354,14 +365,14 @@ fn check_link_consent(
     match proposed {
         None => Ok(()),
         Some(p) if Some(p) == current => Ok(()),
-        Some(p) if p == caller_user_id => Ok(()),
+        Some(p) if p == caller_user_id && current.is_none() => Ok(()),
         Some(_) => Err(ApiError::Validation(vec![FieldViolation::new(
             "/linked_user_id",
             "validation.link_consent_required",
             "Linking a person row to another user requires the invite-email \
              consent flow. Send an invite (POST /families/{id}/invites) and let \
-             the recipient accept; or for self-link, use POST /persons/{id}/claim \
-             or set this field to your own user id.",
+             the recipient accept; or for self-link of an unlinked row, use \
+             POST /persons/{id}/claim or set this field to your own user id.",
         )])),
     }
 }

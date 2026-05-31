@@ -54,7 +54,11 @@ test('the FE refreshes the session when the access cookie disappears but the ref
     // FE's `authRefresh` middleware should POST /api/v1/auth/refresh,
     // get a fresh access cookie back, retry /users/me, and render.
     await page.goto('/account')
-    await expect(page.getByTestId('account-card')).toBeVisible({ timeout: 15_000 })
+    // Bumped 15 s → 25 s: this is the slowest auth-chain in the suite
+    // (hydrate /auth/me 401 → /auth/refresh → retry /auth/me → render
+    // → /users/me on the page mount). CI hot-spots all four hops and
+    // the test was flaking at the 15 s mark on cold-start runs.
+    await expect(page.getByTestId('account-card')).toBeVisible({ timeout: 25_000 })
     // No bounce to sign-in (the failure mode the user reported).
     await expect(page).toHaveURL(/\/account$/)
 

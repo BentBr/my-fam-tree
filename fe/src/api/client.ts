@@ -93,6 +93,31 @@ const familyIdInjector: Middleware = {
 
 let refreshing: Promise<void> | null = null
 
+// Each in-flight Request gets a `.clone()` stashed in this WeakMap on
+// the `onRequest` hook. After a 401 → refresh round-trip we use the
+// CLONE to retry — the original Request's body stream has already
+// been consumed by the first fetch and reusing it would either
+// silently drop the body (Chrome) or throw "Body is unusable"
+// (Firefox / strict spec), so retried POST/PATCH/DELETE calls would
+// land at the BE with an empty payload and fail validation in a way
+// that looks identical to a still-expired session.
+//
+// WeakMap keyed by the Request object means the clone is GC'd as soon
+// as the original drops out of scope — no leak across the long-lived
+// client.
+const retryClones = new WeakMap<Request, Request>()
+
+const requestCloner: Middleware = {
+    async onRequest({ request }) {
+        // `clone()` snapshots method + url + headers + body for a
+        // single replay. Future replays (rare, but possible if
+        // refresh races) would need another clone — out of scope
+        // here. GET / HEAD have no body and the clone is cheap.
+        retryClones.set(request, request.clone())
+        return request
+    },
+}
+
 const authRefresh: Middleware = {
     async onResponse({ request, response }) {
         if (response.status !== 401) return response
@@ -157,7 +182,19 @@ const authRefresh: Middleware = {
         // ourselves rather than letting a still-failing retry escape
         // silently. A retry that's still 401 means the refresh didn't
         // actually recover the session → end it.
-        const retried = await fetch(request)
+        //
+        // CRITICAL: use the cloned request stashed by `requestCloner`,
+        // NOT the original. The original's body stream was consumed by
+        // the first fetch and replaying it would land an empty body at
+        // the BE for any POST/PATCH/DELETE that needed to refresh
+        // mid-flight (creating a person, uploading an avatar, …) —
+        // exactly the case where preserving the user's pending write
+        // matters most. Fall back to the original Request if the clone
+        // is somehow missing (a future middleware re-write that strips
+        // requestCloner would otherwise silently regress to broken
+        // retries for GETs).
+        const replay = retryClones.get(request) ?? request
+        const retried = await fetch(replay)
         if (!retried.ok) {
             if (retried.status === 401) endSession()
             throw await toApiError(retried)
@@ -220,9 +257,14 @@ export const client = createClient<paths>({ baseUrl, credentials: 'include' })
 // silently. Putting `authRefresh` LAST in the `use()` call places it
 // FIRST in the onResponse chain.
 //
-//   onRequest:  familyIdInjector → errorTranslator → warningsBroadcaster → authRefresh
-//   onResponse: authRefresh → warningsBroadcaster → errorTranslator → familyIdInjector
+// `requestCloner` runs AFTER `familyIdInjector` in the onRequest
+// chain so the clone captures the X-Family-Id header (and any other
+// header any future request-side middleware adds). Otherwise the
+// replayed request would land at the BE without the active-family
+// selector and 422 against the X-Family-Id validator. The cloner has
+// no onResponse — it's a pure request-side helper that just stashes
+// a replay copy in the per-request WeakMap.
 //
-// `familyIdInjector` keeps its position on request (it must run before
-// the request is sent so the X-Family-Id header is in place).
-client.use(familyIdInjector, errorTranslator, warningsBroadcaster, authRefresh)
+//   onRequest:  familyIdInjector → requestCloner → errorTranslator → warningsBroadcaster → authRefresh
+//   onResponse: authRefresh → warningsBroadcaster → errorTranslator → requestCloner → familyIdInjector
+client.use(familyIdInjector, requestCloner, errorTranslator, warningsBroadcaster, authRefresh)

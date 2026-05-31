@@ -28,9 +28,11 @@ export async function signIn(page: Page, email: string): Promise<void> {
     // → router.replace → beforeEach guards (hydrate skipped, active-family
     // resolve, role check) → final URL. Under CI runner load this can take
     // past Playwright's default 5 s `toHaveURL` poll window — bumping the
-    // budget to 15 s leaves the redirect plenty of room without masking a
-    // genuine hang (per-test timeout is still 30 s).
-    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/, { timeout: 15_000 })
+    // budget to 25 s leaves the redirect plenty of room without masking a
+    // genuine hang (per-test timeout is still 30 s). Earlier 15 s was enough
+    // most runs but flaked on the cold-start tests (alphabetical-first ones
+    // pay the V8 JIT + BE connection-pool warm-up tax that later tests don't).
+    await expect(page).toHaveURL(/\/(tree|health|families\/create|families\/pick)$/, { timeout: 25_000 })
 }
 
 /**
