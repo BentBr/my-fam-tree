@@ -75,19 +75,43 @@ let refreshing: Promise<void> | null = null
 const authRefresh: Middleware = {
     async onResponse({ request, response }) {
         if (response.status !== 401) return response
+        // Avoid infinite recursion: /auth/refresh's own 401 must NOT
+        // re-trigger this middleware (it would loop forever). Let it
+        // bubble up so the caller (`auth.refresh()`) sees the 401 via
+        // its own error path.
+        if (new URL(request.url).pathname.endsWith('/auth/refresh')) {
+            return response
+        }
         let body: ApiErrorBody | undefined
         try {
             body = (await response.clone().json()) as ApiErrorBody
         } catch {
             return response
         }
-        if (body.code !== 'auth_token_expired') {
-            // Cookie dropped server-side / not an expiry we can refresh.
-            // Session is gone: redirect, then throw the translated error
-            // so `reportError` shows the session-expired toast.
-            endSession()
-            throw new ApiClientError(body)
-        }
+        // Try refresh on ANY 401, not just `auth_token_expired`.
+        //
+        // The narrower "only on auth_token_expired" check fails the
+        // common case where the access cookie has expired wall-clock-
+        // wise: the BROWSER drops expired cookies, so the request
+        // arrives at the BE with NO cookie at all — the BE answers
+        // `auth_unauthenticated`, not `auth_token_expired`. The refresh
+        // cookie has a separate, longer TTL and a narrower path
+        // (`/api/v1/auth/refresh`), so it survives the access cookie's
+        // expiry and is still available for the refresh round-trip.
+        //
+        // For genuinely-anonymous callers (no refresh cookie either),
+        // the refresh attempt below itself returns 401 — we fall
+        // through to `endSession()`, which is a no-op when the auth
+        // store is already in the `anonymous` state, so the user just
+        // sees a normal anonymous page instead of being bounced.
+        //
+        // The cost is one extra `/auth/refresh` round-trip on the very
+        // first 401 of an anonymous session — fine for the
+        // "session-resume-after-cold-tab" UX win it buys us.
+        //
+        // `body` is retained so we can rethrow it verbatim if the
+        // refresh path fails — preserves the original error semantics
+        // for `reportError`'s toast pipeline.
         const auth = useAuthStore()
         refreshing ??= auth
             .refresh()
@@ -99,11 +123,14 @@ const authRefresh: Middleware = {
             })
         try {
             await refreshing
-        } catch (e) {
-            // Refresh failed — the long-lived session is gone. Treat as
-            // hard logout: redirect + propagate so reportError toasts.
+        } catch {
+            // Refresh failed — the long-lived session is gone (or there
+            // was none to begin with). Treat as hard logout: redirect
+            // (no-op if already anonymous) + rethrow the ORIGINAL 401
+            // body so `reportError` shows the right toast — e.g.,
+            // "session expired" rather than "refresh invalid".
             endSession()
-            throw e
+            throw new ApiClientError(body)
         }
         // Retry the original request now that the cookie is fresh. The
         // retried response does NOT re-enter this middleware chain
