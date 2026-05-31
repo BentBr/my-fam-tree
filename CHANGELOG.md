@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.10](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.9...core-v0.1.10) (2026-05-31)
+
+
+### Features
+
+* **health:** add server_duration_ms timer alongside the DB latency ([48fbd76](https://github.com/BentBr/my-fam-tree/commit/48fbd7608dfcd6a1869d4549408898803f72301f))
+* **tree:** allow deeper manual zoom-out without changing fit-to-view ([3ba51ed](https://github.com/BentBr/my-fam-tree/commit/3ba51edae37f350e7f04d061b11fdc12aa3f1aca))
+
 ## [0.1.9](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.8...core-v0.1.9) (2026-05-31)
 
 
