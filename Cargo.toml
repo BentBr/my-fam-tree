@@ -109,3 +109,18 @@ shadow_unrelated = "warn"
 lto = "thin"
 codegen-units = 1
 strip = "symbols"
+
+# `cargo test --workspace --all-targets` links ~15 integration test
+# binaries each pulling in the full dependency graph (~250+ rlibs per
+# binary at debug=2). On the GitHub Actions ubuntu-latest runner that
+# blew the ~14 GB disk budget during link, surfacing as
+# "No space left on device (os error 28)" mid-build. Dropping debug
+# info from the dev/test profile keeps backtraces functional via
+# `line-tables-only` (file:line is preserved, full DWARF expression
+# evaluation is not — fine for CI; locally devs can override). Cuts
+# per-binary size by ~5×.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.test]
+debug = "line-tables-only"

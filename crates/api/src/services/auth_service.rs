@@ -8,7 +8,11 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use chrono::{Duration, Utc};
-use my_fam_tree_domain::{FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, User, UserId};
+use my_fam_tree_domain::{
+    FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, RefreshTokenRepo, User, UserId,
+};
+
+use my_fam_tree_config::JwtConfig;
 
 use crate::auth::{FamilyClaim, JwtIssuer, generate_opaque_token};
 
@@ -36,6 +40,50 @@ pub async fn issue_access_token_for(
     let token =
         issuer.issue(user.id.into_uuid(), &user.email, user.locale.as_str(), claims.clone())?;
     Ok((token, claims))
+}
+
+/// Mint + persist a fresh opaque refresh token for `user`, returning the
+/// raw token string (the cookie value the BE will Set-Cookie to the
+/// browser).
+///
+/// Used by every "first-time-session" path:
+///   - `POST /auth/consume` after a magic-link sign-in
+///   - `POST /invites/accept` after the recipient accepts an invite
+///
+/// `POST /auth/refresh` is a separate flow (it ROTATES an existing
+/// row via `refresh_tokens.rotate`) and doesn't share this helper.
+///
+/// Persists only the sha256 hash of the token. The raw token never
+/// goes to disk — it's encoded into the refresh cookie and only the
+/// client holds it. Rolling + absolute deadlines come from JWT
+/// config (`refresh_ttl_seconds` + `refresh_absolute_ttl_seconds`).
+///
+/// # Errors
+/// Propagates DB errors from the refresh-token repo as an
+/// `anyhow::Error`; callers wrap into their handler's `ApiError`.
+pub async fn mint_refresh_token_for(
+    refresh_tokens: &Arc<dyn RefreshTokenRepo>,
+    jwt_cfg: &JwtConfig,
+    user: &User,
+) -> anyhow::Result<String> {
+    let (token, hash) = generate_opaque_token();
+    let now = Utc::now();
+    let ttl = i64::try_from(jwt_cfg.refresh_ttl_seconds).unwrap_or(i64::MAX);
+    let abs = i64::try_from(jwt_cfg.refresh_absolute_ttl_seconds).unwrap_or(i64::MAX);
+    refresh_tokens
+        .create(
+            user.id,
+            &hash,
+            None,
+            None,
+            None,
+            now + Duration::seconds(ttl),
+            now + Duration::seconds(abs),
+        )
+        .await
+        .map_err(|e| anyhow::anyhow!(e.to_string()))
+        .context("persist refresh token")?;
+    Ok(token)
 }
 
 /// Mint and persist a single-use magic-link `Login` token for `user_id`,

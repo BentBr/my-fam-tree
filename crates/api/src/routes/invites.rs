@@ -23,7 +23,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::auth::{FamilyClaim, hash_token};
-use crate::cookies::{ACCESS_COOKIE, access_cookie};
+use crate::cookies::{ACCESS_COOKIE, access_cookie, refresh_cookie};
 use crate::response::NullResponseBody;
 use crate::routes::families::FamilyView;
 use crate::services::audit;
@@ -213,6 +213,17 @@ pub async fn accept(
         .await
         .map_err(ApiError::Internal)?;
 
+    // Mint + persist a refresh token alongside the access cookie via the
+    // shared service helper. Without this row (and the matching cookie),
+    // invite-accept only set the SHORT-lived access cookie (~15 min
+    // TTL) and the recipient looked logged out the next time they came
+    // back — they had to request a fresh magic link. Same helper as
+    // `/auth/consume` so the two sign-in paths stay in lockstep.
+    let refresh_token =
+        crate::services::auth_service::mint_refresh_token_for(&state.refresh_tokens, &state.cfg.jwt, &user)
+            .await
+            .map_err(ApiError::Internal)?;
+
     let family = family_view_from_claims(invite.family_id.into_uuid(), &fams, invite.invited_role);
     let payload = AcceptRes {
         family,
@@ -226,6 +237,7 @@ pub async fn accept(
 
     let mut resp = HttpResponse::Ok().json(ApiResponse::ok(payload));
     let _ = resp.add_cookie(&access_cookie(&state.cfg, access));
+    let _ = resp.add_cookie(&refresh_cookie(&state.cfg, refresh_token));
     Ok(resp)
 }
 

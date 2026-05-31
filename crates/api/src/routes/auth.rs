@@ -292,22 +292,13 @@ pub async fn consume(
     let (access, families) =
         issue_access_token_for(&state.jwt_issuer, &state.memberships, &user).await?;
 
-    // Rotate a fresh opaque refresh token with both rolling + absolute TTLs.
-    let (refresh_token, refresh_hash) = generate_opaque_token();
-    let now = Utc::now();
-    state
-        .refresh_tokens
-        .create(
-            user.id,
-            &refresh_hash,
-            None,
-            None,
-            None,
-            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds)),
-            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_absolute_ttl_seconds)),
-        )
-        .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
+    // Mint + persist a fresh refresh token via the shared service helper
+    // so consume + invite-accept stay in lockstep on TTL config + repo
+    // semantics.
+    let refresh_token =
+        crate::services::auth_service::mint_refresh_token_for(&state.refresh_tokens, &state.cfg.jwt, &user)
+            .await
+            .map_err(ApiError::Internal)?;
 
     let response = build_consume_response(
         user.id.into_uuid(),
