@@ -8,11 +8,10 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use chrono::{Duration, Utc};
+use my_fam_tree_config::JwtConfig;
 use my_fam_tree_domain::{
     FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, RefreshTokenRepo, User, UserId,
 };
-
-use my_fam_tree_config::JwtConfig;
 
 use crate::auth::{FamilyClaim, JwtIssuer, generate_opaque_token};
 
