@@ -21,13 +21,6 @@ const auth = useAuthStore()
 const family = useActiveFamilyStore()
 const { smAndDown } = useDisplay()
 
-// Set by vitest at runtime; used to disable the FAB's `<Teleport>` so
-// the unit-test wrapper's `.find()` resolves into the component's own
-// template tree (Vue test utils don't follow Teleports by default).
-// `vite-env.d.ts` declares `import.meta.env.MODE`; we narrow the
-// `'test'` literal here.
-const isTest = import.meta.env.MODE === 'test'
-
 const pageTitle = computed(() => {
     const name = family.activeFamily?.name
     if (name === undefined || name === '') return t('tree.title')
@@ -201,39 +194,18 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
              thumb-tap away, independent of toolbar layout / clipping.
              Same `data-testid` as the toolbar button so existing e2e
              tests resolve to whichever variant is active for the
-             current viewport.
-             ----------------------------------------------------------------
-             `<Teleport to="body">` is load-bearing: `position: fixed`
-             against the layout viewport gets trapped to the nearest
-             ancestor that creates a containing block (any element with
-             `transform`, `filter`, `perspective`, `will-change`, or
-             `contain`). The route-transition wrapper, Vuetify's
-             `<v-main>`, and the d3-zoom SVG inside the canvas all
-             potentially create one across the wider Vuetify / browser
-             matrix, and the FAB was disappearing on iOS because of it.
-             Mounting under `<body>` directly bypasses every ancestor's
-             containing-block and keeps the FAB anchored to the real
-             viewport regardless of what wraps the page. The `v-if` /
-             event handler / i18n bindings work the same — Teleport only
-             moves the rendered DOM node, not the reactive owner.
-             ----------------------------------------------------------------
-             `:disabled` reactively short-circuits the Teleport under
-             vitest (`import.meta.env.MODE === 'test'`) so the unit-test
-             wrapper's `.find()` still sees the FAB in the component's
-             own template. Production / dev / e2e all use Teleport. -->
-        <Teleport to="body" :disabled="isTest">
-            <v-btn
-                v-if="smAndDown"
-                icon="user-plus"
-                color="primary"
-                size="large"
-                class="tree-add-fab"
-                :title="t('tree.addPerson')"
-                :aria-label="t('tree.addPerson')"
-                data-testid="tree-add-person"
-                @click="onCreateClick"
-            />
-        </Teleport>
+             current viewport. -->
+        <v-btn
+            v-if="smAndDown"
+            icon="user-plus"
+            color="primary"
+            size="large"
+            class="tree-add-fab"
+            :title="t('tree.addPerson')"
+            :aria-label="t('tree.addPerson')"
+            data-testid="tree-add-person"
+            @click="onCreateClick"
+        />
 
         <div class="tree-row">
             <div class="canvas">
