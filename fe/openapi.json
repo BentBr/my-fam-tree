@@ -3825,7 +3825,7 @@
       },
       "PersonUpdateReq": {
         "type": "object",
-        "description": "Partial update. Every field is optional; only `Some(_)` fields overwrite\nthe corresponding column. An empty body is rejected as `validation.value_required`.",
+        "description": "Partial update. Every field is optional; only fields present in the\nrequest body overwrite the corresponding column. An empty body is\nrejected as `validation.value_required`. Send `null` on `birth_date`\nor `death_date` to clear; send an empty string on string fields to\nclear those.",
         "properties": {
           "birth_date": {
             "type": [

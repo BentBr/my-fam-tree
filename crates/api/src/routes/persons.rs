@@ -16,9 +16,57 @@
 use actix_web::{HttpRequest, delete, get, patch, post, web};
 use chrono::NaiveDate;
 use my_fam_tree_domain::{PersonDraft, PersonId, PersonRepoError, Role};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+
+/// Patch-style optional field deserializer that distinguishes "field
+/// absent in the JSON body" from "field present and explicitly null".
+///
+/// Used on PATCH request fields that need three states:
+///
+/// | JSON body                | Wire reads as | Meaning                |
+/// |--------------------------|---------------|------------------------|
+/// | `{}` (field absent)      | `None`        | preserve existing      |
+/// | `{ "death_date": null }` | `Some(None)`  | clear (write NULL)     |
+/// | `{ "death_date": "..." }`| `Some(Some)`  | set to the given value |
+///
+/// Plain `Option<T>` collapses the first two cases into the same
+/// `None`, which is why `PATCH /persons/{id}` with
+/// `death_date: null` used to silently preserve the existing date
+/// instead of clearing it. Wrapping in `Option<Option<T>>` + this
+/// deserializer keeps the wire format identical (still
+/// `T | null | absent`) while letting the handler tell the three
+/// cases apart.
+///
+/// Apply via:
+///
+/// ```ignore
+/// #[serde(default, deserialize_with = "deserialize_optional_field")]
+/// pub death_date: Option<Option<NaiveDate>>,
+/// ```
+///
+/// Combined with `#[schema(value_type = Option<NaiveDate>, nullable)]`
+/// so the `OpenAPI` surface stays unchanged.
+//
+// `clippy::option_option` flags the triple-state shape, but it IS the
+// established serde pattern for "absent vs null vs value" PATCH bodies
+// (the lint's "use a custom enum" suggestion would require also writing
+// the serde glue every time). Localised allow rather than crate-wide so
+// other accidental Option<Option<T>>s still fire.
+#[allow(clippy::option_option)]
+fn deserialize_optional_field<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    // `Option::<T>::deserialize` already maps JSON null → `None` and a
+    // JSON value → `Some(T)`. Wrapping the result in an outer `Some(_)`
+    // says "field was present"; serde's `#[serde(default)]` covers the
+    // absent case by handing us a synthetic `None` instead of calling
+    // this fn at all.
+    Option::<T>::deserialize(deserializer).map(Some)
+}
 
 fn favourite_internal<E: std::fmt::Display>(e: E) -> ApiError {
     ApiError::Internal(anyhow::anyhow!(e.to_string()))
@@ -83,8 +131,25 @@ pub struct PersonCreateReq {
     pub linked_user_id: Option<Uuid>,
 }
 
-/// Partial update. Every field is optional; only `Some(_)` fields overwrite
-/// the corresponding column. An empty body is rejected as `validation.value_required`.
+/// Partial update. Every field is optional; only fields present in the
+/// request body overwrite the corresponding column. An empty body is
+/// rejected as `validation.value_required`. Send `null` on `birth_date`
+/// or `death_date` to clear; send an empty string on string fields to
+/// clear those.
+//
+// Implementation note (NOT exposed in OpenAPI — kept as a `//` comment
+// so utoipa doesn't pull it into the schema description):
+//
+// `birth_date` and `death_date` use the triple-state pattern
+// `Option<Option<NaiveDate>>` + `deserialize_optional_field` so a PATCH
+// carrying `"death_date": null` actually clears the column. Plain
+// `Option<NaiveDate>` collapses absent vs explicit-null into the same
+// `None`, and `merge_update`'s `.or(existing)` then preserved the
+// value on null — the "uncheck deceased" UI was inert until this fix.
+//
+// `clippy::option_option` is silenced for the date fields here — see
+// the comment on `deserialize_optional_field` for why.
+#[allow(clippy::option_option)]
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PersonUpdateReq {
@@ -93,9 +158,13 @@ pub struct PersonUpdateReq {
     pub name_at_birth: Option<String>,
     pub nickname: Option<String>,
     pub gender: Option<String>,
-    pub birth_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "deserialize_optional_field")]
+    #[schema(value_type = Option<NaiveDate>, nullable)]
+    pub birth_date: Option<Option<NaiveDate>>,
     pub birth_place: Option<String>,
-    pub death_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "deserialize_optional_field")]
+    #[schema(value_type = Option<NaiveDate>, nullable)]
+    pub death_date: Option<Option<NaiveDate>>,
     pub notes: Option<String>,
     pub linked_user_id: Option<Uuid>,
 }
@@ -213,6 +282,12 @@ fn draft_from_create(req: PersonCreateReq) -> PersonDraft {
 
 /// Apply a partial `PersonUpdateReq` on top of an existing person, returning
 /// the resulting draft. None fields preserve the existing column.
+///
+/// Date fields use the triple-state convention from
+/// [`deserialize_optional_field`]:
+///   - outer `None` → field absent in the body → preserve existing
+///   - outer `Some(None)` → field present and JSON-null → clear (write NULL)
+///   - outer `Some(Some(v))` → field present with a value → set to `v`
 fn merge_update(existing: &my_fam_tree_domain::Person, patch: PersonUpdateReq) -> PersonDraft {
     PersonDraft {
         given_name: patch.given_name.unwrap_or_else(|| existing.given_name.clone()),
@@ -220,9 +295,9 @@ fn merge_update(existing: &my_fam_tree_domain::Person, patch: PersonUpdateReq) -
         name_at_birth: patch.name_at_birth.unwrap_or_else(|| existing.name_at_birth.clone()),
         nickname: patch.nickname.unwrap_or_else(|| existing.nickname.clone()),
         gender: patch.gender.unwrap_or_else(|| existing.gender.clone()),
-        birth_date: patch.birth_date.or(existing.birth_date),
+        birth_date: patch.birth_date.unwrap_or(existing.birth_date),
         birth_place: patch.birth_place.unwrap_or_else(|| existing.birth_place.clone()),
-        death_date: patch.death_date.or(existing.death_date),
+        death_date: patch.death_date.unwrap_or(existing.death_date),
         notes: patch.notes.unwrap_or_else(|| existing.notes.clone()),
         linked_user_id: patch
             .linked_user_id
@@ -772,5 +847,81 @@ mod tests {
         let user_a = uid();
         let user_b = uid();
         assert!(check_link_consent(Some(user_b), Some(user_a), caller).is_err());
+    }
+
+    // ---------------------------------------------------------------------
+    // PATCH /persons/{id} triple-state for date fields. Each row of the
+    // table in `deserialize_optional_field` doc gets its own test so a
+    // future refactor that collapses absent/null can't silently re-break
+    // the "uncheck deceased" UI flow.
+    // ---------------------------------------------------------------------
+
+    fn fixture_person_with_death_date(date: Option<NaiveDate>) -> my_fam_tree_domain::Person {
+        my_fam_tree_domain::Person {
+            id: my_fam_tree_domain::PersonId::from_uuid(Uuid::new_v4()),
+            family_id: my_fam_tree_domain::FamilyId::from_uuid(Uuid::new_v4()),
+            given_name: "Alice".into(),
+            family_name: String::new(),
+            name_at_birth: String::new(),
+            nickname: String::new(),
+            gender: String::new(),
+            birth_date: None,
+            birth_place: String::new(),
+            death_date: date,
+            notes: String::new(),
+            linked_user_id: None,
+            photo_key: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        }
+    }
+
+    #[test]
+    fn patch_with_absent_death_date_preserves_existing() {
+        let existing_date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let existing = fixture_person_with_death_date(Some(existing_date));
+        // `{}` — field absent. `#[serde(default)]` produces `None`.
+        let patch: PersonUpdateReq = serde_json::from_str(r#"{ "nickname": "X" }"#).unwrap();
+        assert!(patch.death_date.is_none(), "absent field must deserialize to outer None");
+        let draft = merge_update(&existing, patch);
+        assert_eq!(draft.death_date, Some(existing_date), "absent must preserve");
+    }
+
+    #[test]
+    fn patch_with_null_death_date_clears_existing() {
+        // The bug-fix this test pins. Before the deserializer change, a
+        // JSON null collapsed into outer None, indistinguishable from
+        // "absent", and `merge_update`'s `.or(existing)` then preserved
+        // the date forever — the "uncheck deceased" UI was inert.
+        let existing_date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let existing = fixture_person_with_death_date(Some(existing_date));
+        let patch: PersonUpdateReq = serde_json::from_str(r#"{ "death_date": null }"#).unwrap();
+        assert_eq!(patch.death_date, Some(None), "null must deserialize to outer Some(None)");
+        let draft = merge_update(&existing, patch);
+        assert_eq!(draft.death_date, None, "null must clear");
+    }
+
+    #[test]
+    fn patch_with_value_death_date_sets_new_value() {
+        let existing = fixture_person_with_death_date(None);
+        let patch: PersonUpdateReq =
+            serde_json::from_str(r#"{ "death_date": "2024-06-15" }"#).unwrap();
+        let new_date = NaiveDate::from_ymd_opt(2024, 6, 15).unwrap();
+        assert_eq!(patch.death_date, Some(Some(new_date)), "value must deserialize to Some(Some)");
+        let draft = merge_update(&existing, patch);
+        assert_eq!(draft.death_date, Some(new_date), "value must set");
+    }
+
+    // Mirror the death_date trio for birth_date so the same shape is
+    // pinned on both fields — they share the deserializer + merge path
+    // and we don't want a future refactor to fix one and miss the other.
+
+    #[test]
+    fn patch_with_null_birth_date_clears_existing() {
+        let mut existing = fixture_person_with_death_date(None);
+        existing.birth_date = NaiveDate::from_ymd_opt(1990, 4, 12);
+        let patch: PersonUpdateReq = serde_json::from_str(r#"{ "birth_date": null }"#).unwrap();
+        let draft = merge_update(&existing, patch);
+        assert_eq!(draft.birth_date, None);
     }
 }
