@@ -139,3 +139,12 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Security disclosures: [SECURITY.md](./
 ## License
 
 BUSL-1.1 — see [LICENSE](./LICENSE) and the plain-English [LICENSING.md](./LICENSING.md). Self-hosting for personal use is explicitly permitted; commercial hosted offerings are not.
+
+
+## Todos & ideas
+- highlight mode - when active a person can be clicked and no details opens but the heredity is shown and remains on scroll / pad
+- stronger highlight of heredity leaves
+- comparison of relationship
+- image history / archive
+- event function with invites / image gallery (birthdays, marriages, funerals etc.)
+- message function
