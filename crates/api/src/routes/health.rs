@@ -69,8 +69,7 @@ pub async fn health(
     let db_ok = state.health.ping().await.is_ok();
     let db_latency_ms = u64::try_from(started_db.elapsed().as_millis()).unwrap_or(u64::MAX);
 
-    let server_duration_ms =
-        u64::try_from(started_total.elapsed().as_millis()).unwrap_or(u64::MAX);
+    let server_duration_ms = u64::try_from(started_total.elapsed().as_millis()).unwrap_or(u64::MAX);
 
     let mut resp = ApiResponse::ok(Health {
         status: "ok",
