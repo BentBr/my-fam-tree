@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.14](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.13...core-v0.1.14) (2026-05-31)
+
+
+### Bug Fixes
+
+* **fe:** cache-bust user-visible brand imagery via Vite content hashes ([dadc198](https://github.com/BentBr/my-fam-tree/commit/dadc198cb2d5f61a13c7d5c4e184846f0c547d70))
+* **fe:** only split open partners around anchor when there are NO ended partners ([c780e97](https://github.com/BentBr/my-fam-tree/commit/c780e97e40baeca36182c9d894832ed4a875c7ea))
+* **fe:** parent-edge-aware root barycenter (Herta/Anneliese crossing case) ([a9c5c36](https://github.com/BentBr/my-fam-tree/commit/a9c5c36f0c396e87165922d23574a1d0ef4e7ea9))
+* **fe:** three layout bugs (sibling-by-age, anchor-in-middle, multi-row crossing) ([d8adbcc](https://github.com/BentBr/my-fam-tree/commit/d8adbccefcc08ba3d921ebf51253141780ffd48b))
+
 ## [0.1.13](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.12...core-v0.1.13) (2026-05-31)
 
 
