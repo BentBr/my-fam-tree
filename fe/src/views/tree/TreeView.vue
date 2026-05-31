@@ -6,6 +6,7 @@ import { useDisplay } from 'vuetify'
 
 import { useSetFavourite } from '@/api/hooks/persons'
 import { useTree } from '@/api/hooks/relationships'
+import LucideIcon from '@/components/common/LucideIcon.vue'
 import FamilyTree from '@/components/tree/FamilyTree.vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
@@ -20,13 +21,6 @@ const tree = useTree()
 const auth = useAuthStore()
 const family = useActiveFamilyStore()
 const { smAndDown } = useDisplay()
-
-// Set by vitest at runtime; used to disable the FAB's `<Teleport>` so
-// the unit-test wrapper's `.find()` resolves into the component's own
-// template tree (Vue test utils don't follow Teleports by default).
-// `vite-env.d.ts` declares `import.meta.env.MODE`; we narrow the
-// `'test'` literal here.
-const isTest = import.meta.env.MODE === 'test'
 
 const pageTitle = computed(() => {
     const name = family.activeFamily?.name
@@ -196,44 +190,33 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
             </v-btn>
         </v-toolbar>
 
-        <!-- Mobile FAB: floats over the tree canvas in the bottom-right
-             corner so the primary "add person" affordance is always one
-             thumb-tap away, independent of toolbar layout / clipping.
-             Same `data-testid` as the toolbar button so existing e2e
-             tests resolve to whichever variant is active for the
-             current viewport.
-             ----------------------------------------------------------------
-             `<Teleport to="body">` is load-bearing: `position: fixed`
-             against the layout viewport gets trapped to the nearest
-             ancestor that creates a containing block (any element with
-             `transform`, `filter`, `perspective`, `will-change`, or
-             `contain`). The route-transition wrapper, Vuetify's
-             `<v-main>`, and the d3-zoom SVG inside the canvas all
-             potentially create one across the wider Vuetify / browser
-             matrix, and the FAB was disappearing on iOS because of it.
-             Mounting under `<body>` directly bypasses every ancestor's
-             containing-block and keeps the FAB anchored to the real
-             viewport regardless of what wraps the page. The `v-if` /
-             event handler / i18n bindings work the same — Teleport only
-             moves the rendered DOM node, not the reactive owner.
-             ----------------------------------------------------------------
-             `:disabled` reactively short-circuits the Teleport under
-             vitest (`import.meta.env.MODE === 'test'`) so the unit-test
-             wrapper's `.find()` still sees the FAB in the component's
-             own template. Production / dev / e2e all use Teleport. -->
-        <Teleport to="body" :disabled="isTest">
-            <v-btn
-                v-if="smAndDown"
-                icon="user-plus"
-                color="primary"
-                size="large"
-                class="tree-add-fab"
-                :title="t('tree.addPerson')"
-                :aria-label="t('tree.addPerson')"
-                data-testid="tree-add-person"
-                @click="onCreateClick"
-            />
-        </Teleport>
+        <!-- Mobile FAB — overlays the tree canvas in the bottom-right
+             corner so the primary "add person" affordance is one
+             thumb-tap away. Implementation notes:
+              - As an `<a>`-rendered button with explicit hand-rolled
+                styling (border-radius / background / icon), NOT a
+                Vuetify `<v-btn>`, because the v-btn variant was being
+                rendered with the theme's CSS variables unresolved in
+                some configurations and ended up invisible.
+              - Hardcoded `--acc` orange via the design token so the
+                fill is guaranteed visible across both themes
+                regardless of how Vuetify's `color="primary"` cascade
+                resolves at this position in the DOM.
+              - `position: fixed` with `!important` and a high
+                `z-index` to push past any d3-zoom / drawer stacking.
+              - `data-testid` kept identical to the toolbar variant
+                so existing e2e + unit tests resolve consistently. -->
+        <button
+            v-if="smAndDown"
+            type="button"
+            class="tree-add-fab"
+            :title="t('tree.addPerson')"
+            :aria-label="t('tree.addPerson')"
+            data-testid="tree-add-person"
+            @click="onCreateClick"
+        >
+            <LucideIcon name="user-plus" :size="28" />
+        </button>
 
         <div class="tree-row">
             <div class="canvas">
@@ -334,15 +317,46 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
     flex: 1;
     min-height: 0;
 }
-/* Mobile FAB — overlays the tree canvas with the primary "add person"
- * affordance. `position: fixed` keeps it anchored as the user pans the
- * SVG; `z-index` clears the d3-zoom drag layer and the v-navigation-
- * drawer's scrim. Sized large for a thumb-friendly hit target. */
+/* Mobile FAB. Hand-rolled so the visual treatment is independent of
+ * Vuetify theme resolution at this position in the DOM. `!important`
+ * on `position: fixed` is defensive — there's a hard-to-trace
+ * cascade interaction in the page chain that was eating the rule
+ * silently and rendering the button inline. The token-backed
+ * `--acc` orange + explicit dimensions match the toolbar primary
+ * button so the two variants look like the same affordance. */
 .tree-add-fab {
-    position: fixed;
+    position: fixed !important;
     right: 16px;
-    bottom: 16px;
-    z-index: 10;
+    bottom: 24px;
+    z-index: 100;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--acc);
+    color: var(--on-acc);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    transition: filter 120ms ease-in-out;
+}
+.tree-add-fab:hover,
+.tree-add-fab:focus-visible {
+    filter: brightness(1.08);
+    outline: none;
+}
+.tree-add-fab:focus-visible {
+    box-shadow:
+        0 0 0 3px rgba(var(--v-theme-primary), 0.35),
+        0 2px 4px rgba(0, 0, 0, 0.25),
+        0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.tree-add-fab:active {
+    filter: brightness(0.95);
 }
 .canvas {
     flex: 1;
