@@ -158,3 +158,112 @@ impl WorkerConfig {
         })
     }
 }
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::result_large_err,
+    reason = "figment::Jail::expect_with's closure returns figment::Result; the large-err variant is its design"
+)]
+mod tests {
+    use figment::Jail;
+
+    use super::*;
+
+    fn set_minimum_env(jail: &mut Jail) {
+        // Mirror the api-config jail fixture: every required env var the
+        // worker needs to load. Tests override individual entries on top.
+        for (k, v) in [
+            ("APP_ENV", "development"),
+            ("LOG_FORMAT", "pretty"),
+            ("RUST_LOG", "info"),
+            ("DATABASE_URL", "postgres://u:p@localhost/db"),
+            ("DATABASE_MAX_CONNECTIONS", "10"),
+            ("DATABASE_ACQUIRE_TIMEOUT_SECONDS", "5"),
+            ("DATABASE_STATEMENT_TIMEOUT_MS", "30000"),
+            ("REDIS_URL", "redis://localhost:6379/0"),
+            ("REDIS_MAX_CONNECTIONS", "10"),
+            ("REDIS_KEY_PREFIX", "my-fam-tree:"),
+            ("EMAIL_DSN", "smtp://localhost:1025"),
+            ("EMAIL_FROM_NAME", "my-fam-tree"),
+            ("EMAIL_FROM_ADDRESS", "noreply@my-fam-tree.local"),
+            ("EMAIL_TIMEOUT_SECONDS", "30"),
+            ("WEB_PUBLIC_URL", "http://localhost:5173"),
+            ("STORAGE_DRIVER", "local"),
+            ("STORAGE_BUCKET", "media"),
+            ("STORAGE_REGION", "eu-central-1"),
+            ("STORAGE_ACCESS_KEY_ID", "minio"),
+            ("STORAGE_SECRET_ACCESS_KEY", "minio-secret"),
+            ("STORAGE_FORCE_PATH_STYLE", "true"),
+            ("WORKER_TICK_INTERVAL_SECONDS", "30"),
+            ("WORKER_LEADER_LEASE_SECONDS", "60"),
+            ("WORKER_LEADER_REFRESH_SECONDS", "20"),
+            ("WORKER_MAX_RETRIES", "5"),
+            ("WORKER_RETRY_BACKOFF_MIN_SECONDS", "10"),
+            ("WORKER_RETRY_BACKOFF_MAX_SECONDS", "3600"),
+            ("WORKER_METRICS_BIND", "0.0.0.0:9091"),
+            ("WORKER_JANITOR_INTERVAL_SECONDS", "300"),
+            ("WORKER_JANITOR_GRACE_SECONDS", "60"),
+            ("WORKER_OUTBOX_POLL_SECONDS", "5"),
+            ("WORKER_OUTBOX_POOL_SIZE", "4"),
+        ] {
+            jail.set_env(k, v);
+        }
+    }
+
+    #[test]
+    fn loads_the_full_worker_config_from_a_minimal_env() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            let cfg = WorkerConfig::from_env().expect("minimum env loads");
+
+            // Spot-check every grouped section so a future refactor that
+            // drops a field or remaps a name fails loudly.
+            assert_eq!(cfg.app_env, AppEnv::Development);
+            assert_eq!(cfg.log.format, LogFormat::Pretty);
+            assert_eq!(cfg.log.level, "info");
+            assert_eq!(cfg.database.url, "postgres://u:p@localhost/db");
+            assert_eq!(cfg.database.max_connections, 10);
+            assert_eq!(cfg.redis.url, "redis://localhost:6379/0");
+            assert_eq!(cfg.redis.key_prefix, "my-fam-tree:");
+            assert_eq!(cfg.email.from_address, "noreply@my-fam-tree.local");
+            assert!(cfg.email.reply_to.is_none(), "EMAIL_REPLY_TO is optional");
+            assert_eq!(cfg.web.public_url, "http://localhost:5173");
+            assert_eq!(cfg.storage.driver, StorageDriver::Local);
+            assert!(cfg.storage.force_path_style);
+            assert_eq!(cfg.worker.tick_interval_seconds, 30);
+            assert_eq!(cfg.worker.metrics_bind, "0.0.0.0:9091");
+            assert_eq!(cfg.janitor.interval_seconds, 300);
+            assert_eq!(cfg.outbox.pool_size, 4);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn email_reply_to_is_picked_up_when_present() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            jail.set_env("EMAIL_REPLY_TO", "support@my-fam-tree.local");
+            let cfg = WorkerConfig::from_env().expect("loads with reply-to");
+            assert_eq!(cfg.email.reply_to.as_deref(), Some("support@my-fam-tree.local"));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn malformed_required_env_var_returns_a_config_error() {
+        Jail::expect_with(|jail| {
+            set_minimum_env(jail);
+            // A required typed field (the integer fields are the most
+            // sensitive to garbage) parsed as something serde can't
+            // coerce into a u32 must surface a `ConfigError`. An empty
+            // String is itself a valid `String`, so we pick a numeric
+            // field instead.
+            jail.set_env("DATABASE_MAX_CONNECTIONS", "not-a-number");
+            let err = WorkerConfig::from_env();
+            assert!(err.is_err(), "non-numeric DATABASE_MAX_CONNECTIONS must reject");
+            Ok(())
+        });
+    }
+}

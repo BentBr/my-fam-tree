@@ -25,10 +25,16 @@ cd "$(dirname "$0")/.."
 #   - cache/email/openapi wiring (pool/smtp/derive-only lib.rs)
 #   - aggregated OpenAPI doc (api/src/openapi_doc.rs is derive-only; the
 #     openapi-dump binary serialises it but binaries are already excluded)
-IGNORE='(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$|/api/src/openapi_doc\.rs$)'
+#   - storage/src/s3.rs: the AWS S3 client implementation. Meaningful
+#     coverage requires a real MinIO endpoint and is paid for by e2e;
+#     LocalObjectStore covers the trait contract in unit form.
+#   - worker/src/leader.rs: Postgres advisory-lock leader election. Same
+#     "needs real Postgres" story; the dispatcher / outbox flow tests
+#     exercise the leader path through job_queue.rs in CI.
+IGNORE='(/bin/|/main\.rs$|/tracing_setup\.rs$|/cache/src/pool\.rs$|/email/src/smtp\.rs$|/openapi/src/lib\.rs$|/api/src/openapi_doc\.rs$|/storage/src/s3\.rs$|/worker/src/leader\.rs$)'
 
 # Minimum line-coverage threshold (percent). CI fails the build below this.
-MIN_LINES=80
+MIN_LINES=90
 
 cmd="${1:-help}"
 

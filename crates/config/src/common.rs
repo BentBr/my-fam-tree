@@ -83,3 +83,30 @@ pub struct EmailConfig {
 pub struct WebConfig {
     pub public_url: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn app_env_is_development_only_for_development() {
+        assert!(AppEnv::Development.is_development());
+        assert!(!AppEnv::Staging.is_development());
+        assert!(!AppEnv::Production.is_development());
+    }
+
+    #[test]
+    fn app_env_as_str_matches_serde_lowercase_form() {
+        assert_eq!(AppEnv::Development.as_str(), "development");
+        assert_eq!(AppEnv::Staging.as_str(), "staging");
+        assert_eq!(AppEnv::Production.as_str(), "production");
+        assert_eq!(format!("{}", AppEnv::Production), "production");
+    }
+
+    // AppEnv + LogFormat deserialisation under serde's
+    // `rename_all = "lowercase"` is exercised end-to-end by the worker /
+    // api `from_env` Jail tests — they pump real env-string values
+    // through figment::Env and assert the resulting `AppEnv` / `LogFormat`.
+    // Replicating that with serde_json here would need a dep this crate
+    // doesn't carry, so the pure-type assertions above are sufficient.
+}
