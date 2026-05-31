@@ -137,18 +137,19 @@ function collectComponent(
  * Multi-couple chain (≥3 members): pick the anchor (highest-degree person
  *   inside the component, ties → smallest id). Then thread the anchor's
  *   same-row partners around it:
- *     - ENDED partners thread to the LEFT of the anchor (oldest ended_on
- *       furthest left) so "time direction" reads past-to-present.
- *     - OPEN partners split EVENLY around the anchor — the anchor sits in
- *       the MIDDLE of its open relationships rather than leftmost. With
- *       two concurrent open partners (Wagner-like case: Helmut + Ingrid +
- *       Renate) the chain reads [Ingrid, Helmut, Renate] instead of
- *       [Helmut, Ingrid, Renate].
- *   `floor(N_open/2)` open partners go left of the anchor (just right of
- *   any ended partners), `ceil(N_open/2)` go right. With one open partner
- *   the floor is 0 so the anchor stays left of it — that matches the
- *   v3.1 [ended, anchor, open] shape covered by the existing exspouse
- *   tests (Klaus + Brigitte + Anna).
+ *     - WHEN at least one ENDED partner exists: the chain reads
+ *       past-to-present from left to right — ALL ended partners on the
+ *       left (oldest ended_on furthest left), anchor next, ALL open
+ *       partners on the right. That matches the user-visible "time
+ *       direction" the v3.1 layout already established for Klaus + his
+ *       ex-spouses + current partners.
+ *     - WHEN there are NO ended partners (all relationships concurrent):
+ *       the time-direction reading is meaningless, so the open partners
+ *       split EVENLY around the anchor. With two concurrent open
+ *       partners (Wagner-like case: Helmut + Ingrid + Renate) the chain
+ *       reads [Ingrid, Helmut, Renate] instead of [Helmut, Ingrid,
+ *       Renate]. `floor(N_open/2)` go left of the anchor,
+ *       `ceil(N_open/2)` go right.
  *
  *   Any component members not directly adjacent to the anchor land beyond
  *   the right-open side in stable id order — a safety net for unusual
@@ -204,15 +205,22 @@ function threadComponent(component: Set<string>, fallbackSeed: string, edgesByPe
     const endedOrdered = sortPartners(ended) // oldest ended_on first → leftmost
     const openOrdered = sortPartners(open)
 
-    // Split the open partners so the anchor sits in the middle of them.
-    // floor on the left + ceil on the right means: 1 open → [anchor, open]
-    // (matches the existing 1-ended-1-open exspouse layout, plus the
-    // size==2 branch above which handles single-couple blocks); 2 open →
-    // [open, anchor, open] (the Wagner anchor-in-middle case); 3 open →
-    // [open, anchor, open, open].
-    const openSplit = Math.floor(openOrdered.length / 2)
-    const openLeftOfAnchor = openOrdered.slice(0, openSplit).map((p) => p.id)
-    const openRightOfAnchor = openOrdered.slice(openSplit).map((p) => p.id)
+    // Split the open partners around the anchor ONLY when there are no
+    // ended partners — otherwise the past-to-present "time direction"
+    // reading is the dominant ordering principle and the anchor stays
+    // adjacent to its first OPEN relationship on the right side of the
+    // ended block. With at least one ended partner the chain reads
+    // [Karin (ended), Brigitte (ended), Klaus, Anna (open), Yuki (open)].
+    // With zero ended partners and two open ones (Wagner), the chain
+    // reads [Ingrid, Helmut, Renate] so the anchor isn't visually
+    // marooned at the leftmost slot.
+    let openLeftOfAnchor: string[] = []
+    let openRightOfAnchor: string[] = openOrdered.map((p) => p.id)
+    if (endedOrdered.length === 0 && openOrdered.length >= 2) {
+        const openSplit = Math.floor(openOrdered.length / 2)
+        openLeftOfAnchor = openOrdered.slice(0, openSplit).map((p) => p.id)
+        openRightOfAnchor = openOrdered.slice(openSplit).map((p) => p.id)
+    }
 
     const placed = new Set<string>([anchor, ...endedOrdered.map((p) => p.id), ...openOrdered.map((p) => p.id)])
     const stragglers = ids.filter((id) => !placed.has(id)).sort()

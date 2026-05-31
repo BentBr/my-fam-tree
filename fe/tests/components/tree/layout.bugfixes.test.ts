@@ -188,9 +188,9 @@ describe('layoutTree — bug 2: anchor sits in the middle of two concurrent open
         expect(annaX - klausX).toBe(NODE_W + COL_GAP)
     })
 
-    it('places three open partners with the anchor offset to the left of centre', () => {
-        // floor(3/2) = 1 left, ceil(3/2) = 2 right. Result:
-        //   [open1, anchor, open2, open3]
+    it('places three open partners with the anchor offset to the left of centre when there are no ended partners', () => {
+        // No ended partners → split-around-anchor rule. floor(3/2) = 1
+        // left, ceil(3/2) = 2 right → [open1, anchor, open2, open3].
         // Open partners sort by id ascending: a < b < c.
         const out = layoutTree({
             nodes: [
@@ -213,6 +213,40 @@ describe('layoutTree — bug 2: anchor sits in the middle of two concurrent open
         expect(pa).toBeLessThan(m)
         expect(m).toBeLessThan(pb)
         expect(pb).toBeLessThan(pc)
+    })
+
+    it('keeps all open partners on the RIGHT of the anchor when ANY ended partner exists (Klaus-style row)', () => {
+        // Klaus has 2 ended (Karin, Brigitte) and 2 open (Anna, Yuki).
+        // With at least one ended partner the "time direction" rule
+        // wins — ALL ended on the left, anchor, ALL open on the right.
+        // Splitting open partners around the anchor here would put
+        // Anna LEFT of Klaus and shrink the "past → present" reading.
+        const out = layoutTree({
+            nodes: [
+                person('karin', [], ['klaus']),
+                person('brigitte', [], ['klaus']),
+                person('klaus', [], ['karin', 'brigitte', 'anna', 'yuki']),
+                person('anna', [], ['klaus']),
+                person('yuki', [], ['klaus']),
+            ],
+            parent_edges: [],
+            partner_edges: [
+                { a: 'klaus', b: 'karin', ended_on: '1989-11-20' },
+                { a: 'klaus', b: 'brigitte', ended_on: '2000-06-30' },
+                { a: 'klaus', b: 'anna' },
+                { a: 'klaus', b: 'yuki' },
+            ] as PartnerEdgeInput[],
+        })
+        const karinX = xOf(out, 'karin')
+        const brigitteX = xOf(out, 'brigitte')
+        const klausX = xOf(out, 'klaus')
+        const annaX = xOf(out, 'anna')
+        const yukiX = xOf(out, 'yuki')
+        // Both ended LEFT of anchor, both open RIGHT of anchor.
+        expect(karinX).toBeLessThan(brigitteX)
+        expect(brigitteX).toBeLessThan(klausX)
+        expect(klausX).toBeLessThan(annaX)
+        expect(annaX).toBeLessThan(yukiX)
     })
 })
 
