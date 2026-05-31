@@ -89,7 +89,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-    <v-form data-testid="person-edit" @submit.prevent="submit">
+    <v-form data-testid="person-edit" class="person-edit-form" @submit.prevent="submit">
         <!-- Profile fields — every PersonView name + identity field is
              editable here, in the same top-to-bottom order as the view's
              Profile section so the user's reading path matches. -->
@@ -166,3 +166,25 @@ async function submit(): Promise<void> {
         </div>
     </v-form>
 </template>
+
+<style scoped>
+/* Each v-text-field's focused label floats UP out of its own border-box
+   and over the adjacent field above it. Vuetify's default tight stacking
+   then makes the floated label clip into the previous input's bottom
+   border (most visible on the orange-focus state — image 31). 12 px
+   between fields lets the label sit cleanly in the gap on both desktop
+   and mobile widths, and the rule scopes via `>` to direct children so
+   nested inputs inside, e.g., the v-textarea aren't doubled up.
+
+   `:deep(.v-checkbox)` — the deceased checkbox uses `density="compact"
+   hide-details`, which Vuetify renders without the field's own margin
+   block; the explicit rule reapplies the gap so it doesn't sit
+   shoulder-to-shoulder with the field above. */
+.person-edit-form > .v-input,
+.person-edit-form > .v-text-field,
+.person-edit-form > .v-textarea,
+.person-edit-form > .v-combobox,
+.person-edit-form :deep(.v-checkbox) {
+    margin-bottom: 12px;
+}
+</style>

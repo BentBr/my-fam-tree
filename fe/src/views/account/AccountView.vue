@@ -145,7 +145,7 @@ async function signOut(): Promise<void> {
                     {{ t('account.avatar.remove') }}
                 </v-btn>
             </div>
-            <v-form @submit.prevent="saveProfile">
+            <v-form class="account-form" @submit.prevent="saveProfile">
                 <v-text-field
                     v-model="displayName"
                     :label="t('account.profile.displayName')"
@@ -160,7 +160,15 @@ async function signOut(): Promise<void> {
                     :label="t('language.label')"
                     data-testid="account-locale"
                 />
-                <v-btn type="submit" :loading="update.isPending.value" block class="mt-2" data-testid="account-save">
+                <v-btn
+                    type="submit"
+                    color="primary"
+                    variant="flat"
+                    :loading="update.isPending.value"
+                    block
+                    class="mt-2"
+                    data-testid="account-save"
+                >
                     {{ t('account.profile.save') }}
                 </v-btn>
             </v-form>
@@ -181,7 +189,7 @@ async function signOut(): Promise<void> {
             >
                 {{ t('account.email.pending') }}
             </v-alert>
-            <v-form v-else @submit.prevent="submitEmailChange">
+            <v-form v-else class="account-form" @submit.prevent="submitEmailChange">
                 <v-text-field
                     v-model="newEmail"
                     :label="t('account.email.newLabel')"
@@ -191,6 +199,8 @@ async function signOut(): Promise<void> {
                 />
                 <v-btn
                     type="submit"
+                    color="primary"
+                    variant="flat"
                     :loading="requestChange.isPending.value"
                     block
                     class="mt-2"
@@ -225,5 +235,17 @@ async function signOut(): Promise<void> {
     position: absolute;
     bottom: -4px;
     right: -4px;
+}
+
+/* Stack the profile + email forms with the same 12 px field gap as
+   PersonEdit — without it, Vuetify's floated label on a focused input
+   overlaps the field above (most visible on mobile where the card is
+   narrow and the labels wrap closer to the borders). The selector
+   targets direct children so the button's `mt-2` keeps stacking
+   cleanly below the last input. */
+.account-form > .v-input,
+.account-form > .v-text-field,
+.account-form > .v-select {
+    margin-bottom: 12px;
 }
 </style>

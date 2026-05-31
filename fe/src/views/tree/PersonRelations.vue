@@ -124,4 +124,15 @@ function onChanged(): void {
 .relation-row:last-child {
     border-bottom: none;
 }
+
+/* `variant="accordion"` stacks panels with no gap — the closed-state
+   titles end up shoulder-to-shoulder (image 33) which reads as one
+   blob rather than three distinct sections. A small gap separates
+   them visually without touching the inner accordion behaviour. */
+:deep(.v-expansion-panel) {
+    margin-bottom: 8px;
+}
+:deep(.v-expansion-panel:last-child) {
+    margin-bottom: 0;
+}
 </style>
