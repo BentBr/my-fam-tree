@@ -35,9 +35,10 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
     await page.goto('/tree')
     await expect(page.getByTestId('nav-admin')).toBeVisible()
 
-    // Navigate to /admin — should redirect to /admin/audit and land in
-    // the admin layout shell.
-    await page.goto('/admin')
+    // Navigate to /admin/audit directly — the /admin default landing
+    // changed from /admin/audit to /admin/family when the Family
+    // overview page was added.
+    await page.goto('/admin/audit')
     await expect(page).toHaveURL(/\/admin\/audit$/)
     await expect(page.getByTestId('admin-audit-page')).toBeVisible()
     await expect(page.getByTestId('admin-audit-table')).toBeVisible()

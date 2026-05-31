@@ -121,11 +121,21 @@ const requestCloner: Middleware = {
 const authRefresh: Middleware = {
     async onResponse({ request, response }) {
         if (response.status !== 401) return response
-        // Avoid infinite recursion: /auth/refresh's own 401 must NOT
-        // re-trigger this middleware (it would loop forever). Let it
-        // bubble up so the caller (`auth.refresh()`) sees the 401 via
-        // its own error path.
-        if (new URL(request.url).pathname.endsWith('/auth/refresh')) {
+        // Skip refresh for endpoints where 401 has nothing to do with
+        // session expiry:
+        //   - /auth/refresh — recursive: refreshing the refresh would
+        //     loop forever. Let the 401 bubble up to `auth.refresh()`'s
+        //     own error path.
+        //   - /invites/accept — the invite TOKEN is the auth factor
+        //     here, not the session cookie. 401 means "this invite is
+        //     invalid / already consumed", not "your session expired";
+        //     retrying with a fresh access cookie can't help (the BE
+        //     still rejects the same single-use token) and would just
+        //     consume the refresh-rate budget plus, worse, end the
+        //     session for an already-signed-in user who clicked a
+        //     stale invite link by mistake.
+        const path = new URL(request.url).pathname
+        if (path.endsWith('/auth/refresh') || path.endsWith('/invites/accept')) {
             return response
         }
         let body: ApiErrorBody | undefined

@@ -21,9 +21,13 @@ test('the health page renders DB + worker + server-latency chips', async ({ page
     await expect(page.getByTestId('health-worker')).toBeVisible()
     await expect(page.getByTestId('health-server')).toBeVisible()
     // Each chip carries a kind-specific text shape. Exact ms values are
-    // runner-dependent — we only assert the label landed.
-    await expect(page.getByTestId('health-db')).toContainText(/Database\s+\d+\s+ms/)
-    await expect(page.getByTestId('health-server')).toContainText(/Server\s+\d+\s+ms/)
+    // runner-dependent — we only assert the label landed. The number
+    // may be integer (>= 10 ms) or one-decimal (< 10 ms — sub-ms DB
+    // pings format as e.g. "0.4 ms" so they don't render as a
+    // misleading integer "0 ms").
+    const msPattern = /\d+(?:\.\d+)?\s+ms/
+    await expect(page.getByTestId('health-db')).toContainText(new RegExp(`Database\\s+${msPattern.source}`))
+    await expect(page.getByTestId('health-server')).toContainText(new RegExp(`Server\\s+${msPattern.source}`))
     // Worker chip says either "Worker alive" or "Worker down" depending
     // on whether the lease is currently held; both shapes are valid for
     // the test as long as the chip rendered.
