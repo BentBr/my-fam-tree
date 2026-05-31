@@ -822,13 +822,34 @@ mod tests {
     }
 
     #[test]
-    fn link_consent_allows_proposed_equal_to_caller() {
-        // Admin self-link at CREATE / PATCH — equivalent to POST /claim.
+    fn link_consent_allows_self_link_only_when_row_is_unlinked() {
+        // Admin self-link at CREATE / PATCH of an UNLINKED row —
+        // equivalent to POST /claim.
         let caller = uid();
         assert!(check_link_consent(Some(caller), None, caller).is_ok());
-        // Even when re-linking to self over a different existing link
-        // (admin migrates the row to themselves): allowed.
-        assert!(check_link_consent(Some(caller), Some(uid()), caller).is_ok());
+    }
+
+    #[test]
+    fn link_consent_rejects_admin_yanking_already_linked_row_to_self() {
+        // The privacy bypass the consent gate is supposed to close:
+        // an admin should NOT be able to silently take over a row
+        // that's already linked to user A by PATCHing its
+        // linked_user_id to themselves (PATCH would otherwise mimic
+        // POST /claim without the original user's clearing step).
+        // The `current.is_none()` guard makes this case fall through
+        // to the rejection branch.
+        let caller = uid();
+        let other_user = uid();
+        let err = check_link_consent(Some(caller), Some(other_user), caller)
+            .expect_err("self-link over an existing link must require consent");
+        match err {
+            ApiError::Validation(v) => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0].path, "/linked_user_id");
+                assert_eq!(v[0].code, "validation.link_consent_required");
+            }
+            _ => panic!("expected Validation, got {err:?}"),
+        }
     }
 
     #[test]
