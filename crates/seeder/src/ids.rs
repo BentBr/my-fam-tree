@@ -104,7 +104,7 @@ pub const SEED_PERSON_METTE_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_000
 //      Tim's spouse (Mia) currently shuffles Tim out of the right end
 //      of the sibling row.
 //   2. Two unpartnered mothers (Greta 1912, Anneliese 1921) whose
-//      children (Hubert, Bernhard) sit on opposite sides of the row
+//      children (Hubert, Reinhardt) sit on opposite sides of the row
 //      below — their cross order causes the parent edges to cross.
 //   3. An in-married couple (Tim + Mia) where each spouse has parents
 //      on opposite sides; the couple's own order on its row should
@@ -115,7 +115,7 @@ pub const SEED_PERSON_K_ANNELIESE_ID: Uuid =
 pub const SEED_PERSON_K_HUBERT_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_001f);
 pub const SEED_PERSON_K_SARA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0020);
-pub const SEED_PERSON_K_BERNHARD_ID: Uuid =
+pub const SEED_PERSON_K_REINHARDT_ID: Uuid =
     Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0021);
 pub const SEED_PERSON_K_HELGA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0022);
 pub const SEED_PERSON_K_LARS_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0023);
@@ -224,7 +224,7 @@ pub const SEED_PARTNERSHIP_LARS_METTE_ID: Uuid =
 // Krause subtree partnerships — see the K_* person ids above.
 pub const SEED_PARTNERSHIP_K_HUBERT_SARA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000c);
-pub const SEED_PARTNERSHIP_K_BERNHARD_HELGA_ID: Uuid =
+pub const SEED_PARTNERSHIP_K_REINHARDT_HELGA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000d);
 pub const SEED_PARTNERSHIP_K_TIM_MIA_ID: Uuid =
     Uuid::from_u128(0x0000_0004_0000_0000_0000_0000_0000_000e);

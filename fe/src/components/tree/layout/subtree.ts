@@ -91,16 +91,18 @@ export function centerLeftOver(childrenL: number, childrenR: number, blockWidth:
  * positive). Pass 1 first claims children with full both-parent
  * matches; pass 2 only sees children left over after that.
  *
- * Worked example for the Bernd / Gudrun / Bernhard chain (anchor =
- * Gudrun, couples = [Bernd+Gudrun (ended), Gudrun+Bernhard (open)]):
- *   - Child with parents [Bernd, Gudrun] → couple 0 (pass 1).
- *   - Child with parents [Gudrun, Bernhard] → couple 1 (pass 1).
- *   - Child with parents [Bernd] only → couple 0 (pass 2: Bernd
- *     appears in couple 0, NOT in couple 1).
- *   - Child with parents [Gudrun] only → couple 0 (pass 2: Gudrun
- *     appears in couple 0 first, then in couple 1). Visually grouping
- *     a Gudrun-only child with her older partnership is the saner
- *     default than placing her under the most recent one.
+ * Worked example for a chain [husband_l, anchor, husband_r] where
+ * `anchor` has husband_l as an ENDED partner and husband_r as an
+ * OPEN partner (couples = [husband_l+anchor (ended), anchor+husband_r
+ * (open)]):
+ *   - Child with parents [husband_l, anchor] → couple 0 (pass 1).
+ *   - Child with parents [anchor, husband_r] → couple 1 (pass 1).
+ *   - Child with parents [husband_l] only → couple 0 (pass 2:
+ *     husband_l appears in couple 0, NOT in couple 1).
+ *   - Child with parents [anchor] only → couple 0 (pass 2: anchor
+ *     appears in couple 0 first, then in couple 1). Visually
+ *     grouping an anchor-only child with the older partnership is
+ *     the saner default than placing her under the most recent one.
  *   - Child with parents [step-aunt] → couple 1 via rightmost
  *     fallback (no overlap with the chain).
  */

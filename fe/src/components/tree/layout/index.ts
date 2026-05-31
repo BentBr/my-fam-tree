@@ -439,12 +439,13 @@ function reorderRootsByBarycenter(
  * only child sits inside a multi-couple chain owned by ANOTHER root's
  * block tree still gets credit for that child in its barycenter.
  *
- * `seen` is shared across the BFS so a person reachable via two roots
- * (e.g. Bernhard reachable from both Herta and — through Gudrun's chain
- * neighbour Bernd — indirectly Anneliese) is counted ONCE per root walk.
- * Double-counting across roots is fine and actually wanted — both Herta
- * AND Anneliese should see Gudrun's grandchildren as descendants
- * because both share custody of the children's block.
+ * `seen` is shared within each root's BFS so a person reachable via
+ * two paths from the same root (e.g. a grandchild reachable through
+ * both parents who are siblings inside the same chain) is counted
+ * ONCE per root walk. Double-counting across roots is fine and
+ * actually wanted — when two top-row mothers share a multi-couple
+ * chain in the next row, both should see the chain's grandchildren as
+ * descendants because both share custody of the children's block.
  */
 function sumDescendantsByParentEdges(
     root: Block,
