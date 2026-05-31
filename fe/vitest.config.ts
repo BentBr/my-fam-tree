@@ -39,7 +39,7 @@ export default defineConfig({
                 // Lines only, matching backend's `--fail-under-lines` gate.
                 // Branch / statement / function coverage are reported but not
                 // gated. See spec Section 9 (Out of scope).
-                lines: 80,
+                lines: 90,
             },
         },
     },

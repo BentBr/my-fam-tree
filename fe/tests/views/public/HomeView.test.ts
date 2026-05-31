@@ -50,10 +50,16 @@ describe('HomeView', () => {
         expect(w.text()).toContain('Yours alone.')
     })
 
-    it('mounts the real screenshot image (not the placeholder caption)', async () => {
+    it('mounts the real screenshot image, picking the variant that matches the resolved theme', async () => {
         const w = await mountHome()
-        const screenshot = w.find('img[src="/brand/tree-example-960.webp"]')
-        expect(screenshot.exists()).toBe(true)
+        // The HomeView's screenshot src is now theme-resolved
+        // (`tree-example-{light,dark}-{960,1280}.webp`). The unit test
+        // mounts under the default theme — assert either the light-960
+        // OR the dark-960 src is present so a future default-theme
+        // change doesn't quietly break the assertion.
+        const lightImg = w.find('img[src="/brand/tree-example-light-960.webp"]')
+        const darkImg = w.find('img[src="/brand/tree-example-dark-960.webp"]')
+        expect(lightImg.exists() || darkImg.exists()).toBe(true)
     })
 
     it('renders the footer CTA button', async () => {
