@@ -1,12 +1,7 @@
-// PATCH /persons/{id} regression: clearing `death_date` from the UI must
-// actually clear the column (not silently preserve the existing date).
-//
-// Previously a plain `Option<NaiveDate>` on the BE collapsed "field
-// absent" and "field explicitly null" into the same `None`, so the
-// "uncheck deceased" checkbox had no effect — the date stuck around in
-// the DB and re-appeared on the next refetch. The triple-state
-// deserializer on the server fixes that; this e2e walks the UI path
-// end-to-end to lock the behaviour in.
+// Sending `death_date: null` on PATCH /persons/{id} clears the column.
+// The triple-state deserializer on the BE distinguishes "absent" (preserve)
+// from "explicit null" (clear); this e2e walks the UI path end-to-end so
+// the "uncheck deceased" flow stays wired to the clear semantics.
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
@@ -26,20 +21,26 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
 
     // ----- 2. Edit → mark deceased, fill date, save. -----
     await page.getByTestId('person-edit-button').click()
-    // Vuetify v-checkbox: the `data-testid` lands on the OUTER wrapper.
-    // Clicking the wrapper sometimes doesn't propagate to the `<input>`
-    // that drives v-model (depends on the slot/label structure), and
-    // the `deceased` ref then stays false. Target the inner input
-    // directly — its `:checked` flip is what v-model listens to.
+    // Vuetify v-checkbox: the `data-testid` lands on the outer wrapper.
+    // Clicking that wrapper doesn't always propagate to the `<input>`
+    // (depends on the slot/label structure), so the v-model bound to
+    // `deceased` would stay false. Target the inner input directly —
+    // its `:checked` flip is what v-model listens to.
     await page.getByTestId('person-deceased').locator('input').check()
     // `v-if="deceased"` mounts the date field on the next tick.
     const deathDateInput = page.getByTestId('person-death-date').locator('input')
     await expect(deathDateInput).toBeVisible()
     await deathDateInput.fill('2024-06-15')
     await page.getByTestId('person-submit').click()
+    // `page.click()` returns when the DOM event fires, NOT when the
+    // mutation completes. Wait for the form to flip back to view mode
+    // (PersonDetail's `editing` ref goes false on the `saved` emit
+    // from PersonEdit, which only fires after `update.mutateAsync`
+    // resolves) before reloading — otherwise the reload races the
+    // in-flight PATCH and the GET returns the pre-save row.
+    await expect(page.getByTestId('person-edit-button')).toBeVisible()
 
-    // Drawer flips back to view-mode; assert the date persisted server-side
-    // by reloading and re-opening the detail.
+    // Reload + re-open the drawer to assert the date persisted server-side.
     await page.reload()
     const node = page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first()
     await node.click()
@@ -47,19 +48,21 @@ test('uncheck deceased + save actually clears death_date round-trip', async ({ p
 
     // ----- 3. Edit again → uncheck deceased, save. -----
     await page.getByTestId('person-edit-button').click()
-    // The checkbox starts checked (`deceased` ref true from initial load
-    // because death_date is set). Uncheck the inner input directly (same
-    // reasoning as the `.check()` above); the date field unmounts AND
-    // `form.death_date` is cleared to `null` by the `watch(deceased)`
-    // handler in PersonEdit.
+    // The checkbox starts checked (`deceased` ref true on mount because
+    // death_date is set). Uncheck the inner input; the date field
+    // unmounts AND `form.death_date` is cleared to `null` by the
+    // `watch(deceased)` handler in PersonEdit.
     await page.getByTestId('person-deceased').locator('input').uncheck()
     await expect(page.getByTestId('person-death-date')).toHaveCount(0)
     await page.getByTestId('person-submit').click()
+    // Same view-mode-flip sync as step 2 — wait for the save to land
+    // before reloading.
+    await expect(page.getByTestId('person-edit-button')).toBeVisible()
 
     // ----- 4. Reload and verify the BE actually NULL'd the column. -----
-    // The reload + re-open is what makes this an honest round-trip:
-    // a save that only updated the local form (without persisting the
-    // NULL) would show "—" until refetch, then snap back to the date.
+    // Reload + re-open is what makes this an honest round-trip: a save
+    // that only updated the local form (without persisting the NULL)
+    // would show "—" until refetch, then snap back to the date.
     await page.reload()
     await page.locator('[data-testid^="tree-node-"]').filter({ hasText: 'Werner' }).first().click()
     await expect(page.getByTestId('person-detail')).toBeVisible()

@@ -320,10 +320,15 @@ async fn family_operations_require_membership_and_role() {
 async fn protected_endpoints_require_authentication() {
     // Every endpoint mounted under the `AuthMiddleware::required()` scope must
     // reject anonymous (no `access` cookie) callers with a 401 + RFC 7807
-    // envelope carrying `code = "auth_unauthenticated"`. `auth_errors.rs`
-    // already pins this for `/auth/logout`; this consolidated check guards the
-    // family + invite surface so a future refactor that drops the middleware
-    // wrap on any one route is caught here.
+    // envelope carrying `code = "auth_unauthenticated"`. This consolidated
+    // check guards the family + invite surface so a future refactor that
+    // drops the middleware wrap on any one route is caught here.
+    //
+    // `/auth/logout` is deliberately NOT in this list — it's mounted PUBLIC
+    // (outside the required-auth scope) so the FE can clear stale HttpOnly
+    // cookies after a session collapse. Its no-session contract is pinned
+    // by `logout_is_idempotent_and_reachable_without_session` in
+    // `auth_flow.rs`.
     let stack = ephemeral_stack().await;
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
 
@@ -332,7 +337,6 @@ async fn protected_endpoints_require_authentication() {
     // since the middleware rejects before extraction runs anyway.
     let endpoints: Vec<(&'static str, &'static str, serde_json::Value)> = vec![
         ("GET", "/api/v1/auth/me", serde_json::Value::Null),
-        ("POST", "/api/v1/auth/logout", serde_json::Value::Null),
         ("GET", "/api/v1/users/me", serde_json::Value::Null),
         ("PATCH", "/api/v1/users/me", serde_json::json!({ "display_name": "x" })),
         (
