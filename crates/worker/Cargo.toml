@@ -12,8 +12,8 @@ path = "src/main.rs"
 [features]
 default = []
 # Adds a `POST /__test/advance-clock` route on the same in-process HTTP
-# listener that already serves `/healthz`, so the E2E suite can fast-
-# forward the worker's clock and run a tick immediately instead of
+# listener that already serves `/health`, so the E2E suite can fast-forward
+# the worker's clock and run a tick immediately instead of
 # waiting for the real 06:00 window. MUST NOT be enabled in production.
 test-fixtures = []
 
