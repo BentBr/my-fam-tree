@@ -207,4 +207,22 @@ const warningsBroadcaster: Middleware = {
 }
 
 export const client = createClient<paths>({ baseUrl, credentials: 'include' })
-client.use(familyIdInjector, authRefresh, errorTranslator, warningsBroadcaster)
+
+// Middleware order matters in two directions:
+//
+//   onRequest:  runs in the order passed to `use()`.
+//   onResponse: runs in REVERSE order.
+//
+// We need `authRefresh` to be the FIRST middleware that sees a 401
+// response — otherwise `errorTranslator` would throw the typed error
+// before `authRefresh` could intercept and retry, and a token-expiry
+// 401 would bounce the user to /auth/sign-in instead of refreshing
+// silently. Putting `authRefresh` LAST in the `use()` call places it
+// FIRST in the onResponse chain.
+//
+//   onRequest:  familyIdInjector → errorTranslator → warningsBroadcaster → authRefresh
+//   onResponse: authRefresh → warningsBroadcaster → errorTranslator → familyIdInjector
+//
+// `familyIdInjector` keeps its position on request (it must run before
+// the request is sent so the X-Family-Id header is in place).
+client.use(familyIdInjector, errorTranslator, warningsBroadcaster, authRefresh)

@@ -21,20 +21,7 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
 
-// TODO: this test reproduces the production regression Bent reported
-// ("logged out after some min" — refresh not kicking in). It currently
-// fails locally on the same path: after clearing the access cookie, the
-// next `GET /users/me` returns 401, the `authRefresh` middleware tries
-// `POST /auth/refresh`, the BE rejects with 401 (cause TBD — likely
-// SameSite=Strict on the refresh cookie + how the dev proxy frames the
-// request), and `endSession()` bounces the user to /auth/sign-in.
-//
-// Marked `test.fail()` so CI stays green while pinning the regression:
-// the moment the underlying bug is fixed, this test PASSES, which
-// makes Playwright surface the `test.fail()` as an unexpected pass —
-// the cue to remove the marker. Remove `test.fail()` + this comment
-// once the fix lands.
-test.fail('the FE refreshes the session when the access cookie disappears but the refresh cookie survives', async ({
+test('the FE refreshes the session when the access cookie disappears but the refresh cookie survives', async ({
     browser,
 }) => {
     // Fresh context so we own the cookie jar — isolated from other tests.
