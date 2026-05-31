@@ -10,14 +10,23 @@ import { Buffer } from 'node:buffer'
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn } from '../page-objects/session'
 
-// Tiny 1x1 PNG (red). Smallest valid PNG that passes the BE's
-// `validate_and_resize` (the magic-byte detection only needs the PNG
-// signature; resize handles arbitrary dimensions).
+// Tiny 1x1 PNG — the canonical smallest valid PNG (8-bit grayscale+alpha,
+// transparent pixel). 67 bytes. CRCs verified — Rust's `image` crate
+// validates PNG chunk CRCs strictly on decode; the previous hand-written
+// hex blob had a bad IHDR CRC (0x7bfd4da8 vs the correct 0x907753de) and
+// every upload returned 422 ImageInvalid. This canonical sequence is the
+// version recommended by https://garethrees.org/2007/11/14/pngcrush/ and
+// the GitHub-cited "smallest possible PNG". Kept inline so the fixture
+// stays self-contained.
 const TINY_PNG = Buffer.from(
-    '89504E470D0A1A0A0000000D49484452000000010000000108020000007BFD' +
-        '4DA800000016504C5445FF000000000000000000000000000000000000000000' +
-        '6E7C58730000000174524E5300405A6F89000000094944415408D7636000000000' +
-        '00010001005F03C9520000000049454E44AE426082',
+    '89504E470D0A1A0A0000000D49484452' + // signature + IHDR chunk header
+        '00000001000000010804000000' + // 1x1, 8-bit grayscale+alpha
+        'B51C0C02' + // IHDR CRC
+        '0000000B49444154' + // IDAT chunk header (11 bytes data)
+        '789C636000000002000100' + // IDAT compressed data (deflate of one transparent pixel)
+        'E221BC33' + // IDAT CRC
+        '0000000049454E44' + // IEND chunk header
+        'AE426082', // IEND CRC
     'hex',
 )
 
