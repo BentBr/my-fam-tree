@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.13](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.12...core-v0.1.13) (2026-05-31)
+
+
+### Bug Fixes
+
+* **auth:** invite-accept mints a refresh cookie + drop dev/test debug info for CI disk budget ([c00a533](https://github.com/BentBr/my-fam-tree/commit/c00a533476e3a07b23baa0ef46e4228795e56df3))
+* **ci:** rustfmt import order + skip authRefresh for /invites/accept + e2e adjustments ([be6824b](https://github.com/BentBr/my-fam-tree/commit/be6824bb9050e984f858f4e940bb05d66100a8ae))
+
 ## [0.1.12](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.11...core-v0.1.12) (2026-05-31)
 
 
