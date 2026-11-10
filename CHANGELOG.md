@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.22](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.21...core-v0.1.22) (2026-11-10)
+
+
+### Bug Fixes
+
+* **dates:** allow pre-1900 birth/death/partnership dates ([843cf00](https://github.com/BentBr/my-fam-tree/commit/843cf0071f38b59844b7462d8baff82a68242d22))
+* **fe:** shim CSS global for vite-ssg prerender ([5ea56e0](https://github.com/BentBr/my-fam-tree/commit/5ea56e058a71674a5a07d7b67d1cb039c1359c40))
+
 ## [0.1.21](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.20...core-v0.1.21) (2026-06-16)
 
 

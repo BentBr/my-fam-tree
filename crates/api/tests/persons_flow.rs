@@ -379,3 +379,58 @@ async fn persons_cursor_pagination_walks_full_list() {
 // Per-person contact data has been moved out of the persons row into
 // the dedicated `person_contacts` table — see `contacts_flow.rs` for
 // the contact CRUD + role + visibility coverage.
+
+/// Regression: ancestors born long before 1900 (e.g. 1870) must round-trip
+/// through create + PATCH. Dates before `MIN_DATE_YEAR` (1000) are rejected
+/// with `validation.date_too_early`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn persons_accept_pre_1900_dates_and_reject_before_min_year() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let (access, _refresh) = sign_in(&stack, &app, "ancestor@example.com").await;
+    let (access, family_id) = create_family(&app, &access, "Ancestor Fam").await;
+
+    // POST with an 1870 birth date and an 1931 death date -> 200, echoed back.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/persons")
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({
+            "given_name": "Urahn",
+            "birth_date": "1870-12-03",
+            "death_date": "1931-04-17",
+        }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["data"]["birth_date"], "1870-12-03");
+    assert_eq!(body["data"]["death_date"], "1931-04-17");
+    let person_id = body["data"]["id"].as_str().expect("person id").to_string();
+
+    // PATCH to an even older date (1650) -> 200.
+    let req = test::TestRequest::patch()
+        .uri(&format!("/api/v1/persons/{person_id}"))
+        .cookie(Cookie::new("access", access.clone()))
+        .insert_header(("X-Family-Id", family_id.clone()))
+        .set_json(serde_json::json!({ "birth_date": "1650-01-01" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["data"]["birth_date"], "1650-01-01");
+
+    // PATCH to year 999 -> 422 date_too_early on /birth_date.
+    let req = test::TestRequest::patch()
+        .uri(&format!("/api/v1/persons/{person_id}"))
+        .cookie(Cookie::new("access", access))
+        .insert_header(("X-Family-Id", family_id))
+        .set_json(serde_json::json!({ "birth_date": "0999-12-31" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 422);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["fields"][0]["code"], "validation.date_too_early");
+    assert_eq!(body["fields"][0]["path"], "/birth_date");
+    assert_eq!(body["fields"][0]["params"]["min"], "1000-01-01");
+}

@@ -7,7 +7,7 @@
       "name": "BUSL-1.1",
       "identifier": "BUSL-1.1"
     },
-    "version": "0.1.21"
+    "version": "0.1.22"
   },
   "servers": [
     {
@@ -2379,10 +2379,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2477,10 +2477,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2635,10 +2635,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2691,10 +2691,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2743,10 +2743,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2791,10 +2791,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2869,10 +2869,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -2982,10 +2982,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3031,10 +3031,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3139,10 +3139,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3233,10 +3233,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3268,10 +3268,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3374,10 +3374,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3425,10 +3425,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3446,10 +3446,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3503,10 +3503,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3538,10 +3538,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3573,10 +3573,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3592,10 +3592,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3852,10 +3852,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3924,10 +3924,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -3945,10 +3945,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4131,10 +4131,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4155,10 +4155,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4196,10 +4196,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4254,10 +4254,10 @@
           "pagination": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Pagination"
               },
               {
-                "$ref": "#/components/schemas/Pagination"
+                "type": "null"
               }
             ]
           },
@@ -4338,20 +4338,20 @@
           "data": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/TransferStatus"
               },
               {
-                "$ref": "#/components/schemas/TransferStatus"
+                "type": "null"
               }
             ]
           },
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4369,10 +4369,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4489,10 +4489,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4596,10 +4596,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4635,10 +4635,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }
@@ -4718,10 +4718,10 @@
           "meta": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/ResponseMeta"
               },
               {
-                "$ref": "#/components/schemas/ResponseMeta"
+                "type": "null"
               }
             ]
           }

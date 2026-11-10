@@ -73,7 +73,7 @@ fn favourite_internal<E: std::fmt::Display>(e: E) -> ApiError {
 use crate::auth::{require_role, user_claims_with_family};
 use crate::response::{ApiResponse, Pagination};
 use crate::services::audit;
-use crate::validation::{string_too_long, value_required};
+use crate::validation::{check_date_not_too_early, string_too_long, value_required};
 use crate::{ApiError, AppState, FieldViolation, response_body};
 
 const PERSONS_LIST_DEFAULT_LIMIT: u32 = 50;
@@ -105,6 +105,8 @@ fn check_draft(d: &PersonDraft) -> Result<(), ApiError> {
     check_max("/gender", &d.gender, SHORT_MAX)?;
     check_max("/birth_place", &d.birth_place, SHORT_MAX)?;
     check_max("/notes", &d.notes, NOTES_MAX)?;
+    check_date_not_too_early("/birth_date", d.birth_date)?;
+    check_date_not_too_early("/death_date", d.death_date)?;
     Ok(())
 }
 

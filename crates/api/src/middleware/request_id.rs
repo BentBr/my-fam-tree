@@ -82,7 +82,7 @@ mod tests {
     use super::*;
 
     async fn echo(req: HttpRequest) -> HttpResponse {
-        let id = req.extensions().get::<RequestIdValue>().map(|v| v.0.clone()).unwrap_or_default();
+        let id = req.extensions().get::<RequestIdValue>().map_or_else(String::new, |v| v.0.clone());
         HttpResponse::Ok().body(id)
     }
 
@@ -93,7 +93,7 @@ mod tests {
         let req = test::TestRequest::default().to_request();
         let res = test::call_service(&app, req).await;
         let header = res.headers().get(&*HEADER).unwrap().to_str().unwrap().to_string();
-        assert!(!header.is_empty());
+        assert_ne!(header, "");
         let body = test::read_body(res).await;
         assert_eq!(std::str::from_utf8(&body).unwrap(), header);
     }

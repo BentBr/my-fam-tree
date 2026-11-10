@@ -141,7 +141,7 @@ async fn relationships_tree_denormalises_parents_and_partners() {
     let mut expected = vec![mom.clone(), dad.clone()];
     expected.sort();
     assert_eq!(kid_parents, expected, "Kid's parents should be Mom and Dad");
-    assert!(kid_node["partner_ids"].as_array().unwrap().is_empty());
+    assert_eq!(kid_node["partner_ids"], serde_json::json!([]));
     assert_eq!(kid_node["linked_user_id"], owner_uuid);
 
     // Mom and Dad: each has one partner (the other), no parents, no link.
@@ -159,8 +159,8 @@ async fn relationships_tree_denormalises_parents_and_partners() {
         .map(|v| v.as_str().unwrap().to_string())
         .collect();
     assert_eq!(dad_partners, vec![mom.clone()]);
-    assert!(mom_node["parent_ids"].as_array().unwrap().is_empty());
-    assert!(dad_node["parent_ids"].as_array().unwrap().is_empty());
+    assert_eq!(mom_node["parent_ids"], serde_json::json!([]));
+    assert_eq!(dad_node["parent_ids"], serde_json::json!([]));
     assert!(mom_node["linked_user_id"].is_null());
     assert!(dad_node["linked_user_id"].is_null());
 }
@@ -180,7 +180,7 @@ async fn relationships_tree_empty_family_returns_empty_arrays() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    assert!(body["data"]["nodes"].as_array().unwrap().is_empty());
-    assert!(body["data"]["parent_edges"].as_array().unwrap().is_empty());
-    assert!(body["data"]["partner_edges"].as_array().unwrap().is_empty());
+    assert_eq!(body["data"]["nodes"], serde_json::json!([]));
+    assert_eq!(body["data"]["parent_edges"], serde_json::json!([]));
+    assert_eq!(body["data"]["partner_edges"], serde_json::json!([]));
 }

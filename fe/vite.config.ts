@@ -87,6 +87,19 @@ function stripSeoFallback(html: string): string {
 // the authenticated app stays a client-rendered SPA.
 const PRERENDER_ROUTES = ['/en', '/de', '/en/imprint', '/de/imprint', '/en/data-policy', '/de/data-policy']
 
+// vite-ssg's `mock: true` installs a `window` for the Node-side prerender but
+// no `CSS` namespace. Vuetify ≥ 4.3 probes `CSS.supports(...)` at module load
+// once it sees a `window`, which throws `ReferenceError: CSS is not defined`.
+// A no-op shim lets the prerender proceed; the real browser has its own `CSS`.
+// This only runs in the Node process that loads this config (dev/build).
+if (!('CSS' in globalThis)) {
+    Object.defineProperty(globalThis, 'CSS', {
+        value: { supports: (): boolean => false, escape: (s: string): string => s },
+        configurable: true,
+        writable: true,
+    })
+}
+
 export default defineConfig({
     plugins: [vue(), vuetify({ autoImport: true }), stripHtmlComments(), sitemapDevServer()],
     resolve: {

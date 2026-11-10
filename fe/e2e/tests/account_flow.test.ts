@@ -49,7 +49,8 @@ test.describe('FE account flow', () => {
         // the German label for "de" is "Deutsch" (it was "German" only while
         // the UI was still English — the pre-fix behaviour). Seeing "Deutsch"
         // after a reload is the proof the change persisted (DB + re-minted JWT).
-        const localeInput = page.getByTestId('account-locale').locator('input').first()
+        // Skip Vuetify's hidden form input (raw `de`) — assert the visible label.
+        const localeInput = page.getByTestId('account-locale').locator('input:not([type="hidden"])').first()
         await expect(localeInput).toHaveValue('Deutsch')
     })
 

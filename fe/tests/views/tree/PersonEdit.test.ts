@@ -11,6 +11,7 @@ vi.mock('@/api/hooks/persons', () => ({
 }))
 
 import { i18n } from '@/i18n'
+import { MIN_DATE } from '@/utils/dates'
 import PersonEdit from '@/views/tree/PersonEdit.vue'
 
 interface MountProps {
@@ -66,8 +67,8 @@ function mountView(props: MountProps) {
                     // Forward `readonly` as the HTML attribute so tests can
                     // assert on it; v-combobox is stubbed below the same way.
                     template:
-                        '<input :data-testid="$attrs[\'data-testid\']" :value="modelValue" :readonly="readonly" @input="$emit(\'update:modelValue\', $event.target.value)" />',
-                    props: ['modelValue', 'label', 'type', 'autocomplete', 'readonly', 'hint', 'persistentHint'],
+                        '<input :data-testid="$attrs[\'data-testid\']" :type="type" :min="min" :value="modelValue" :readonly="readonly" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+                    props: ['modelValue', 'label', 'type', 'min', 'autocomplete', 'readonly', 'hint', 'persistentHint'],
                     emits: ['update:modelValue'],
                 },
                 'v-textarea': {
@@ -143,6 +144,29 @@ describe('PersonEdit', () => {
         // because Vue dev-mode may dispatch the click event through more than
         // one DOM listener layer (button + form), so we just require it fired.
         expect((w.emitted('cancel') ?? []).length).toBeGreaterThanOrEqual(1)
+    })
+
+    // Regression: Firefox for Android's native picker defaults to a
+    // 1900-01-01 lower bound when the input has no `min`, so an 1870
+    // ancestor couldn't be entered. Both date inputs must carry MIN_DATE.
+    it('date inputs carry an explicit min well before 1900 and accept 1870', async () => {
+        updateMutate.mockResolvedValueOnce({ id: 'p-1' })
+        const w = mountView({
+            mode: 'edit',
+            initial: { id: 'p-1', given_name: 'Urahn', birth_date: '1870-12-03', death_date: '1931-04-17' },
+        })
+        expect(MIN_DATE < '1650-01-01').toBe(true)
+        for (const id of ['person-birth-date', 'person-death-date']) {
+            const input = w.get<HTMLInputElement>(`[data-testid="${id}"]`)
+            expect(input.attributes('type')).toBe('date')
+            expect(input.attributes('min')).toBe(MIN_DATE)
+        }
+        expect(w.get<HTMLInputElement>('[data-testid="person-birth-date"]').element.value).toBe('1870-12-03')
+
+        await w.find('form').trigger('submit')
+        await flushPromises()
+        const call = updateMutate.mock.calls[0]?.[0] as { input: Record<string, unknown> } | undefined
+        expect(call?.input['birth_date']).toBe('1870-12-03')
     })
 
     it('every PersonView field is editable and flows through to the mutation payload', async () => {
