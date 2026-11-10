@@ -32,7 +32,9 @@ test.describe('FE family flow', () => {
         await page.goto('/tree')
         await expect(page).toHaveURL(/\/tree$/)
         // The active family appears in the switcher's combobox value.
-        const switcherInput = page.getByTestId('family-switcher').locator('input').first()
+        // Vuetify ≥ 4.3 renders a hidden form input (raw id) before the
+        // visible text input; assert on the visible one.
+        const switcherInput = page.getByTestId('family-switcher').locator('input:not([type="hidden"])').first()
         await expect(switcherInput).toHaveValue(`Auto-${stamp}`)
     })
 
