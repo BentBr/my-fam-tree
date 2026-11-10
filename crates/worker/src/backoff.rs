@@ -1,7 +1,7 @@
 //! Exponential backoff with jitter for digest send retries.
 
 use chrono::{DateTime, Duration as CDur, Utc};
-use rand::Rng;
+use rand::RngExt;
 
 /// Next retry instant for `attempt` (1-based): `min * 2^(attempt-1)` capped at
 /// `max`, plus up to 25% jitter so a fleet of retries doesn't thunder.
@@ -9,7 +9,7 @@ use rand::Rng;
 pub fn next_attempt(now: DateTime<Utc>, attempt: i32, min_sec: u64, max_sec: u64) -> DateTime<Utc> {
     let exp = u32::try_from(attempt.max(1) - 1).unwrap_or(0);
     let base = min_sec.saturating_mul(2_u64.saturating_pow(exp)).min(max_sec);
-    let jitter = rand::thread_rng().gen_range(0..=(base / 4 + 1));
+    let jitter = rand::rng().random_range(0..=(base / 4 + 1));
     let secs = i64::try_from(base.saturating_add(jitter)).unwrap_or(i64::MAX);
     now + CDur::seconds(secs)
 }

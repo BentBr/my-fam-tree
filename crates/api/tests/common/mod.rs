@@ -35,7 +35,8 @@ use my_fam_tree_persistence::{
     PgPersonContactRepo, PgPersonFavouriteRepo, PgPersonRepo, PgRefreshTokenRepo,
     PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use rand::rngs::OsRng;
+use rand::rand_core::UnwrapErr;
+use rand::rngs::SysRng;
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
@@ -82,7 +83,7 @@ pub async fn ephemeral_stack() -> TestStack {
     sqlx::migrate!("../../migrations").run(db.pool()).await.expect("migrate");
 
     // Ephemeral Ed25519 keypair so the JWT issuer is real but isolated.
-    let signing = SigningKey::generate(&mut OsRng);
+    let signing = SigningKey::generate(&mut UnwrapErr(SysRng));
     let priv_pem = signing.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
     let pub_pem = signing.verifying_key().to_public_key_pem(LineEnding::LF).unwrap();
     let public_json =
