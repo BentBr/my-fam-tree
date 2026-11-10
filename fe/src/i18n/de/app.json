@@ -439,6 +439,7 @@
         "generic": "Etwas ist schiefgegangen."
     },
     "validation": {
+        "date_too_early": "Das Datum darf nicht vor dem {min} liegen.",
         "email_invalid": "Bitte gib eine gültige E-Mail-Adresse ein.",
         "header_required": "Der {header}-Header ist erforderlich.",
         "invite_email_mismatch": "Diese Einladung wurde an eine andere E-Mail-Adresse gesendet.",

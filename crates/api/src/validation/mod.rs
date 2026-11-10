@@ -20,7 +20,36 @@
 
 pub mod relationships;
 
+use chrono::{Datelike, NaiveDate};
+
 use crate::{ApiError, FieldViolation};
+
+/// Earliest year accepted for any genealogical date.
+///
+/// Applies to birth, death, and partnership start/end. Ancestors routinely
+/// pre-date 1900, so the bound is deliberately generous; it only rejects
+/// obvious typos like `0187`. Mirrored by `MIN_DATE` in
+/// `fe/src/utils/dates.ts` — keep both in sync.
+pub const MIN_DATE_YEAR: i32 = 1000;
+
+/// Reject a date before [`MIN_DATE_YEAR`]-01-01 with
+/// `validation.date_too_early` (param `min`). `None` passes.
+///
+/// # Errors
+/// Returns `ApiError::Validation` when the date is too early.
+pub fn check_date_not_too_early(path: &str, date: Option<NaiveDate>) -> Result<(), ApiError> {
+    match date {
+        Some(d) if d.year() < MIN_DATE_YEAR => Err(ApiError::Validation(vec![
+            FieldViolation::new(
+                path,
+                "validation.date_too_early",
+                "date is before the earliest supported year",
+            )
+            .with_param("min", format!("{MIN_DATE_YEAR}-01-01")),
+        ])),
+        _ => Ok(()),
+    }
+}
 
 /// Lightweight email syntax check.
 ///
@@ -210,6 +239,29 @@ mod tests {
                 assert_eq!(v[0].path, "/email");
                 assert_eq!(v[0].code, "validation.email_invalid");
                 assert!(v[0].params.is_empty());
+            }
+            _ => panic!("expected Validation"),
+        }
+    }
+
+    #[test]
+    fn check_date_not_too_early_accepts_old_ancestor_dates() {
+        for (y, m, d) in [(1870, 12, 3), (1650, 1, 1), (MIN_DATE_YEAR, 1, 1)] {
+            let date = NaiveDate::from_ymd_opt(y, m, d);
+            assert!(check_date_not_too_early("/birth_date", date).is_ok(), "{y}-{m}-{d}");
+        }
+        assert!(check_date_not_too_early("/birth_date", None).is_ok());
+    }
+
+    #[test]
+    fn check_date_not_too_early_rejects_dates_before_min_year() {
+        let date = NaiveDate::from_ymd_opt(MIN_DATE_YEAR - 1, 12, 31);
+        match check_date_not_too_early("/birth_date", date) {
+            Err(ApiError::Validation(v)) => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0].path, "/birth_date");
+                assert_eq!(v[0].code, "validation.date_too_early");
+                assert_eq!(v[0].params["min"], "1000-01-01");
             }
             _ => panic!("expected Validation"),
         }

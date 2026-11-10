@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreatePartnership, useDeletePartnership, useUpdatePartnership } from '@/api/hooks/relationships'
+import { MIN_DATE } from '@/utils/dates'
 
 export interface PartnerRow {
     id: string
@@ -212,6 +213,7 @@ watch(
                         v-model="draft.started_on"
                         :label="t('person.fields.started_on')"
                         type="date"
+                        :min="MIN_DATE"
                         density="comfortable"
                         clearable
                         :data-testid="`relation-partner-started-on-${row.id}`"
@@ -220,6 +222,7 @@ watch(
                         v-model="draft.ended_on"
                         :label="t('person.fields.ended_on')"
                         type="date"
+                        :min="MIN_DATE"
                         density="comfortable"
                         clearable
                         :data-testid="`relation-partner-ended-on-${row.id}`"
@@ -282,6 +285,7 @@ watch(
                     v-model="partnerStartedOn"
                     :label="t('person.fields.started_on')"
                     type="date"
+                    :min="MIN_DATE"
                     density="comfortable"
                     clearable
                     data-testid="person-add-partner-started-on"
