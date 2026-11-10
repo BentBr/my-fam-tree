@@ -40,7 +40,7 @@ jobs:
             backend: ${{ steps.filter.outputs.backend || steps.default.outputs.backend }}
             frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
             - if: ${{ github.event_name == 'pull_request' }}
@@ -97,7 +97,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
               with:
                   fetch-depth: 0
             - name: Validate Conventional Commits
@@ -164,7 +164,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rustfmt, clippy
@@ -197,7 +197,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: clippy
@@ -209,7 +209,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: rustfmt
@@ -220,7 +220,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - name: Restore cargo bin
@@ -310,7 +310,7 @@ jobs:
             STORAGE_SECRET_ACCESS_KEY: ""
             STORAGE_FORCE_PATH_STYLE: "false"
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             # The seed binary's `Config::load_from_env` validates JWT_*; the
@@ -340,7 +340,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - run: cargo build --workspace --all-targets
@@ -418,7 +418,7 @@ jobs:
             STORAGE_SECRET_ACCESS_KEY: ""
             STORAGE_FORCE_PATH_STYLE: "false"
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
               with:
                   components: llvm-tools-preview
@@ -518,7 +518,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - name: Dump live OpenAPI
@@ -536,7 +536,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -558,7 +558,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -580,7 +580,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -601,7 +601,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -623,7 +623,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -644,7 +644,7 @@ jobs:
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
               with:
                   version: 10.33.4
@@ -794,7 +794,7 @@ jobs:
             STORAGE_FORCE_PATH_STYLE: "false"
             VITE_API_BASE_URL: http://localhost:8080
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - uses: pnpm/action-setup@v6
@@ -968,7 +968,7 @@ jobs:
         if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
             - uses: docker/setup-buildx-action@v4
             - name: Build api image
               uses: docker/build-push-action@v7
