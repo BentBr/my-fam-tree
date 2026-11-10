@@ -267,7 +267,7 @@ async fn upcoming_empty_anniversary_when_no_partnership_no_death() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    assert!(body["data"].as_array().unwrap().is_empty());
+    assert_eq!(body["data"], serde_json::json!([]));
 
     let req = test::TestRequest::get()
         .uri("/api/v1/upcoming")

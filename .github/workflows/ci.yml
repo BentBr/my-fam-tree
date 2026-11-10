@@ -170,7 +170,7 @@ jobs:
                   components: rustfmt, clippy
             - uses: Swatinem/rust-cache@v2
             - name: Cache cargo bin
-              uses: actions/cache@v5
+              uses: actions/cache@v6
               with:
                   path: ~/.cargo/bin
                   key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
@@ -224,7 +224,7 @@ jobs:
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
             - name: Restore cargo bin
-              uses: actions/cache@v5
+              uses: actions/cache@v6
               with:
                   path: ~/.cargo/bin
                   key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
@@ -424,7 +424,7 @@ jobs:
                   components: llvm-tools-preview
             - uses: Swatinem/rust-cache@v2
             - name: Restore cargo bin
-              uses: actions/cache@v5
+              uses: actions/cache@v6
               with:
                   path: ~/.cargo/bin
                   key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
@@ -546,7 +546,7 @@ jobs:
             # setup-node's built-in pnpm cache assumes a global store at
             # ~/.local/share/pnpm/store; ours lives at fe/.pnpm-store
             # (fe/.npmrc). Cache the repo-local store directly.
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -565,7 +565,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -587,7 +587,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -608,7 +608,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -630,7 +630,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -651,7 +651,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
@@ -803,7 +803,7 @@ jobs:
             - uses: actions/setup-node@v6
               with:
                   node-version: 22
-            - uses: actions/cache@v5
+            - uses: actions/cache@v6
               with:
                   path: fe/.pnpm-store
                   key: ${{ runner.os }}-pnpm-store-${{ hashFiles('fe/pnpm-lock.yaml') }}
