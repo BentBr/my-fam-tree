@@ -30,21 +30,7 @@ import {
     type TreeInput,
 } from './types'
 
-export {
-    type BackendEdge,
-    type BackendNode,
-    type BackendPartnerEdge,
-    CLUSTER_GAP,
-    COL_GAP,
-    type LayoutResult,
-    NODE_H,
-    NODE_W,
-    type ParentEdge,
-    type PartnerEdge,
-    type Positioned,
-    ROW_GAP,
-    type TreeInput,
-} from './types'
+export { type BackendNode, COL_GAP, type LayoutResult, NODE_H, NODE_W, type Positioned, type TreeInput } from './types'
 
 /**
  * Compute SVG-ready positions and edge coordinates for the family tree.

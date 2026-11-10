@@ -1,0 +1,5 @@
+# cargo-audit config. Keep in sync with `[advisories].ignore` in deny.toml.
+[advisories]
+# RUSTSEC-2026-0459: libsqlite3-sys is only in Cargo.lock as an optional
+# sqlx-sqlite dep; the sqlite driver is never compiled (postgres only).
+ignore = ["RUSTSEC-2026-0459"]
