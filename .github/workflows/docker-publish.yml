@@ -48,7 +48,7 @@ jobs:
                     -   image: fe
                         file: .docker/fe/Dockerfile
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v7
             -   name: Lowercase repo owner
                 id: repo
                 env:
