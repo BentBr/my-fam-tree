@@ -5,23 +5,19 @@ all-features = false
 db-path = "~/.cargo/advisory-db"
 yanked = "deny"
 ignore = [
-    # RUSTSEC-2023-0071 — Marvin Attack timing sidechannel in the `rsa` crate.
-    # Pulled in transitively via jsonwebtoken 10.x's rust_crypto feature, but
-    # we only sign/verify Ed25519 — the RSA path is dead code in our binary.
-    # No fix available upstream. Re-evaluate when the rsa crate ships a
-    # constant-time release.
-    "RUSTSEC-2023-0071",
-    # RUSTSEC-2026-0098/0099/0104 — three rustls-webpki 0.101.x bugs around
-    # name-constraint handling and a panic in CRL parsing. Reachable only if
-    # an attacker controls the TLS peer's certificate. Pulled in via
-    # aws-sdk-s3 → aws-smithy-http-client 1.1.x → hyper-rustls 0.24 →
-    # rustls 0.21 → rustls-webpki 0.101. We talk plain HTTP to MinIO in dev
-    # and CA-issued TLS to real AWS in prod — no attacker-controlled cert
-    # path. Drop these when aws-smithy-http-client ships with rustls ≥ 0.23
-    # (which carries webpki ≥ 0.103.12).
-    "RUSTSEC-2026-0098",
-    "RUSTSEC-2026-0099",
-    "RUSTSEC-2026-0104",
+    # RUSTSEC-2026-0459 — C SQLite CVE in `libsqlite3-sys` 0.37. Only listed in
+    # Cargo.lock as an optional dep of `sqlx-sqlite` (via sqlx-macros-core);
+    # we enable the `postgres` driver only, so it is never compiled. Drop
+    # once sqlx ships with libsqlite3-sys >= 0.39.
+    "RUSTSEC-2026-0459",
+    # RUSTSEC-2026-0374 — `basic-toml` unmaintained. Build-time only: askama's
+    # derive macro reads `askama.toml` with it; nothing reaches the binary at
+    # runtime. askama 0.16.1 is the latest release; revisit on the next one.
+    "RUSTSEC-2026-0374",
+    # RUSTSEC-2026-0440 — `astral-tokio-tar` unmaintained. Dev-dependency only
+    # (testcontainers 0.27). testcontainers-modules 0.15 (latest) still pins
+    # testcontainers 0.27; revisit when it moves to 0.28.
+    "RUSTSEC-2026-0440",
 ]
 
 [licenses]

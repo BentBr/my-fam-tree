@@ -439,6 +439,7 @@
         "generic": "Something went wrong."
     },
     "validation": {
+        "date_too_early": "Date must be on or after {min}.",
         "email_invalid": "Please enter a valid email address.",
         "header_required": "The {header} header is required.",
         "invite_email_mismatch": "This invite was sent to a different email address.",

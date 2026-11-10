@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreatePerson, useUpdatePerson } from '@/api/hooks/persons'
+import { MIN_DATE } from '@/utils/dates'
 
 interface Initial {
     id?: string
@@ -126,6 +127,7 @@ async function submit(): Promise<void> {
             v-model="form.birth_date"
             :label="t('person.fields.birth_date')"
             type="date"
+            :min="MIN_DATE"
             data-testid="person-birth-date"
         />
         <v-text-field
@@ -145,6 +147,7 @@ async function submit(): Promise<void> {
             v-model="form.death_date"
             :label="t('person.fields.death_date')"
             type="date"
+            :min="MIN_DATE"
             data-testid="person-death-date"
         />
         <v-combobox
