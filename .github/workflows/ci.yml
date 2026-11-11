@@ -909,7 +909,16 @@ jobs:
                   pnpm openapi-codegen
             - name: Install Playwright Chromium
               working-directory: fe
-              run: pnpm exec playwright install --with-deps chromium
+              # `--with-deps` apt-installs system fonts/libs; runner DNS to the
+              # Ubuntu mirrors occasionally blips ("Temporary failure resolving
+              # security.ubuntu.com"). Retry with backoff instead of failing the run.
+              run: |
+                  for attempt in 1 2 3; do
+                      pnpm exec playwright install --with-deps chromium && exit 0
+                      echo "playwright install failed (attempt $attempt); retrying in $((attempt * 20))s"
+                      sleep $((attempt * 20))
+                  done
+                  exit 1
             - name: Build FE for production
               # We deliberately E2E the production bundle (not `pnpm dev`)
               # because Vite dev's on-demand module loading + HMR
