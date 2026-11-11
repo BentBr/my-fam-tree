@@ -35,7 +35,7 @@ actix-web = { version = "4.19", default-features = false, features = ["macros", 
 actix-cors = "0.7.1"
 # Multipart upload parser used by the photo + avatar endpoints. 0.7 lines up
 # with actix-web 4.
-actix-multipart = "0.7"
+actix-multipart = "0.8"
 anyhow = "1.0"
 askama = "0.16"
 async-trait = "0.1"
@@ -46,15 +46,14 @@ aws-sdk-s3 = { version = "1", default-features = false, features = ["behavior-ve
 # `rt-tokio` in transitively; declaring the dep directly lets us name the
 # helper without leaning on a private re-export.
 aws-smithy-async = { version = "1", features = ["rt-tokio"] }
-base64 = "0.22"
+base64 = "0.23"
 bytes = "1.10"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-tz = "0.10"
 clap = { version = "4.6", features = ["derive", "env"] }
 deadpool-redis = "0.23"
 dotenvy = "0.15"
-# TODO bump: 3.0; latest stable is 2.2 (3.0 is pre-release/alpha as of 2026-05-20).
-ed25519-dalek = { version = "2.2", features = ["pem", "rand_core"] }
+ed25519-dalek = { version = "3.0", features = ["pem", "rand_core"] }
 envy = "0.4"
 figment = { version = "0.10", features = ["env", "toml"] }
 futures-util = "0.3"
@@ -68,8 +67,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 jsonwebtoken = { version = "11", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "tokio1", "tokio1-rustls-tls", "builder"] }
 once_cell = "1"
-# TODO bump: 0.10; pinned at 0.8 because ed25519-dalek 2.2 still uses rand_core 0.6.
-rand = "0.8"
+rand = "0.10"
 redis = { version = "1.2", features = ["tokio-comp", "connection-manager"] }
 reqwest = { version = "0.13", features = ["json", "rustls"], default-features = false }
 serde = { version = "1.0", features = ["derive"] }

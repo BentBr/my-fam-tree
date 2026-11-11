@@ -5,7 +5,8 @@ use std::env;
 use ed25519_dalek::SigningKey;
 use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
 use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
-use rand::rngs::OsRng;
+use rand::rand_core::UnwrapErr;
+use rand::rngs::SysRng;
 
 #[allow(
     clippy::print_stdout,
@@ -17,7 +18,7 @@ fn main() -> anyhow::Result<()> {
         format!("local-{}", now.format("%Y%m%d-%H%M%S"))
     });
 
-    let signing = SigningKey::generate(&mut OsRng);
+    let signing = SigningKey::generate(&mut UnwrapErr(SysRng));
     let verifying = signing.verifying_key();
 
     let priv_pem = signing.to_pkcs8_pem(LineEnding::LF)?.to_string();

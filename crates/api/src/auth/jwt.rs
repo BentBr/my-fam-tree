@@ -101,12 +101,13 @@ impl JwtIssuer {
 mod tests {
     use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
     use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
-    use rand::rngs::OsRng;
+    use rand::rand_core::UnwrapErr;
+    use rand::rngs::SysRng;
 
     use super::*;
 
     fn fixture_issuer(kid: &str) -> JwtIssuer {
-        let sk = ed25519_dalek::SigningKey::generate(&mut OsRng);
+        let sk = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
         let priv_pem = sk.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
         let pub_pem = sk.verifying_key().to_public_key_pem(LineEnding::LF).unwrap();
         let public_json =

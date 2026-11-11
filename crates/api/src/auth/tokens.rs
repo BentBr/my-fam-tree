@@ -3,14 +3,17 @@
 //! Tokens are 256-bit url-safe base64 strings; only the SHA-256 hash is
 //! persisted so a DB leak can't be used to forge a session.
 
-use rand::RngCore;
+use rand::Rng;
+use rand::rand_core::UnwrapErr;
+use rand::rngs::SysRng;
 use sha2::{Digest, Sha256};
 
 /// Generates a 256-bit opaque token; returns (`urlsafe-b64` string, sha256 hash bytes).
 #[must_use]
 pub fn generate_opaque_token() -> (String, Vec<u8>) {
     let mut bytes = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut bytes);
+    // OS CSPRNG; `UnwrapErr` panics only if the OS RNG itself fails.
+    UnwrapErr(SysRng).fill_bytes(&mut bytes);
     let token = base64_urlsafe(&bytes);
     let hash = Sha256::digest(token.as_bytes()).to_vec();
     (token, hash)
