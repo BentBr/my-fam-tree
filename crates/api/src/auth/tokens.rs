@@ -42,6 +42,16 @@ mod tests {
         assert_eq!(hash.len(), 32);
     }
 
+    /// 32 random bytes → 43 chars of URL-safe base64 without padding.
+    /// Pins the wire format across `base64` / `rand` upgrades.
+    #[test]
+    fn token_is_43_char_urlsafe_base64_without_padding() {
+        let (tok, _) = generate_opaque_token();
+        assert_eq!(tok.len(), 43);
+        assert!(tok.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'), "{tok}");
+        assert_eq!(base64_urlsafe(&[0xfb, 0xff]), "-_8");
+    }
+
     #[test]
     fn tokens_are_unique() {
         let (a, _) = generate_opaque_token();

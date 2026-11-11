@@ -90,3 +90,50 @@ impl JwtKeyset {
         })
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+mod tests {
+    use super::*;
+    use crate::auth::jwt::JwtIssuer;
+
+    // Fixed Ed25519 key pair from RFC 8410 §10.1 / §10.3, written exactly the
+    // way `gen-jwt-keys` emits them for `.env` (single line, literal `\n`).
+    // Every other test generates a fresh key with the *current* ed25519-dalek;
+    // these pin that keys produced by any earlier version (i.e. the ones
+    // already deployed) still parse and sign after a dependency bump.
+    const PRIVATE_PEM: &str = "-----BEGIN PRIVATE KEY-----\\nMC4CAQAwBQYDK2VwBCIEINTuctv5E1hK1bbY8fdp+K06/nwoy/HU++CXqI9EdVhC\\n-----END PRIVATE KEY-----\\n";
+    const PUBLIC_PEM: &str = "-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAGb9ECWmEzf6FQbrBZ9w7lshQhqowtrbLDFw4rXAxZuE=\\n-----END PUBLIC KEY-----\\n";
+
+    fn public_json(kid: &str) -> String {
+        format!(r#"[{{"kid":"{kid}","public_pem":"{PUBLIC_PEM}"}}]"#)
+    }
+
+    #[test]
+    fn loads_fixed_rfc8410_key_pair_from_env_format() {
+        let keys = JwtKeyset::load(PRIVATE_PEM, "k1", &public_json("k1")).unwrap();
+        assert_eq!(keys.active_kid, "k1");
+        // The private key must derive exactly the published public key.
+        assert_eq!(keys.signing.verifying_key(), keys.verifying["k1"]);
+        assert!(!keys.signing_pem.contains("\\n"), "escaped newlines are unescaped");
+    }
+
+    #[test]
+    fn fixed_key_pair_signs_and_verifies_jwt() {
+        let keys = JwtKeyset::load(PRIVATE_PEM, "k1", &public_json("k1")).unwrap();
+        let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900);
+        let token = issuer.issue(uuid::Uuid::new_v4(), "a@b.c", "en", vec![]).unwrap();
+        assert_eq!(issuer.verify(&token).unwrap().email, "a@b.c");
+    }
+
+    #[test]
+    fn rejects_active_kid_missing_from_public_keys() {
+        let err = JwtKeyset::load(PRIVATE_PEM, "k2", &public_json("k1")).unwrap_err();
+        assert!(err.to_string().contains("k2"), "{err}");
+    }
+
+    #[test]
+    fn rejects_malformed_private_pem() {
+        assert!(JwtKeyset::load("not a pem", "k1", &public_json("k1")).is_err());
+    }
+}
