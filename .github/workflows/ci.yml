@@ -909,16 +909,20 @@ jobs:
                   pnpm openapi-codegen
             - name: Install Playwright Chromium
               working-directory: fe
-              # `--with-deps` apt-installs system fonts/libs; runner DNS to the
-              # Ubuntu mirrors occasionally blips ("Temporary failure resolving
-              # security.ubuntu.com"). Retry with backoff instead of failing the run.
+              # `--with-deps` apt-installs fonts/libs from *.ubuntu.com. Those
+              # mirrors are sometimes unresolvable from the runner while npm,
+              # crates.io and packages.microsoft.com still work. Retry, then
+              # fall back to the browser binary alone: the runner image ships
+              # Google Chrome, so Chromium's shared libs are already present,
+              # and the suite has no screenshot assertions that need the fonts.
               run: |
                   for attempt in 1 2 3; do
                       pnpm exec playwright install --with-deps chromium && exit 0
-                      echo "playwright install failed (attempt $attempt); retrying in $((attempt * 20))s"
+                      echo "playwright install --with-deps failed (attempt $attempt)"
                       sleep $((attempt * 20))
                   done
-                  exit 1
+                  echo "::warning::apt deps unavailable; installing Chromium without --with-deps"
+                  pnpm exec playwright install chromium
             - name: Build FE for production
               # We deliberately E2E the production bundle (not `pnpm dev`)
               # because Vite dev's on-demand module loading + HMR
