@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.23](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.22...core-v0.1.23) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** adapt to rand 0.10 and ed25519-dalek 3 ([c65d8a0](https://github.com/BentBr/my-fam-tree/commit/c65d8a0d1a35a2848bf2d38f5932163ba85e36c1))
+
 ## [0.1.22](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.21...core-v0.1.22) (2026-11-10)
 
 
