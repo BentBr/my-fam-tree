@@ -36,6 +36,7 @@ jobs:
     # ============================================================================
     changes:
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         outputs:
             backend: ${{ steps.filter.outputs.backend || steps.default.outputs.backend }}
             frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
@@ -69,6 +70,13 @@ jobs:
                           - '.sqlx/**'
                           - 'deny.toml'
                           - 'rust-toolchain.toml'
+                          # Read by crates/arch-tests (package refs, docs
+                          # coverage, skill paths). Any file a check reads
+                          # must be in the filter of the job that runs it.
+                          - '.githooks/**'
+                          - '.rusty_dev_tool/**'
+                          - '.claude/skills/**'
+                          - 'README.md'
                       frontend:
                           - *infra
                           - 'fe/**'
@@ -96,6 +104,7 @@ jobs:
     commit-lint:
         if: ${{ github.event_name == 'pull_request' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - uses: actions/checkout@v7
               with:
@@ -137,6 +146,7 @@ jobs:
     branch-name:
         if: ${{ github.event_name == 'pull_request' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - name: Validate branch name
               env:
@@ -161,6 +171,7 @@ jobs:
     # ============================================================================
     file-size:
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - uses: actions/checkout@v7
             - run: ./scripts/check-file-size.sh
@@ -173,6 +184,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -206,6 +218,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -218,6 +231,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -229,6 +243,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -251,6 +266,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         services:
             postgres:
                 image: postgres:18-alpine
@@ -349,6 +365,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -359,6 +376,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         services:
             postgres:
                 image: postgres:18-alpine
@@ -527,6 +545,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -543,6 +562,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -565,6 +585,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -587,6 +608,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -608,6 +630,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -630,6 +653,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -651,6 +675,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -732,6 +757,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 45
         services:
             postgres:
                 image: postgres:18-alpine
@@ -988,6 +1014,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: docker/setup-buildx-action@v4
@@ -1049,6 +1076,7 @@ jobs:
             - docker-build
         if: ${{ always() }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             # Strict: every upstream job that was *required to run* must report
             # `success`. `skipped` is treated as failure when the change filter

@@ -12,3 +12,4 @@ pub mod repo;
 pub mod rules;
 pub mod sql;
 pub mod violation;
+pub mod workflows;
