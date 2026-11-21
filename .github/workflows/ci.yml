@@ -261,6 +261,13 @@ jobs:
                       cargo install cargo-deny --locked
                   fi
             - run: cargo deny check
+            - name: Install cargo-machete
+              run: |
+                  if ! command -v cargo-machete >/dev/null 2>&1; then
+                      cargo install cargo-machete --locked
+                  fi
+            - name: Unused dependencies
+              run: cargo machete
 
     backend-tests:
         needs: [changes, backend-prepare]

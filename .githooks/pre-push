@@ -34,4 +34,5 @@ run "fe typecheck"    SKIP_FETSC   ./scripts/fe-in-container.sh typecheck
 run "fe component"    SKIP_FETEST  ./scripts/fe-in-container.sh test
 run "fe knip"         SKIP_FEKNIP  ./scripts/fe-in-container.sh knip
 run "openapi drift"   SKIP_OPENAPI ./scripts/openapi.sh check
+run "machete"         SKIP_MACHETE cargo machete
 run "file-size"       SKIP_SIZE    ./scripts/check-file-size.sh
