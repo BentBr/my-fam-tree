@@ -15,7 +15,7 @@ path = "src/bin/gen_jwt_keys.rs"
 
 [dependencies]
 my-fam-tree-config = { path = "../config" }
-my-fam-tree-domain = { path = "../domain" }
+my-fam-tree-domain = { path = "../domain", features = ["openapi"] }
 my-fam-tree-cache = { path = "../cache" }
 my-fam-tree-email = { path = "../email" }
 my-fam-tree-persistence = { path = "../persistence" }
