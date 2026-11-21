@@ -103,10 +103,11 @@ missing_debug_implementations = "warn"
 unreachable_pub = "warn"
 
 # Strict gate: `pedantic` + `nursery` at deny, all four big lint groups
-# enforced. No targeted allows — every clippy finding gets fixed in
-# source per Phase 2c spec (workstream D). If a specific lint is
-# genuinely inappropriate later, add it back here with a one-line
-# rationale rather than scattering `#[allow]` across files.
+# enforced. Fix findings in source. Where a lint genuinely does not fit,
+# use `#[expect(lint, reason = "…")]` — never `#[allow]` (denied below):
+# an expect that stops firing is itself an error, so suppressions cannot
+# go stale. Structural causes get one module-level `#![expect]`. Test-only
+# allowances (unwrap/expect/index/panic/print in tests) live in clippy.toml.
 [workspace.lints.clippy]
 pedantic = { level = "deny", priority = -1 }
 nursery = { level = "deny", priority = -1 }
@@ -120,6 +121,8 @@ print_stderr = "deny"
 indexing_slicing = "deny"
 float_arithmetic = "warn"
 shadow_unrelated = "warn"
+allow_attributes = "deny"
+allow_attributes_without_reason = "deny"
 
 [profile.release]
 lto = "thin"
