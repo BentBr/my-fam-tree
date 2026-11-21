@@ -79,6 +79,7 @@ jobs:
                           - '.claude/skills/**'
                           - '.claude/agents/**'
                           - 'README.md'
+                          - 'CLAUDE.md'
                       frontend:
                           - *infra
                           - 'fe/**'

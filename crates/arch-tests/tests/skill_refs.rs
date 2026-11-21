@@ -1,5 +1,5 @@
-//! Repo paths referenced in `.claude/skills/**/*.md` and `.claude/agents/*.md`
-//! exist, so skills never point Claude at moved or deleted files.
+//! Repo paths referenced in `.claude/skills/**/*.md`, `.claude/agents/*.md` and
+//! `CLAUDE.md` exist, so skills never point Claude at moved or deleted files.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -23,6 +23,7 @@ fn skill_and_agent_docs() -> Vec<(String, String)> {
     let mut paths = Vec::new();
     markdown_files(&root.join(".claude/skills"), &mut paths);
     markdown_files(&root.join(".claude/agents"), &mut paths);
+    paths.push(root.join("CLAUDE.md"));
     paths.sort();
     paths
         .iter()
