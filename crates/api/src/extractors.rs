@@ -100,8 +100,7 @@ mod tests {
         let ct = res
             .headers()
             .get(actix_web::http::header::CONTENT_TYPE)
-            .map(|v| v.to_str().unwrap().to_owned())
-            .unwrap_or_default();
+            .map_or_default(|v| v.to_str().unwrap().to_owned());
         let body = test::read_body(res).await;
         (status, ct, serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null))
     }

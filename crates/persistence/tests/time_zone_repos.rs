@@ -105,14 +105,14 @@ async fn due_users_follow_their_own_timezone() {
     // 00:30Z = 06:00 IST — half-hour offsets work.
     assert_eq!(due(p, datetime!(2026-06-08 00:30 UTC)).await, vec![(kolkata, d)]);
     // 12:00Z = 14:00 Berlin / 08:00 NY / 17:30 Kolkata — nobody.
-    assert!(due(p, datetime!(2026-06-08 12:00 UTC)).await.is_empty());
+    assert_eq!(due(p, datetime!(2026-06-08 12:00 UTC)).await, Vec::<(UserId, Date)>::new());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn emails_disabled_users_are_never_due() {
     let db = setup().await;
     user(&db.pool, "off@x.io", "Europe/Berlin", false).await;
-    assert!(due(&db.pool, datetime!(2026-06-08 04:00 UTC)).await.is_empty());
+    assert_eq!(due(&db.pool, datetime!(2026-06-08 04:00 UTC)).await, Vec::<(UserId, Date)>::new());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -153,7 +153,7 @@ async fn dst_transitions_shift_the_utc_firing_time() {
         due(p, datetime!(2026-03-28 05:00 UTC)).await,
         vec![(berlin, date!(2026 - 03 - 28))]
     );
-    assert!(due(p, datetime!(2026-03-28 04:00 UTC)).await.is_empty());
+    assert_eq!(due(p, datetime!(2026-03-28 04:00 UTC)).await, Vec::<(UserId, Date)>::new());
     // Spring-forward day (02:00→03:00 on 2026-03-29): CEST → 06:00 = 04:00Z.
     assert_eq!(
         due(p, datetime!(2026-03-29 04:00 UTC)).await,
