@@ -5,7 +5,9 @@
 //! run them against the real repository, so `cargo test --workspace`
 //! (pre-push + CI) enforces them.
 
+pub mod deps;
 pub mod docs;
 pub mod refs;
 pub mod repo;
+pub mod rules;
 pub mod violation;
