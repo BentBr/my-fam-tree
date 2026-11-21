@@ -8,6 +8,8 @@ description = "Repository rules (crate boundaries, package refs, CI hygiene) enf
 
 [dependencies]
 cargo_metadata.workspace = true
+proc-macro2 = { workspace = true, features = ["span-locations"] }
+syn.workspace = true
 
 [lints]
 workspace = true

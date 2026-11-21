@@ -10,4 +10,5 @@ pub mod docs;
 pub mod refs;
 pub mod repo;
 pub mod rules;
+pub mod sql;
 pub mod violation;

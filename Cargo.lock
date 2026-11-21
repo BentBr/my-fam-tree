@@ -2808,6 +2808,8 @@ name = "my-fam-tree-arch-tests"
 version = "0.1.23"
 dependencies = [
  "cargo_metadata",
+ "proc-macro2",
+ "syn 3.0.10",
 ]
 
 [[package]]

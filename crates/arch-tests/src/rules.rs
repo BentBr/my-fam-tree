@@ -14,8 +14,9 @@ pub struct Rule {
     pub exceptions: &'static [(&'static str, &'static str)],
 }
 
-/// External dependency groups, for readability of [`RULES`].
-/// WEB = actix-web, actix-cors, actix-multipart, tracing-actix-web, utoipa-swagger-ui ·
+/// The dependency matrix.
+///
+/// External groups: WEB = actix-web, actix-cors, actix-multipart, tracing-actix-web, utoipa-swagger-ui ·
 /// DB = sqlx, tokio-postgres, postgres, diesel, sea-orm · REDIS = redis, deadpool-redis ·
 /// MAIL = lettre · S3 = aws-sdk-s3, aws-credential-types, aws-smithy-async · OPENAPI = utoipa.
 ///
