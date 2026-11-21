@@ -24,9 +24,12 @@ pub enum Capability {
 
 /// Static capability set for a role. Pure data, no DB lookup.
 #[must_use]
-#[allow(clippy::enum_glob_use)] // idiomatic within a single match over a local enum
 pub const fn capabilities_of(role: Role) -> &'static [Capability] {
-    use Capability::*;
+    use Capability::{
+        CreatePerson, DeleteFamily, DeletePerson, EditAnyContact, EditAnyPerson, EditOwnContacts,
+        EditOwnPerson, InviteUsers, ManageOwnReminders, ManageRelationships, ManageRolesBelowOwner,
+        TransferOwnership,
+    };
     match role {
         Role::User => &[EditOwnPerson, EditOwnContacts, ManageOwnReminders],
         Role::Admin => &[
@@ -60,7 +63,6 @@ pub const fn capabilities_of(role: Role) -> &'static [Capability] {
 
 // Can't be `const fn`: slice `.contains` requires PartialEq which isn't const yet.
 #[must_use]
-#[allow(clippy::missing_const_for_fn)]
 pub fn has(role: Role, cap: Capability) -> bool {
     capabilities_of(role).contains(&cap)
 }

@@ -57,7 +57,6 @@ pub fn canonicalize_pair(a: PersonId, b: PersonId) -> Option<(PersonId, PersonId
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use uuid::Uuid;
 

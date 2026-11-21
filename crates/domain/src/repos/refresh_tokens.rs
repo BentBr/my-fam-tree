@@ -27,7 +27,10 @@ pub enum RefreshRepoError {
 }
 
 #[async_trait]
-#[allow(clippy::too_many_arguments)] // create/rotate carry full audit context (UA, IP, device, deadlines).
+#[expect(
+    clippy::too_many_arguments,
+    reason = "create/rotate carry full audit context (UA, IP, device, deadlines)"
+)]
 pub trait RefreshTokenRepo: Send + Sync {
     async fn create(
         &self,

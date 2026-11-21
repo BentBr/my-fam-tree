@@ -28,7 +28,10 @@ pub enum InviteRepoError {
 
 #[async_trait]
 pub trait FamilyInviteRepo: Send + Sync {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "an invite row is created with its full audit context in one call"
+    )]
     async fn create(
         &self,
         family_id: FamilyId,

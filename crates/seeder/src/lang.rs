@@ -37,7 +37,7 @@ pub const PERSON_COUNT: usize = 8;
 /// Number of parent-link rows this family seeds (row-count assert only).
 pub const PARENT_LINK_COUNT: i64 = 7;
 
-#[allow(clippy::too_many_lines, reason = "static fixture table; splitting hurts readability")]
+#[expect(clippy::too_many_lines, reason = "static fixture table; splitting hurts readability")]
 const fn persons() -> [PersonSeed; PERSON_COUNT] {
     [
         PersonSeed {

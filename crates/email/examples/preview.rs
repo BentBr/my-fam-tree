@@ -14,7 +14,12 @@
 //! without a mail client. Toggle your OS appearance to see the dark variant —
 //! the templates carry an `@media (prefers-color-scheme: dark)` block.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stdout)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::print_stdout,
+    reason = "dev-only preview example: prints rendered templates, aborts on errors"
+)]
 
 use std::fmt::Write as _;
 use std::fs;

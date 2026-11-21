@@ -48,7 +48,6 @@ pub const SEED_CONTACT_COUNT: usize = 9;
 ///
 /// # Errors
 /// Propagates any Postgres error from the upsert statements.
-#[allow(clippy::too_many_lines, reason = "static table of 9 contacts; splitting hurts readability")]
 pub async fn seed_contacts(db: &SeedDb<'_>) -> anyhow::Result<()> {
     let rows: [ContactSeed; SEED_CONTACT_COUNT] = [
         // Klaus — Work email (admins_only) + Private email (family).

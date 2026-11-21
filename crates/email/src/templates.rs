@@ -80,7 +80,6 @@ pub use owner_transfer::{render_owner_transfer_admin, render_owner_transfer_owne
 pub use sign_in::{render_magic_link, render_welcome};
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

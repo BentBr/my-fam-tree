@@ -73,7 +73,7 @@ pub(crate) struct PartnershipSeed {
     pub(crate) note: &'static str,
 }
 
-#[allow(
+#[expect(
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]

@@ -6,7 +6,7 @@
 //! tells the testcontainers reaper to stop the container. Without that we
 //! leak running postgres instances on the docker host across runs.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::print_stderr)]
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
 
 use std::time::Duration as StdDuration;
 

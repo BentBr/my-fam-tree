@@ -40,7 +40,6 @@ pub const fn date_from_ymd(year: i32, month: u8, day: u8) -> Option<Date> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
     use super::*;
 
     #[test]

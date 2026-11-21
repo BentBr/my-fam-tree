@@ -2,14 +2,10 @@
 //! and idempotency. Lives in tests/ (not src/) because it runs migrations
 //! with sqlx directly — src/ stays SQL-free (arch-tests).
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::cast_possible_wrap,
-    reason = "test code: container setup + assertion helpers may panic; seed counts are tiny so the usize→i64 cast can't wrap"
+    reason = "test code: setup failures abort the test with context; tiny fixture counts cannot wrap"
 )]
 
 use std::time::Duration;

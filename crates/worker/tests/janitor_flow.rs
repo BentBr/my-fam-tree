@@ -3,15 +3,11 @@
 //! Uses testcontainers like the digest-flow test; CI's backend-tests job runs
 //! it on the Docker daemon there.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::panic,
-    clippy::indexing_slicing,
-    clippy::future_not_send,
     clippy::similar_names,
     clippy::too_many_lines,
-    reason = "test code: testcontainers + assertions may panic and aren't Send-bounded; the long set-up enumerates fixtures for four tables in one fn for readability"
+    reason = "test code: setup failures abort the test with context; fixture names mirror the domain; long linear set-up reads best in one place"
 )]
 
 use std::time::Duration as StdDuration;

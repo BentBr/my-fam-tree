@@ -2,8 +2,6 @@
 //! test -p my-fam-tree-persistence --test ping` so the test sees the compose
 //! `postgres` service at its network hostname.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr)]
-
 use std::time::Duration;
 
 use my_fam_tree_persistence::Database;

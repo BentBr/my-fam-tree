@@ -138,10 +138,6 @@ mod test_fixtures {
     }
 
     #[post("/__test/advance-clock")]
-    #[allow(
-        unreachable_pub,
-        reason = "the #[post] proc-macro replaces this fn with a unit struct; pub is required for actix's HttpServiceFactory wiring"
-    )]
     pub(super) async fn advance(
         ts: web::Data<TestState>,
         body: web::Json<AdvanceReq>,

@@ -49,7 +49,7 @@ pub(crate) struct PersonSeed {
     pub(crate) linked_user_id: Option<Uuid>,
 }
 
-#[allow(
+#[expect(
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]

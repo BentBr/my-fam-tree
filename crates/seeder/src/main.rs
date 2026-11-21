@@ -10,7 +10,7 @@ use my_fam_tree_persistence::Database;
 use my_fam_tree_persistence::seed::SeedDb;
 use my_fam_tree_seeder::run_seed;
 
-#[allow(
+#[expect(
     clippy::print_stdout,
     reason = "this binary's job is to surface seeded magic-link URLs on stdout"
 )]

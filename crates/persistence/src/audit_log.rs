@@ -59,7 +59,7 @@ impl AuditLogRepo for PgAuditLogRepo {
         Ok(())
     }
 
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "single dynamic-filter query — splitting would obscure the SQL"
     )]

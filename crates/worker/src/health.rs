@@ -93,8 +93,7 @@ pub struct HealthState {
 }
 
 #[get("/health")]
-#[allow(clippy::future_not_send, reason = "actix-web handler signature; HttpRequest holds an Rc")]
-#[allow(
+#[expect(
     unreachable_pub,
     reason = "the #[get] proc-macro replaces this fn with a unit struct; pub is required for actix's HttpServiceFactory wiring even though the fn body itself isn't directly callable from outside"
 )]
@@ -107,7 +106,6 @@ pub async fn health(state: web::Data<HealthState>) -> HttpResponse {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

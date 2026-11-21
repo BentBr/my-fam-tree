@@ -13,12 +13,6 @@
 //! get serde's whole-struct validation without forcing operators to write
 //! double-underscore env vars.
 
-#![allow(
-    clippy::struct_field_names,
-    clippy::struct_excessive_bools,
-    reason = "config structs mirror env var names; bools are flags by nature"
-)]
-
 use figment::Figment;
 use figment::providers::Env;
 use serde::Deserialize;

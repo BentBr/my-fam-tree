@@ -97,7 +97,7 @@ impl ReminderDigestRepo for PgReminderDigestRepo {
         Ok(())
     }
 
-    #[allow(
+    #[expect(
         clippy::option_if_let_else,
         reason = "the two arms run distinct SQL statements; map_or_else over query! macros is less readable"
     )]

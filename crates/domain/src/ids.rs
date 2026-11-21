@@ -36,7 +36,6 @@ id_newtype!(PersonId);
 id_newtype!(FamilyMembershipId);
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

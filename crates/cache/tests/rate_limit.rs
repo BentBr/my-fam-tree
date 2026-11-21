@@ -4,8 +4,6 @@
 //! `redis`). Silently returns when unset so the test is a no-op locally
 //! without infrastructure.
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
-
 use std::time::Duration;
 
 use my_fam_tree_cache::{RateLimiter, RedisPool, RedisRateLimiter};

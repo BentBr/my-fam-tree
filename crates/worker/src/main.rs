@@ -84,7 +84,7 @@ async fn run_leader_loop(
 // launch. Splitting it into a sub-fn just moves the cfg-gated branches
 // to a new boundary without making either side simpler, so we accept
 // the length here.
-#[allow(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
+#[expect(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {

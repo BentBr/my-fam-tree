@@ -8,7 +8,7 @@ use super::{
 };
 use crate::persons::{PersonSeed, ymd};
 
-#[allow(clippy::too_many_lines, reason = "static fixture table; splitting hurts readability")]
+#[expect(clippy::too_many_lines, reason = "static fixture table; splitting hurts readability")]
 pub(super) const fn persons() -> [PersonSeed; PERSON_COUNT] {
     [
         // G1 — two grandmothers (separate roots).

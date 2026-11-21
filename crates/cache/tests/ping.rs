@@ -1,8 +1,6 @@
 //! Requires `REDIS_URL` pointing at a running Redis (compose service `redis`).
 //! Skipped automatically when `REDIS_URL` is unset.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr)]
-
 use my_fam_tree_cache::RedisPool;
 
 #[tokio::test]

@@ -12,8 +12,6 @@
 //! my-fam-tree-email --test mailpit`, which injects both env vars pointing at the
 //! compose `mailpit` service.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stderr, clippy::indexing_slicing)]
-
 use my_fam_tree_email::{EmailSender, OutboundEmail, SmtpSender};
 
 #[tokio::test]

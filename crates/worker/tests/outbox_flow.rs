@@ -5,16 +5,7 @@
 //! `worker::outbox::process_one` so the retry/backoff bookkeeping is
 //! validated end-to-end (the API tests use a `SyncOutbox` double).
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::indexing_slicing,
-    clippy::future_not_send,
-    clippy::similar_names,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded"
-)]
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
 
 use std::sync::Arc;
 use std::time::Duration as StdDuration;

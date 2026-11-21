@@ -1,6 +1,10 @@
 // This binary is a CLI; --status, --check, and --dry-run all print
 // human-readable migration state to stdout/stderr by design.
-#![allow(clippy::print_stdout, clippy::print_stderr)]
+#![expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "CLI: --status/--check/--dry-run print migration state for humans"
+)]
 
 use std::time::Duration;
 

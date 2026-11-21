@@ -5,13 +5,10 @@
 //! deterministic. CI runs these; they no-op-skip nowhere — they need Docker,
 //! so they only run where a Docker socket is available (CI's backend-tests).
 
-#![allow(
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    clippy::panic,
-    clippy::future_not_send,
-    clippy::indexing_slicing,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded"
+    reason = "test code: setup failures abort the test; setup failures abort the test with context"
 )]
 
 use std::collections::VecDeque;
