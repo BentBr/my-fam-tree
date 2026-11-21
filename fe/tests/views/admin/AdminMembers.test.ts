@@ -59,8 +59,7 @@ const stubs = {
     'v-chip': { template: '<span class="chip" :data-color="color"><slot /></span>', props: ['color'] },
     'v-table': { template: '<table :data-testid="$attrs[\'data-testid\']"><slot /></table>' },
     'v-dialog': {
-        template:
-            '<div v-if="modelValue" class="dialog" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
+        template: '<div v-if="modelValue" class="dialog" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
         props: ['modelValue'],
     },
     'v-btn': { template: '<button v-bind="$attrs"><slot /></button>' },

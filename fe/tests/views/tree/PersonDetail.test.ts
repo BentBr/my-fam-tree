@@ -350,8 +350,7 @@ describe('PersonDetail', () => {
         await flushPromises()
         expect(updatePartnerMutate).toHaveBeenCalledTimes(1)
         const callArg = updatePartnerMutate.mock.calls[0]?.[0] as
-            | { id: string; input: Record<string, unknown> }
-            | undefined
+            { id: string; input: Record<string, unknown> } | undefined
         expect(callArg?.id).toBe('part-1')
         expect(callArg?.input['end_reason']).toBe('divorce')
         expect(typeof callArg?.input['ended_on']).toBe('string')

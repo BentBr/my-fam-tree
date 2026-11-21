@@ -31,9 +31,7 @@ describe('ContactEdit', () => {
         const w = mountEdit()
         // Native <select>'s `.element.value` reflects the v-model.
         expect((w.find('[data-testid="contact-kind"]').element as HTMLSelectElement).value).toBe('email')
-        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe(
-            'family',
-        )
+        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe('family')
         expect((w.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe('')
         expect((w.find('[data-testid="contact-label"]').element as HTMLInputElement).value).toBe('')
     })
@@ -47,20 +45,14 @@ describe('ContactEdit', () => {
             visibility: 'admins_only',
         })
         expect((w.find('[data-testid="contact-kind"]').element as HTMLSelectElement).value).toBe('email')
-        expect((w.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe(
-            'me@example.com',
-        )
+        expect((w.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe('me@example.com')
         expect((w.find('[data-testid="contact-label"]').element as HTMLInputElement).value).toBe('Work')
-        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe(
-            'admins_only',
-        )
+        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe('admins_only')
     })
 
     it('phone hydrates from `value.number` (BE stores it under the kind-specific key, not `value`)', () => {
         const w = mountEdit({ kind: 'phone', label: '', value: { number: '+49 30 5550100' }, visibility: 'family' })
-        expect((w.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe(
-            '+49 30 5550100',
-        )
+        expect((w.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe('+49 30 5550100')
     })
 
     it('url + other map to their own kind-specific keys', () => {
@@ -80,13 +72,9 @@ describe('ContactEdit', () => {
 
     it('tolerates the legacy `{ v: "..." }` value shape and a bare-string `value`', () => {
         const legacyObj = mountEdit({ kind: 'email', label: '', value: { v: 'legacy@x.com' }, visibility: 'family' })
-        expect((legacyObj.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe(
-            'legacy@x.com',
-        )
+        expect((legacyObj.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe('legacy@x.com')
         const bareString = mountEdit({ kind: 'phone', label: '', value: 'bare-string', visibility: 'family' })
-        expect((bareString.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe(
-            'bare-string',
-        )
+        expect((bareString.find('[data-testid="contact-value"]').element as HTMLInputElement).value).toBe('bare-string')
     })
 
     it('hydrates from an `address`-kind initial contact, splitting the value into five fields', () => {
@@ -104,21 +92,13 @@ describe('ContactEdit', () => {
         })
         // The single-line `contact-value` is replaced by the five address fields.
         expect(w.find('[data-testid="contact-value"]').exists()).toBe(false)
-        expect(
-            (w.find('[data-testid="contact-address-street"]').element as HTMLInputElement).value,
-        ).toBe('Wilhelmstraße')
-        expect(
-            (w.find('[data-testid="contact-address-house-number"]').element as HTMLInputElement).value,
-        ).toBe('12a')
-        expect((w.find('[data-testid="contact-address-zip"]').element as HTMLInputElement).value).toBe(
-            '47877',
+        expect((w.find('[data-testid="contact-address-street"]').element as HTMLInputElement).value).toBe(
+            'Wilhelmstraße',
         )
-        expect((w.find('[data-testid="contact-address-city"]').element as HTMLInputElement).value).toBe(
-            'Willich',
-        )
-        expect(
-            (w.find('[data-testid="contact-address-country"]').element as HTMLInputElement).value,
-        ).toBe('DE')
+        expect((w.find('[data-testid="contact-address-house-number"]').element as HTMLInputElement).value).toBe('12a')
+        expect((w.find('[data-testid="contact-address-zip"]').element as HTMLInputElement).value).toBe('47877')
+        expect((w.find('[data-testid="contact-address-city"]').element as HTMLInputElement).value).toBe('Willich')
+        expect((w.find('[data-testid="contact-address-country"]').element as HTMLInputElement).value).toBe('DE')
     })
 
     it('falls back to defaults when initial.kind is an unknown string (sanitise vs hard-fail)', () => {
@@ -129,9 +109,7 @@ describe('ContactEdit', () => {
             visibility: 'who-knows',
         })
         expect((w.find('[data-testid="contact-kind"]').element as HTMLSelectElement).value).toBe('email')
-        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe(
-            'family',
-        )
+        expect((w.find('[data-testid="contact-visibility"]').element as HTMLSelectElement).value).toBe('family')
     })
 
     it('switching kind to address hides the single-line value field and shows the address rows', async () => {

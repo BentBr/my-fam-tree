@@ -46,9 +46,7 @@ const dbColor = computed(() => colourFor(dbLatency.value, dbOk.value))
 const serverColor = computed(() => colourFor(serverLatency.value))
 const networkColor = computed(() => colourFor(networkLatency.value))
 const workerColor = computed<'success' | 'error'>(() => (workerOk.value ? 'success' : 'error'))
-const dbText = computed(() =>
-    dbOk.value ? t('health.dbLatency', { ms: fmtMs(dbLatency.value) }) : t('health.dbDown'),
-)
+const dbText = computed(() => (dbOk.value ? t('health.dbLatency', { ms: fmtMs(dbLatency.value) }) : t('health.dbDown')))
 const serverText = computed(() => t('health.serverLatency', { ms: fmtMs(serverLatency.value) }))
 const networkText = computed(() => t('health.networkLatency', { ms: fmtMs(networkLatency.value) }))
 const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t('health.workerDown')))
