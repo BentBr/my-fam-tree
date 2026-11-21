@@ -1,0 +1,8 @@
+# Test code may unwrap / expect / index / panic / print; production code may
+# not (workspace lints deny them). Covers #[test] fns and #[cfg(test)] modules.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-print-in-tests = true
+allow-dbg-in-tests = false

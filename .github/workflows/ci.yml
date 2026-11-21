@@ -70,6 +70,7 @@ jobs:
                           - '.sqlx/**'
                           - 'deny.toml'
                           - 'rust-toolchain.toml'
+                          - 'clippy.toml'
                           # Read by crates/arch-tests (package refs, docs
                           # coverage, skill paths). Any file a check reads
                           # must be in the filter of the job that runs it.
