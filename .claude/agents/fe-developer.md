@@ -32,7 +32,7 @@ proposing fixes), `superpowers:test-driven-development` (new feature/behavior), 
 - Call the API through hooks (`src/api/hooks/`) using `unwrap` / `expectOk` /
   `useApiMutation` — not the raw client in components.
 - **i18n always.** Never hardcode a user-facing string — use vue-i18n `t('...')` and
-  add the key to **every** locale file (`fe/src/i18n/en.json` *and* `de.json`), kept in
+  add the key to **every** locale file (`fe/src/i18n/en/*.json` *and* the matching `fe/src/i18n/de/` file), kept in
   sync. A new backend `ErrorCode` slug needs an `errorCodes.<slug>` entry in both.
 - **Always give feedback as toasts.** Let API errors propagate to the central
   `queryClient` handler (translated error toast); give mutations a success toast via
