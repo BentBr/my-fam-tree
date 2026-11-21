@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import { NODE_H, NODE_W, type Positioned } from './layout'
+import TreeNodeFavourite from './TreeNodeFavourite.vue'
+import { TEXT_LEFT, TEXT_RIGHT_PAD, useNodeLabels } from './useNodeLabels'
 
 const props = defineProps<{
     node: Positioned
@@ -20,8 +19,6 @@ const props = defineProps<{
     isDimmed?: boolean
 }>()
 
-const { t } = useI18n()
-
 const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
 
 const emit = defineEmits<{
@@ -33,106 +30,7 @@ const emit = defineEmits<{
     (e: 'toggle-favourite', id: string, next: boolean): void
 }>()
 
-// Width budget for the text columns (right of the avatar circle). Used to
-// truncate the full name with ellipsis when it would overflow the card.
-const TEXT_LEFT = 64
-const TEXT_RIGHT_PAD = 12
-const TEXT_WIDTH = NODE_W - TEXT_LEFT - TEXT_RIGHT_PAD
-
-// Average glyph width for `system-ui` at the sizes we use. Cheap heuristic
-// — better than measuring per-glyph and good enough for ellipsizing names
-// that overflow the card. The card is 220px wide; the budget here lands
-// around 18-22 chars for the name and ~24 for the smaller dates row.
-const NAME_AVG_CHAR_PX = 7.5
-const DATES_AVG_CHAR_PX = 5.8
-
-function truncate(s: string, maxChars: number): string {
-    if (s.length <= maxChars) return s
-    if (maxChars <= 1) return '…'
-    return `${s.slice(0, maxChars - 1)}…`
-}
-
-const fullName = computed(() => {
-    const raw = `${props.node.given_name} ${props.node.family_name}`.trim()
-    return truncate(raw, Math.floor(TEXT_WIDTH / NAME_AVG_CHAR_PX))
-})
-
-const DATES_MAX_CHARS = Math.floor(TEXT_WIDTH / DATES_AVG_CHAR_PX)
-
-const birthLabel = computed(() => {
-    const b = props.node.birth_date ?? ''
-    if (b === '') return ''
-    return truncate(`* ${b}`, DATES_MAX_CHARS)
-})
-
-const deathLabel = computed(() => {
-    const d = props.node.death_date ?? ''
-    if (d === '') return ''
-    return truncate(`† ${d}`, DATES_MAX_CHARS)
-})
-
-const hasDates = computed(() => birthLabel.value !== '' || deathLabel.value !== '')
-
-/**
- * Parse a (possibly partial) ISO date string into a Date. Accepts the
- * full `YYYY-MM-DD` shape, `YYYY-MM`, and bare `YYYY`. Returns null on
- * anything else. We hand-parse rather than feeding partial ISO to the
- * `Date` constructor — Safari rejects bare `YYYY-MM` and Chromium
- * interprets it as UTC midnight which can land on the previous local
- * day depending on the runtime tz.
- */
-function parseIsoDate(s: string): Date | null {
-    const parts = s.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/)
-    if (parts === null) return null
-    const head = parts[1]
-    if (head === undefined) return null
-    const yr = Number.parseInt(head, 10)
-    if (!Number.isFinite(yr)) return null
-    const mo = parts[2] !== undefined ? Number.parseInt(parts[2], 10) - 1 : 0
-    const da = parts[3] !== undefined ? Number.parseInt(parts[3], 10) : 1
-    return new Date(yr, mo, da)
-}
-
-/**
- * Full years between two dates, day-precision. Canonical "how old are
- * you" semantics — subtracts a year if the end month/day hasn't reached
- * the start month/day yet.
- */
-function fullYearsBetween(from: Date, to: Date): number {
-    let years = to.getFullYear() - from.getFullYear()
-    if (to.getMonth() < from.getMonth() || (to.getMonth() === from.getMonth() && to.getDate() < from.getDate())) {
-        years -= 1
-    }
-    return years
-}
-
-/**
- * Age label shown right-aligned on the birth date row. Living: just the
- * number. Deceased: `N (†)` to mark age-at-death. Returns the empty
- * string when birth_date is missing or unparseable — no cell rendered.
- */
-const ageLabel = computed(() => {
-    const birth = props.node.birth_date ?? ''
-    if (birth === '') return ''
-    const birthDate = parseIsoDate(birth)
-    if (birthDate === null) return ''
-    const deathStr = props.node.death_date ?? ''
-    if (deathStr === '') {
-        const years = fullYearsBetween(birthDate, new Date())
-        return years >= 0 ? String(years) : ''
-    }
-    const deathDate = parseIsoDate(deathStr)
-    if (deathDate === null) return ''
-    const years = fullYearsBetween(birthDate, deathDate)
-    return years >= 0 ? `${years} (†)` : ''
-})
-
-function initials(p: Positioned): string {
-    const a = p.given_name.charAt(0)
-    const b = p.family_name.charAt(0)
-    const combined = `${a}${b}`.toUpperCase()
-    return combined === '' ? '?' : combined
-}
+const { fullName, birthLabel, deathLabel, hasDates, ageLabel, initials } = useNodeLabels(() => props.node)
 
 function onSelect(): void {
     emit('select', props.node.id)
@@ -145,41 +43,6 @@ function onHoverEnter(): void {
 function onHoverLeave(): void {
     emit('hover', null)
 }
-
-/**
- * Click on the star: flip the favourite mark. `stopPropagation` is
- * critical — without it the click bubbles to the surrounding `<g>` and
- * also fires `select`, which would open the drawer every time the user
- * stars a card.
- */
-function onStarClick(evt: Event): void {
-    evt.stopPropagation()
-    emit('toggle-favourite', props.node.id, !props.node.is_favourite_for_me)
-}
-
-const favouriteTooltip = computed(() =>
-    t(props.node.is_favourite_for_me ? 'person.favourite.unmarkTooltip' : 'person.favourite.markTooltip'),
-)
-
-// Star geometry. We hand-build the SVG `points` attribute for a 5-point
-// star so the icon stays scoped to TreeNode (no extra lucide icon, no
-// runtime path lookups). The star sits in the top-right of the card; we
-// centre at (cx, cy) with outer radius `R` and inner radius ~R*0.45.
-const STAR_CX = NODE_W - 18
-const STAR_CY = 16
-const STAR_R = 9
-const STAR_POINTS = (() => {
-    const pts: string[] = []
-    for (let i = 0; i < 10; i += 1) {
-        const radius = i % 2 === 0 ? STAR_R : STAR_R * 0.45
-        // Start at the top (angle = -90°), step 36° between alternating outer/inner vertices.
-        const angle = ((i * 36 - 90) * Math.PI) / 180
-        const x = STAR_CX + radius * Math.cos(angle)
-        const y = STAR_CY + radius * Math.sin(angle)
-        pts.push(`${x.toFixed(2)},${y.toFixed(2)}`)
-    }
-    return pts.join(' ')
-})()
 </script>
 
 <template>
@@ -208,33 +71,11 @@ const STAR_POINTS = (() => {
         @mouseleave="onHoverLeave"
     >
         <rect :width="NODE_W" :height="NODE_H" rx="12" />
-        <!--
-            Per-user favourite toggle. Outline-only when unset; filled
-            gold when marked. The hit target is a transparent square
-            around the star so taps on tablets land reliably. Click
-            bubbling is stopped in the handler so the card's onSelect
-            doesn't ALSO fire on the same gesture.
-        -->
-        <g
-            class="favourite"
-            :class="{ filled: props.node.is_favourite_for_me }"
-            role="button"
-            tabindex="0"
-            :aria-label="favouriteTooltip"
-            :data-testid="`tree-node-favourite-${props.node.id}`"
-            @click="onStarClick"
-            @keydown.enter.stop="onStarClick"
-            @keydown.space.stop.prevent="onStarClick"
-        >
-            <rect
-                :x="STAR_CX - STAR_R - 3"
-                :y="STAR_CY - STAR_R - 3"
-                :width="(STAR_R + 3) * 2"
-                :height="(STAR_R + 3) * 2"
-                fill="transparent"
-            />
-            <polygon :points="STAR_POINTS" />
-        </g>
+        <TreeNodeFavourite
+            :node-id="props.node.id"
+            :filled="props.node.is_favourite_for_me"
+            @toggle="(id, next) => emit('toggle-favourite', id, next)"
+        />
         <!--
             Avatar bubble. When the node has a presigned `photo_url` we
             render the image masked by a circular `clipPath` so it stays
@@ -265,7 +106,7 @@ const STAR_POINTS = (() => {
         <template v-else>
             <circle :cx="32" :cy="NODE_H / 2" r="22" class="avatar" />
             <text :x="32" :y="NODE_H / 2 + 6" text-anchor="middle" class="initials">
-                {{ initials(props.node) }}
+                {{ initials }}
             </text>
         </template>
         <!--
@@ -517,40 +358,5 @@ const STAR_POINTS = (() => {
 .tree-node.deceased.hovered .initials,
 .tree-node.deceased.related .initials {
     fill: var(--acc-strong);
-}
-
-/* Favourite star — outline-only when unset (subtle dark stroke so it
- * reads as "available action" without dominating the card), filled
- * gold once marked. The hit-rect intercepts pointer events so the
- * polygon doesn't need to grow to be tappable. */
-.favourite {
-    cursor: pointer;
-}
-.favourite polygon {
-    fill: none;
-    /* Vuetify theme RGB vars are comma-separated triplets, so the
-     * `rgb(... / a)` slash syntax is INVALID and silently drops the
-     * declaration — which left the idle star with the SVG default
-     * `stroke: none` (invisible until hover). Use the `rgba(var, a)`
-     * comma form so the unmarked star is always faintly visible. */
-    stroke: rgba(var(--v-theme-on-surface), 0.55);
-    stroke-width: 1.75;
-    stroke-linejoin: round;
-    transition:
-        fill 150ms ease-in-out,
-        stroke 150ms ease-in-out,
-        opacity 150ms ease-in-out;
-    /* Always present, just muted; hover/marked states lift it. */
-    opacity: 0.55;
-}
-.favourite:hover polygon,
-.favourite:focus-visible polygon {
-    stroke: var(--star);
-    opacity: 1;
-}
-.favourite.filled polygon {
-    fill: var(--star);
-    stroke: var(--acc-strong);
-    opacity: 1;
 }
 </style>

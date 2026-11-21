@@ -2,22 +2,15 @@
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCreateInvite } from '@/api/hooks/invites'
-import {
-    useClaimPerson,
-    useClearPersonPhoto,
-    useDeletePerson,
-    useGetPerson,
-    useListPersons,
-    useSetFavourite,
-    useSetPersonPhoto,
-} from '@/api/hooks/persons'
-import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import { useClaimPerson, useDeletePerson, useGetPerson, useListPersons, useSetFavourite } from '@/api/hooks/persons'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 
 import ContactsSection from './ContactsSection.vue'
+import PersonDetailHero from './PersonDetailHero.vue'
 import PersonEdit from './PersonEdit.vue'
+import PersonInviteDialog from './PersonInviteDialog.vue'
+import PersonProfileList from './PersonProfileList.vue'
 import PersonRelations from './PersonRelations.vue'
 
 const props = defineProps<{
@@ -68,10 +61,7 @@ const canEdit = computed(() => {
 // Invite-to-family modal. Visible to admin+owner only; gated on the
 // active family's role (read from the same store as `canEdit` above so
 // the two checks share their loading-window semantics).
-const inviteMutation = useCreateInvite()
 const inviteOpen = ref(false)
-const inviteEmail = ref('')
-const inviteRole = ref<'user' | 'admin'>('user')
 
 const canInvite = computed(() => {
     const role = family.activeFamily?.role ?? null
@@ -111,20 +101,9 @@ async function claimAsMe(): Promise<void> {
     await claim.mutateAsync(person.value.id)
 }
 
+// The dialog resets its own form on every open (see PersonInviteDialog).
 function openInvite(): void {
-    inviteEmail.value = ''
-    inviteRole.value = 'user'
     inviteOpen.value = true
-}
-
-async function submitInvite(): Promise<void> {
-    if (person.value === null) return
-    await inviteMutation.mutateAsync({
-        email: inviteEmail.value.trim(),
-        role: inviteRole.value,
-        personId: person.value.id,
-    })
-    inviteOpen.value = false
 }
 
 async function remove(): Promise<void> {
@@ -150,44 +129,6 @@ function toggleFavourite(): void {
     fav.mutate({ id: person.value.id, isFavourite: !isFavourite.value })
 }
 
-// ---------------------------------------------------------------------------
-// Photo upload
-// ---------------------------------------------------------------------------
-//
-// The hidden file input is triggered programmatically by the avatar button,
-// so the only UI surface is the avatar itself + a clear-photo affordance.
-// `canEdit` already gates whether the user is allowed to touch this person;
-// the BE re-checks anyway (defense in depth).
-const setPhoto = useSetPersonPhoto()
-const clearPhoto = useClearPersonPhoto()
-const fileInput = ref<HTMLInputElement | null>(null)
-const photoBusy = computed(() => setPhoto.isPending.value || clearPhoto.isPending.value)
-const displayName = computed(() => {
-    if (person.value === null) return ''
-    const first = person.value.given_name ?? ''
-    const last = person.value.family_name ?? ''
-    return `${first} ${last}`.trim()
-})
-
-function openPhotoPicker(): void {
-    fileInput.value?.click()
-}
-
-async function onPhotoSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.[0] ?? null
-    // Reset the input value BEFORE the await so re-selecting the same file
-    // still fires a change event (browsers de-dupe by filename otherwise).
-    input.value = ''
-    if (file === null || person.value === null) return
-    await setPhoto.mutateAsync({ id: person.value.id, file })
-}
-
-async function removePhoto(): Promise<void> {
-    if (person.value === null) return
-    await clearPhoto.mutateAsync(person.value.id)
-}
-
 // The chip distinguishes "this person row is linked to *some* user
 // account" from "this person row is linked to *YOU*". The latter gets a
 // friendlier label and a different colour so the signed-in user
@@ -200,56 +141,7 @@ const isMe = computed(() => {
 
 <template>
     <section class="pa-4" data-testid="person-detail">
-        <!--
-            Big squared hero photo. Full sidebar width, 1:1 aspect ratio,
-            corners only slightly rounded so it reads as a card rather
-            than an avatar (the rest of the UI uses round avatars).
-            Click-to-upload affordance overlays the bottom-right.
-        -->
-        <div class="person-detail-hero mb-3" data-testid="person-detail-hero">
-            <img
-                v-if="person?.photo_url"
-                :src="person.photo_url"
-                :alt="displayName"
-                class="person-detail-hero-img"
-                data-testid="person-detail-hero-photo"
-            />
-            <div v-else class="person-detail-hero-fallback" data-testid="person-detail-hero-fallback">
-                <DefaultAvatar :src="null" :name="displayName" :size="180" />
-            </div>
-            <v-btn
-                v-if="canEdit && person !== null"
-                icon="mdi-camera"
-                size="small"
-                color="primary"
-                class="person-detail-hero-edit"
-                :loading="photoBusy"
-                :aria-label="t('person.photo.upload')"
-                data-testid="person-detail-photo-upload"
-                @click="openPhotoPicker"
-            />
-            <v-btn
-                v-if="canEdit && person?.photo_url"
-                variant="flat"
-                size="x-small"
-                color="error"
-                class="person-detail-hero-remove"
-                :loading="photoBusy"
-                :aria-label="t('person.photo.remove')"
-                data-testid="person-detail-photo-remove"
-                @click="removePhoto"
-            >
-                {{ t('person.photo.remove') }}
-            </v-btn>
-            <input
-                ref="fileInput"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                class="d-none"
-                data-testid="person-detail-photo-input"
-                @change="onPhotoSelected"
-            />
-        </div>
+        <PersonDetailHero :person="person" :can-edit="canEdit" />
 
         <header class="d-flex align-center justify-space-between mb-3">
             <div class="d-flex align-center ga-2 flex-wrap">
@@ -306,48 +198,7 @@ const isMe = computed(() => {
                 </v-chip>
             </div>
 
-            <!-- Profile section — every PersonView field rendered as a labelled
-                 read-only row. Editing flips into the existing PersonEdit
-                 component (covers every field via v-text-field/v-combobox);
-                 we deliberately don't duplicate that form here. -->
-            <v-list density="compact" class="mb-2" data-testid="person-profile-list">
-                <v-list-item data-testid="person-field-given-name">
-                    <v-list-item-title>{{ t('person.fields.given_name') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.given_name }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-family-name">
-                    <v-list-item-title>{{ t('person.fields.family_name') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.family_name || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-name-at-birth">
-                    <v-list-item-title>{{ t('person.fields.name_at_birth') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.name_at_birth || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-nickname">
-                    <v-list-item-title>{{ t('person.fields.nickname') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.nickname || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-gender">
-                    <v-list-item-title>{{ t('person.fields.gender') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.gender || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-birth-date">
-                    <v-list-item-title>{{ t('person.fields.birth_date') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.birth_date ?? '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-birth-place">
-                    <v-list-item-title>{{ t('person.fields.birth_place') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.birth_place || '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item data-testid="person-field-death-date">
-                    <v-list-item-title>{{ t('person.fields.death_date') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.death_date ?? '—' }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="person.notes" data-testid="person-field-notes">
-                    <v-list-item-title>{{ t('person.fields.notes') }}</v-list-item-title>
-                    <v-list-item-subtitle>{{ person.notes }}</v-list-item-subtitle>
-                </v-list-item>
-            </v-list>
+            <PersonProfileList :person="person" />
 
             <v-divider class="my-3" />
 
@@ -397,53 +248,7 @@ const isMe = computed(() => {
                 </v-btn>
             </div>
 
-            <v-dialog v-model="inviteOpen" max-width="480">
-                <v-card v-if="person !== null" data-testid="person-invite-modal">
-                    <v-card-title>
-                        {{
-                            t('person.invite.modalTitle', {
-                                name: `${person.given_name} ${person.family_name}`.trim(),
-                            })
-                        }}
-                    </v-card-title>
-                    <v-card-text class="invite-form">
-                        <v-text-field
-                            v-model="inviteEmail"
-                            :label="t('person.invite.emailLabel')"
-                            type="email"
-                            density="compact"
-                            data-testid="person-invite-email"
-                        />
-                        <v-select
-                            v-model="inviteRole"
-                            :label="t('person.invite.roleLabel')"
-                            :items="[
-                                { title: t('admin.members.role.user'), value: 'user' },
-                                { title: t('admin.members.role.admin'), value: 'admin' },
-                            ]"
-                            density="compact"
-                            hide-details
-                            data-testid="person-invite-role"
-                        />
-                    </v-card-text>
-                    <v-card-actions>
-                        <v-spacer />
-                        <v-btn variant="text" @click="inviteOpen = false">
-                            {{ t('common.cancel') }}
-                        </v-btn>
-                        <v-btn
-                            color="primary"
-                            variant="flat"
-                            :disabled="inviteEmail.trim().length === 0"
-                            :loading="inviteMutation.isPending.value"
-                            data-testid="person-invite-submit"
-                            @click="submitInvite"
-                        >
-                            {{ t('person.invite.submit') }}
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
-            </v-dialog>
+            <PersonInviteDialog v-model="inviteOpen" :person="person" />
 
             <v-dialog v-model="confirmDelete" max-width="420">
                 <v-card>
@@ -488,61 +293,3 @@ const isMe = computed(() => {
         />
     </section>
 </template>
-
-<style scoped>
-/* Invite modal field-gap — same 12 px the PersonEdit / Account /
-   Relations sub-forms use. Without it, Vuetify's floated label on a
-   focused field (e.g., "Rolle" while the role picker is active) clips
-   into the field above ("E-Mail-Adresse"). */
-.invite-form > .v-input,
-.invite-form > .v-text-field,
-.invite-form > .v-select {
-    margin-bottom: 12px;
-}
-
-/* Squared, full-sidebar-width hero photo. The card is 1:1 so the
-   aspect ratio matches social-style profile photos; only the corners
-   are slightly rounded so it reads as "card" rather than "avatar"
-   (the rest of the UI uses round avatars). */
-.person-detail-hero {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgb(var(--v-theme-surface-variant, 240 240 240));
-}
-
-.person-detail-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-/* When there's no photo the DefaultAvatar (with initials) is centred
-   in the same square so the layout doesn't jump when a photo lands. */
-.person-detail-hero-fallback {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Camera button overlays the bottom-right of the hero photo — the
-   conventional "edit my photo" affordance on every social platform. */
-.person-detail-hero-edit {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-}
-
-/* "Remove photo" is a destructive action; tuck it bottom-left away
-   from the primary affordance so it can't be hit accidentally. */
-.person-detail-hero-remove {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-}
-</style>
