@@ -76,6 +76,7 @@ jobs:
                           - '.githooks/**'
                           - '.rusty_dev_tool/**'
                           - '.claude/skills/**'
+                          - '.claude/agents/**'
                           - 'README.md'
                       frontend:
                           - *infra

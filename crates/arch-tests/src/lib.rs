@@ -10,6 +10,7 @@ pub mod docs;
 pub mod refs;
 pub mod repo;
 pub mod rules;
+pub mod skills;
 pub mod sql;
 pub mod violation;
 pub mod workflows;
