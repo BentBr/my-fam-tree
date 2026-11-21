@@ -7,6 +7,28 @@ use std::process::Command;
 
 use my_fam_tree_arch_tests::repo;
 
+/// Variables through which an outer git process (e.g. a pre-push hook run
+/// from a linked worktree, which exports `GIT_DIR`) would redirect these
+/// commands to the real repository.
+const INHERITED_GIT_VARS: &[&str] = &[
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_PREFIX",
+    "GIT_CONFIG_PARAMETERS",
+    "GIT_COMMON_DIR",
+];
+
+/// A command that only ever sees the throwaway repo in its cwd: no inherited
+/// repo variables, no user/system git config (hooks path, gpg signing).
+fn isolated(mut cmd: Command) -> Command {
+    for var in INHERITED_GIT_VARS {
+        cmd.env_remove(var);
+    }
+    cmd.env("GIT_CONFIG_GLOBAL", "/dev/null").env("GIT_CONFIG_NOSYSTEM", "1");
+    cmd
+}
+
 struct Repo(PathBuf);
 
 impl Repo {
@@ -24,7 +46,7 @@ impl Repo {
     }
 
     fn git(&self, args: &[&str]) {
-        let st = Command::new("git").args(args).current_dir(&self.0).status();
+        let st = isolated(Command::new("git")).args(args).current_dir(&self.0).status();
         assert!(st.is_ok_and(|s| s.success()), "git {args:?}");
     }
 
@@ -42,7 +64,7 @@ impl Repo {
     }
 
     fn scope(&self, mode: Option<&str>) -> String {
-        let mut cmd = Command::new("bash");
+        let mut cmd = isolated(Command::new("bash"));
         cmd.arg(repo::root().join(".claude/skills/qa/scripts/scope.sh"));
         if let Some(m) = mode {
             cmd.arg(m);
@@ -64,6 +86,27 @@ impl Drop for Repo {
     fn drop(&mut self) {
         drop(fs::remove_dir_all(&self.0));
     }
+}
+
+#[test]
+fn git_commands_ignore_inherited_repo_env() {
+    let cmd = isolated(Command::new("git"));
+    let envs: Vec<_> = cmd.get_envs().collect();
+    for var in ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX", "GIT_CONFIG_PARAMETERS"]
+    {
+        assert!(
+            envs.iter().any(|(k, v)| *k == var && v.is_none()),
+            "{var} must be removed: {envs:?}"
+        );
+    }
+    assert!(
+        envs.iter().any(|(k, v)| *k == "GIT_CONFIG_NOSYSTEM" && v.is_some()),
+        "system config disabled: {envs:?}"
+    );
+    assert!(
+        envs.iter().any(|(k, v)| *k == "GIT_CONFIG_GLOBAL" && v.is_some()),
+        "global config isolated: {envs:?}"
+    );
 }
 
 fn has(out: &str, class: &str, file: &str) -> bool {
