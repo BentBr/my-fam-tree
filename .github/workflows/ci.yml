@@ -531,10 +531,8 @@ jobs:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
-            - name: Dump live OpenAPI
-              run: cargo run -p my-fam-tree-openapi --bin openapi-dump > /tmp/openapi.json
-            - name: Diff against committed fe/openapi.json
-              run: diff -u fe/openapi.json /tmp/openapi.json
+            - name: Diff live OpenAPI against committed fe/openapi.json
+              run: ./scripts/openapi.sh check
 
     # ============================================================================
     # Frontend prepare - install deps once into the repo-local pnpm store.
