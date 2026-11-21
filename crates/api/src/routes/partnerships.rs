@@ -8,12 +8,12 @@
 //! - `DELETE /partnerships/{id}` — remove.
 
 use actix_web::{HttpRequest, delete, patch, post, web};
-use chrono::NaiveDate;
 use my_fam_tree_domain::{
     Partnership, PartnershipDraft, PartnershipEndReason, PartnershipKind, PartnershipRepoError,
     PersonId, Role,
 };
 use serde::{Deserialize, Serialize};
+use time::Date;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -31,8 +31,8 @@ pub struct PartnershipCreateReq {
     pub partner_b_id: Uuid,
     /// One of `marriage`, `civil_union`, `partnership`.
     pub kind: String,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     /// One of `divorce`, `separation`, `death`.
     pub end_reason: Option<String>,
     #[serde(default)]
@@ -43,8 +43,8 @@ pub struct PartnershipCreateReq {
 #[serde(deny_unknown_fields)]
 pub struct PartnershipUpdateReq {
     pub kind: Option<String>,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     pub end_reason: Option<String>,
     pub note: Option<String>,
 }
@@ -56,8 +56,8 @@ pub struct PartnershipView {
     pub partner_a_id: Uuid,
     pub partner_b_id: Uuid,
     pub kind: String,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     pub end_reason: Option<String>,
     pub note: String,
 }

@@ -20,7 +20,7 @@
 
 pub mod relationships;
 
-use chrono::{Datelike, NaiveDate};
+use time::Date;
 
 use crate::{ApiError, FieldViolation};
 
@@ -37,7 +37,7 @@ pub const MIN_DATE_YEAR: i32 = 1000;
 ///
 /// # Errors
 /// Returns `ApiError::Validation` when the date is too early.
-pub fn check_date_not_too_early(path: &str, date: Option<NaiveDate>) -> Result<(), ApiError> {
+pub fn check_date_not_too_early(path: &str, date: Option<Date>) -> Result<(), ApiError> {
     match date {
         Some(d) if d.year() < MIN_DATE_YEAR => Err(ApiError::Validation(vec![
             FieldViolation::new(
@@ -247,7 +247,7 @@ mod tests {
     #[test]
     fn check_date_not_too_early_accepts_old_ancestor_dates() {
         for (y, m, d) in [(1870, 12, 3), (1650, 1, 1), (MIN_DATE_YEAR, 1, 1)] {
-            let date = NaiveDate::from_ymd_opt(y, m, d);
+            let date = my_fam_tree_domain::dates::date_from_ymd(y, m, d);
             assert!(check_date_not_too_early("/birth_date", date).is_ok(), "{y}-{m}-{d}");
         }
         assert!(check_date_not_too_early("/birth_date", None).is_ok());
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn check_date_not_too_early_rejects_dates_before_min_year() {
-        let date = NaiveDate::from_ymd_opt(MIN_DATE_YEAR - 1, 12, 31);
+        let date = my_fam_tree_domain::dates::date_from_ymd(MIN_DATE_YEAR - 1, 12, 31);
         match check_date_not_too_early("/birth_date", date) {
             Err(ApiError::Validation(v)) => {
                 assert_eq!(v.len(), 1);

@@ -4,11 +4,9 @@
 //! hour, schedule today's digest (idempotently) and enqueue it. Safe to re-run
 //! within the hour.
 
-use std::str::FromStr;
-
-use chrono::{Duration, Timelike};
-use chrono_tz::Tz;
 use my_fam_tree_cache::ReminderJob;
+use my_fam_tree_domain::dates::{DEFAULT_TIMEZONE, DIGEST_LOCAL_HOUR};
+use time::Duration;
 
 use crate::digest::events_for_user_on;
 use crate::state::WorkerState;
@@ -16,21 +14,24 @@ use crate::state::WorkerState;
 /// Run one tick. Returns the number of digests freshly scheduled (for logging
 /// + tests).
 ///
+/// Which users are "in their 06:00 hour" (and their local date) is resolved
+/// by the database from each user's IANA timezone — see
+/// `ReminderPreferencesRepo::due_at_local_hour`.
+///
 /// # Errors
 /// Propagates repo / queue errors.
 pub async fn run_tick(state: &WorkerState) -> anyhow::Result<usize> {
     let now_utc = state.clock.now();
     let mut scheduled = 0_usize;
-    for user_id in state.prefs.enabled_user_ids().await? {
-        let Some(user) = state.users.find_by_id(user_id).await? else { continue };
-        let tz: Tz = Tz::from_str(&user.timezone).unwrap_or(chrono_tz::Europe::Berlin);
-        let local = now_utc.with_timezone(&tz);
-        if local.hour() != 6 {
-            continue;
-        }
-        let today_local = local.date_naive();
+    let due = state.prefs.due_at_local_hour(now_utc, DIGEST_LOCAL_HOUR, DEFAULT_TIMEZONE).await?;
+    for user in due {
+        let user_id = user.user_id;
+        let today_local = user.local_date;
         let prefs = state.prefs.get(user_id).await?;
-        let target_date = today_local + Duration::days(i64::from(prefs.lead_days));
+        let Some(target_date) = today_local.checked_add(Duration::days(i64::from(prefs.lead_days)))
+        else {
+            continue;
+        };
 
         let events = events_for_user_on(state, user_id, &prefs, today_local, target_date).await?;
         if events.is_empty() {

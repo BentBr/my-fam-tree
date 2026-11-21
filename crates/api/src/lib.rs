@@ -3,6 +3,7 @@
 pub mod auth;
 pub mod cookies;
 pub mod error;
+pub mod extractors;
 pub mod images;
 pub mod middleware;
 pub mod multipart;
@@ -87,6 +88,10 @@ pub fn build_app(
     // `ServiceConfig::service` accepts any `HttpServiceFactory`.
     App::new()
         .app_data(web::Data::new(state))
+        // Parse failures in Json / Query / Path extractors → RFC 7807 400.
+        .app_data(extractors::json_config())
+        .app_data(extractors::query_config())
+        .app_data(extractors::path_config())
         .wrap(middleware::PanicCatcher)
         // NB: the `Referer` header is deliberately NOT logged. Browser-facing
         // one-time-token pages (`/auth/consume?token=…`, invite / owner-transfer

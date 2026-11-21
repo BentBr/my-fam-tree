@@ -4,10 +4,10 @@
 //! kids can still validate tokens issued before rotation.
 
 use anyhow::{Context, anyhow};
-use chrono::Utc;
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, decode_header, encode,
 };
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::claims::{FamilyClaim, JwtClaims};
@@ -54,7 +54,7 @@ impl JwtIssuer {
         locale: &str,
         families: Vec<FamilyClaim>,
     ) -> anyhow::Result<String> {
-        let now = Utc::now().timestamp();
+        let now = OffsetDateTime::now_utc().unix_timestamp();
         let claims = JwtClaims {
             iss: self.issuer.clone(),
             aud: self.audience.clone(),

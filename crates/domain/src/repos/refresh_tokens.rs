@@ -1,7 +1,7 @@
 use std::net::IpAddr;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::UserId;
@@ -10,11 +10,11 @@ use crate::UserId;
 pub struct RefreshTokenRecord {
     pub id: Uuid,
     pub user_id: UserId,
-    pub created_at: DateTime<Utc>,
-    pub last_used_at: DateTime<Utc>,
-    pub expires_at: DateTime<Utc>,
-    pub absolute_expires_at: DateTime<Utc>,
-    pub revoked_at: Option<DateTime<Utc>>,
+    pub created_at: OffsetDateTime,
+    pub last_used_at: OffsetDateTime,
+    pub expires_at: OffsetDateTime,
+    pub absolute_expires_at: OffsetDateTime,
+    pub revoked_at: Option<OffsetDateTime>,
     pub device_label: Option<String>,
 }
 
@@ -36,8 +36,8 @@ pub trait RefreshTokenRepo: Send + Sync {
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,
-        rolling_expires_at: DateTime<Utc>,
-        absolute_expires_at: DateTime<Utc>,
+        rolling_expires_at: OffsetDateTime,
+        absolute_expires_at: OffsetDateTime,
     ) -> Result<Uuid, RefreshRepoError>;
 
     /// Returns the record if found and not revoked. Caller compares `expires_at` and
@@ -62,7 +62,7 @@ pub trait RefreshTokenRepo: Send + Sync {
         &self,
         old_hash: &[u8],
         new_hash: &[u8],
-        new_rolling_expires_at: DateTime<Utc>,
+        new_rolling_expires_at: OffsetDateTime,
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,

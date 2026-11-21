@@ -20,10 +20,10 @@
 use std::time::Duration as StdDuration;
 
 use actix_web::{HttpRequest, HttpResponse, post, web};
-use chrono::{Duration, Utc};
 use my_fam_tree_domain::{Locale, MagicLinkRepoError};
 use my_fam_tree_email::{Locale as EmailLocale, render_magic_link, render_welcome};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 
 use crate::auth::{FamilyClaim, generate_opaque_token, hash_token};
@@ -399,7 +399,7 @@ pub async fn refresh(
         return Err(ApiError::RefreshInvalid);
     };
 
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
     if record.expires_at < now || record.absolute_expires_at < now {
         return Err(ApiError::RefreshInvalid);
     }

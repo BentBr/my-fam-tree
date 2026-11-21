@@ -5,8 +5,8 @@
 //! than the partial-unique `(a, b, kind) WHERE ended_on IS NULL` index)
 //! so closed/widowed rows can be re-seeded without inserting duplicates.
 
-use chrono::NaiveDate;
 use sqlx::PgPool;
+use time::Date;
 use uuid::Uuid;
 
 use crate::ids::{
@@ -328,8 +328,8 @@ pub(crate) struct PartnershipSeed {
     pub(crate) partner_a: Uuid,
     pub(crate) partner_b: Uuid,
     pub(crate) kind: &'static str,
-    pub(crate) started_on: Option<NaiveDate>,
-    pub(crate) ended_on: Option<NaiveDate>,
+    pub(crate) started_on: Option<Date>,
+    pub(crate) ended_on: Option<Date>,
     pub(crate) end_reason: Option<&'static str>,
     pub(crate) note: &'static str,
 }
@@ -338,8 +338,8 @@ pub(crate) struct PartnershipSeed {
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]
-const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
-    match NaiveDate::from_ymd_opt(y, m, d) {
+const fn ymd(y: i32, m: u8, d: u8) -> Date {
+    match my_fam_tree_domain::dates::date_from_ymd(y, m, d) {
         Some(date) => date,
         None => panic!("static seed date must be valid"),
     }

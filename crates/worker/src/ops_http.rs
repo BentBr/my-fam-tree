@@ -67,9 +67,10 @@ pub async fn serve_with_test_fixtures(
     bind: String,
     worker_state: WorkerState,
     fixed: Arc<OffsetClock>,
+    zones: Arc<dyn my_fam_tree_domain::TimeZoneRepo>,
 ) {
     let health_data = web::Data::new(HealthState { heartbeat, stale_after_ms });
-    let test_data = web::Data::new(test_fixtures::TestState { state: worker_state, fixed });
+    let test_data = web::Data::new(test_fixtures::TestState { state: worker_state, fixed, zones });
     tracing::warn!(%bind, "worker ops listener starting WITH test-fixtures — DO NOT enable in production");
     let server = HttpServer::new(move || {
         App::new()
@@ -90,9 +91,11 @@ mod test_fixtures {
     use std::sync::Arc;
 
     use actix_web::{HttpResponse, post, web};
-    use chrono::{DateTime, NaiveDate, TimeZone, Utc};
-    use chrono_tz::Europe::Berlin;
+    use my_fam_tree_domain::TimeZoneRepo;
+    use my_fam_tree_domain::dates::{DEFAULT_TIMEZONE, DIGEST_LOCAL_HOUR};
     use serde::Deserialize;
+    use time::format_description::well_known::Rfc3339;
+    use time::{Date, OffsetDateTime, Time};
 
     use crate::clock::OffsetClock;
     use crate::state::WorkerState;
@@ -101,31 +104,37 @@ mod test_fixtures {
     #[derive(Debug, Deserialize)]
     struct AdvanceReq {
         /// Explicit UTC instant. Takes precedence over `date` when both are given.
-        #[serde(default)]
-        to: Option<DateTime<Utc>>,
+        #[serde(default, with = "time::serde::rfc3339::option")]
+        to: Option<OffsetDateTime>,
         /// A calendar date, resolved to 06:00 Europe/Berlin (the worker's default
         /// user timezone), DST-aware. Defaults to today when neither field is set —
         /// so `{}` advances to "this morning's 06:00" and fires today's reminders.
         #[serde(default)]
-        date: Option<NaiveDate>,
+        date: Option<Date>,
     }
 
-    fn resolve_instant(req: &AdvanceReq) -> DateTime<Utc> {
+    /// `to` verbatim, else 06:00 in [`DEFAULT_TIMEZONE`] on `date` (default:
+    /// today there). The zone math runs in Postgres via [`TimeZoneRepo`].
+    async fn resolve_instant(
+        req: &AdvanceReq,
+        zones: &dyn TimeZoneRepo,
+    ) -> Result<OffsetDateTime, my_fam_tree_domain::TimeZoneRepoError> {
         if let Some(to) = req.to {
-            return to;
+            return Ok(to);
         }
-        let date = req.date.unwrap_or_else(|| Utc::now().with_timezone(&Berlin).date_naive());
-        let Some(naive) = date.and_hms_opt(6, 0, 0) else { return Utc::now() };
-        Berlin
-            .from_local_datetime(&naive)
-            .single()
-            .map_or_else(Utc::now, |dt| dt.with_timezone(&Utc))
+        let date = match req.date {
+            Some(d) => d,
+            None => zones.local_date(OffsetDateTime::now_utc(), DEFAULT_TIMEZONE).await?,
+        };
+        let six = Time::from_hms(DIGEST_LOCAL_HOUR, 0, 0).unwrap_or(Time::MIDNIGHT);
+        zones.local_to_utc(date, six, DEFAULT_TIMEZONE).await
     }
 
     #[derive(Clone)]
     pub(super) struct TestState {
         pub state: WorkerState,
         pub fixed: Arc<OffsetClock>,
+        pub zones: Arc<dyn TimeZoneRepo>,
     }
 
     #[post("/__test/advance-clock")]
@@ -137,11 +146,16 @@ mod test_fixtures {
         ts: web::Data<TestState>,
         body: web::Json<AdvanceReq>,
     ) -> HttpResponse {
-        let to = resolve_instant(&body);
+        let to = match resolve_instant(&body, ts.zones.as_ref()).await {
+            Ok(to) => to,
+            Err(e) => {
+                return HttpResponse::InternalServerError().body(format!("resolve error: {e}"));
+            }
+        };
         ts.fixed.set(to);
         match ticker::run_tick(&ts.state).await {
             Ok(scheduled) => HttpResponse::Ok().json(serde_json::json!({
-                "now": to,
+                "now": to.format(&Rfc3339).unwrap_or_default(),
                 "scheduled": scheduled,
             })),
             Err(e) => HttpResponse::InternalServerError().body(format!("tick error: {e}")),

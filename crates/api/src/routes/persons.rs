@@ -14,9 +14,9 @@
 //! not on this row — see [`crate::routes::contacts`].
 
 use actix_web::{HttpRequest, delete, get, patch, post, web};
-use chrono::NaiveDate;
 use my_fam_tree_domain::{PersonDraft, PersonId, PersonRepoError, Role};
 use serde::{Deserialize, Deserializer, Serialize};
+use time::Date;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -41,10 +41,10 @@ use uuid::Uuid;
 ///
 /// ```ignore
 /// #[serde(default, deserialize_with = "deserialize_optional_field")]
-/// pub death_date: Option<Option<NaiveDate>>,
+/// pub death_date: Option<Option<Date>>,
 /// ```
 ///
-/// Combined with `#[schema(value_type = Option<NaiveDate>, nullable)]`
+/// Combined with `#[schema(value_type = Option<Date>, nullable)]`
 /// so the `OpenAPI` surface stays unchanged.
 //
 // `clippy::option_option` flags the triple-state shape, but it IS the
@@ -122,10 +122,10 @@ pub struct PersonCreateReq {
     pub nickname: String,
     #[serde(default)]
     pub gender: String,
-    pub birth_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
     #[serde(default)]
     pub birth_place: String,
-    pub death_date: Option<NaiveDate>,
+    pub death_date: Option<Date>,
     #[serde(default)]
     pub notes: String,
     pub linked_user_id: Option<Uuid>,
@@ -143,7 +143,7 @@ pub struct PersonCreateReq {
 // so utoipa doesn't pull it into the schema description):
 //
 // `birth_date` and `death_date` use the triple-state pattern
-// `Option<Option<NaiveDate>>` + `deserialize_optional_field` so a PATCH
+// `Option<Option<Date>>` + `deserialize_optional_field` so a PATCH
 // carrying `"death_date": null` clears the column rather than
 // preserving the existing value. See the helper's doc for the wire-
 // format vs handler-semantics mapping.
@@ -160,12 +160,12 @@ pub struct PersonUpdateReq {
     pub nickname: Option<String>,
     pub gender: Option<String>,
     #[serde(default, deserialize_with = "deserialize_optional_field")]
-    #[schema(value_type = Option<NaiveDate>, nullable)]
-    pub birth_date: Option<Option<NaiveDate>>,
+    #[schema(value_type = Option<Date>, nullable)]
+    pub birth_date: Option<Option<Date>>,
     pub birth_place: Option<String>,
     #[serde(default, deserialize_with = "deserialize_optional_field")]
-    #[schema(value_type = Option<NaiveDate>, nullable)]
-    pub death_date: Option<Option<NaiveDate>>,
+    #[schema(value_type = Option<Date>, nullable)]
+    pub death_date: Option<Option<Date>>,
     pub notes: Option<String>,
     pub linked_user_id: Option<Uuid>,
 }
@@ -179,9 +179,9 @@ pub struct PersonView {
     pub name_at_birth: String,
     pub nickname: String,
     pub gender: String,
-    pub birth_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
     pub birth_place: String,
-    pub death_date: Option<NaiveDate>,
+    pub death_date: Option<Date>,
     pub notes: String,
     pub linked_user_id: Option<Uuid>,
     /// Time-limited presigned URL for the person's photo, or `null` when
@@ -889,7 +889,7 @@ mod tests {
     // the "uncheck deceased" UI flow.
     // ---------------------------------------------------------------------
 
-    fn fixture_person_with_death_date(date: Option<NaiveDate>) -> my_fam_tree_domain::Person {
+    fn fixture_person_with_death_date(date: Option<Date>) -> my_fam_tree_domain::Person {
         my_fam_tree_domain::Person {
             id: my_fam_tree_domain::PersonId::from_uuid(Uuid::new_v4()),
             family_id: my_fam_tree_domain::FamilyId::from_uuid(Uuid::new_v4()),
@@ -904,14 +904,14 @@ mod tests {
             notes: String::new(),
             linked_user_id: None,
             photo_key: None,
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
+            created_at: time::OffsetDateTime::now_utc(),
+            updated_at: time::OffsetDateTime::now_utc(),
         }
     }
 
     #[test]
     fn patch_with_absent_death_date_preserves_existing() {
-        let existing_date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let existing_date = time::macros::date!(2020 - 01 - 01);
         let existing = fixture_person_with_death_date(Some(existing_date));
         // `{}` — field absent. `#[serde(default)]` produces `None`.
         let patch: PersonUpdateReq = serde_json::from_str(r#"{ "nickname": "X" }"#).unwrap();
@@ -926,7 +926,7 @@ mod tests {
         // of the triple-state pattern: a JSON `null` here deserializes
         // to outer `Some(None)`, which `merge_update` reads as "clear"
         // and writes NULL to the column.
-        let existing_date = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        let existing_date = time::macros::date!(2020 - 01 - 01);
         let existing = fixture_person_with_death_date(Some(existing_date));
         let patch: PersonUpdateReq = serde_json::from_str(r#"{ "death_date": null }"#).unwrap();
         assert_eq!(patch.death_date, Some(None), "null must deserialize to outer Some(None)");
@@ -939,7 +939,7 @@ mod tests {
         let existing = fixture_person_with_death_date(None);
         let patch: PersonUpdateReq =
             serde_json::from_str(r#"{ "death_date": "2024-06-15" }"#).unwrap();
-        let new_date = NaiveDate::from_ymd_opt(2024, 6, 15).unwrap();
+        let new_date = time::macros::date!(2024 - 06 - 15);
         assert_eq!(patch.death_date, Some(Some(new_date)), "value must deserialize to Some(Some)");
         let draft = merge_update(&existing, patch);
         assert_eq!(draft.death_date, Some(new_date), "value must set");
@@ -952,7 +952,7 @@ mod tests {
     #[test]
     fn patch_with_null_birth_date_clears_existing() {
         let mut existing = fixture_person_with_death_date(None);
-        existing.birth_date = NaiveDate::from_ymd_opt(1990, 4, 12);
+        existing.birth_date = Some(time::macros::date!(1990 - 04 - 12));
         let patch: PersonUpdateReq = serde_json::from_str(r#"{ "birth_date": null }"#).unwrap();
         let draft = merge_update(&existing, patch);
         assert_eq!(draft.birth_date, None);

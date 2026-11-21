@@ -2899,6 +2899,7 @@
           "partnership_duplicate",
           "parent_link_duplicate",
           "validation_failed",
+          "request_malformed",
           "image_invalid",
           "conflict_stale",
           "email_taken",

@@ -16,9 +16,9 @@
 //! `families::invite` handler ships from there.
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -72,7 +72,8 @@ pub struct InviteDto {
     pub email: String,
     pub role: Role,
     pub person_id: Option<Uuid>,
-    pub expires_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: OffsetDateTime,
     pub invited_by: Uuid,
 }
 
@@ -132,7 +133,7 @@ pub async fn accept(
         .map(|jwt| (jwt.email.clone(), my_fam_tree_domain::UserId::from_uuid(jwt.sub)));
 
     let hash = hash_token(body.token.trim());
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
 
     // SECURITY: validate the acting user BEFORE the single-use token is
     // burned. We FIRST do a non-mutating `find_pending` lookup, resolve /

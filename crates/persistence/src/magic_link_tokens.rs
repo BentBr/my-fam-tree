@@ -1,11 +1,11 @@
 //! Postgres-backed [`MagicLinkRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{
     MagicLinkPurpose, MagicLinkRecord, MagicLinkRepo, MagicLinkRepoError, UserId,
 };
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -38,8 +38,8 @@ struct MagicLinkRow {
     email: String,
     #[sqlx(rename = "purpose!")]
     purpose: String,
-    expires_at: DateTime<Utc>,
-    consumed_at: Option<DateTime<Utc>>,
+    expires_at: OffsetDateTime,
+    consumed_at: Option<OffsetDateTime>,
 }
 
 impl From<MagicLinkRow> for MagicLinkRecord {
@@ -63,7 +63,7 @@ impl MagicLinkRepo for PgMagicLinkRepo {
         email: &str,
         token_hash: &[u8],
         purpose: MagicLinkPurpose,
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, MagicLinkRepoError> {
         let user_uuid = user_id.map(UserId::into_uuid);
         let row = sqlx::query!(
@@ -99,7 +99,7 @@ impl MagicLinkRepo for PgMagicLinkRepo {
         .map_err(|e| MagicLinkRepoError::Db(e.to_string()))?
         .ok_or(MagicLinkRepoError::NotFoundOrConsumed)?;
 
-        if row.expires_at < Utc::now() {
+        if row.expires_at < OffsetDateTime::now_utc() {
             return Err(MagicLinkRepoError::Expired);
         }
         Ok(row.into())
@@ -119,7 +119,7 @@ impl MagicLinkRepo for PgMagicLinkRepo {
         .map_err(|e| MagicLinkRepoError::Db(e.to_string()))?
         .ok_or(MagicLinkRepoError::NotFoundOrConsumed)?;
 
-        if row.expires_at < Utc::now() {
+        if row.expires_at < OffsetDateTime::now_utc() {
             return Err(MagicLinkRepoError::Expired);
         }
         Ok(row.into())

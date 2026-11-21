@@ -1,9 +1,9 @@
 //! Postgres-backed [`FamilyRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{Family, FamilyId, FamilyRepo, FamilyRepoError, UserId};
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -25,7 +25,7 @@ struct FamilyRow {
     id: Uuid,
     name: String,
     created_by: Uuid,
-    created_at: DateTime<Utc>,
+    created_at: OffsetDateTime,
 }
 
 impl From<FamilyRow> for Family {

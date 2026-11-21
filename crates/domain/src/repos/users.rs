@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 use crate::UserId;
 
@@ -10,11 +10,11 @@ pub struct User {
     pub display_name: String,
     pub locale: Locale,
     pub timezone: String,
-    pub email_verified_at: Option<DateTime<Utc>>,
+    pub email_verified_at: Option<OffsetDateTime>,
     /// Opaque object-storage key for this user's avatar, or `None` when
     /// they have no avatar yet. Resolved to a presigned URL at the HTTP edge.
     pub avatar_key: Option<String>,
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

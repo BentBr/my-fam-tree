@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH zones AS (SELECT name FROM pg_timezone_names)\n               SELECT rp.user_id AS \"user_id!\",\n                      (($1::timestamptz) AT TIME ZONE COALESCE(z.name, $3::text))::date\n                          AS \"local_date!\"\n                 FROM reminder_preferences rp\n                 JOIN users u ON u.id = rp.user_id\n            LEFT JOIN zones z ON z.name = u.timezone\n                WHERE rp.emails_enabled = true\n                  AND EXTRACT(HOUR FROM ($1::timestamptz) AT TIME ZONE COALESCE(z.name, $3::text))::int4\n                      = $2::int4\n             ORDER BY rp.user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reminder_preferences",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "local_date!",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "874b7687b2207e0d2fab3cee9400728b6fc2487c0cd15b0564e05b600a3d799d"
+}

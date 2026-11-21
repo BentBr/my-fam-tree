@@ -1,4 +1,6 @@
+import type { APIRequestContext } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
+import { digestSendDates, setUserTimezone } from '../fixtures/db.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { signIn, createFamily } from '../page-objects/session'
@@ -83,5 +85,84 @@ test('a daily digest email fires 7 days before a birthday when reminders are on'
             data: { to: new Date().toISOString() },
         })
         expect(reset.ok(), 'worker clock reset should succeed').toBeTruthy()
+    }
+})
+
+// POST advance-clock and return the parsed body ({ now, scheduled }).
+async function advanceClock(
+    request: APIRequestContext,
+    data: { to?: string; date?: string },
+): Promise<{ now: string; scheduled: number }> {
+    const res = await request.post(`${WORKER_URL}/__test/advance-clock`, {
+        headers: { 'content-type': 'application/json' },
+        data,
+    })
+    expect(res.ok(), `advance-clock ${JSON.stringify(data)}: ${await res.text()}`).toBeTruthy()
+    return (await res.json()) as { now: string; scheduled: number }
+}
+
+// Put the worker clock back to real time — see the SCOPED time travel note above.
+async function resetClock(request: APIRequestContext): Promise<void> {
+    await advanceClock(request, { to: new Date().toISOString() })
+}
+
+test('the digest fires at 06:00 in the user’s own timezone, not Berlin’s', async ({ page }) => {
+    const stamp = Date.now()
+    const userEmail = `reminders-ny-${stamp}@example.com`
+    await signIn(page, userEmail)
+    await createFamily(page, `RemindersNY-${stamp}`)
+    const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
+    expect(familyId).not.toBe('')
+
+    await seedPerson(page.request, familyId, {
+        given_name: 'Newyork',
+        family_name: 'Birthday',
+        birth_date: '1990-06-15',
+    })
+    const prefs = await page.request.put('/api/v1/reminder-preferences', {
+        headers: { 'content-type': 'application/json' },
+        data: {
+            emails_enabled: true,
+            remind_birthdays: true,
+            remind_anniversaries: true,
+            favourites_only: false,
+            lead_days: 7,
+        },
+    })
+    expect(prefs.ok(), 'enable reminders via API').toBeTruthy()
+
+    // There is no API to change the zone (it defaults to Europe/Berlin), so
+    // set it directly. The worker resolves local time in Postgres.
+    await setUserTimezone(userEmail, 'America/New_York')
+    await clearMailpit()
+
+    try {
+        // 06:00 Berlin (04:00Z) is 00:00 in New York: the tick (synchronous
+        // with the advance-clock response) must NOT schedule this user.
+        const berlin = await advanceClock(page.request, { to: '2026-06-08T04:00:00Z' })
+        expect(berlin.now).toBe('2026-06-08T04:00:00Z')
+        expect(await digestSendDates(userEmail)).toEqual([])
+
+        // 10:00Z = 06:00 EDT → scheduled for their local date and sent.
+        await advanceClock(page.request, { to: '2026-06-08T10:00:00Z' })
+        expect(await digestSendDates(userEmail)).toEqual(['2026-06-08'])
+        const digest = await waitForEmail((s) => /In 7 days|In 7 Tagen|🎂/.test(s), {
+            recipient: userEmail,
+            timeoutMs: 30_000,
+        })
+        expect(digest.text).toMatch(/Newyork Birthday/)
+    } finally {
+        await resetClock(page.request)
+    }
+})
+
+test('advance-clock resolves a bare date to 06:00 Europe/Berlin, DST-aware', async ({ request }) => {
+    try {
+        // Summer (CEST, UTC+2) and winter (CET, UTC+1). Exercises the
+        // Postgres-backed zone conversion and the RFC 3339 response format.
+        expect((await advanceClock(request, { date: '2026-06-08' })).now).toBe('2026-06-08T04:00:00Z')
+        expect((await advanceClock(request, { date: '2026-01-08' })).now).toBe('2026-01-08T05:00:00Z')
+    } finally {
+        await resetClock(request)
     }
 })

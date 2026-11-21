@@ -15,4 +15,5 @@ pub mod persons;
 pub mod refresh_tokens;
 pub mod reminder_digests;
 pub mod reminder_prefs;
+pub mod time_zones;
 pub mod users;

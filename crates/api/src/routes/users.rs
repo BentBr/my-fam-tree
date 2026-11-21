@@ -20,10 +20,10 @@
 //! so a leaked token never lets one user steal another's email.
 
 use actix_web::{HttpRequest, get, patch, post, web};
-use chrono::{DateTime, Duration, Utc};
 use my_fam_tree_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
 use my_fam_tree_email::{Locale as EmailLocale, render_email_change};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -52,11 +52,13 @@ pub struct UserProfile {
     pub display_name: String,
     pub locale: String,
     pub timezone: String,
-    pub email_verified_at: Option<DateTime<Utc>>,
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub email_verified_at: Option<OffsetDateTime>,
     /// Time-limited presigned URL for the user's avatar, or `null` when
     /// no avatar is set. Re-presigned on every read; do NOT cache.
     pub avatar_url: Option<String>,
-    pub created_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -316,7 +318,8 @@ pub async fn email_change_request(
             &new_email,
             &hash,
             MagicLinkPurpose::EmailChange,
-            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds)),
+            OffsetDateTime::now_utc()
+                + Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds)),
         )
         .await
         .map_err(internal)?;

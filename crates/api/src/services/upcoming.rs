@@ -5,10 +5,10 @@
 //! API's `ToSchema` shape and renders the English `label` server-side (the FE
 //! shows it verbatim; i18n stays on `upcoming.kinds.*` for the chips).
 
-use chrono::NaiveDate;
 pub use my_fam_tree_domain::{DEFAULT_LIMIT, MAX_LIMIT, UpcomingFilter, build_upcoming};
 use my_fam_tree_domain::{UpcomingEvent as DomainEvent, UpcomingKind};
 use serde::Serialize;
+use time::Date;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -21,7 +21,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct UpcomingEvent {
     pub kind: String,
-    pub next_date: NaiveDate,
+    pub next_date: Date,
     pub years: u32,
     pub person_id: Option<Uuid>,
     pub partnership_id: Option<Uuid>,

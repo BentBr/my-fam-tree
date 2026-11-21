@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (($1::timestamptz) AT TIME ZONE $2::text)::date AS \"local_date!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "local_date!",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6d78c0b2c79699fa015d49ee8e1efcc0de7c31469ba91ae001b63b8d7927c1c8"
+}

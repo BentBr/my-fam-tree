@@ -1,6 +1,7 @@
 //! Core domain types and repository traits. No I/O.
 
 pub mod capabilities;
+pub mod dates;
 pub mod ids;
 pub mod relationships;
 pub mod repos;
@@ -45,8 +46,9 @@ pub use repos::reminder_digests::{
     DigestRepoError, DigestStatus, ReminderDigest, ReminderDigestRepo,
 };
 pub use repos::reminder_prefs::{
-    ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError,
+    DueDigestUser, ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError,
 };
+pub use repos::time_zones::{TimeZoneRepo, TimeZoneRepoError};
 pub use repos::users::{Locale, User, UserRepo, UserRepoError};
 pub use role::Role;
 pub use upcoming::{

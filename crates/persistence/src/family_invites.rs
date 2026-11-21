@@ -1,9 +1,9 @@
 //! Postgres-backed [`FamilyInviteRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{FamilyId, FamilyInviteRepo, Invite, InviteRepoError, Role, UserId};
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 const fn role_db(r: Role) -> &'static str {
@@ -46,8 +46,8 @@ struct InviteRow {
     role: String,
     invited_by: Uuid,
     person_id: Option<Uuid>,
-    expires_at: DateTime<Utc>,
-    accepted_at: Option<DateTime<Utc>>,
+    expires_at: OffsetDateTime,
+    accepted_at: Option<OffsetDateTime>,
 }
 
 impl From<InviteRow> for Invite {
@@ -75,7 +75,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
         invited_by: UserId,
         person_id: Option<Uuid>,
         token_hash: &[u8],
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, InviteRepoError> {
         let row = sqlx::query!(
             r#"INSERT INTO family_invites
@@ -99,7 +99,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
     async fn find_pending(
         &self,
         token_hash: &[u8],
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Invite, InviteRepoError> {
         let row = sqlx::query_as!(
             InviteRow,
@@ -123,7 +123,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
     async fn accept(
         &self,
         token_hash: &[u8],
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Invite, InviteRepoError> {
         let row = sqlx::query_as!(
             InviteRow,

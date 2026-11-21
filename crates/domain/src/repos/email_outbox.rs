@@ -8,7 +8,7 @@
 //! the row sent / retry / permanent-failure.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 /// Newtype around the outbox row id. Display + serde transparent.
@@ -83,14 +83,14 @@ pub trait EmailOutboxRepo: Send + Sync + 'static {
     /// Returns `None` if nothing is due.
     async fn claim_next_due(
         &self,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Option<EmailOutboxRow>, EmailOutboxRepoError>;
 
     /// Terminal: SMTP succeeded.
     async fn mark_sent(
         &self,
         id: EmailOutboxId,
-        sent_at: DateTime<Utc>,
+        sent_at: OffsetDateTime,
     ) -> Result<(), EmailOutboxRepoError>;
 
     /// Non-terminal: SMTP failed, but the row still has retries left.
@@ -98,7 +98,7 @@ pub trait EmailOutboxRepo: Send + Sync + 'static {
     async fn mark_retry(
         &self,
         id: EmailOutboxId,
-        next_attempt_at: DateTime<Utc>,
+        next_attempt_at: OffsetDateTime,
         last_error: &str,
     ) -> Result<(), EmailOutboxRepoError>;
 

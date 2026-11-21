@@ -20,7 +20,6 @@ use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
 use async_trait::async_trait;
-use chrono::Utc;
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
 use my_fam_tree_domain::{EmailOutboxInsert, EmailOutboxKind};
 use my_fam_tree_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
@@ -34,6 +33,7 @@ use my_fam_tree_worker::state::WorkerState;
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
+use time::OffsetDateTime;
 
 // --- testcontainer setup ----------------------------------------------------
 
@@ -139,7 +139,7 @@ async fn enqueue_then_process_one_sends_and_marks_sent() {
     // `next_attempt_at <= T`. If FixedClock T = real-now and the insert
     // captures real-now + δ, the row stays unclaimed. A 60s shift is
     // generous against runner clock jitter.
-    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
+    let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
     let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
 
     state
@@ -177,7 +177,7 @@ async fn failing_send_marks_retry_with_attempts_incremented_and_backoff_schedule
     let (db, _pg) = start_pg().await;
     // Same 60s shift as the happy-path test — claim_next_due needs the
     // clock to be at or past the DB's `next_attempt_at`.
-    let now = Utc::now() + chrono::Duration::seconds(60);
+    let now = OffsetDateTime::now_utc() + time::Duration::seconds(60);
     let clock = Arc::new(FixedClock::new(now));
     let state = build_state(
         &db,
@@ -212,7 +212,7 @@ async fn failing_send_marks_retry_with_attempts_incremented_and_backoff_schedule
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn failing_at_max_retries_marks_failed_permanent() {
     let (db, _pg) = start_pg().await;
-    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
+    let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
     // max_retries=1 ⇒ the very first failure pushes attempts (0+1) >=
     // max_retries, so the row goes terminal-failed in one cycle.
     let state = build_state(
@@ -255,7 +255,7 @@ async fn skip_locked_lets_two_pollers_drain_in_parallel_without_double_send() {
     // the SKIP-LOCKED contract — distinct rows per drain is enough.)
     let (db, _pg) = start_pg().await;
     let fake = Arc::new(FakeEmailSender::new());
-    let clock = Arc::new(FixedClock::new(Utc::now() + chrono::Duration::seconds(60)));
+    let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
     let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
 
     for addr in ["a@example.com", "b@example.com", "c@example.com"] {

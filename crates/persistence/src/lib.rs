@@ -20,6 +20,7 @@ pub mod pool;
 pub mod refresh_tokens;
 pub mod reminder_digests;
 pub mod reminder_prefs;
+pub mod time_zones;
 pub mod users;
 
 pub use audit_log::PgAuditLogRepo;
@@ -41,4 +42,5 @@ pub use pool::Database;
 pub use refresh_tokens::PgRefreshTokenRepo;
 pub use reminder_digests::PgReminderDigestRepo;
 pub use reminder_prefs::PgReminderPrefsRepo;
+pub use time_zones::PgTimeZoneRepo;
 pub use users::PgUserRepo;

@@ -16,12 +16,12 @@
 
 use std::time::Duration as StdDuration;
 
-use chrono::{Duration, Utc};
 use my_fam_tree_domain::JanitorRepo;
 use my_fam_tree_persistence::{Database, PgJanitor};
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
+use time::{Duration, OffsetDateTime};
 
 async fn start_pg() -> (Database, ContainerAsync<Postgres>) {
     let pg = Postgres::default()
@@ -52,7 +52,7 @@ async fn sweep_deletes_expired_rows_across_all_four_tables() {
     let pool = db.pool().clone();
     let janitor = PgJanitor::new(pool.clone());
 
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
     let expired = now - Duration::hours(48); // well past a 24h grace
     let fresh = now + Duration::hours(1); // still active
 

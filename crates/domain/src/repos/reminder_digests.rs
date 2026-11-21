@@ -5,7 +5,7 @@
 //! reconcile sweep).
 
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 use crate::UserId;
@@ -35,13 +35,13 @@ impl DigestStatus {
 pub struct ReminderDigest {
     pub id: Uuid,
     pub user_id: UserId,
-    pub send_date: NaiveDate,
+    pub send_date: Date,
     pub event_count: i32,
     pub status: DigestStatus,
     pub error: String,
     pub attempt_count: i32,
-    pub next_attempt_at: DateTime<Utc>,
-    pub dispatched_at: Option<DateTime<Utc>>,
+    pub next_attempt_at: OffsetDateTime,
+    pub dispatched_at: Option<OffsetDateTime>,
 }
 
 /// Errors surfaced by [`ReminderDigestRepo`].
@@ -62,7 +62,7 @@ pub trait ReminderDigestRepo: Send + Sync {
     async fn ensure_pending(
         &self,
         user_id: UserId,
-        send_date: NaiveDate,
+        send_date: Date,
         event_count: i32,
     ) -> Result<(Uuid, bool), DigestRepoError>;
 
@@ -86,7 +86,7 @@ pub trait ReminderDigestRepo: Send + Sync {
         &self,
         id: Uuid,
         error: &str,
-        next_attempt_at: Option<DateTime<Utc>>,
+        next_attempt_at: Option<OffsetDateTime>,
     ) -> Result<(), DigestRepoError>;
 
     /// Recent digests for the FE history page (Phase 5 endpoint).

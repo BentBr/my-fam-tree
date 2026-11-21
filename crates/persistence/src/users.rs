@@ -1,9 +1,9 @@
 //! Postgres-backed [`UserRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{Locale, User, UserId, UserRepo, UserRepoError};
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -37,9 +37,9 @@ struct UserRow {
     #[sqlx(rename = "locale!")]
     locale: String,
     timezone: String,
-    email_verified_at: Option<DateTime<Utc>>,
+    email_verified_at: Option<OffsetDateTime>,
     avatar_key: Option<String>,
-    created_at: DateTime<Utc>,
+    created_at: OffsetDateTime,
 }
 
 impl From<UserRow> for User {

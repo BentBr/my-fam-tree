@@ -8,7 +8,7 @@
 //! partnerships of the same `kind` for the same pair.
 
 use async_trait::async_trait;
-use chrono::NaiveDate;
+use time::Date;
 use uuid::Uuid;
 
 use crate::{FamilyId, PersonId};
@@ -56,8 +56,8 @@ pub struct Partnership {
     pub partner_a_id: PersonId,
     pub partner_b_id: PersonId,
     pub kind: PartnershipKind,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     pub end_reason: Option<PartnershipEndReason>,
     pub note: String,
 }
@@ -65,8 +65,8 @@ pub struct Partnership {
 #[derive(Debug, Clone)]
 pub struct PartnershipDraft {
     pub kind: PartnershipKind,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     pub end_reason: Option<PartnershipEndReason>,
     pub note: String,
 }

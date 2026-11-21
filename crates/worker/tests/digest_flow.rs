@@ -19,7 +19,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use async_trait::async_trait;
-use chrono::{NaiveDate, TimeZone, Utc};
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
 use my_fam_tree_domain::{
     DigestStatus, FamilyMembershipRepo, FamilyRepo, Locale, PersonDraft, PersonRepo,
@@ -37,6 +36,7 @@ use my_fam_tree_worker::{dispatcher, ticker};
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
+use time::Date;
 
 // --- in-memory queue fake -------------------------------------------------
 
@@ -129,12 +129,7 @@ fn build_state(
 
 /// Seed a user (Europe/Berlin tz by default), a family they own, one person
 /// with `birthday`, and the user's reminder preferences. Returns the user id.
-async fn seed(
-    db: &Database,
-    email: &str,
-    prefs: ReminderPreferences,
-    birthday: NaiveDate,
-) -> UserId {
+async fn seed(db: &Database, email: &str, prefs: ReminderPreferences, birthday: Date) -> UserId {
     let pool = db.pool().clone();
     let users = PgUserRepo::new(pool.clone());
     let families = PgFamilyRepo::new(pool.clone());
@@ -180,11 +175,11 @@ const fn enabled_prefs(lead_days: i32) -> ReminderPreferences {
 /// 06:00 Europe/Berlin on 2026-06-08 is 04:00 UTC (CEST = UTC+2). With
 /// `lead_days` = 7 the target is 2026-06-15, so a 06-15 birthday fires.
 fn berlin_0600_june_8() -> FixedClock {
-    FixedClock::new(Utc.with_ymd_and_hms(2026, 6, 8, 4, 0, 0).single().unwrap())
+    FixedClock::new(time::macros::datetime!(2026-06-08 04:00:00 UTC))
 }
 
-const fn birthday_june_15() -> NaiveDate {
-    NaiveDate::from_ymd_opt(1990, 6, 15).expect("valid date")
+const fn birthday_june_15() -> Date {
+    time::macros::date!(1990 - 06 - 15)
 }
 
 // --- tests ----------------------------------------------------------------
@@ -261,7 +256,7 @@ async fn no_digest_outside_the_0600_hour() {
     let queue = Arc::new(FakeQueue::default());
     let email = Arc::new(FakeEmailSender::new());
     // 10:00 Europe/Berlin (08:00 UTC) — outside the firing window.
-    let fixed = FixedClock::new(Utc.with_ymd_and_hms(2026, 6, 8, 8, 0, 0).single().unwrap());
+    let fixed = FixedClock::new(time::macros::datetime!(2026-06-08 08:00:00 UTC));
     let state = build_state(
         &db,
         Arc::new(fixed) as Arc<dyn Clock>,
@@ -292,4 +287,63 @@ async fn disabled_user_is_never_scheduled() {
 
     assert_eq!(ticker::run_tick(&state).await.unwrap(), 0, "emails-disabled user is skipped");
     assert_eq!(queue.len(), 0);
+}
+
+/// Overwrite a seeded user's stored IANA timezone.
+async fn set_timezone(db: &Database, user_id: UserId, tz: &str) {
+    sqlx::query!("UPDATE users SET timezone = $1 WHERE id = $2", tz, user_id.into_uuid())
+        .execute(db.pool())
+        .await
+        .expect("set timezone");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn user_in_another_timezone_fires_at_their_local_0600() {
+    let (db, _pg) = start_pg().await;
+    let user_id = seed(&db, "ny@example.com", enabled_prefs(7), birthday_june_15()).await;
+    set_timezone(&db, user_id, "America/New_York").await;
+
+    let queue = Arc::new(FakeQueue::default());
+    let email = Arc::new(FakeEmailSender::new());
+    let fixed = berlin_0600_june_8();
+    let state = build_state(
+        &db,
+        Arc::new(fixed.clone()) as Arc<dyn Clock>,
+        queue.clone() as Arc<dyn ReminderJobQueue>,
+        email.clone() as Arc<dyn EmailSender>,
+    );
+
+    // 06:00 Berlin is 00:00 in New York — not their hour.
+    assert_eq!(ticker::run_tick(&state).await.unwrap(), 0, "Berlin's 06:00 is not NY's");
+
+    // 10:00Z = 06:00 EDT → scheduled for the NY user's local date.
+    fixed.set(time::macros::datetime!(2026-06-08 10:00:00 UTC));
+    assert_eq!(ticker::run_tick(&state).await.unwrap(), 1, "fires at NY 06:00");
+    let job = ReminderJobQueue::try_pop(&*queue).await.unwrap().expect("a queued job");
+    dispatcher::handle(&state, &job).await.unwrap();
+
+    let sent = email.drain();
+    assert_eq!(sent.len(), 1);
+    assert!(sent[0].text_body.contains("Anna"), "body lists the person: {}", sent[0].text_body);
+    let digests = state.digests.list_for_user(user_id, 10).await.unwrap();
+    assert_eq!(digests[0].send_date, time::macros::date!(2026 - 06 - 08));
+    assert_eq!(digests[0].status, DigestStatus::Sent);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn unknown_timezone_falls_back_to_berlin() {
+    let (db, _pg) = start_pg().await;
+    let user_id = seed(&db, "bogus-tz@example.com", enabled_prefs(7), birthday_june_15()).await;
+    set_timezone(&db, user_id, "Not/AZone").await;
+
+    let queue = Arc::new(FakeQueue::default());
+    let state = build_state(
+        &db,
+        Arc::new(berlin_0600_june_8()) as Arc<dyn Clock>,
+        queue.clone() as Arc<dyn ReminderJobQueue>,
+        Arc::new(FakeEmailSender::new()) as Arc<dyn EmailSender>,
+    );
+
+    assert_eq!(ticker::run_tick(&state).await.unwrap(), 1, "invalid zone → Berlin 06:00");
+    assert_eq!(queue.len(), 1);
 }

@@ -12,7 +12,7 @@
 //! and visibility enum. See [`crate::repos::person_contacts`].
 
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
+use time::{Date, OffsetDateTime};
 
 use crate::{FamilyId, PersonId, UserId};
 
@@ -25,16 +25,16 @@ pub struct Person {
     pub name_at_birth: String,
     pub nickname: String,
     pub gender: String,
-    pub birth_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
     pub birth_place: String,
-    pub death_date: Option<NaiveDate>,
+    pub death_date: Option<Date>,
     pub notes: String,
     pub linked_user_id: Option<UserId>,
     /// Opaque object-storage key for this person's photo, or `None` when the
     /// person has no photo yet. Resolved to a presigned URL at the HTTP edge.
     pub photo_key: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
+    pub updated_at: OffsetDateTime,
 }
 
 /// Input shape used by both `create` and `update`. Callers building partial
@@ -46,9 +46,9 @@ pub struct PersonDraft {
     pub name_at_birth: String,
     pub nickname: String,
     pub gender: String,
-    pub birth_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
     pub birth_place: String,
-    pub death_date: Option<NaiveDate>,
+    pub death_date: Option<Date>,
     pub notes: String,
     pub linked_user_id: Option<UserId>,
 }

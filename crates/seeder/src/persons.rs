@@ -18,8 +18,8 @@
 //! data now lives in the dedicated `person_contacts` table, seeded in
 //! the [`crate::contacts`] module.
 
-use chrono::NaiveDate;
 use sqlx::PgPool;
+use time::Date;
 use uuid::Uuid;
 
 use crate::ids::{
@@ -53,9 +53,9 @@ pub(crate) struct PersonSeed {
     pub(crate) name_at_birth: &'static str,
     pub(crate) nickname: &'static str,
     pub(crate) gender: &'static str,
-    pub(crate) birth_date: NaiveDate,
+    pub(crate) birth_date: Date,
     pub(crate) birth_place: &'static str,
-    pub(crate) death_date: Option<NaiveDate>,
+    pub(crate) death_date: Option<Date>,
     pub(crate) notes: &'static str,
     pub(crate) linked_user_id: Option<Uuid>,
 }
@@ -64,8 +64,8 @@ pub(crate) struct PersonSeed {
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]
-pub(crate) const fn ymd(y: i32, m: u32, d: u32) -> NaiveDate {
-    match NaiveDate::from_ymd_opt(y, m, d) {
+pub(crate) const fn ymd(y: i32, m: u8, d: u8) -> Date {
+    match my_fam_tree_domain::dates::date_from_ymd(y, m, d) {
         Some(date) => date,
         None => panic!("static seed date must be valid"),
     }

@@ -459,6 +459,7 @@
         "end_reason_death_mismatch": "Hinweis: Der Endgrund ist „Tod“, aber keine der Partner:innen hat ein passendes Sterbedatum."
     },
     "errorCodes": {
+        "request_malformed": "Die Anfrage konnte nicht gelesen werden. Bitte prüfe deine Eingabe und versuche es erneut.",
         "validation_failed": "Die übermittelten Daten sind ungültig.",
         "relationship_cycle": "Diese Verbindung würde einen Kreis im Stammbaum erzeugen.",
         "partnership_duplicate": "Eine aktuelle Partnerschaft gleicher Art zwischen diesen Personen existiert bereits.",

@@ -76,7 +76,9 @@ impl RateLimiter for RedisRateLimiter {
         // Durations longer than i64::MAX seconds (~292 billion years) can't
         // realistically happen, but `try_from` keeps us lint-clean either way.
         let window_secs = i64::try_from(window.as_secs()).unwrap_or(i64::MAX);
-        let now_ms = chrono::Utc::now().timestamp_millis();
+        let now_ms =
+            i64::try_from(time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000)
+                .unwrap_or(i64::MAX);
         let cutoff = now_ms.saturating_sub(window_secs.saturating_mul(1_000));
 
         // Sorted-set member is unique per call so concurrent inserts at the

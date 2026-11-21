@@ -15,20 +15,32 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-use chrono::{DateTime, TimeZone, Utc};
+use time::OffsetDateTime;
+
+/// Microseconds since the Unix epoch, saturating at the `i64` range.
+fn to_micros(t: OffsetDateTime) -> i64 {
+    i64::try_from(t.unix_timestamp_nanos() / 1_000).unwrap_or(i64::MAX)
+}
+
+/// Inverse of [`to_micros`]; falls back to the wall clock for an
+/// out-of-range value (never happens for real instants).
+fn from_micros(micros: i64) -> OffsetDateTime {
+    OffsetDateTime::from_unix_timestamp_nanos(i128::from(micros) * 1_000)
+        .unwrap_or_else(|_| OffsetDateTime::now_utc())
+}
 
 /// Source of "now". Production uses [`SystemClock`]; tests + the
 /// `test-fixtures` HTTP listener use [`FixedClock`].
 pub trait Clock: Send + Sync + std::fmt::Debug {
-    fn now(&self) -> DateTime<Utc>;
+    fn now(&self) -> OffsetDateTime;
 }
 
 #[derive(Debug, Default)]
 pub struct SystemClock;
 
 impl Clock for SystemClock {
-    fn now(&self) -> DateTime<Utc> {
-        Utc::now()
+    fn now(&self) -> OffsetDateTime {
+        OffsetDateTime::now_utc()
     }
 }
 
@@ -41,26 +53,26 @@ pub struct FixedClock {
 
 impl FixedClock {
     #[must_use]
-    pub fn new(at: DateTime<Utc>) -> Self {
-        Self { micros: Arc::new(AtomicI64::new(at.timestamp_micros())) }
+    pub fn new(at: OffsetDateTime) -> Self {
+        Self { micros: Arc::new(AtomicI64::new(to_micros(at))) }
     }
 
     /// Move the clock to `at`.
-    pub fn set(&self, at: DateTime<Utc>) {
-        self.micros.store(at.timestamp_micros(), Ordering::SeqCst);
+    pub fn set(&self, at: OffsetDateTime) {
+        self.micros.store(to_micros(at), Ordering::SeqCst);
     }
 }
 
 impl Clock for FixedClock {
-    fn now(&self) -> DateTime<Utc> {
+    fn now(&self) -> OffsetDateTime {
         let micros = self.micros.load(Ordering::SeqCst);
-        Utc.timestamp_micros(micros).single().unwrap_or_else(Utc::now)
+        from_micros(micros)
     }
 }
 
 /// Real-time clock with a settable forward/backward offset.
 ///
-/// `now() = Utc::now() + offset`, where `offset` starts at zero (so the
+/// `now() = OffsetDateTime::now_utc() + offset`, where `offset` starts at zero (so the
 /// clock behaves identically to [`SystemClock`] until something calls
 /// [`set`](Self::set)). Each `set(t)` snapshots the current wall clock and
 /// stores `offset = t - real_now`, so the clock immediately reads `t` and
@@ -74,38 +86,38 @@ impl Clock for FixedClock {
 /// forever).
 #[derive(Debug, Clone)]
 pub struct OffsetClock {
-    /// Microseconds to add to `Utc::now()` to produce the clock's `now`.
+    /// Microseconds to add to `OffsetDateTime::now_utc()` to produce the clock's `now`.
     offset_micros: Arc<AtomicI64>,
 }
 
 impl Default for OffsetClock {
     fn default() -> Self {
-        Self::new(Utc::now())
+        Self::new(OffsetDateTime::now_utc())
     }
 }
 
 impl OffsetClock {
     /// Create a clock whose `now()` is approximately `at` (within the
-    /// time it takes to read `Utc::now()`).
+    /// time it takes to read `OffsetDateTime::now_utc()`).
     #[must_use]
-    pub fn new(at: DateTime<Utc>) -> Self {
-        let offset = at.timestamp_micros().saturating_sub(Utc::now().timestamp_micros());
+    pub fn new(at: OffsetDateTime) -> Self {
+        let offset = to_micros(at).saturating_sub(to_micros(OffsetDateTime::now_utc()));
         Self { offset_micros: Arc::new(AtomicI64::new(offset)) }
     }
 
     /// Move the clock to approximately `at`. The clock then continues
     /// advancing with real wall time from `at`.
-    pub fn set(&self, at: DateTime<Utc>) {
-        let offset = at.timestamp_micros().saturating_sub(Utc::now().timestamp_micros());
+    pub fn set(&self, at: OffsetDateTime) {
+        let offset = to_micros(at).saturating_sub(to_micros(OffsetDateTime::now_utc()));
         self.offset_micros.store(offset, Ordering::SeqCst);
     }
 }
 
 impl Clock for OffsetClock {
-    fn now(&self) -> DateTime<Utc> {
+    fn now(&self) -> OffsetDateTime {
         let offset = self.offset_micros.load(Ordering::SeqCst);
-        let micros = Utc::now().timestamp_micros().saturating_add(offset);
-        Utc.timestamp_micros(micros).single().unwrap_or_else(Utc::now)
+        let micros = to_micros(OffsetDateTime::now_utc()).saturating_add(offset);
+        from_micros(micros)
     }
 }
 
@@ -116,15 +128,15 @@ mod tests {
 
     #[test]
     fn fixed_clock_returns_the_set_instant() {
-        let t = Utc.with_ymd_and_hms(2026, 6, 15, 6, 0, 0).single().unwrap();
+        let t = time::macros::datetime!(2026-06-15 06:00:00 UTC);
         let c = FixedClock::new(t);
         assert_eq!(c.now(), t);
     }
 
     #[test]
     fn fixed_clock_set_moves_now() {
-        let t0 = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).single().unwrap();
-        let t1 = Utc.with_ymd_and_hms(2026, 6, 8, 6, 0, 0).single().unwrap();
+        let t0 = time::macros::datetime!(2026-01-01 00:00:00 UTC);
+        let t1 = time::macros::datetime!(2026-06-08 06:00:00 UTC);
         let c = FixedClock::new(t0);
         c.set(t1);
         assert_eq!(c.now(), t1);
@@ -132,10 +144,10 @@ mod tests {
 
     #[test]
     fn fixed_clock_clones_share_the_same_instant() {
-        let t0 = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).single().unwrap();
+        let t0 = time::macros::datetime!(2026-01-01 00:00:00 UTC);
         let c = FixedClock::new(t0);
         let c2 = c.clone();
-        let t1 = Utc.with_ymd_and_hms(2026, 12, 31, 23, 0, 0).single().unwrap();
+        let t1 = time::macros::datetime!(2026-12-31 23:00:00 UTC);
         c.set(t1);
         // The clone observes the update (shared atomic).
         assert_eq!(c2.now(), t1);
@@ -144,27 +156,30 @@ mod tests {
     #[test]
     fn offset_clock_default_tracks_real_time() {
         // No `set(...)` call → offset = 0 → behaves like `SystemClock`.
-        // Allow a small tolerance for the time between `Utc::now()` reads.
+        // Allow a small tolerance for the time between `OffsetDateTime::now_utc()` reads.
         let c = OffsetClock::default();
-        let real = Utc::now();
-        let diff = (c.now() - real).num_milliseconds().abs();
-        assert!(diff < 100, "OffsetClock should track Utc::now() within 100 ms; got {diff} ms");
+        let real = OffsetDateTime::now_utc();
+        let diff = (c.now() - real).whole_milliseconds().abs();
+        assert!(
+            diff < 100,
+            "OffsetClock should track OffsetDateTime::now_utc() within 100 ms; got {diff} ms"
+        );
     }
 
     #[test]
     fn offset_clock_set_jumps_then_advances() {
-        let target = Utc.with_ymd_and_hms(2026, 6, 8, 4, 0, 0).single().unwrap();
+        let target = time::macros::datetime!(2026-06-08 04:00:00 UTC);
         let c = OffsetClock::default();
         c.set(target);
         // Immediately after `set`, `now()` is within a few ms of `target`.
-        let drift_a = (c.now() - target).num_milliseconds().abs();
+        let drift_a = (c.now() - target).whole_milliseconds().abs();
         assert!(drift_a < 100, "post-set drift {drift_a} ms exceeds tolerance");
         // After a short real-time sleep, `now()` has advanced by ~the same
         // amount — the clock isn't frozen.
         std::thread::sleep(std::time::Duration::from_millis(50));
         let advanced = c.now() - target;
         assert!(
-            advanced.num_milliseconds() >= 30,
+            advanced.whole_milliseconds() >= 30,
             "OffsetClock did not advance with real time (got {advanced})",
         );
     }

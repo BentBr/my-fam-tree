@@ -14,8 +14,9 @@ use rand::rngs::SysRng;
 )]
 fn main() -> anyhow::Result<()> {
     let kid = env::args().nth(1).unwrap_or_else(|| {
-        let now = chrono::Utc::now();
-        format!("local-{}", now.format("%Y%m%d-%H%M%S"))
+        let now = time::OffsetDateTime::now_utc();
+        let fmt = time::macros::format_description!("[year][month][day]-[hour][minute][second]");
+        format!("local-{}", now.format(fmt).unwrap_or_default())
     });
 
     let signing = SigningKey::generate(&mut UnwrapErr(SysRng));

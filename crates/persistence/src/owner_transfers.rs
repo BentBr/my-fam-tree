@@ -7,11 +7,11 @@
 //! so the API layer can surface it as a `409 Conflict`.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{
     FamilyId, OwnerTransfer, OwnerTransferRepo, OwnerTransferRepoError, TransferSide, UserId,
 };
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -35,7 +35,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         to_user_id: UserId,
         from_token_hash: &[u8],
         to_token_hash: &[u8],
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, OwnerTransferRepoError> {
         let row = sqlx::query!(
             r#"INSERT INTO family_owner_transfers
@@ -67,7 +67,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         &self,
         token_hash: &[u8],
         actor_user_id: UserId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(OwnerTransfer, TransferSide), OwnerTransferRepoError> {
         // First find which side this token belongs to.
         let row = sqlx::query!(
@@ -168,7 +168,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         Ok((updated, side))
     }
 
-    async fn complete(&self, id: Uuid, now: DateTime<Utc>) -> Result<(), OwnerTransferRepoError> {
+    async fn complete(&self, id: Uuid, now: OffsetDateTime) -> Result<(), OwnerTransferRepoError> {
         sqlx::query!(
             "UPDATE family_owner_transfers SET completed_at = $2
              WHERE id = $1 AND completed_at IS NULL AND cancelled_at IS NULL",
@@ -187,7 +187,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
         family_id: FamilyId,
         from_user_id: UserId,
         to_user_id: UserId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(), OwnerTransferRepoError> {
         // Single SQL transaction across THREE writes — without this the
         // API made three separate non-transactional calls and a failure
@@ -256,7 +256,7 @@ impl OwnerTransferRepo for PgOwnerTransferRepo {
     async fn cancel(
         &self,
         family_id: FamilyId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(), OwnerTransferRepoError> {
         sqlx::query!(
             "UPDATE family_owner_transfers SET cancelled_at = $2

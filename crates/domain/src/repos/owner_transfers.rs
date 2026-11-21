@@ -15,7 +15,7 @@
 //! - `find_active` -> read the current pending transfer (if any).
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::{FamilyId, UserId};
@@ -27,11 +27,11 @@ pub struct OwnerTransfer {
     pub family_id: FamilyId,
     pub from_user_id: UserId,
     pub to_user_id: UserId,
-    pub from_confirmed_at: Option<DateTime<Utc>>,
-    pub to_confirmed_at: Option<DateTime<Utc>>,
-    pub expires_at: DateTime<Utc>,
-    pub completed_at: Option<DateTime<Utc>>,
-    pub cancelled_at: Option<DateTime<Utc>>,
+    pub from_confirmed_at: Option<OffsetDateTime>,
+    pub to_confirmed_at: Option<OffsetDateTime>,
+    pub expires_at: OffsetDateTime,
+    pub completed_at: Option<OffsetDateTime>,
+    pub cancelled_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -80,7 +80,7 @@ pub trait OwnerTransferRepo: Send + Sync {
         to_user_id: UserId,
         from_token_hash: &[u8],
         to_token_hash: &[u8],
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, OwnerTransferRepoError>;
 
     /// Mark one side of a transfer as confirmed.
@@ -98,7 +98,7 @@ pub trait OwnerTransferRepo: Send + Sync {
         &self,
         token_hash: &[u8],
         actor_user_id: UserId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(OwnerTransfer, TransferSide), OwnerTransferRepoError>;
 
     /// Mark a transfer completed; meant to be called by the API after
@@ -110,7 +110,7 @@ pub trait OwnerTransferRepo: Send + Sync {
     /// family with no owner. This raw `complete` exists so admin tooling
     /// can mark an out-of-band swap as done without re-running the role
     /// updates.
-    async fn complete(&self, id: Uuid, now: DateTime<Utc>) -> Result<(), OwnerTransferRepoError>;
+    async fn complete(&self, id: Uuid, now: OffsetDateTime) -> Result<(), OwnerTransferRepoError>;
 
     /// Atomic completion: in a single SQL transaction, demote the
     /// outgoing owner to admin, promote the incoming user to owner, and
@@ -140,14 +140,14 @@ pub trait OwnerTransferRepo: Send + Sync {
         family_id: FamilyId,
         from_user_id: UserId,
         to_user_id: UserId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(), OwnerTransferRepoError>;
 
     /// Cancel the active pending transfer for a family (owner-only).
     async fn cancel(
         &self,
         family_id: FamilyId,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<(), OwnerTransferRepoError>;
 
     /// Read the active transfer for the family, if any.

@@ -3,9 +3,9 @@
 use std::net::IpAddr;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{RefreshRepoError, RefreshTokenRecord, RefreshTokenRepo, UserId};
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -26,11 +26,11 @@ impl PgRefreshTokenRepo {
 struct RefreshTokenRow {
     id: Uuid,
     user_id: Uuid,
-    created_at: DateTime<Utc>,
-    last_used_at: DateTime<Utc>,
-    expires_at: DateTime<Utc>,
-    absolute_expires_at: DateTime<Utc>,
-    revoked_at: Option<DateTime<Utc>>,
+    created_at: OffsetDateTime,
+    last_used_at: OffsetDateTime,
+    expires_at: OffsetDateTime,
+    absolute_expires_at: OffsetDateTime,
+    revoked_at: Option<OffsetDateTime>,
     device_label: Option<String>,
 }
 
@@ -58,8 +58,8 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,
-        rolling_expires_at: DateTime<Utc>,
-        absolute_expires_at: DateTime<Utc>,
+        rolling_expires_at: OffsetDateTime,
+        absolute_expires_at: OffsetDateTime,
     ) -> Result<Uuid, RefreshRepoError> {
         let ip_net = ip.map(sqlx::types::ipnetwork::IpNetwork::from);
         let row = sqlx::query!(
@@ -119,7 +119,7 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         &self,
         old_hash: &[u8],
         new_hash: &[u8],
-        new_rolling_expires_at: DateTime<Utc>,
+        new_rolling_expires_at: OffsetDateTime,
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,

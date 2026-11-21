@@ -6,11 +6,11 @@
 //! commits the status transition.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{
     EmailOutboxId, EmailOutboxInsert, EmailOutboxRepo, EmailOutboxRepoError, EmailOutboxRow,
 };
 use sqlx::PgPool;
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug)]
 pub struct PgEmailOutboxRepo {
@@ -52,7 +52,7 @@ impl EmailOutboxRepo for PgEmailOutboxRepo {
 
     async fn claim_next_due(
         &self,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Option<EmailOutboxRow>, EmailOutboxRepoError> {
         // Single statement: nested SELECT picks the next due row with
         // SKIP LOCKED, then we use its id to lock the outer DELETE-like
@@ -69,7 +69,7 @@ impl EmailOutboxRepo for PgEmailOutboxRepo {
         // UPDATE moves next_attempt_at forward by a short claim window
         // (60 s) and returns the row. The poller has 60s to finish; if it
         // dies, the row becomes claimable again automatically.
-        let claim_horizon = now + chrono::Duration::seconds(60);
+        let claim_horizon = now + time::Duration::seconds(60);
         let row = sqlx::query!(
             "UPDATE email_outbox \
              SET next_attempt_at = $2, updated_at = $1 \
@@ -102,7 +102,7 @@ impl EmailOutboxRepo for PgEmailOutboxRepo {
     async fn mark_sent(
         &self,
         id: EmailOutboxId,
-        sent_at: DateTime<Utc>,
+        sent_at: OffsetDateTime,
     ) -> Result<(), EmailOutboxRepoError> {
         sqlx::query!(
             "UPDATE email_outbox \
@@ -120,7 +120,7 @@ impl EmailOutboxRepo for PgEmailOutboxRepo {
     async fn mark_retry(
         &self,
         id: EmailOutboxId,
-        next_attempt_at: DateTime<Utc>,
+        next_attempt_at: OffsetDateTime,
         last_error: &str,
     ) -> Result<(), EmailOutboxRepoError> {
         sqlx::query!(
