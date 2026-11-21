@@ -80,3 +80,5 @@ compose services fit together.
 - `crate-ops-binaries` — migrator, seeder, openapi binaries and their rdt commands.
 - `frontend-workflow` — Vue/Vuetify, stores, API client, i18n, container-only tooling.
 - `playwright-e2e` — E2E tests and live browser debugging.
+- `/qa` (user-invoked) — scope the change, run targeted gates, read-only review by the
+  `quality-assurance` agent. `/qa delta` checks only what is new since the last push.
