@@ -37,7 +37,6 @@ rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
-sqlx.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
@@ -48,6 +47,9 @@ utoipa-swagger-ui.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+# Integration tests seed and truncate tables directly; src/ has no SQL
+# (arch-tests: only persistence may depend on a DB driver).
+sqlx.workspace = true
 # `actix-http` re-export is needed in integration tests so we can name the
 # `Service<Request, ...>` type returned by `actix_web::test::init_service`
 # inside test-local helper functions. actix-web does not re-export this type.
