@@ -6,3 +6,6 @@ import type { components } from './schema'
  * from the generated schema barrel — see the `no-restricted-imports` rule.
  */
 export type ClaimsPayload = components['schemas']['ConsumeRes']
+
+/** A person row as returned by the persons endpoints (list + get). */
+export type PersonView = components['schemas']['PersonView']

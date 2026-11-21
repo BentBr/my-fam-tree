@@ -15,6 +15,7 @@ EXCLUDES_ARGS=(
   -not -path "*/dist/*"
   -not -path "*/.sqlx/*"
   -not -path "*/.git/*"
+  -not -path "./.claude/worktrees/*"
   -not -path "./fe/src/api/schema.d.ts"
   -not -path "./fe/openapi.json"
 )

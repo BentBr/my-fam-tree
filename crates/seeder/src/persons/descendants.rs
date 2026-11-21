@@ -1,0 +1,214 @@
+//! Seed persons: G3 + G4 of the Müller core, plus the standalone demo couples.
+
+use super::{PersonSeed, ymd};
+use crate::ids::{
+    SEED_BOB_USER_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_HEINZ_ID,
+    SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_MAREN_ID,
+    SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
+    SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
+};
+
+pub(super) const ROWS: [PersonSeed; 14] = [
+    // -------------------------------------------------------------
+    // G3 Müller — Lina, Max, Mia (Klaus + Anna) and Felix (Klaus + Brigitte).
+    // -------------------------------------------------------------
+    PersonSeed {
+        id: SEED_PERSON_FELIX_ID,
+        given: "Felix",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1992, 7, 8),
+        birth_place: "Hamburg",
+        death_date: None,
+        notes: "Klaus + Brigitte's son; half-brother to Lina, Max, Mia. \
+                Step-mother Anna raised him after the 2000 divorce.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_LINA_ID,
+        given: "Lina",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "Lini",
+        gender: "female",
+        birth_date: ymd(1995, 12, 3),
+        birth_place: "Berlin",
+        death_date: None,
+        notes: "G3 — software developer in Berlin; mother of Emma and Noah.",
+        linked_user_id: Some(SEED_BOB_USER_ID),
+    },
+    PersonSeed {
+        id: SEED_PERSON_MAX_ID,
+        given: "Max",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1998, 4, 17),
+        birth_place: "Berlin",
+        death_date: None,
+        notes: "G3 — university student studying chemistry.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_MIA_ID,
+        given: "Mia",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "",
+        gender: "female",
+        birth_date: ymd(2001, 9, 15),
+        birth_place: "Hamburg",
+        death_date: None,
+        notes: "Youngest Klaus + Anna child; high-school graduate.",
+        linked_user_id: None,
+    },
+    // -------------------------------------------------------------
+    // G3 Sabine + Julia's adopted daughter, and Markus's son.
+    // -------------------------------------------------------------
+    PersonSeed {
+        id: SEED_PERSON_LENA_ID,
+        given: "Lena",
+        family: "Weber-Schmidt",
+        name_at_birth: "",
+        nickname: "",
+        gender: "female",
+        birth_date: ymd(2005, 4, 22),
+        birth_place: "Köln",
+        death_date: None,
+        notes: "Adopted by Sabine + Julia in 2007; both parents registered as adoptive.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_TOM_ID,
+        given: "Tom",
+        family: "Bauer",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1996, 6, 30),
+        birth_place: "Stuttgart",
+        death_date: None,
+        notes: "Markus's son; raised by a single parent.",
+        linked_user_id: None,
+    },
+    // -------------------------------------------------------------
+    // G4 — Lina's children (no partnership row, single mother).
+    // -------------------------------------------------------------
+    PersonSeed {
+        id: SEED_PERSON_EMMA_ID,
+        given: "Emma",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "",
+        gender: "female",
+        birth_date: ymd(2020, 5, 10),
+        birth_place: "Berlin",
+        death_date: None,
+        notes: "Lina's daughter; G4.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_NOAH_ID,
+        given: "Noah",
+        family: "Müller",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(2022, 11, 3),
+        birth_place: "Berlin",
+        death_date: None,
+        notes: "Lina's son; G4, born after Emma.",
+        linked_user_id: None,
+    },
+    // -------------------------------------------------------------
+    // Standalone couples — no parents / children in the seeded
+    // family. They exist so the tree canvas has clean isolated
+    // examples of the marriage glyph in both states:
+    //   * Sven + Maren  — active marriage → gold interlocking rings
+    //   * Heinz + Ursula — divorced marriage → greyed rings + line
+    // -------------------------------------------------------------
+    PersonSeed {
+        id: SEED_PERSON_SVEN_ID,
+        given: "Sven",
+        family: "Hoffmann",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1978, 2, 14),
+        birth_place: "Lübeck",
+        death_date: None,
+        notes: "Active-marriage demo couple with Maren (no children in seed).",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_MAREN_ID,
+        given: "Maren",
+        family: "Hoffmann",
+        name_at_birth: "Lindqvist",
+        nickname: "",
+        gender: "female",
+        birth_date: ymd(1980, 6, 5),
+        birth_place: "Kiel",
+        death_date: None,
+        notes: "Married Sven 2007; no children in seed.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_HEINZ_ID,
+        given: "Heinz",
+        family: "Becker",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1965, 10, 12),
+        birth_place: "Dortmund",
+        death_date: None,
+        notes: "Divorced-marriage demo with Ursula; ended 2010.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_URSULA_ID,
+        given: "Ursula",
+        family: "Schwarz",
+        name_at_birth: "Becker",
+        nickname: "Uschi",
+        gender: "female",
+        birth_date: ymd(1968, 3, 28),
+        birth_place: "Essen",
+        death_date: None,
+        notes: "Divorced from Heinz 2010; kept maiden name Schwarz after divorce.",
+        linked_user_id: None,
+    },
+    // Standalone separated-partnership demo: non-marriage, ended.
+    // Shows the greyed-out HEART (not rings) on the canvas — the
+    // counterpart to Heinz + Ursula's greyed-out rings.
+    PersonSeed {
+        id: SEED_PERSON_LARS_ID,
+        given: "Lars",
+        family: "Andersen",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(1982, 9, 4),
+        birth_place: "Flensburg",
+        death_date: None,
+        notes: "Separated-partnership demo with Mette; ended 2018.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_METTE_ID,
+        given: "Mette",
+        family: "Jensen",
+        name_at_birth: "",
+        nickname: "",
+        gender: "female",
+        birth_date: ymd(1984, 1, 19),
+        birth_place: "Aarhus",
+        death_date: None,
+        notes: "Separated from Lars 2018 (non-marriage partnership).",
+        linked_user_id: None,
+    },
+];
