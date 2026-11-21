@@ -18,6 +18,8 @@
     clippy::too_many_lines
 )]
 
+pub mod invites;
+
 use std::sync::Arc;
 use std::time::Duration;
 
