@@ -156,6 +156,16 @@ jobs:
                   echo "Branch name '$BRANCH_NAME' is valid"
 
     # ============================================================================
+    # File size limits - soft 300 / hard 500 lines (see scripts/check-file-size.sh).
+    # Cheap (no toolchain), so it runs on every push and PR.
+    # ============================================================================
+    file-size:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - run: ./scripts/check-file-size.sh
+
+    # ============================================================================
     # Backend prepare - warm cargo caches + cargo-bin tools once. Downstream
     # backend jobs reuse the cargo build cache via swatinem/rust-cache@v2.
     # ============================================================================
@@ -1024,6 +1034,7 @@ jobs:
             - changes
             - branch-name
             - commit-lint
+            - file-size
             - backend-clippy
             - backend-format
             - backend-audit
@@ -1053,6 +1064,7 @@ jobs:
               env:
                   BRANCH_NAME_RESULT: ${{ needs.branch-name.result }}
                   COMMIT_LINT_RESULT: ${{ needs.commit-lint.result }}
+                  FILE_SIZE_RESULT: ${{ needs.file-size.result }}
                   BACKEND_NEEDED: ${{ needs.changes.outputs.backend }}
                   FRONTEND_NEEDED: ${{ needs.changes.outputs.frontend }}
                   BACKEND_CLIPPY: ${{ needs.backend-clippy.result }}
@@ -1082,6 +1094,7 @@ jobs:
                           echo "✓ $name"
                       fi
                   }
+                  require_success file-size "$FILE_SIZE_RESULT"
                   # PR-only gates
                   if [[ "$EVENT_NAME" == "pull_request" ]]; then
                       require_success branch-name "$BRANCH_NAME_RESULT"
