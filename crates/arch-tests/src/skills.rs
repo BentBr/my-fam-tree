@@ -37,16 +37,26 @@ pub fn path_refs(markdown: &str) -> Vec<String> {
         .collect()
 }
 
-/// Violations for referenced paths missing under `root`. `files` are
-/// `(path, markdown)` pairs.
+/// Violations for referenced paths missing under `root`.
+///
+/// `files` are `(path, markdown)` pairs. Paths for which `is_ignored` returns true are
+/// gitignored, generated artifacts (e.g. `fe/src/api/schema.d.ts`) that exist
+/// only after a local build, so they are skipped: a clean checkout and a dev
+/// machine must agree.
 #[must_use]
-pub fn check_refs(root: &Path, files: &[(String, String)]) -> Vec<Violation> {
+pub fn check_refs(
+    root: &Path,
+    files: &[(String, String)],
+    is_ignored: &dyn Fn(&str) -> bool,
+) -> Vec<Violation> {
     files
         .iter()
         .flat_map(|(file, md)| {
-            path_refs(md).into_iter().filter(|p| !root.join(p).exists()).map(move |p| {
-                Violation::new(file.clone(), format!("referenced path `{p}` does not exist"))
-            })
+            path_refs(md).into_iter().filter(|p| !root.join(p).exists() && !is_ignored(p)).map(
+                move |p| {
+                    Violation::new(file.clone(), format!("referenced path `{p}` does not exist"))
+                },
+            )
         })
         .collect()
 }
@@ -88,12 +98,25 @@ mod tests {
     }
 
     #[test]
+    fn ignored_generated_path_is_skipped() {
+        let root = std::env::temp_dir().join(format!("skills-ignored-{}", std::process::id()));
+        drop(std::fs::remove_dir_all(&root));
+        assert!(std::fs::create_dir_all(&root).is_ok(), "mkdir");
+        let files =
+            vec![("s.md".to_owned(), "`fe/src/api/schema.d.ts` `crates/gone.rs`".to_owned())];
+        let v = check_refs(&root, &files, &|p| p.starts_with("fe/src/api/schema"));
+        drop(std::fs::remove_dir_all(&root));
+        assert_eq!(v.len(), 1, "only the non-ignored missing path: {v:?}");
+        assert!(v.iter().all(|x| x.detail.contains("crates/gone.rs")), "{v:?}");
+    }
+
+    #[test]
     fn missing_path_is_violation() {
         let root = std::env::temp_dir().join(format!("skills-refs-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         assert!(std::fs::create_dir_all(root.join("crates/api")).is_ok(), "mkdir");
         let files = vec![("s.md".to_owned(), "`crates/api` `crates/gone/src/x.rs`".to_owned())];
-        let v = check_refs(&root, &files);
+        let v = check_refs(&root, &files, &|_| false);
         let _ = std::fs::remove_dir_all(&root);
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(

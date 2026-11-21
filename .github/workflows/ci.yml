@@ -177,6 +177,18 @@ jobs:
             - uses: actions/checkout@v7
             - run: ./scripts/check-file-size.sh
 
+    # Repo rules (crates/arch-tests). Unfiltered: they read files from every
+    # area (skills, fe/openapi.json, workflows, README), so a frontend-only or
+    # docs-only change must run them too. No services needed.
+    arch-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo test -p my-fam-tree-arch-tests
+
     # ============================================================================
     # Backend prepare - warm cargo caches + cargo-bin tools once. Downstream
     # backend jobs reuse the cargo build cache via swatinem/rust-cache@v2.
@@ -1068,6 +1080,7 @@ jobs:
             - branch-name
             - commit-lint
             - file-size
+            - arch-tests
             - backend-clippy
             - backend-format
             - backend-audit
@@ -1099,6 +1112,7 @@ jobs:
                   BRANCH_NAME_RESULT: ${{ needs.branch-name.result }}
                   COMMIT_LINT_RESULT: ${{ needs.commit-lint.result }}
                   FILE_SIZE_RESULT: ${{ needs.file-size.result }}
+                  ARCH_TESTS_RESULT: ${{ needs.arch-tests.result }}
                   BACKEND_NEEDED: ${{ needs.changes.outputs.backend }}
                   FRONTEND_NEEDED: ${{ needs.changes.outputs.frontend }}
                   BACKEND_CLIPPY: ${{ needs.backend-clippy.result }}
@@ -1129,6 +1143,7 @@ jobs:
                       fi
                   }
                   require_success file-size "$FILE_SIZE_RESULT"
+                  require_success arch-tests "$ARCH_TESTS_RESULT"
                   # PR-only gates
                   if [[ "$EVENT_NAME" == "pull_request" ]]; then
                       require_success branch-name "$BRANCH_NAME_RESULT"

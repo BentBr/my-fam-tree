@@ -33,6 +33,21 @@ fn skill_and_agent_docs() -> Vec<(String, String)> {
         .collect()
 }
 
+/// `git check-ignore` works for paths that do not exist yet.
+fn git_ignored(path: &str) -> bool {
+    std::process::Command::new("git")
+        .args(["check-ignore", "-q", "--", path])
+        .current_dir(repo::root())
+        .status()
+        .is_ok_and(|s| s.success())
+}
+
+#[test]
+fn generated_schema_counts_as_ignored() {
+    assert!(git_ignored("fe/src/api/schema.d.ts"), "generated TS schema is gitignored");
+    assert!(!git_ignored("crates/api/src/lib.rs"), "tracked source is not ignored");
+}
+
 #[test]
 fn real_skills_dir_has_files() {
     let docs = skill_and_agent_docs();
@@ -41,6 +56,6 @@ fn real_skills_dir_has_files() {
 
 #[test]
 fn skill_and_agent_refs_exist() {
-    let violations = check_refs(&repo::root(), &skill_and_agent_docs());
+    let violations = check_refs(&repo::root(), &skill_and_agent_docs(), &git_ignored);
     assert!(violations.is_empty(), "stale paths in skills/agents:\n{}", report(&violations));
 }
