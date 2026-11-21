@@ -26,8 +26,11 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
 
 - **The deny-lint regime is law.** No `unwrap` / `expect` / `panic` / `println!` /
   `eprintln!` / `arr[i]` in non-test code. Use `?` + typed errors, `.get()`,
-  `tracing::*`. **Never** silence a finding with `#[allow(...)]` in source (test
-  modules are the only sanctioned exception). Run `rdt lint` and make it clean.
+  `tracing::*`. `#[allow]` is denied; if a lint genuinely does not fit use
+  `#[expect(lint, reason = "…")]`. Test allowances come from `clippy.toml`. Run
+  `rdt lint` and make it clean.
+- **Repo rules:** `cargo test -p my-fam-tree-arch-tests` must pass — crate boundaries
+  (`crates/arch-tests/src/rules.rs`), SQL only in `persistence`, documented scripts.
 - **SQLx:** `query!` / `query_as!` only. After adding/changing a query, run
   `rdt sqlx-prepare` against a migrated DB and commit the `.sqlx/` diff **in the same
   commit** as the change. Migrations are additive in `migrations/`.
@@ -53,14 +56,15 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
   read-then-write invariants). No partial writes.
 - **Be maximally strict** — typed errors over strings, newtypes over primitives,
   exhaustive matches (no catch-all `_`), validate at the edge, fail loud at startup. The
-  deny-lints are the floor; never `#[allow]` your way past them.
+  deny-lints are the floor; never suppress your way past them.
 
 ## Working loop
 
 1. Read the relevant skill(s); study the existing pattern in that crate before editing.
 2. Write the test first where it applies (TDD), then implement.
-3. Run the targeted tests: `cargo test -p my-fam-tree-<crate> --test <file> -- --nocapture`.
-   Tests needing live infra (e.g. email→Mailpit) run via
+3. Run the targeted tests on the host: `cargo test -p my-fam-tree-<crate> --test <file> -- --nocapture`
+   (host cargo is fine; `SQLX_OFFLINE=true` when no DB is reachable). Only tests that need
+   compose hostnames (e.g. email→Mailpit) run via
    `./scripts/cargo-in-network.sh test -p my-fam-tree-<crate> --test <file>`.
 4. `rdt lint` then `rdt test` (or the relevant subset) before declaring done.
 

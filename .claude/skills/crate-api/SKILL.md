@@ -1,6 +1,8 @@
 ---
 name: crate-api
 description: Use when adding or changing an HTTP endpoint, route, or handler in the my-fam-tree API; touching AppState, build_app, AuthMiddleware, the X-Family-Id flow, the ApiError/ErrorCode/RFC 7807 error model, the ApiResponse/response_body! success envelope, or the utoipa::path/openapi aggregation. Triggers: "add an endpoint", "new route", "ApiError mapping", "openapi", Actix handler work.
+paths:
+  - "crates/api/**"
 ---
 
 # crate-api (`my-fam-tree-api`, `my_fam_tree_api`)
@@ -26,6 +28,9 @@ mechanics.
 | `src/services/` | `auth_service`, `audit`, `relationships_tree`, `upcoming` — orchestration between repos and thin handlers. |
 | `src/validation/` | request validation (`looks_like_email`, `email_invalid`, `string_too_long`, …) incl. `relationships`. |
 | `src/openapi_doc.rs` | `ApiDoc` aggregating every `utoipa::path` + schema. |
+
+List every route (method, path, operationId) from the generated spec:
+`.claude/skills/crate-api/scripts/routes.sh` — no hand-kept route table to drift.
 
 ## AppState (the DI container)
 

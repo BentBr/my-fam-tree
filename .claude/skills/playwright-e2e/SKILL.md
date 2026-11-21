@@ -1,6 +1,8 @@
 ---
 name: playwright-e2e
 description: Use when writing, running, or debugging Playwright end-to-end tests in fe/e2e, or when reproducing/inspecting a frontend bug in a real browser. Covers the dedicated playwright compose service, the magic-link/Mailpit + console-error + link-rewrite fixtures, global Redis-flush/DB-truncate setup, data-testid selectors, traces/reports, and live browser debugging via the Playwright MCP. Load for E2E flakiness, "test can't reach the app", or full-stack flow tests.
+paths:
+  - "fe/e2e/**"
 ---
 
 # Playwright E2E + live browser debugging

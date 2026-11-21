@@ -1,6 +1,8 @@
 ---
 name: crate-config
 description: Use when reading or changing how my-fam-tree loads runtime configuration — the centralised my-fam-tree-config crate that backs ApiConfig and WorkerConfig. Triggers — adding a new env var; renaming/removing one; tweaking validation (JWT kid, production cookie flags, storage driver); wiring a new field into AppState or WorkerState; debugging "missing/invalid env var" errors. Keywords — figment, Env::raw, ApiConfig, WorkerConfig, FlatApiConfig, FlatWorkerConfig, load_flat, ConfigError, AppEnv, LogFormat, StorageDriver, from_env, validate.
+paths:
+  - "crates/config/**"
 ---
 
 # crate-config — single source of truth for env-derived config

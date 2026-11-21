@@ -1,6 +1,8 @@
 ---
 name: crate-persistence
 description: Use when editing or adding a SQLx repo impl in crates/persistence (package my-fam-tree-persistence, crate my_fam_tree_persistence) — implementing crate-domain repo traits against Postgres, writing PgUserRepo-style structs, query_as!/query! with FromRow Row structs and column aliases, mapping sqlx errors to FooRepoError, Database::connect/PgPool wiring, or the SERIALIZABLE cycle-check on parent_links.
+paths:
+  - "crates/persistence/**"
 ---
 
 # crate-persistence (my-fam-tree-persistence)
@@ -29,6 +31,7 @@ types/traits and invariants see `project-concepts`; for the deny-lint regime, th
 | `person_contacts.rs` `person_favourites.rs` | | per-person rows. |
 | `owner_transfers.rs` `reminder_prefs.rs` `reminder_digests.rs` `audit_log.rs` | | `PgReminderPrefsRepo.get` returns defaults when absent; `upsert` is `ON CONFLICT (user_id) DO UPDATE`. |
 | `counts.rs` | `Table`, `count_rows()` | free fn for tests/seeder; returns `sqlx::Error`. |
+| `seed/` (feature `seed`) | `SeedDb`, `SeedError`, row structs | the dev/CI seeder's statements; only `crates/seeder` enables the feature. |
 
 ## Patterns when editing a repo
 

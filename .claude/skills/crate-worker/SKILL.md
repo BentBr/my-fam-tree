@@ -1,6 +1,8 @@
 ---
 name: crate-worker
 description: Use when working in the worker crate (package my-fam-tree-worker, crate my_fam_tree_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
+paths:
+  - "crates/worker/**"
 ---
 
 # crate-worker

@@ -1,6 +1,9 @@
 ---
 name: frontend-workflow
 description: Use when working in fe/ — building or debugging Vue 3 / Vuetify components, views, Pinia stores, the openapi-fetch API client, TanStack Query hooks, i18n, or Vitest component tests; or when pnpm/lint/typecheck/codegen behave oddly. Covers the container-only tooling rule (never run pnpm/node on the host) and the strict-TS regime. Load before editing anything under fe/src.
+paths:
+  - "fe/src/**"
+  - "fe/eslint.config.js"
 ---
 
 # Frontend Workflow (Vue 3 + Vuetify + strict TS)

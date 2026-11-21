@@ -1,6 +1,10 @@
 ---
 name: rust-foundations
 description: Use when writing, building, testing, or debugging any Rust crate in my-fam-tree — covers the strict clippy/deny-lint regime (no unwrap/expect/panic/print/indexing), SQLx offline cache + cargo sqlx prepare, the testcontainers integration harness and scripts/cargo-in-network.sh, ApiError/Result conventions, newtype IDs, tracing/logs, and lockfile discipline. Load before touching code under crates/.
+paths:
+  - "crates/**"
+  - "Cargo.toml"
+  - "clippy.toml"
 ---
 
 # Rust Foundations (my-fam-tree workspace)
@@ -23,12 +27,22 @@ root `Cargo.toml` are not advisory:
 **Rules that follow from this:**
 - No `unwrap` / `expect` / `panic` / `println!` / `eprintln!` / `arr[i]` in non-test
   code. Use `?` + typed errors, `.get(i)`, `tracing::*` macros.
-- **Do NOT silence with `#[allow(...)]` in source.** Fix the finding. (`#[cfg(test)]`
-  modules and `tests/` files may `#![allow(clippy::unwrap_used, ...)]` — that's the
-  only sanctioned place.) If a lint is genuinely wrong, it goes in `Cargo.toml` with a
-  rationale, never scattered inline.
+- **Fix the finding.** `#[allow]` is denied (`allow_attributes`). When a lint genuinely
+  does not fit, use `#[expect(lint, reason = "…")]` — it errors once it stops firing, so
+  suppressions cannot go stale. Structural causes get one module-level `#![expect]`
+  (actix handler modules: `future_not_send`, `unreachable_pub`).
+- Tests may unwrap / expect / index / panic / print without attributes: `clippy.toml`
+  sets the `allow-*-in-tests` options (covers `#[test]` fns and `#[cfg(test)]` modules;
+  shared helpers in `tests/common` still need a module-level `#![expect]`).
+- Also denied: `arithmetic_side_effects` (use `saturating_*` / `checked_*`),
+  `str_to_string` (`to_owned`), `clone_on_ref_ptr` (`Arc::clone(&x)`),
+  `let_underscore_drop` (`drop(x)` or handle the error), `unused_qualifications`.
 - Run the exact CI lint: **`rdt lint`** (or directly
   `cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings -D clippy::pedantic -D clippy::nursery`).
+- **Repo rules** run as tests in `crates/arch-tests` (`cargo test -p my-fam-tree-arch-tests`):
+  crate dependency matrix (`src/rules.rs`), SQL only in `persistence`, cargo `-p` names,
+  workflow timeouts, README coverage of scripts + rdt commands, paths quoted in skills.
+  A failure names the file and rule — fix the code, or change the rule deliberately.
 - File size: non-test files **soft 300 / hard 500** lines (the `#[cfg(test)] mod`
   block is stripped before counting `.rs`); dedicated test files hard 500. Enforced by
   `scripts/check-file-size.sh` inside `rdt lint`.
