@@ -22,8 +22,8 @@
 //! Rows are hardcoded with deterministic UUIDs so the seed is
 //! idempotent — re-running upserts the same rows.
 
+use my_fam_tree_persistence::seed::{ContactRow, SeedDb};
 use serde_json::{Value, json};
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::ids::{SEED_PERSON_ANNA_ID, SEED_PERSON_HANNELORE_ID, SEED_PERSON_KLAUS_ID};
@@ -49,7 +49,7 @@ pub const SEED_CONTACT_COUNT: usize = 9;
 /// # Errors
 /// Propagates any Postgres error from the upsert statements.
 #[allow(clippy::too_many_lines, reason = "static table of 9 contacts; splitting hurts readability")]
-pub async fn seed_contacts(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn seed_contacts(db: &SeedDb<'_>) -> anyhow::Result<()> {
     let rows: [ContactSeed; SEED_CONTACT_COUNT] = [
         // Klaus — Work email (admins_only) + Private email (family).
         ContactSeed {
@@ -141,23 +141,14 @@ pub async fn seed_contacts(pool: &PgPool) -> anyhow::Result<()> {
     ];
 
     for c in rows {
-        sqlx::query(
-            "INSERT INTO person_contacts (id, person_id, kind, label, value, visibility) \
-             VALUES ($1, $2, ($3::text)::contact_kind, $4, $5, ($6::text)::contact_visibility) \
-             ON CONFLICT (id) DO UPDATE SET \
-                 person_id = EXCLUDED.person_id, \
-                 kind = EXCLUDED.kind, \
-                 label = EXCLUDED.label, \
-                 value = EXCLUDED.value, \
-                 visibility = EXCLUDED.visibility",
-        )
-        .bind(c.id)
-        .bind(c.person_id)
-        .bind(c.kind)
-        .bind(c.label)
-        .bind(&c.value)
-        .bind(c.visibility)
-        .execute(pool)
+        db.upsert_contact(&ContactRow {
+            id: c.id,
+            person_id: c.person_id,
+            kind: c.kind,
+            label: c.label,
+            value: &c.value,
+            visibility: c.visibility,
+        })
         .await?;
     }
     Ok(())

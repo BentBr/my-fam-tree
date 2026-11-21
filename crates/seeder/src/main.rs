@@ -7,6 +7,7 @@ use std::time::Duration;
 use anyhow::Context;
 use my_fam_tree_api::{Config, init_tracing};
 use my_fam_tree_persistence::Database;
+use my_fam_tree_persistence::seed::SeedDb;
 use my_fam_tree_seeder::run_seed;
 
 #[allow(
@@ -34,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
     .await
     .context("connect postgres pool")?;
 
-    let report = run_seed(db.pool(), &cfg).await.context("run seed")?;
+    let report = run_seed(&SeedDb::new(&db), &cfg).await.context("run seed")?;
 
     println!("seeded {} users, {} persons", report.users_upserted, report.persons_upserted);
     for (email, url) in &report.magic_links {

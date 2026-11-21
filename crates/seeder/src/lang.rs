@@ -16,7 +16,7 @@
 //! Sigrun co-parents with two different partners (Reto, Detlef) without
 //! any partnership row — the missing-edge layout repro.
 
-use sqlx::PgPool;
+use my_fam_tree_persistence::seed::SeedDb;
 use uuid::Uuid;
 
 use crate::ids::SEED_FAMILY_LANG_ID;
@@ -33,10 +33,9 @@ const P_SVEA: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0607);
 const P_LINA_JO: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0608);
 
 /// Number of persons this family seeds (summed into the seed report).
-pub(crate) const PERSON_COUNT: usize = 8;
+pub const PERSON_COUNT: usize = 8;
 /// Number of parent-link rows this family seeds (row-count assert only).
-#[cfg(test)]
-pub(crate) const PARENT_LINK_COUNT: i64 = 7;
+pub const PARENT_LINK_COUNT: i64 = 7;
 
 #[allow(clippy::too_many_lines, reason = "static fixture table; splitting hurts readability")]
 const fn persons() -> [PersonSeed; PERSON_COUNT] {
@@ -168,15 +167,15 @@ fn parent_links() -> Vec<ParentLinkSeed> {
 ///
 /// # Errors
 /// Propagates any Postgres error from the upserts.
-pub async fn seed(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn seed(db: &SeedDb<'_>) -> anyhow::Result<()> {
     let rows = persons();
     let keep: Vec<Uuid> = rows.iter().map(|p| p.id).collect();
-    delete_non_seed_persons(pool, SEED_FAMILY_LANG_ID, &keep).await?;
+    delete_non_seed_persons(db, SEED_FAMILY_LANG_ID, &keep).await?;
     for p in &rows {
-        upsert_person(pool, SEED_FAMILY_LANG_ID, p).await?;
+        upsert_person(db, SEED_FAMILY_LANG_ID, p).await?;
     }
     for r in &parent_links() {
-        upsert_parent_link(pool, r).await?;
+        upsert_parent_link(db, r).await?;
     }
     Ok(())
 }

@@ -20,6 +20,8 @@ pub mod pool;
 pub mod refresh_tokens;
 pub mod reminder_digests;
 pub mod reminder_prefs;
+#[cfg(feature = "seed")]
+pub mod seed;
 pub mod time_zones;
 pub mod users;
 
