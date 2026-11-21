@@ -109,8 +109,7 @@ type MetaTag = { name: string; content: string } | { property: string; content: 
 // unhead's `ResolvableLink` is a discriminated union: the `rel: "alternate"`
 // arm REQUIRES a `type`. Literal rel + explicit type keep us assignable.
 type LinkTag =
-    | { rel: 'canonical'; href: string }
-    | { rel: 'alternate'; href: string; hreflang: string; type: 'text/html' }
+    { rel: 'canonical'; href: string } | { rel: 'alternate'; href: string; hreflang: string; type: 'text/html' }
 
 /**
  * Wire the document head for the active page. Accepts a (possibly

@@ -54,8 +54,7 @@ const stubs = {
     'v-card': { template: '<div class="card"><slot /></div>' },
     'v-table': { template: '<table :data-testid="$attrs[\'data-testid\']"><slot /></table>' },
     'v-pagination': {
-        template:
-            '<nav :data-testid="$attrs[\'data-testid\']" :data-length="length" :data-page="modelValue" />',
+        template: '<nav :data-testid="$attrs[\'data-testid\']" :data-length="length" :data-page="modelValue" />',
         props: ['modelValue', 'length'],
     },
     // Lightweight stand-ins for v-text-field / v-select that mirror v-model

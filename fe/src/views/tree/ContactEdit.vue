@@ -177,12 +177,7 @@ function submit(): void {
             </label>
             <label class="ds-form-row">
                 <span class="ds-form-label">{{ t('contact.address.zip') }}</span>
-                <input
-                    v-model="form.address.zip"
-                    class="ds-form-input"
-                    type="text"
-                    data-testid="contact-address-zip"
-                />
+                <input v-model="form.address.zip" class="ds-form-input" type="text" data-testid="contact-address-zip" />
             </label>
             <label class="ds-form-row">
                 <span class="ds-form-label">{{ t('contact.address.city') }}</span>
@@ -205,13 +200,7 @@ function submit(): void {
         </template>
         <label v-else class="ds-form-row">
             <span class="ds-form-label">{{ t('contact.value') }}</span>
-            <input
-                v-model="form.textValue"
-                class="ds-form-input"
-                type="text"
-                required
-                data-testid="contact-value"
-            />
+            <input v-model="form.textValue" class="ds-form-input" type="text" required data-testid="contact-value" />
         </label>
         <label class="ds-form-row">
             <span class="ds-form-label">{{ t('contact.visibility') }}</span>

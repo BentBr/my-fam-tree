@@ -41,8 +41,7 @@ const stubs = {
         template: '<table :data-testid="$attrs[\'data-testid\']"><slot /></table>',
     },
     'v-dialog': {
-        template:
-            '<div v-if="modelValue" class="dialog" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
+        template: '<div v-if="modelValue" class="dialog" :data-testid="$attrs[\'data-testid\']"><slot /></div>',
         props: ['modelValue'],
     },
     'v-btn': {
@@ -105,10 +104,7 @@ describe('AdminInvites', () => {
     })
 
     it('renders an invite row per row in the data + cancel buttons per row', async () => {
-        invitesData.value = [
-            row({ id: 'a' }),
-            row({ id: 'b', email: 'b@x.com', role: 'admin' }),
-        ]
+        invitesData.value = [row({ id: 'a' }), row({ id: 'b', email: 'b@x.com', role: 'admin' })]
         const w = await mountView()
         expect(w.find('[data-testid="admin-invites-row-a"]').exists()).toBe(true)
         expect(w.find('[data-testid="admin-invites-row-b"]').exists()).toBe(true)
@@ -117,10 +113,7 @@ describe('AdminInvites', () => {
     })
 
     it('renders a person-link for invites that carry a person_id; em-dash otherwise', async () => {
-        invitesData.value = [
-            row({ id: 'with', person_id: 'person-uuid' }),
-            row({ id: 'without', person_id: null }),
-        ]
+        invitesData.value = [row({ id: 'with', person_id: 'person-uuid' }), row({ id: 'without', person_id: null })]
         const w = await mountView()
         expect(w.find('[data-testid="admin-invites-person-with"]').exists()).toBe(true)
         expect(w.find('[data-testid="admin-invites-person-without"]').exists()).toBe(false)

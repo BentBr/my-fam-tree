@@ -88,10 +88,7 @@ const placeholder = computed(() => t('family.switcher.placeholder'))
 // `exactOptionalPropertyTypes` is on). Build a plain bag of bindings
 // per item that only includes optional fields when they're actually
 // strings — then pass the bag via v-bind.
-function bindingsFor(it: { value: string; title: string; props?: Record<string, unknown> }): Record<
-    string,
-    unknown
-> {
+function bindingsFor(it: { value: string; title: string; props?: Record<string, unknown> }): Record<string, unknown> {
     const bag: Record<string, unknown> = {
         active: it.value === family.activeFamilyId,
         title: it.title,

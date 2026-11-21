@@ -125,12 +125,7 @@ function fullName(p: { given_name: string; family_name: string }): string {
                         >
                             {{ t('common.save') }}
                         </v-btn>
-                        <v-btn
-                            variant="text"
-                            size="small"
-                            data-testid="admin-family-name-cancel"
-                            @click="cancelEdit"
-                        >
+                        <v-btn variant="text" size="small" data-testid="admin-family-name-cancel" @click="cancelEdit">
                             {{ t('common.cancel') }}
                         </v-btn>
                     </div>
@@ -174,10 +169,7 @@ function fullName(p: { given_name: string; family_name: string }): string {
             <v-card variant="outlined" data-testid="admin-family-latest">
                 <v-card-title>{{ t('admin.family.latestTitle') }}</v-card-title>
                 <v-list density="compact">
-                    <v-list-item
-                        v-if="family.latest_persons.length === 0"
-                        data-testid="admin-family-latest-empty"
-                    >
+                    <v-list-item v-if="family.latest_persons.length === 0" data-testid="admin-family-latest-empty">
                         {{ t('admin.family.latestEmpty') }}
                     </v-list-item>
                     <v-list-item

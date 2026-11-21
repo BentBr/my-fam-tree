@@ -100,9 +100,7 @@ export function useRenameFamily() {
             // refetch lands. The BE doesn't reissue the JWT on rename (the
             // name isn't in the access token), so this is the only update
             // path for the in-memory store.
-            const families = auth.families.map((f) =>
-                f.id === vars.id ? { ...f, name: vars.name } : f,
-            )
+            const families = auth.families.map((f) => (f.id === vars.id ? { ...f, name: vars.name } : f))
             auth.applyClaimsPayload({
                 user_id: auth.user?.id ?? '',
                 email: auth.user?.email ?? '',
