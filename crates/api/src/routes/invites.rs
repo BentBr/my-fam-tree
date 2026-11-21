@@ -15,6 +15,15 @@
 //! place; `families.rs` only owns the `POST` half because the existing
 //! `families::invite` handler ships from there.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
 use my_fam_tree_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
 use serde::{Deserialize, Serialize};
@@ -106,8 +115,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/invites/accept")]
 pub async fn accept(
     state: web::Data<AppState>,
@@ -283,8 +290,6 @@ pub async fn accept(
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/{id}/invites")]
 pub async fn list_invites(
     state: web::Data<AppState>,
@@ -336,8 +341,6 @@ pub async fn list_invites(
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/families/{id}/invites/{invite_id}")]
 pub async fn cancel_invite(
     state: web::Data<AppState>,
@@ -372,7 +375,6 @@ pub async fn cancel_invite(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

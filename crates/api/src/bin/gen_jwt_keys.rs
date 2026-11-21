@@ -8,7 +8,7 @@ use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use rand::rand_core::UnwrapErr;
 use rand::rngs::SysRng;
 
-#[allow(
+#[expect(
     clippy::print_stdout,
     reason = "this binary's sole purpose is to print key material and env lines to stdout"
 )]

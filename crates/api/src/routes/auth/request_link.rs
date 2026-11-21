@@ -1,5 +1,14 @@
 //! `POST /auth/magic-link` — issue + email a single-use sign-in link.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use std::time::Duration as StdDuration;
 
 use actix_web::{HttpRequest, post, web};
@@ -26,8 +35,6 @@ use crate::{ApiError, ApiResponse, AppState};
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/magic-link")]
 pub async fn magic_link(
     state: web::Data<AppState>,

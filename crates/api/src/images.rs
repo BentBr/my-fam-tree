@@ -170,7 +170,6 @@ fn extract_extension(filename: &str) -> Option<&str> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

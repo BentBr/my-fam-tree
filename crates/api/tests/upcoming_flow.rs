@@ -5,16 +5,12 @@
 //! then exercises the filter / sort / limit behaviour against the
 //! real Postgres + Redis stack via testcontainers.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -26,7 +22,10 @@ use my_fam_tree_api::build_app;
 use time::OffsetDateTime;
 
 /// Helper: POST a person with optional birth/death dates and return the new id.
-#[allow(clippy::future_not_send, clippy::too_many_arguments)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread; test helper mirrors the full request shape"
+)]
 async fn create_person<S, B>(
     app: &S,
     access: &str,
@@ -66,7 +65,10 @@ where
     body["data"]["id"].as_str().expect("person id").to_string()
 }
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_partnership<S, B>(
     app: &S,
     access: &str,
@@ -111,7 +113,7 @@ where
 /// All three filter modes share the same seed so we only build the
 /// graph once. Open partnership ⇒ `wedding_anniversary`; ended
 /// partnership ⇒ no event. Death-this-year is suppressed.
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "single end-to-end scenario covering all three filter modes"
 )]

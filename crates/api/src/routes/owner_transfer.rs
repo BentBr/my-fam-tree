@@ -22,6 +22,15 @@
 //! `complete`, `cancel`. See `plan-corrections.md` §9 for the slug
 //! convention.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, delete, get, post, web};
 use my_fam_tree_domain::{FamilyId, MembershipRepoError, OwnerTransferRepoError, Role, UserId};
 use my_fam_tree_email::{
@@ -77,7 +86,10 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 
 /// Render + dispatch both transfer-confirmation emails. Kept as a helper so
 /// the `begin` handler stays under the 100-line clippy budget.
-#[allow(clippy::future_not_send, clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "renders and sends two emails; each argument is a distinct part of the transfer context"
+)]
 async fn send_transfer_emails(
     state: &AppState,
     family_name: &str,
@@ -155,8 +167,6 @@ async fn send_transfer_emails(
     security(("cookie_access" = [])),
     tag = "owner-transfer",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/families/{family_id}/transfer-owner")]
 pub async fn begin(
     state: web::Data<AppState>,
@@ -296,8 +306,6 @@ pub async fn begin(
     security(("cookie_access" = [])),
     tag = "owner-transfer",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/families/{family_id}/transfer-owner/confirm")]
 pub async fn confirm(
     state: web::Data<AppState>,
@@ -407,8 +415,6 @@ pub async fn confirm(
     security(("cookie_access" = [])),
     tag = "owner-transfer",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/families/{family_id}/transfer-owner")]
 pub async fn cancel(
     state: web::Data<AppState>,
@@ -454,8 +460,6 @@ pub async fn cancel(
     security(("cookie_access" = [])),
     tag = "owner-transfer",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/{family_id}/transfer-owner")]
 pub async fn status(
     state: web::Data<AppState>,
@@ -481,7 +485,6 @@ pub async fn status(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

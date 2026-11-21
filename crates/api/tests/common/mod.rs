@@ -6,16 +6,24 @@
 //! compile this module as a standalone binary.
 //!
 //! Each downstream test file pulls a different subset of these helpers,
-//! so `#![allow(dead_code)]` is needed to keep clippy quiet across all
+//! so `#![expect(dead_code, reason = "shared test helpers; not every test binary uses every helper")]` is needed to keep clippy quiet across all
 //! integration crates.
 
-#![allow(dead_code)]
-#![allow(unreachable_pub)]
-#![allow(
+#![expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
+#![expect(dead_code, reason = "shared test helpers; not every test binary uses every helper")]
+#![expect(
+    unreachable_pub,
+    reason = "shared test helpers are pub for the test binaries that include them"
+)]
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    reason = "test code: setup failures abort the test; setup failures abort the test with context; indexes into known fixture/response shapes; long linear set-up reads best in one place"
 )]
 
 pub mod invites;
@@ -270,7 +278,6 @@ pub fn extract_token_from_link(body: &str) -> String {
 /// `test::call_service` would panic. We catch the error and rebuild the
 /// `ServiceResponse` via `HttpResponse::from_error`, matching what the actix
 /// server does for a real client.
-#[allow(clippy::future_not_send)]
 pub async fn try_call<S, B>(
     app: &S,
     req: actix_http::Request,
@@ -307,7 +314,6 @@ where
 /// inherits the same constraint — perfectly fine inside `#[tokio::test]`
 /// runners, but clippy's `future_not_send` lint trips because the helper is
 /// `pub`-shaped to the test crate. The lint is irrelevant for test-only code.
-#[allow(clippy::future_not_send)]
 pub async fn sign_in<S, B>(stack: &TestStack, app: &S, email: &str) -> (String, String)
 where
     S: actix_web::dev::Service<
@@ -346,7 +352,6 @@ where
 /// and the response body's `data.family.id` carries the UUID. Test code
 /// then attaches `X-Family-Id` to subsequent requests against the
 /// persons / parent-links / partnerships / relationships scope.
-#[allow(clippy::future_not_send)]
 pub async fn create_family<S, B>(app: &S, access: &str, name: &str) -> (String, String)
 where
     S: actix_web::dev::Service<
@@ -384,7 +389,6 @@ where
 
 /// Sign `email` in (provisions the `users` row) and return its `UserId`. The
 /// session cookies are discarded — callers re-sign-in after memberships exist.
-#[allow(clippy::future_not_send)]
 pub async fn provision_user<S, B>(
     stack: &TestStack,
     app: &S,
@@ -403,7 +407,6 @@ where
 }
 
 /// Insert (or update) a membership row directly via the repo.
-#[allow(clippy::future_not_send)]
 pub async fn ensure_membership(
     state: &my_fam_tree_api::AppState,
     family_id: my_fam_tree_domain::FamilyId,
@@ -429,7 +432,6 @@ pub struct ThreeRoleFamily {
 
 /// Seed a fresh family with an owner, an admin and a user. `stamp` keeps the
 /// emails unique across parallel tests.
-#[allow(clippy::future_not_send)]
 pub async fn seed_three_role_family<S, B>(
     stack: &TestStack,
     app: &S,
@@ -462,7 +464,6 @@ where
 
 /// Sign `email` in and return just the access-cookie value (JWT now carries
 /// the member's current role for the seeded family).
-#[allow(clippy::future_not_send)]
 pub async fn fresh_access<S, B>(stack: &TestStack, app: &S, email: &str) -> String
 where
     S: actix_web::dev::Service<

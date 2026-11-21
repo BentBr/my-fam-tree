@@ -5,16 +5,12 @@
 //! verifying the denormalised `parent_ids` / `partner_ids` adjacency lists
 //! and the `linked_user_id` echo.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -24,7 +20,10 @@ use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(
     app: &S,
     access: &str,

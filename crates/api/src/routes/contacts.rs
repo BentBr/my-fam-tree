@@ -29,6 +29,15 @@
 //! [`crate::services::audit::record`]; failures are swallowed so an
 //! audit hiccup never blocks the request.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, delete, get, patch, post, web};
 use my_fam_tree_domain::{
     ContactDraft, ContactKind, ContactRepoError, ContactVisibility, PersonId, Role,
@@ -203,8 +212,6 @@ fn map_repo_err(e: ContactRepoError, id: Option<Uuid>) -> ApiError {
     security(("cookie_access" = [])),
     tag = "contacts",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/persons/{id}/contacts")]
 pub async fn list_for_person(
     state: web::Data<AppState>,
@@ -247,8 +254,6 @@ pub async fn list_for_person(
     security(("cookie_access" = [])),
     tag = "contacts",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/persons/{id}/contacts")]
 pub async fn create(
     state: web::Data<AppState>,
@@ -306,8 +311,6 @@ pub async fn create(
     security(("cookie_access" = [])),
     tag = "contacts",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/contacts/{id}")]
 pub async fn update(
     state: web::Data<AppState>,
@@ -368,8 +371,6 @@ pub async fn update(
     security(("cookie_access" = [])),
     tag = "contacts",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/contacts/{id}")]
 pub async fn delete(
     state: web::Data<AppState>,

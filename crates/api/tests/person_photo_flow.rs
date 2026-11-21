@@ -13,18 +13,15 @@
 //! - Cross-family IDOR guard: an admin of F1 cannot set a photo on a person
 //!   that lives in F2 (the audit High shape, mirrored on the photo route).
 
-#![allow(
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
     clippy::similar_names,
     clippy::case_sensitive_file_extension_comparisons,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests; access_a/access_b are the natural pair names for the cross-family test"
+    reason = "test code: setup failures abort the test; setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names; fixture names mirror the domain; fixture file names are fixed lowercase"
 )]
 
 mod common;
@@ -65,7 +62,10 @@ fn multipart_body(filename: &str, bytes: &[u8]) -> (String, Vec<u8>) {
     (format!("multipart/form-data; boundary={boundary}"), body)
 }
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(app: &S, access: &str, family_id: &str, given_name: &str) -> String
 where
     S: actix_web::dev::Service<

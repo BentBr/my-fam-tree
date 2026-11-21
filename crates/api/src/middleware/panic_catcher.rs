@@ -69,7 +69,6 @@ where
 // The borrowed `Box` signature is intentional: `catch_unwind` yields
 // `Box<dyn Any + Send>` and we want to inspect it without consuming so the
 // caller keeps ownership for further diagnostics if needed.
-#[allow(clippy::borrowed_box)]
 fn panic_to_string(panic: &Box<dyn std::any::Any + Send>) -> String {
     if let Some(s) = panic.downcast_ref::<&'static str>() {
         return (*s).to_string();
@@ -81,13 +80,6 @@ fn panic_to_string(panic: &Box<dyn std::any::Any + Send>) -> String {
 }
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::future_not_send,
-    clippy::panic,
-    clippy::indexing_slicing
-)]
 mod tests {
     use actix_web::{App, HttpResponse, test, web};
 

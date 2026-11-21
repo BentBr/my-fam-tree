@@ -8,6 +8,15 @@
 //! Both endpoints live under `AuthMiddleware::required`. The worker (Phase 4b)
 //! reads these rows to decide who gets a daily digest and when.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, put, web};
 use my_fam_tree_domain::ReminderPreferences;
 use serde::{Deserialize, Serialize};
@@ -20,7 +29,7 @@ const LEAD_DAYS_MIN: i32 = 0;
 const LEAD_DAYS_MAX: i32 = 21;
 
 /// Wire shape for the caller's reminder settings (request + response).
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "independent user-facing toggles mirroring reminder_preferences, not a state machine"
 )]
@@ -63,8 +72,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     security(("cookie_access" = [])),
     tag = "reminders",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/reminder-preferences")]
 pub async fn get_prefs(
     state: web::Data<AppState>,
@@ -88,8 +95,6 @@ pub async fn get_prefs(
     security(("cookie_access" = [])),
     tag = "reminders",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[put("/reminder-preferences")]
 pub async fn put_prefs(
     state: web::Data<AppState>,

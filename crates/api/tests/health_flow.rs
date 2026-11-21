@@ -4,16 +4,10 @@
 //! the worker leader-lease check (`worker_ok` — false when no worker is
 //! running, which is the expected state under the test harness).
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing integration-test convention"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;

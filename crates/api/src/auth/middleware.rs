@@ -253,7 +253,6 @@ pub async fn require_db_role(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     // Importing `actix_web::test` unqualified shadows the std `#[test]`
     // attribute for the rest of this module; alias it to keep the existing

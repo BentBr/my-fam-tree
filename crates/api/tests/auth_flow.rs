@@ -17,13 +17,10 @@
 //! `Drop` impls trigger the testcontainers reaper. Without that we'd accumulate
 //! orphan Postgres + Redis containers on every run.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;

@@ -37,7 +37,7 @@ use crate::images::MAX_RAW_BYTES;
 /// Returns [`ApiError::ImageInvalid`] when the body has no `file`
 /// field, has more than one, exceeds the size cap, or the multipart
 /// transport itself errors mid-stream.
-#[allow(clippy::future_not_send, reason = "actix Multipart is !Send by design")]
+#[expect(clippy::future_not_send, reason = "actix Multipart is !Send by design")]
 pub async fn read_single_file_field(
     mut payload: Multipart,
 ) -> Result<(Bytes, Option<String>), ApiError> {

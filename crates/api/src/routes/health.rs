@@ -16,6 +16,15 @@
 //! yellow < 200 ms, red ≥ 200 ms); the DB / worker chips also flip
 //! to red when the underlying `_ok` is false.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use std::time::Instant;
 
 use actix_web::{HttpMessage, get, web};
@@ -70,11 +79,9 @@ response_body!(pub HealthResponseBody, Health);
 )]
 // `actix_web::HttpRequest` holds an `Rc`, so the returned future is `!Send`;
 // this is the canonical actix-web handler signature.
-#[allow(clippy::future_not_send)]
 // The `#[get("/health")]` proc-macro replaces this function with a `struct health`
 // that implements `HttpServiceFactory`, which trips `unreachable_pub` on the fn.
 // The `pub` is needed so the `openapi` crate can name it in `paths(...)`.
-#[allow(unreachable_pub)]
 #[get("/health")]
 pub async fn health(
     state: web::Data<AppState>,
@@ -98,7 +105,7 @@ pub async fn health(
     // gauge this is exactly the kind of place floats belong.
     let started_db = Instant::now();
     let db_ok = state.health.ping().await.is_ok();
-    #[allow(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
+    #[expect(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
     let db_latency_ms = started_db.elapsed().as_secs_f64() * 1000.0;
 
     // Worker liveness — does it currently hold the Redis leader lease?
@@ -108,7 +115,7 @@ pub async fn health(
     // Redis itself is the wedge.
     let worker_ok = worker_leader_alive(&state).await;
 
-    #[allow(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
+    #[expect(clippy::float_arithmetic, reason = "latency gauge, see comment above")]
     let server_duration_ms = started_total.elapsed().as_secs_f64() * 1000.0;
 
     let mut resp = ApiResponse::ok(Health {

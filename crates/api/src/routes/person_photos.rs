@@ -26,6 +26,15 @@
 //! the cross-family-IDOR shape the security audit flagged on
 //! `parent_links` can never reproduce here.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use std::time::Duration;
 
 use actix_multipart::Multipart;
@@ -97,8 +106,6 @@ fn image_err_to_api(e: &images::ImageError) -> ApiError {
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/persons/{id}/photo")]
 pub async fn upload(
     state: web::Data<AppState>,
@@ -186,8 +193,6 @@ pub async fn upload(
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/persons/{id}/photo")]
 pub async fn clear(
     state: web::Data<AppState>,

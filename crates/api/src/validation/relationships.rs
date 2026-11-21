@@ -135,7 +135,7 @@ pub fn check_parent_link(
 ///
 /// # Errors
 /// Returns `ApiError::Validation` when a hard rule is violated.
-#[allow(
+#[expect(
     clippy::too_many_arguments,
     clippy::similar_names,
     reason = "validator carries the full candidate row + graph snapshot; partner_a/partner_b are the canonical names for the two halves of the pair"
@@ -219,13 +219,6 @@ fn parents_of(person: PersonId, links: &[ParentLink]) -> HashSet<PersonId> {
 }
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    reason = "test code: assertion helpers may panic on unexpected variants"
-)]
 mod tests {
     use my_fam_tree_domain::{FamilyId, Person, PersonId};
     use time::Date;

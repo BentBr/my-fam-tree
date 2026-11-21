@@ -42,7 +42,7 @@ use crate::{ApiError, AppState, response_body};
 /// `prefix` is namespaced per endpoint (e.g. `"consume:ip"`) so a busy
 /// `/auth/refresh` doesn't eat the `consume` budget. `max_per_hour` is
 /// expected to be generous (~120).
-#[allow(clippy::future_not_send, reason = "actix HttpRequest is !Send by design")]
+#[expect(clippy::future_not_send, reason = "actix HttpRequest is !Send by design")]
 pub(crate) async fn rate_limit_ip(
     state: &web::Data<AppState>,
     req: &HttpRequest,
@@ -132,13 +132,6 @@ const fn build_consume_response(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::future_not_send,
-    clippy::indexing_slicing,
-    clippy::panic
-)]
 mod tests {
     use my_fam_tree_domain::{MagicLinkPurpose, Role};
     use uuid::Uuid;

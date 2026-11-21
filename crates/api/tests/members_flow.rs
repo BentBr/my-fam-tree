@@ -7,16 +7,10 @@
 //! helper so the JWT carries `families` claims that mirror the
 //! database — `require_role` only sees what's in the token.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;

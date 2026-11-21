@@ -186,13 +186,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send
-)]
 mod tests {
     use my_fam_tree_domain::{FamilyId, Role, UserId};
     use uuid::Uuid;

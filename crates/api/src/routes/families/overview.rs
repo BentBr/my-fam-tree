@@ -1,5 +1,14 @@
 //! `GET /admin/family/overview` — aggregated stats for the admin page.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 use my_fam_tree_domain::Role;
 
@@ -22,8 +31,6 @@ use crate::{ApiError, ApiResponse, AppState};
     security(("cookie_access" = [])),
     tag = "families",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/admin/family/overview")]
 pub async fn admin_overview(
     state: web::Data<AppState>,

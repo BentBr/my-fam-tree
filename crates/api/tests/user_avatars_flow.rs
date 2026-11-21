@@ -5,16 +5,11 @@
 //! `linked_user_id = self`, so the test asserts both the avatar fields
 //! AND the linked-person photo propagation; clearing reverses both.
 
-#![allow(
+#![expect(
     clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests"
+    reason = "test code: setup failures abort the test; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -54,7 +49,10 @@ fn multipart_body(filename: &str, bytes: &[u8]) -> (String, Vec<u8>) {
 // Multi-stage flow (upload + propagate + replace + delete + re-check)
 // naturally runs long; splitting it into helpers would scatter the
 // assertions and obscure the round-trip. Localised allow.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear end-to-end scenario reads best as a single test"
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_avatar_sets_url_propagates_to_linked_persons_and_clear_undoes_it() {
     let stack = ephemeral_stack().await;

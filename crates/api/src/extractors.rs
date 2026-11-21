@@ -45,11 +45,9 @@ pub fn path_config() -> web::PathConfig {
 }
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::future_not_send
+#[expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
 )]
 mod tests {
     use actix_web::{App, HttpResponse, test};

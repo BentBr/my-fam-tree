@@ -16,6 +16,15 @@
 //! NOT written to the audit log — a per-user preference is noise in the
 //! family-wide event stream.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, patch, web};
 use my_fam_tree_domain::PersonId;
 use serde::{Deserialize, Serialize};
@@ -57,8 +66,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/persons/{id}/favourite")]
 pub async fn set_favourite(
     state: web::Data<AppState>,

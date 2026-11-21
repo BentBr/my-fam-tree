@@ -7,16 +7,11 @@
 //! directly through `state.audit.record`, then exercise the route via
 //! `test::call_service`.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; test steps rebind the same response/body names"
 )]
 
 mod common;

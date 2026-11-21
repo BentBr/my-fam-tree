@@ -97,7 +97,6 @@ impl JwtIssuer {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
     use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};

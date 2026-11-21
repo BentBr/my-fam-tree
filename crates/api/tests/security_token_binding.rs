@@ -3,17 +3,11 @@
 //! BEFORE consuming the token, and refresh-token reuse revokes every
 //! session. See `security_regressions.rs` for the audit overview.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests"
+    reason = "test code: setup failures abort the test with context; test steps rebind the same response/body names"
 )]
 
 mod common;

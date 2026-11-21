@@ -19,6 +19,15 @@
 //! confirm step additionally cross-checks `record.user_id == claims.user_id`
 //! so a leaked token never lets one user steal another's email.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, patch, post, web};
 use my_fam_tree_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
 use my_fam_tree_email::{Locale as EmailLocale, render_email_change};
@@ -158,8 +167,6 @@ async fn profile_from(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/users/me")]
 pub async fn me(
     state: web::Data<AppState>,
@@ -192,8 +199,6 @@ pub async fn me(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/users/me")]
 pub async fn update(
     state: web::Data<AppState>,
@@ -260,8 +265,6 @@ pub async fn update(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/users/me/email-change")]
 pub async fn email_change_request(
     state: web::Data<AppState>,
@@ -370,8 +373,6 @@ pub async fn email_change_request(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/users/me/email-change/confirm")]
 pub async fn email_change_confirm(
     state: web::Data<AppState>,
@@ -432,13 +433,6 @@ pub async fn email_change_confirm(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send
-)]
 mod tests {
     use super::*;
 

@@ -75,7 +75,10 @@ where
 pub struct RequestIdValue(pub String);
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
 mod tests {
     use actix_web::{App, HttpMessage, HttpRequest, HttpResponse, test, web};
 

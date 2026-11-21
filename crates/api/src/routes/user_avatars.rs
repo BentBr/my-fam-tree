@@ -3,6 +3,15 @@
 //! Mirror of `routes::person_photos` but operating on the calling user
 //! (no IDOR surface, no role check — you can only edit yourself).
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use std::time::Duration;
 
 use actix_multipart::Multipart;
@@ -57,8 +66,6 @@ fn image_err_to_api(e: &images::ImageError) -> ApiError {
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/users/me/avatar")]
 pub async fn upload(
     state: web::Data<AppState>,
@@ -119,8 +126,6 @@ pub async fn upload(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/users/me/avatar")]
 pub async fn clear(
     state: web::Data<AppState>,

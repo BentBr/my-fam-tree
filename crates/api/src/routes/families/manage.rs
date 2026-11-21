@@ -1,6 +1,15 @@
 //! `GET /families/me`, `POST /families`, `PATCH /families/{id}` and
 //! `DELETE /families/{id}`.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
 use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
@@ -30,8 +39,6 @@ use crate::{ApiError, ApiResponse, AppState};
     security(("cookie_access" = [])),
     tag = "families",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/me")]
 pub async fn list_mine(
     state: web::Data<AppState>,
@@ -70,8 +77,6 @@ pub async fn list_mine(
     security(("cookie_access" = [])),
     tag = "families",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/families")]
 pub async fn create(
     state: web::Data<AppState>,
@@ -146,8 +151,6 @@ pub async fn create(
     security(("cookie_access" = [])),
     tag = "families",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/families/{id}")]
 pub async fn rename(
     state: web::Data<AppState>,
@@ -180,8 +183,6 @@ pub async fn rename(
     security(("cookie_access" = [])),
     tag = "families",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/families/{id}")]
 pub async fn delete_family(
     state: web::Data<AppState>,

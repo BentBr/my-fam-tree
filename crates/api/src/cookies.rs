@@ -79,7 +79,6 @@ pub fn revoked<'a>(cfg: &Config, name: &'static str, path: &'static str) -> Cook
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use actix_web::cookie::SameSite;
     use my_fam_tree_config::storage::StorageDriver;

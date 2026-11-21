@@ -5,16 +5,12 @@
 //! Transitively covers `crates/persistence/src/partnerships.rs` against a
 //! real Postgres via testcontainers.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -26,7 +22,10 @@ use my_fam_tree_api::build_app;
 use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(app: &S, access: &str, family_id: &str, given_name: &str) -> String
 where
     S: actix_web::dev::Service<

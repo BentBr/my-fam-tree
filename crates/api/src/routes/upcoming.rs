@@ -8,6 +8,15 @@
 //! in their timezone but not yet in UTC" will simply appear one day
 //! earlier than they otherwise might.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 use serde::Deserialize;
 use time::OffsetDateTime;
@@ -54,8 +63,6 @@ response_body!(pub UpcomingResponseBody, Vec<UpcomingEvent>);
     security(("cookie_access" = [])),
     tag = "upcoming",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/upcoming")]
 pub async fn list(
     state: web::Data<AppState>,

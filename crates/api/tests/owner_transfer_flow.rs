@@ -6,16 +6,12 @@
 //! admin. Each side's `confirm` route advances the state machine; when
 //! BOTH sides have clicked their link, the role swap commits atomically.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
     clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; actix test service futures are !Send and run on the current thread; test steps rebind the same response/body names"
 )]
 
 mod common;

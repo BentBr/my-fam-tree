@@ -5,16 +5,10 @@
 //! gates (admin/owner vs `user` linked to own person vs `user`
 //! against someone else's contact).
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -214,7 +208,10 @@ async fn person_contacts_admins_only_visibility_hidden_from_user_role() {
 // 101-line body sits one above the lint default. The flow reads
 // top-to-bottom and splitting it into helpers would scatter the
 // assertions across the file. Keep it inline.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear end-to-end scenario reads best as a single test"
+)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn person_contacts_user_role_edit_gate() {
     let stack = ephemeral_stack().await;

@@ -222,7 +222,6 @@ pub(super) fn check_link_consent(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic)]
 mod tests {
     use my_fam_tree_domain::UserId;
     use time::Date;

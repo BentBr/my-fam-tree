@@ -437,11 +437,9 @@ impl ResponseError for ApiError {
     }
 }
 
-#[allow(clippy::result_large_err)]
 pub type ApiResult<T> = Result<crate::ApiResponse<T>, ApiError>;
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use actix_web::body::to_bytes;
 

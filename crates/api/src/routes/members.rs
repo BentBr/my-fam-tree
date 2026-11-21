@@ -13,6 +13,15 @@
 //! the same matrix; the backend is the source of truth and re-validates
 //! every call.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, delete, get, patch, web};
 use my_fam_tree_domain::{FamilyId, MembershipRepoError, Role, UserId};
 use serde::{Deserialize, Serialize};
@@ -72,10 +81,6 @@ fn map_db_err(target: Option<UserId>) -> impl FnOnce(MembershipRepoError) -> Api
 ///
 /// `new_role = None` means "DELETE this membership"; `Some(role)` means
 /// "PATCH to this new role".
-#[allow(
-    clippy::needless_pass_by_value,
-    reason = "matches Role's small Copy-ish API for readability inside the match arms"
-)]
 fn gate_mutation(
     actor_role: Role,
     actor_id: UserId,
@@ -138,8 +143,6 @@ fn gate_mutation(
     security(("cookie_access" = [])),
     tag = "members",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/{family_id}/members")]
 pub async fn list_members(
     state: web::Data<AppState>,
@@ -190,8 +193,6 @@ pub async fn list_members(
     security(("cookie_access" = [])),
     tag = "members",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/families/{family_id}/members/{user_id}")]
 pub async fn set_member_role(
     state: web::Data<AppState>,
@@ -275,8 +276,6 @@ pub async fn set_member_role(
     security(("cookie_access" = [])),
     tag = "members",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/families/{family_id}/members/{user_id}")]
 pub async fn revoke_member(
     state: web::Data<AppState>,
@@ -324,7 +323,6 @@ pub async fn revoke_member(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use uuid::Uuid;
 

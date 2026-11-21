@@ -1,6 +1,15 @@
 //! `POST /auth/consume` and `POST /auth/refresh` — token exchange +
 //! refresh-cookie rotation.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use my_fam_tree_domain::MagicLinkRepoError;
 use time::{Duration, OffsetDateTime};
@@ -25,8 +34,6 @@ use crate::{ApiError, ApiResponse, AppState};
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/consume")]
 pub async fn consume(
     state: web::Data<AppState>,
@@ -105,8 +112,6 @@ pub async fn consume(
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/refresh")]
 pub async fn refresh(
     state: web::Data<AppState>,

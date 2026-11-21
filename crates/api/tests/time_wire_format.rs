@@ -5,16 +5,11 @@
 //! `time::serde::rfc3339`; these tests fail if one regresses, so the FE
 //! contract (`format: date-time` / `format: date` in openapi.json) holds.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: panics are test failures; test steps rebind the same response/body names"
 )]
 
 mod common;

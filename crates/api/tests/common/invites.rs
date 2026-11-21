@@ -9,7 +9,10 @@ use super::{TestStack, create_family, sign_in};
 /// Seed an admin-owned family with one person (Klaus) and return
 /// `(access_cookie, family_uuid_string, klaus_person_id)` for the caller
 /// to drive the invite flow from.
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 pub async fn seed_admin_family_with_person<S, B>(
     stack: &TestStack,
     app: &S,

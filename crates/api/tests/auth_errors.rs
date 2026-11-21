@@ -5,13 +5,10 @@
 //! the error arms of the magic-link, consume, refresh, and logout handlers —
 //! the happy path is covered by `auth_flow.rs`.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;

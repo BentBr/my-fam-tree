@@ -12,6 +12,15 @@
 //! resolved family in sync — a mismatch is a 401, because the only way
 //! to land here with a different `family_id` is a forged URL.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 use my_fam_tree_domain::{AuditFilter, FamilyId, Role, UserId};
 use serde::{Deserialize, Serialize};
@@ -101,8 +110,6 @@ const fn clamp_page_size(requested: u32) -> u32 {
     security(("cookie_access" = [])),
     tag = "audit",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/{family_id}/audit")]
 pub async fn list_audit(
     state: web::Data<AppState>,
