@@ -9,7 +9,8 @@ compose services fit together.
 
 - `rdt` is the task runner — see the README tables for every command and helper script.
   `rdt start` is the documented way to bring the stack up; don't replace it with raw compose.
-- Host `cargo` is fine. Tests that need compose hostnames (postgres/redis/mailpit) run inside
+- Host `cargo` only on machines IT marked as Rust dev machines (org policy); everywhere else
+  Rust runs in Docker. Tests that need compose hostnames (postgres/redis/mailpit) run inside
   the network: `./scripts/cargo-in-network.sh test -p <package> --test <name>`.
 - Host builds without a reachable DB: `SQLX_OFFLINE=true` (CI default; `.sqlx/` is committed).
   Changed a `query!`? Run `rdt sqlx-prepare` and commit `.sqlx/`.

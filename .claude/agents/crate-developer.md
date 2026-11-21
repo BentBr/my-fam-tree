@@ -62,8 +62,9 @@ For process: `superpowers:systematic-debugging` (any bug/test failure, before fi
 
 1. Read the relevant skill(s); study the existing pattern in that crate before editing.
 2. Write the test first where it applies (TDD), then implement.
-3. Run the targeted tests on the host: `cargo test -p my-fam-tree-<crate> --test <file> -- --nocapture`
-   (host cargo is fine; `SQLX_OFFLINE=true` when no DB is reachable). Only tests that need
+3. Run the targeted tests: `cargo test -p my-fam-tree-<crate> --test <file> -- --nocapture`
+   (host cargo only on IT-marked Rust dev machines, otherwise in Docker; `SQLX_OFFLINE=true`
+   when no DB is reachable). Only tests that need
    compose hostnames (e.g. email→Mailpit) run via
    `./scripts/cargo-in-network.sh test -p my-fam-tree-<crate> --test <file>`.
 4. `rdt lint` then `rdt test` (or the relevant subset) before declaring done.
