@@ -74,7 +74,7 @@ pub struct TransferStatus {
     pub from_confirmed: bool,
     pub to_confirmed: bool,
     #[serde(with = "time::serde::rfc3339")]
-    pub expires_at: time::OffsetDateTime,
+    pub expires_at: OffsetDateTime,
 }
 
 response_body!(pub TransferStatusResponseBody, TransferStatus);
@@ -123,7 +123,7 @@ async fn send_transfer_emails(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_FROM.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_FROM.to_owned(),
             to_addr: from_email.to_owned(),
             subject: from_msg.subject,
             text_body: from_msg.text,
@@ -134,7 +134,7 @@ async fn send_transfer_emails(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_TO.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::OWNER_TRANSFER_TO.to_owned(),
             to_addr: to_email.to_owned(),
             subject: to_msg.subject,
             text_body: to_msg.text,
@@ -205,7 +205,7 @@ pub async fn begin(
 
     let (from_token, from_hash) = generate_opaque_token();
     let (to_token, to_hash) = generate_opaque_token();
-    let expires_at = OffsetDateTime::now_utc() + Duration::hours(1);
+    let expires_at = OffsetDateTime::now_utc().saturating_add(Duration::hours(1));
 
     let id = state
         .owner_transfers

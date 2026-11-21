@@ -89,7 +89,7 @@ pub async fn consume(
     let response = build_consume_response(
         user.id.into_uuid(),
         user.email.clone(),
-        user.locale.as_str().to_string(),
+        user.locale.as_str().to_owned(),
         families,
     );
 
@@ -141,7 +141,9 @@ pub async fn refresh(
             .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?
             && rec.revoked_at.is_some()
         {
-            let _ = state.refresh_tokens.revoke_all_for_user(rec.user_id).await;
+            if let Err(e) = state.refresh_tokens.revoke_all_for_user(rec.user_id).await {
+                tracing::warn!(error = %e, "refresh reuse: revoking all user sessions failed");
+            }
             tracing::warn!(
                 user_id = %rec.user_id.into_uuid(),
                 "refresh token reuse detected; revoked all sessions for user"
@@ -170,7 +172,7 @@ pub async fn refresh(
         .rotate(
             &old_hash,
             &new_hash,
-            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds)),
+            now.saturating_add(Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds))),
             record.device_label.as_deref(),
             None,
             None,
@@ -184,7 +186,7 @@ pub async fn refresh(
     let response = build_consume_response(
         user.id.into_uuid(),
         user.email.clone(),
-        user.locale.as_str().to_string(),
+        user.locale.as_str().to_owned(),
         families,
     );
 

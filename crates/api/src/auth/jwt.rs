@@ -59,11 +59,11 @@ impl JwtIssuer {
             iss: self.issuer.clone(),
             aud: self.audience.clone(),
             sub,
-            email: email.to_string(),
-            locale: locale.to_string(),
+            email: email.to_owned(),
+            locale: locale.to_owned(),
             families,
             iat: now,
-            exp: now + self.access_ttl_seconds,
+            exp: now.saturating_add(self.access_ttl_seconds),
             jti: Uuid::new_v4().to_string(),
         };
         let mut header = Header::new(Algorithm::EdDSA);

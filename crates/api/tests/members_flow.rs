@@ -219,5 +219,5 @@ async fn nobody_can_target_self_even_with_owner_role() {
     assert_eq!(still_owner.role, Role::Owner);
 
     // Suppress unused warning for the fields not exercised in this test.
-    let _ = (fam.admin_id, fam.user_email);
+    drop((fam.admin_id, fam.user_email));
 }

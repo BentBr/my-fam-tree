@@ -181,10 +181,10 @@ fn to_view(c: my_fam_tree_domain::Contact) -> ContactView {
     ContactView {
         id: c.id,
         person_id: c.person_id.into_uuid(),
-        kind: c.kind.as_db().to_string(),
+        kind: c.kind.as_db().to_owned(),
         label: c.label,
         value: c.value,
-        visibility: c.visibility.as_db().to_string(),
+        visibility: c.visibility.as_db().to_owned(),
     }
 }
 

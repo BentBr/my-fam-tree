@@ -23,7 +23,7 @@ use uuid::Uuid;
 /// helper used by the invite / owner-transfer flow tests.
 fn token_from_link(body: &str) -> String {
     let after = body.split("token=").nth(1).expect("token= present");
-    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_string()
+    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_owned()
 }
 
 // ---------------------------------------------------------------------------
@@ -118,14 +118,14 @@ async fn owner_transfer_confirm_rejects_wrong_actor_without_burning_side() {
         create_family(&app, &owner_access, &format!("Xfer3-{stamp}")).await;
     let family_id = FamilyId::from_uuid(family_id_str.parse::<Uuid>().unwrap());
 
-    let _ = sign_in(&stack, &app, &admin_email).await;
+    drop(sign_in(&stack, &app, &admin_email).await);
     let admin_id =
         stack.state.users.find_by_email(&admin_email).await.expect("lookup").expect("admin").id;
     stack.state.memberships.insert(family_id, admin_id, Role::Admin).await.expect("admin member");
 
     // Owner begins the transfer (two emails dispatched). The access cookie
     // from `create_family` already carries the owner role.
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let req = test::TestRequest::post()
         .uri(&format!("/api/v1/families/{family_id_str}/transfer-owner"))
         .cookie(Cookie::new("access", owner_access))
@@ -248,7 +248,7 @@ async fn refresh_token_reuse_revokes_all_sessions() {
         .find(|c| c.name() == "refresh")
         .expect("rotated refresh cookie")
         .value()
-        .to_string();
+        .to_owned();
     assert_ne!(refresh_new, refresh_old, "rotation must mint a new token");
 
     // Re-present the OLD (now revoked) token → reuse detected → 401.

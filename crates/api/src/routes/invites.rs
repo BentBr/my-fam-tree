@@ -134,10 +134,10 @@ pub async fn accept(
     // scope: actix's empty-path sibling-scope resolution stops at the
     // first scope and would 404 anonymous callers if the middleware were
     // applied.
-    let existing_claims_email_and_id: Option<(String, my_fam_tree_domain::UserId)> = req
+    let existing_claims_email_and_id: Option<(String, UserId)> = req
         .cookie(ACCESS_COOKIE)
         .and_then(|c| state.jwt_issuer.verify(c.value()).ok())
-        .map(|jwt| (jwt.email.clone(), my_fam_tree_domain::UserId::from_uuid(jwt.sub)));
+        .map(|jwt| (jwt.email.clone(), UserId::from_uuid(jwt.sub)));
 
     let hash = hash_token(body.token.trim());
     let now = OffsetDateTime::now_utc();
@@ -260,7 +260,7 @@ pub async fn accept(
         claims: super::auth::ConsumeRes {
             user_id: user.id.into_uuid(),
             email: user.email.clone(),
-            locale: user.locale.as_str().to_string(),
+            locale: user.locale.as_str().to_owned(),
             families: fams,
         },
     };

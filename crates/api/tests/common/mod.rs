@@ -185,8 +185,10 @@ pub async fn ephemeral_stack() -> TestStack {
         reminder_digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         health: Arc::new(PgHealthRepo::new(pool.clone())),
         audit: Arc::new(PgAuditLogRepo::new(pool)),
-        email: fake_email.clone(),
-        outbox: Arc::new(SyncOutbox(fake_email.clone() as Arc<dyn my_fam_tree_email::EmailSender>)),
+        email: Arc::<FakeEmailSender>::clone(&fake_email),
+        outbox: Arc::new(SyncOutbox(
+            Arc::clone(&fake_email) as Arc<dyn my_fam_tree_email::EmailSender>
+        )),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
@@ -269,7 +271,7 @@ impl my_fam_tree_domain::EmailOutboxRepo for SyncOutbox {
 /// splitting on `token=` is independent of the locale prefix.
 pub fn extract_token_from_link(body: &str) -> String {
     let after = body.split("token=").nth(1).expect("token= present");
-    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_string()
+    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_owned()
 }
 
 /// Call the service tolerantly: middlewares such as `AuthMiddleware::required`
@@ -341,7 +343,7 @@ where
     assert_eq!(res.status(), 200, "consume should succeed for {email}");
     let access = res.response().cookies().find(|c| c.name() == "access").expect("access cookie");
     let refresh = res.response().cookies().find(|c| c.name() == "refresh").expect("refresh cookie");
-    (access.value().to_string(), refresh.value().to_string())
+    (access.value().to_owned(), refresh.value().to_owned())
 }
 
 /// Create a family for the caller (becomes Owner) and return the rotated
@@ -363,7 +365,7 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/families")
-        .cookie(actix_web::cookie::Cookie::new("access", access.to_string()))
+        .cookie(actix_web::cookie::Cookie::new("access", access.to_owned()))
         .set_json(serde_json::json!({ "name": name }))
         .to_request();
     let res = test::call_service(app, req).await;
@@ -374,9 +376,9 @@ where
         .find(|c| c.name() == "access")
         .expect("rotated access cookie")
         .value()
-        .to_string();
+        .to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
+    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_owned();
     (new_access, family_id)
 }
 
@@ -402,13 +404,13 @@ where
         >,
     B: actix_web::body::MessageBody,
 {
-    let _ = sign_in(stack, app, email).await;
+    drop(sign_in(stack, app, email).await);
     stack.state.users.find_by_email(email).await.expect("user lookup").expect("user exists").id
 }
 
 /// Insert (or update) a membership row directly via the repo.
 pub async fn ensure_membership(
-    state: &my_fam_tree_api::AppState,
+    state: &AppState,
     family_id: my_fam_tree_domain::FamilyId,
     user_id: my_fam_tree_domain::UserId,
     role: my_fam_tree_domain::Role,

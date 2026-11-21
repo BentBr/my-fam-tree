@@ -58,7 +58,7 @@ where
         let svc = Rc::clone(&self.service);
         Box::pin(async move {
             let incoming =
-                req.headers().get(&*HEADER).and_then(|v| v.to_str().ok()).map(str::to_string);
+                req.headers().get(&*HEADER).and_then(|v| v.to_str().ok()).map(str::to_owned);
             let id = incoming.unwrap_or_else(|| Uuid::new_v4().to_string());
             tracing::Span::current().record("request_id", tracing::field::display(&id));
             req.extensions_mut().insert(RequestIdValue(id.clone()));
@@ -95,7 +95,7 @@ mod tests {
             test::init_service(App::new().wrap(RequestId).route("/", web::get().to(echo))).await;
         let req = test::TestRequest::default().to_request();
         let res = test::call_service(&app, req).await;
-        let header = res.headers().get(&*HEADER).unwrap().to_str().unwrap().to_string();
+        let header = res.headers().get(&*HEADER).unwrap().to_str().unwrap().to_owned();
         assert_ne!(header, "");
         let body = test::read_body(res).await;
         assert_eq!(std::str::from_utf8(&body).unwrap(), header);

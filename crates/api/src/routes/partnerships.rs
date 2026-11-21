@@ -109,10 +109,10 @@ fn to_view(p: Partnership) -> PartnershipView {
         family_id: p.family_id.into_uuid(),
         partner_a_id: p.partner_a_id.into_uuid(),
         partner_b_id: p.partner_b_id.into_uuid(),
-        kind: kind_to_str(p.kind).to_string(),
+        kind: kind_to_str(p.kind).to_owned(),
         started_on: p.started_on,
         ended_on: p.ended_on,
-        end_reason: p.end_reason.map(|r| end_to_str(r).to_string()),
+        end_reason: p.end_reason.map(|r| end_to_str(r).to_owned()),
         note: p.note,
     }
 }

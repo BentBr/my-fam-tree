@@ -113,11 +113,11 @@ mod tests {
     #[test]
     fn missing_path_is_violation() {
         let root = std::env::temp_dir().join(format!("skills-refs-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
+        drop(std::fs::remove_dir_all(&root));
         assert!(std::fs::create_dir_all(root.join("crates/api")).is_ok(), "mkdir");
         let files = vec![("s.md".to_owned(), "`crates/api` `crates/gone/src/x.rs`".to_owned())];
         let v = check_refs(&root, &files, &|_| false);
-        let _ = std::fs::remove_dir_all(&root);
+        drop(std::fs::remove_dir_all(&root));
         assert_eq!(v.len(), 1, "{v:?}");
         assert!(
             v.iter().all(|x| x.file == "s.md" && x.detail.contains("crates/gone/src/x.rs")),

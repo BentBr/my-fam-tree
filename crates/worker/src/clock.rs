@@ -25,7 +25,7 @@ fn to_micros(t: OffsetDateTime) -> i64 {
 /// Inverse of [`to_micros`]; falls back to the wall clock for an
 /// out-of-range value (never happens for real instants).
 fn from_micros(micros: i64) -> OffsetDateTime {
-    OffsetDateTime::from_unix_timestamp_nanos(i128::from(micros) * 1_000)
+    OffsetDateTime::from_unix_timestamp_nanos(i128::from(micros).saturating_mul(1_000))
         .unwrap_or_else(|_| OffsetDateTime::now_utc())
 }
 

@@ -82,7 +82,7 @@ impl JwtKeyset {
             return Err(anyhow!("JWT_PRIVATE_KEY_ID {active_kid} not present in JWT_PUBLIC_KEYS"));
         }
         Ok(Self {
-            active_kid: active_kid.to_string(),
+            active_kid: active_kid.to_owned(),
             signing_pem,
             signing,
             verifying_pem,

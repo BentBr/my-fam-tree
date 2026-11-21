@@ -64,8 +64,8 @@ impl SmtpSender {
         };
 
         if !url.username().is_empty() {
-            let user = url.username().to_string();
-            let pass = url.password().unwrap_or("").to_string();
+            let user = url.username().to_owned();
+            let pass = url.password().unwrap_or("").to_owned();
             builder = builder.credentials(Credentials::new(user, pass));
         }
 
@@ -73,9 +73,9 @@ impl SmtpSender {
 
         Ok(Self {
             transport,
-            from_address: from_address.to_string(),
-            from_name: from_name.to_string(),
-            reply_to: reply_to.map(str::to_string),
+            from_address: from_address.to_owned(),
+            from_name: from_name.to_owned(),
+            reply_to: reply_to.map(str::to_owned),
         })
     }
 }
@@ -106,7 +106,7 @@ impl EmailSender for SmtpSender {
             // from the inline attachment; text-only clients fall back cleanly.
             let png =
                 ContentType::parse("image/png").map_err(|e| EmailError::Build(e.to_string()))?;
-            let logo = Attachment::new_inline(LOGO_CID.to_string()).body(LOGO_PNG.to_vec(), png);
+            let logo = Attachment::new_inline(LOGO_CID.to_owned()).body(LOGO_PNG.to_vec(), png);
             builder.multipart(
                 MultiPart::alternative()
                     .singlepart(

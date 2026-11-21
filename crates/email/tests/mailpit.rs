@@ -20,7 +20,7 @@ async fn smtp_sender_delivers_to_mailpit() {
         eprintln!("EMAIL_DSN not set; skipping");
         return;
     };
-    let api = std::env::var("MAILPIT_API").unwrap_or_else(|_| "http://localhost:8025".to_string());
+    let api = std::env::var("MAILPIT_API").unwrap_or_else(|_| "http://localhost:8025".to_owned());
 
     // Drain any previous messages so the assertion is deterministic.
     reqwest::Client::new()
@@ -56,7 +56,7 @@ async fn smtp_sender_delivers_to_mailpit() {
         .as_array()
         .unwrap_or(&vec![])
         .iter()
-        .filter_map(|m| m["Subject"].as_str().map(str::to_string))
+        .filter_map(|m| m["Subject"].as_str().map(str::to_owned))
         .collect();
     assert!(subjects.contains(&subject), "subject not found in Mailpit: {subjects:?}");
 }
@@ -71,7 +71,7 @@ async fn smtp_sender_delivers_html_with_inline_logo() {
         eprintln!("EMAIL_DSN not set; skipping");
         return;
     };
-    let api = std::env::var("MAILPIT_API").unwrap_or_else(|_| "http://localhost:8025".to_string());
+    let api = std::env::var("MAILPIT_API").unwrap_or_else(|_| "http://localhost:8025".to_owned());
     let client = reqwest::Client::new();
 
     client.delete(format!("{api}/api/v1/messages")).send().await.expect("delete prior messages");
@@ -103,7 +103,7 @@ async fn smtp_sender_delivers_html_with_inline_logo() {
         .find(|m| m["Subject"].as_str() == Some(subject.as_str()))
         .and_then(|m| m["ID"].as_str())
         .expect("our html message present in Mailpit")
-        .to_string();
+        .to_owned();
 
     let msg: serde_json::Value = client
         .get(format!("{api}/api/v1/message/{id}"))

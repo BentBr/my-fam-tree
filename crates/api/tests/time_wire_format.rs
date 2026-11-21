@@ -30,7 +30,7 @@ fn assert_rfc3339(v: &serde_json::Value, what: &str) -> OffsetDateTime {
 
 /// Within a few minutes of now — catches epoch/offset mix-ups.
 fn assert_recent(t: OffsetDateTime, what: &str) {
-    let age = (OffsetDateTime::now_utc() - t).whole_seconds().abs();
+    let age = OffsetDateTime::now_utc().unix_timestamp().saturating_sub(t.unix_timestamp()).abs();
     assert!(age < 300, "{what} should be ~now, is {t}");
 }
 

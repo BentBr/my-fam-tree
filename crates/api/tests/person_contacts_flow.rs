@@ -37,7 +37,7 @@ async fn person_contacts_every_kind_round_trips() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id = body["data"]["id"].as_str().unwrap().to_string();
+    let person_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // Post each of the five `kind`s. The address row carries the full
     // postal structure that used to live in flat columns; everything
@@ -142,7 +142,7 @@ async fn person_contacts_admins_only_visibility_hidden_from_user_role() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id = body["data"]["id"].as_str().unwrap().to_string();
+    let person_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     for body in [
         serde_json::json!({
@@ -169,7 +169,7 @@ async fn person_contacts_admins_only_visibility_hidden_from_user_role() {
 
     // Add a regular `user`-role member to the family.
     let regular_email = "vis-regular@example.com";
-    let _ = sign_in(&stack, &app, regular_email).await;
+    drop(sign_in(&stack, &app, regular_email).await);
     let user =
         stack.state.users.find_by_email(regular_email).await.expect("lookup").expect("user exists");
     stack
@@ -229,11 +229,11 @@ async fn person_contacts_user_role_edit_gate() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
-    let other_person_id = body["data"]["id"].as_str().unwrap().to_string();
+    let other_person_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // Sign the guest in so the user row exists, then add their membership.
     let guest_email = "edit-guest@example.com";
-    let _ = sign_in(&stack, &app, guest_email).await;
+    drop(sign_in(&stack, &app, guest_email).await);
     let guest_user =
         stack.state.users.find_by_email(guest_email).await.expect("lookup").expect("user");
     stack
@@ -258,7 +258,7 @@ async fn person_contacts_user_role_edit_gate() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
-    let guest_person_id = body["data"]["id"].as_str().unwrap().to_string();
+    let guest_person_id = body["data"]["id"].as_str().unwrap().to_owned();
     stack
         .state
         .persons
@@ -284,7 +284,7 @@ async fn person_contacts_user_role_edit_gate() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let other_contact_id = body["data"]["id"].as_str().unwrap().to_string();
+    let other_contact_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // Guest signs in fresh and exercises the gate.
     let (guest_access, _r) = sign_in(&stack, &app, guest_email).await;
@@ -302,7 +302,7 @@ async fn person_contacts_user_role_edit_gate() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let own_contact_id = body["data"]["id"].as_str().unwrap().to_string();
+    let own_contact_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // OK: guest updates their own contact.
     let req = test::TestRequest::patch()
@@ -357,7 +357,7 @@ async fn person_contacts_email_kind_rejects_malformed_address() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id = body["data"]["id"].as_str().unwrap().to_string();
+    let person_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // Garbage in `value.v` for an email kind ⇒ 422.
     let req = test::TestRequest::post()

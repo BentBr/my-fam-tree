@@ -22,13 +22,13 @@ fn workflow_files(dir: &Path) -> Vec<PathBuf> {
 #[test]
 fn collects_yml_and_yaml() {
     let dir = std::env::temp_dir().join(format!("wf-collect-{}", std::process::id()));
-    let _ = fs::remove_dir_all(&dir);
+    drop(fs::remove_dir_all(&dir));
     assert!(fs::create_dir_all(&dir).is_ok(), "mkdir");
     for name in ["a.yml", "b.yaml", "c.txt"] {
         assert!(fs::write(dir.join(name), "jobs: {}\n").is_ok(), "write {name}");
     }
     let found = workflow_files(&dir);
-    let _ = fs::remove_dir_all(&dir);
+    drop(fs::remove_dir_all(&dir));
     assert_eq!(found.len(), 2, "yml + yaml, not txt: {found:?}");
 }
 

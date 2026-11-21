@@ -26,6 +26,8 @@
 
 mod common;
 
+use std::sync::Arc;
+
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
@@ -77,20 +79,20 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_photo_then_get_returns_presigned_url_then_delete_clears_it() {
     let stack = ephemeral_stack().await;
-    let store = stack.state.object_store.clone();
+    let store = Arc::clone(&stack.state.object_store);
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
     let (access, _r) = sign_in(&stack, &app, "photo-owner@example.com").await;
     let (access, family_id) = create_family(&app, &access, "Photos").await;
@@ -109,7 +111,7 @@ async fn upload_photo_then_get_returns_presigned_url_then_delete_clears_it() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200, "upload should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    let key1 = body["data"]["photo_key"].as_str().expect("photo_key").to_string();
+    let key1 = body["data"]["photo_key"].as_str().expect("photo_key").to_owned();
     let url1 = body["data"]["photo_url"].as_str().expect("photo_url");
     assert!(key1.starts_with(&format!("persons/{person_id}/")), "key shape: got `{key1}`");
     assert!(key1.ends_with(".jpg"), "output extension is always .jpg, got `{key1}`");
@@ -143,7 +145,7 @@ async fn upload_photo_then_get_returns_presigned_url_then_delete_clears_it() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let key2 = body["data"]["photo_key"].as_str().expect("photo_key").to_string();
+    let key2 = body["data"]["photo_key"].as_str().expect("photo_key").to_owned();
     assert_ne!(key1, key2, "replace mints a fresh suffix");
     match store.get(&key1).await {
         Err(my_fam_tree_storage::StorageError::NotFound(_)) => {} // expected
@@ -222,7 +224,7 @@ async fn upload_rejects_extension_mismatch() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_rejects_cross_family_person_id() {
     let stack = ephemeral_stack().await;
-    let store = stack.state.object_store.clone();
+    let store = Arc::clone(&stack.state.object_store);
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
 
     // Family A owns the person; Family B owns the attacker.

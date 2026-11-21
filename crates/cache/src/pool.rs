@@ -48,7 +48,7 @@ impl RedisPool {
     /// [`CacheError::Redis`] if the server rejects the `PING` command.
     pub async fn ping(&self) -> Result<(), CacheError> {
         let mut conn = self.inner.get().await?;
-        let _: String = redis::cmd("PING").query_async(&mut conn).await?;
+        let _pong: String = redis::cmd("PING").query_async(&mut conn).await?;
         Ok(())
     }
 

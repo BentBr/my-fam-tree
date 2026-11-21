@@ -121,8 +121,8 @@ async fn seed_families(db: &SeedDb<'_>) -> anyhow::Result<()> {
     // (id, name). All three created by the admin user.
     let rows: [(Uuid, &str); 3] = [
         (SEED_FAMILY_ID, "Müller"),
-        (ids::SEED_FAMILY_VELLMAR_ID, "Vellmar"),
-        (ids::SEED_FAMILY_LANG_ID, "Lang"),
+        (SEED_FAMILY_VELLMAR_ID, "Vellmar"),
+        (SEED_FAMILY_LANG_ID, "Lang"),
     ];
     for (id, name) in rows {
         db.upsert_family(id, name, SEED_ADMIN_USER_ID).await?;
@@ -135,7 +135,7 @@ async fn seed_memberships(db: &SeedDb<'_>) -> anyhow::Result<()> {
     // trees are switchable in the app. (user_id, role) per family.
     let members: [(Uuid, &str); 3] =
         [(SEED_ADMIN_USER_ID, "owner"), (SEED_ALICE_USER_ID, "admin"), (SEED_BOB_USER_ID, "user")];
-    let families = [SEED_FAMILY_ID, ids::SEED_FAMILY_VELLMAR_ID, ids::SEED_FAMILY_LANG_ID];
+    let families = [SEED_FAMILY_ID, SEED_FAMILY_VELLMAR_ID, SEED_FAMILY_LANG_ID];
     for family_id in families {
         for (user_id, role) in members {
             db.upsert_membership(family_id, user_id, role).await?;
@@ -164,7 +164,7 @@ async fn mint_magic_links(
             cfg.magic_link.ttl_seconds,
         )
         .await?;
-        out.push((email.to_string(), url));
+        out.push((email.to_owned(), url));
     }
     Ok(out)
 }

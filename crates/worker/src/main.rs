@@ -88,7 +88,7 @@ async fn run_leader_loop(
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
     let cfg = WorkerConfig::from_env().context("load worker config")?;
 
@@ -129,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "test-fixtures")]
     let fixed = Arc::new(OffsetClock::default());
     #[cfg(feature = "test-fixtures")]
-    let clock: Arc<dyn Clock> = fixed.clone();
+    let clock: Arc<dyn Clock> = Arc::<OffsetClock>::clone(&fixed);
     #[cfg(not(feature = "test-fixtures"))]
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
 
@@ -175,7 +175,8 @@ async fn main() -> anyhow::Result<()> {
     // jitter margin so a one-cycle blip doesn't flip the probe to red.
     // The refresh interval is the loop's natural cadence; anything past
     // two of those is almost certainly a wedged loop, not just slow.
-    let refresh_ms = i64::try_from(cfg.worker.leader_refresh_seconds * 1000).unwrap_or(i64::MAX);
+    let refresh_ms =
+        i64::try_from(cfg.worker.leader_refresh_seconds.saturating_mul(1000)).unwrap_or(i64::MAX);
     let stale_after_ms = refresh_ms.saturating_mul(2).saturating_add(5_000);
 
     // actix-web's HttpServer future is not Send (Rc internals), so it
@@ -184,7 +185,7 @@ async fn main() -> anyhow::Result<()> {
     // trick the old test-fixtures listener used; now hosts /health
     // unconditionally + /__test/advance-clock when the feature is on.
     let bind = cfg.worker.metrics_bind.clone();
-    let hb_for_http = heartbeat.clone();
+    let hb_for_http = Arc::clone(&heartbeat);
     #[cfg(not(feature = "test-fixtures"))]
     std::thread::spawn(move || {
         actix_web::rt::System::new().block_on(ops_http::serve(hb_for_http, stale_after_ms, bind));
@@ -192,7 +193,7 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "test-fixtures")]
     {
         let s = worker.clone();
-        let fixed_handle = fixed.clone();
+        let fixed_handle = Arc::clone(&fixed);
         let zones: Arc<dyn my_fam_tree_domain::TimeZoneRepo> =
             Arc::new(my_fam_tree_persistence::PgTimeZoneRepo::new(pool.clone()));
         std::thread::spawn(move || {

@@ -77,8 +77,8 @@ pub async fn mint_refresh_token_for(
             None,
             None,
             None,
-            now + Duration::seconds(ttl),
-            now + Duration::seconds(abs),
+            now.saturating_add(Duration::seconds(ttl)),
+            now.saturating_add(Duration::seconds(abs)),
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))
@@ -113,7 +113,7 @@ pub async fn mint_magic_link_url(
             email,
             &hash,
             MagicLinkPurpose::Login,
-            OffsetDateTime::now_utc() + Duration::seconds(ttl),
+            OffsetDateTime::now_utc().saturating_add(Duration::seconds(ttl)),
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))

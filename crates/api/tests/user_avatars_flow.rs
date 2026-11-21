@@ -14,6 +14,8 @@
 
 mod common;
 
+use std::sync::Arc;
+
 use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
@@ -56,7 +58,7 @@ fn multipart_body(filename: &str, bytes: &[u8]) -> (String, Vec<u8>) {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn upload_avatar_sets_url_propagates_to_linked_persons_and_clear_undoes_it() {
     let stack = ephemeral_stack().await;
-    let store = stack.state.object_store.clone();
+    let store = Arc::clone(&stack.state.object_store);
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
     let owner_email = "avatar-owner@example.com";
     let (access, _r) = sign_in(&stack, &app, owner_email).await;
@@ -85,7 +87,7 @@ async fn upload_avatar_sets_url_propagates_to_linked_persons_and_clear_undoes_it
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id_str = body["data"]["id"].as_str().unwrap().to_string();
+    let person_id_str = body["data"]["id"].as_str().unwrap().to_owned();
     let person_id =
         PersonId::from_uuid(uuid::Uuid::parse_str(&person_id_str).expect("person uuid"));
     stack
@@ -107,7 +109,7 @@ async fn upload_avatar_sets_url_propagates_to_linked_persons_and_clear_undoes_it
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200, "upload should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    let avatar_key = body["data"]["avatar_key"].as_str().expect("avatar_key").to_string();
+    let avatar_key = body["data"]["avatar_key"].as_str().expect("avatar_key").to_owned();
     let avatar_url = body["data"]["avatar_url"].as_str().expect("avatar_url");
     assert!(avatar_url.starts_with("http"), "avatar_url is a presigned URL");
     // The key sits under `users/{user_id}/`.
@@ -156,7 +158,7 @@ async fn upload_avatar_sets_url_propagates_to_linked_persons_and_clear_undoes_it
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let new_key = body["data"]["avatar_key"].as_str().unwrap().to_string();
+    let new_key = body["data"]["avatar_key"].as_str().unwrap().to_owned();
     assert_ne!(new_key, avatar_key, "second upload mints a fresh key");
     // Old key cleaned up best-effort; new key stored.
     assert!(store.get(&avatar_key).await.is_err(), "previous key deleted");

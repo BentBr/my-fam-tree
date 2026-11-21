@@ -59,7 +59,7 @@ where
                 Err(panic) => {
                     let detail = panic_to_string(&panic);
                     let err = ApiError::Internal(anyhow::anyhow!("panic: {detail}"));
-                    Err(actix_web::Error::from(err))
+                    Err(Error::from(err))
                 }
             }
         })
@@ -71,12 +71,12 @@ where
 // caller keeps ownership for further diagnostics if needed.
 fn panic_to_string(panic: &Box<dyn std::any::Any + Send>) -> String {
     if let Some(s) = panic.downcast_ref::<&'static str>() {
-        return (*s).to_string();
+        return (*s).to_owned();
     }
     if let Some(s) = panic.downcast_ref::<String>() {
         return s.clone();
     }
-    "<non-string panic payload>".to_string()
+    "<non-string panic payload>".to_owned()
 }
 
 #[cfg(test)]

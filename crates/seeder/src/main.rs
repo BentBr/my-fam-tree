@@ -20,7 +20,7 @@ async fn main() -> anyhow::Result<()> {
         // Optional .env, same handling as the api binary — ignore missing/parse
         // errors here because tracing isn't initialized yet and the workspace
         // forbids println/eprintln outside the seeder's main itself.
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
 
     let cfg = Config::from_env().context("load config from environment")?;

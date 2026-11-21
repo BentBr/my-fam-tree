@@ -192,8 +192,8 @@ async fn schedules_then_sends_digest_and_is_idempotent() {
     let state = build_state(
         &db,
         Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email.clone() as Arc<dyn EmailSender>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&email) as Arc<dyn EmailSender>,
     );
 
     // First tick schedules + enqueues exactly one digest.
@@ -230,7 +230,7 @@ async fn retries_on_smtp_failure() {
     let state = build_state(
         &db,
         Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
         Arc::new(FailingEmail) as Arc<dyn EmailSender>,
     );
 
@@ -257,7 +257,7 @@ async fn no_digest_outside_the_0600_hour() {
     let state = build_state(
         &db,
         Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
         email as Arc<dyn EmailSender>,
     );
 
@@ -278,7 +278,7 @@ async fn disabled_user_is_never_scheduled() {
     let state = build_state(
         &db,
         Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
         email as Arc<dyn EmailSender>,
     );
 
@@ -306,8 +306,8 @@ async fn user_in_another_timezone_fires_at_their_local_0600() {
     let state = build_state(
         &db,
         Arc::new(fixed.clone()) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email.clone() as Arc<dyn EmailSender>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&email) as Arc<dyn EmailSender>,
     );
 
     // 06:00 Berlin is 00:00 in New York — not their hour.
@@ -337,7 +337,7 @@ async fn unknown_timezone_falls_back_to_berlin() {
     let state = build_state(
         &db,
         Arc::new(berlin_0600_june_8()) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
+        Arc::clone(&queue) as Arc<dyn ReminderJobQueue>,
         Arc::new(FakeEmailSender::new()) as Arc<dyn EmailSender>,
     );
 

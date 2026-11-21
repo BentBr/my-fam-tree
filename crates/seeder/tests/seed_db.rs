@@ -124,7 +124,7 @@ async fn start_pg() -> Harness {
 
 // Counting rows goes through `persistence::counts::count_rows` so
 // raw SQL stays inside the persistence crate (architectural rule).
-async fn count(pool: &sqlx::PgPool, table: my_fam_tree_persistence::counts::Table) -> i64 {
+async fn count(pool: &sqlx::PgPool, table: Table) -> i64 {
     my_fam_tree_persistence::counts::count_rows(pool, table).await.expect("count")
 }
 
@@ -156,7 +156,7 @@ async fn seed_against_empty_db_inserts_expected_row_counts() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn seed_is_idempotent_on_row_counts() {
     let h = start_pg().await;
-    let _ = run_seed(&SeedDb::new(&h.db), &h.cfg).await.expect("first seed");
+    drop(run_seed(&SeedDb::new(&h.db), &h.cfg).await.expect("first seed"));
     let r2 = run_seed(&SeedDb::new(&h.db), &h.cfg).await.expect("second seed");
 
     // Row counts unchanged after a second invocation.

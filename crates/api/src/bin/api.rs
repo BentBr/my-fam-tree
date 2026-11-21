@@ -27,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
         // errors here because tracing isn't initialized yet and the binary
         // lints forbid `eprintln!`/`println!`. Any real misconfiguration will
         // surface from `Config::load_from_env` below.
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
 
     let cfg = Config::from_env().context("load config from environment")?;

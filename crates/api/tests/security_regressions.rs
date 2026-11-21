@@ -49,14 +49,14 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +244,7 @@ async fn email_taken_response_does_not_echo_the_email() {
 
     // Two existing users — A is the caller, B owns the target address.
     let (access_a, _r) = sign_in(&stack, &app, "audit-et-caller@example.com").await;
-    let _ = sign_in(&stack, &app, "audit-et-owner@example.com").await;
+    drop(sign_in(&stack, &app, "audit-et-owner@example.com").await);
 
     // Caller tries to swap their email to B's address.
     let req = test::TestRequest::post()

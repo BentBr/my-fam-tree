@@ -68,7 +68,7 @@ pub async fn magic_link(
     // `realip_remote_addr()` returns the peer addr (or the leading X-Forwarded-For
     // entry when a trusted proxy sets it); `"unknown"` is a safe fallback that
     // keeps the per-IP bucket usable even when actix can't resolve the peer.
-    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_string();
+    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_owned();
     let ip_decision = state
         .rate_limiter
         .check(
@@ -143,7 +143,7 @@ pub async fn magic_link(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::MAGIC_LINK.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::MAGIC_LINK.to_owned(),
             to_addr: user.email.clone(),
             subject: msg.subject,
             text_body: msg.text,

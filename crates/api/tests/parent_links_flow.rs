@@ -38,14 +38,14 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -222,7 +222,7 @@ async fn parent_links_user_role_cannot_create_or_delete() {
 
     // Seed a regular user.
     let regular_email = "pl-regular@example.com";
-    let _ = sign_in(&stack, &app, regular_email).await;
+    drop(sign_in(&stack, &app, regular_email).await);
     let user =
         stack.state.users.find_by_email(regular_email).await.expect("lookup").expect("user exists");
     let fam_uuid = Uuid::parse_str(&family_id).expect("uuid");

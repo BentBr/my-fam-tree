@@ -62,7 +62,7 @@ async fn persons_full_crud_happy_path() {
     assert_eq!(body["data"]["given_name"], "Anna");
     assert_eq!(body["data"]["family_name"], "Doe");
     assert_eq!(body["data"]["family_id"], family_id);
-    let person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    let person_id = body["data"]["id"].as_str().expect("person id").to_owned();
 
     // GET /persons — list now has one row.
     let req = test::TestRequest::get()
@@ -168,7 +168,7 @@ async fn persons_validation_and_404_arms() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    let person_id = body["data"]["id"].as_str().expect("person id").to_owned();
 
     let req = test::TestRequest::patch()
         .uri(&format!("/api/v1/persons/{person_id}"))
@@ -216,7 +216,7 @@ async fn persons_role_gating_user_cannot_create_or_delete_or_edit_others() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    let person_id = body["data"]["id"].as_str().expect("person id").to_owned();
 
     // Sign in a second user, then directly seed a `user`-role membership in
     // the same family so the next sign_in picks it up via the JWT claims.
@@ -284,7 +284,7 @@ async fn persons_role_gating_user_cannot_create_or_delete_or_edit_others() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let self_person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    let self_person_id = body["data"]["id"].as_str().expect("person id").to_owned();
     stack
         .state
         .persons
@@ -352,7 +352,7 @@ async fn persons_cursor_pagination_walks_full_list() {
     assert_eq!(body["meta"]["pagination"]["returned"], 2);
     assert_eq!(body["meta"]["pagination"]["limit"], 2);
     let next_cursor =
-        body["meta"]["pagination"]["next_cursor"].as_str().expect("next cursor").to_string();
+        body["meta"]["pagination"]["next_cursor"].as_str().expect("next cursor").to_owned();
 
     // Second page.
     let req = test::TestRequest::get()
@@ -400,7 +400,7 @@ async fn persons_accept_pre_1900_dates_and_reject_before_min_year() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["data"]["birth_date"], "1870-12-03");
     assert_eq!(body["data"]["death_date"], "1931-04-17");
-    let person_id = body["data"]["id"].as_str().expect("person id").to_string();
+    let person_id = body["data"]["id"].as_str().expect("person id").to_owned();
 
     // PATCH to an even older date (1650) -> 200.
     let req = test::TestRequest::patch()

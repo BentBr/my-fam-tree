@@ -41,18 +41,18 @@ where
 {
     let mut payload = serde_json::json!({ "given_name": given_name });
     if let Some(uid) = linked_user_id {
-        payload["linked_user_id"] = serde_json::Value::String(uid.to_string());
+        payload["linked_user_id"] = serde_json::Value::String(uid.to_owned());
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(payload)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -124,7 +124,7 @@ async fn relationships_tree_denormalises_parents_and_partners() {
 
     // Find each node by id and assert their adjacency lists.
     let by_id: std::collections::HashMap<String, &serde_json::Value> =
-        nodes.iter().map(|n| (n["id"].as_str().unwrap().to_string(), n)).collect();
+        nodes.iter().map(|n| (n["id"].as_str().unwrap().to_owned(), n)).collect();
     let kid_node = by_id.get(&kid).expect("kid node present");
     let mom_node = by_id.get(&mom).expect("mom node present");
     let dad_node = by_id.get(&dad).expect("dad node present");
@@ -134,7 +134,7 @@ async fn relationships_tree_denormalises_parents_and_partners() {
         .as_array()
         .unwrap()
         .iter()
-        .map(|v| v.as_str().unwrap().to_string())
+        .map(|v| v.as_str().unwrap().to_owned())
         .collect();
     kid_parents.sort();
     let mut expected = vec![mom.clone(), dad.clone()];
@@ -148,14 +148,14 @@ async fn relationships_tree_denormalises_parents_and_partners() {
         .as_array()
         .unwrap()
         .iter()
-        .map(|v| v.as_str().unwrap().to_string())
+        .map(|v| v.as_str().unwrap().to_owned())
         .collect();
     assert_eq!(mom_partners, vec![dad.clone()]);
     let dad_partners: Vec<String> = dad_node["partner_ids"]
         .as_array()
         .unwrap()
         .iter()
-        .map(|v| v.as_str().unwrap().to_string())
+        .map(|v| v.as_str().unwrap().to_owned())
         .collect();
     assert_eq!(dad_partners, vec![mom.clone()]);
     assert_eq!(mom_node["parent_ids"], serde_json::json!([]));

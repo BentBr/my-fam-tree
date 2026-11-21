@@ -44,7 +44,7 @@ pub async fn process_one(state: &WorkerState) -> bool {
                     }
                 }
                 Err(e) => {
-                    let next_attempts = row.attempts + 1;
+                    let next_attempts = row.attempts.saturating_add(1);
                     let err_msg = e.to_string();
                     if next_attempts >= state.max_retries {
                         if let Err(me) = state.outbox.mark_failed_permanent(row.id, &err_msg).await

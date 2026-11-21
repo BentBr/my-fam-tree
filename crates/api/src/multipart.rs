@@ -60,7 +60,7 @@ pub async fn read_single_file_field(
         }
         seen_file = true;
 
-        filename = field.content_disposition().and_then(|cd| cd.get_filename().map(str::to_string));
+        filename = field.content_disposition().and_then(|cd| cd.get_filename().map(str::to_owned));
 
         while let Some(chunk_res) = field.next().await {
             let chunk = chunk_res

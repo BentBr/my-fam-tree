@@ -32,8 +32,8 @@ pub async fn record(
     let entry = AuditEntry {
         family_id,
         actor_user_id: Some(actor),
-        action: action.to_string(),
-        entity_kind: entity_kind.to_string(),
+        action: action.to_owned(),
+        entity_kind: entity_kind.to_owned(),
         entity_id,
         metadata,
     };

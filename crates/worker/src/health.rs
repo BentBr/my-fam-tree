@@ -67,7 +67,7 @@ impl Heartbeat {
         if last == 0 {
             return None;
         }
-        Some((now_unix_ms() - last).max(0))
+        Some(now_unix_ms().saturating_sub(last).max(0))
     }
 }
 

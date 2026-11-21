@@ -55,14 +55,14 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[expect(
@@ -100,14 +100,14 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/partnerships")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create partnership should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("partnership id").to_string()
+    body["data"]["id"].as_str().expect("partnership id").to_owned()
 }
 
 /// All three filter modes share the same seed so we only build the
@@ -258,8 +258,9 @@ async fn upcoming_empty_anniversary_when_no_partnership_no_death() {
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
     let (access, _r) = sign_in(&stack, &app, "upcoming-empty@example.com").await;
     let (access, family_id) = create_family(&app, &access, "Birthdays").await;
-    let _ =
-        create_person(&app, &access, &family_id, "Solo", "Person", Some("1990-01-15"), None).await;
+    drop(
+        create_person(&app, &access, &family_id, "Solo", "Person", Some("1990-01-15"), None).await,
+    );
 
     let req = test::TestRequest::get()
         .uri("/api/v1/upcoming?filter=anniversary")

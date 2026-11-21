@@ -42,7 +42,7 @@ pub async fn run_tick(state: &WorkerState) -> anyhow::Result<usize> {
             state.digests.ensure_pending(user_id, today_local, count).await?;
         if inserted {
             state.queue.push(&ReminderJob { digest_id }).await?;
-            scheduled += 1;
+            scheduled = scheduled.saturating_add(1);
         }
     }
     Ok(scheduled)

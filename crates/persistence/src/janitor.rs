@@ -30,7 +30,7 @@ impl JanitorRepo for PgJanitor {
         now: OffsetDateTime,
         grace: Duration,
     ) -> Result<JanitorSweepReport, JanitorRepoError> {
-        let cutoff = now - grace;
+        let cutoff = now.saturating_sub(grace);
 
         // Magic-link tokens: expired OR consumed past the grace window.
         // Token hashes are useless once expired/consumed, so this is purely

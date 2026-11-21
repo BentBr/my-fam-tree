@@ -199,7 +199,7 @@ async fn user_email_change_rejects_taken_email() {
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
 
     // Pre-create the "taken" account.
-    let _ = sign_in(&stack, &app, "taken@example.com").await;
+    drop(sign_in(&stack, &app, "taken@example.com").await);
     stack.fake_email.drain();
 
     let (access, _refresh) = sign_in(&stack, &app, "hopeful@example.com").await;

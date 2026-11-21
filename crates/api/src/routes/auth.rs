@@ -49,7 +49,7 @@ pub(crate) async fn rate_limit_ip(
     prefix: &str,
     max_per_hour: u32,
 ) -> Result<(), ApiError> {
-    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_string();
+    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_owned();
     let decision = state
         .rate_limiter
         .check(&format!("{prefix}:{ip}"), max_per_hour, StdDuration::from_hours(1))

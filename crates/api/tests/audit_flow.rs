@@ -32,8 +32,8 @@ async fn seed_person(
     family: &str,
 ) -> PersonId {
     let draft = PersonDraft {
-        given_name: given.to_string(),
-        family_name: family.to_string(),
+        given_name: given.to_owned(),
+        family_name: family.to_owned(),
         ..Default::default()
     };
     state.persons.create(family_id, draft).await.expect("seed person").id
@@ -105,7 +105,7 @@ async fn user_role_audit_listing_returns_403() {
 
     // Add a regular `user`-role member.
     let guest_email = "audit-user@example.com";
-    let _ = sign_in(&stack, &app, guest_email).await;
+    drop(sign_in(&stack, &app, guest_email).await);
     let guest =
         stack.state.users.find_by_email(guest_email).await.expect("lookup").expect("user exists");
     stack

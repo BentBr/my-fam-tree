@@ -95,8 +95,9 @@ pub async fn invite(
             claims.user_id,
             body.person_id,
             &hash,
-            OffsetDateTime::now_utc()
-                + Duration::seconds(seconds_i64(state.cfg.magic_link.invite_ttl_seconds)),
+            OffsetDateTime::now_utc().saturating_add(Duration::seconds(seconds_i64(
+                state.cfg.magic_link.invite_ttl_seconds,
+            ))),
         )
         .await
         .map_err(internal)?;
@@ -114,7 +115,7 @@ pub async fn invite(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::INVITE.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::INVITE.to_owned(),
             to_addr: email.clone(),
             subject: email_msg.subject,
             text_body: email_msg.text,

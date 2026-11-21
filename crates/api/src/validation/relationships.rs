@@ -21,7 +21,7 @@ use std::collections::{HashMap, HashSet};
 use my_fam_tree_domain::{
     ParentKind, ParentLink, Partnership, PartnershipEndReason, Person, PersonId,
 };
-use time::{Date, Duration};
+use time::Date;
 
 use crate::response::Warning;
 use crate::{ApiError, FieldViolation};
@@ -80,7 +80,7 @@ pub fn check_parent_link(
     if kind == ParentKind::Biological
         && let (Some(p), Some(c)) = (parent, child)
         && let (Some(death), Some(birth)) = (p.death_date, c.birth_date)
-        && (birth - death) >= Duration::days(GESTATION_DAYS)
+        && days_between(death, birth) >= GESTATION_DAYS
     {
         violations.push(FieldViolation::new(
             "/parent_id",
@@ -113,12 +113,12 @@ pub fn check_parent_link(
     if let (Some(p), Some(c)) = (parent, child)
         && let (Some(pb), Some(cb)) = (p.birth_date, c.birth_date)
         && pb < cb
-        && (cb - pb) < Duration::days(MIN_PARENT_CHILD_GAP_DAYS)
+        && days_between(pb, cb) < MIN_PARENT_CHILD_GAP_DAYS
     {
         warnings.push(Warning {
-            code: "warning.parent_child_age_gap_under_14y".to_string(),
-            message: "parent-child age gap is under fourteen years".to_string(),
-            path: Some("/parent_id".to_string()),
+            code: "warning.parent_child_age_gap_under_14y".to_owned(),
+            message: "parent-child age gap is under fourteen years".to_owned(),
+            path: Some("/parent_id".to_owned()),
         });
     }
 
@@ -182,8 +182,8 @@ pub fn check_partnership(
     let parents_b = parents_of(partner_b_id, parent_links);
     if !parents_a.is_disjoint(&parents_b) {
         warnings.push(Warning {
-            code: "warning.sibling_partnership".to_string(),
-            message: "partners share at least one parent".to_string(),
+            code: "warning.sibling_partnership".to_owned(),
+            message: "partners share at least one parent".to_owned(),
             path: None,
         });
     }
@@ -195,10 +195,10 @@ pub fn check_partnership(
         });
         if !matches {
             warnings.push(Warning {
-                code: "warning.end_reason_death_mismatch".to_string(),
+                code: "warning.end_reason_death_mismatch".to_owned(),
                 message: "end_reason is 'death' but no partner has a matching death_date"
-                    .to_string(),
-                path: Some("/end_reason".to_string()),
+                    .to_owned(),
+                path: Some("/end_reason".to_owned()),
             });
         }
     }
@@ -209,6 +209,12 @@ pub fn check_partnership(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Signed whole days from `from` to `to` (Julian day numbers, so no
+/// `Duration` overflow is possible).
+fn days_between(from: Date, to: Date) -> i64 {
+    i64::from(to.to_julian_day()).saturating_sub(i64::from(from.to_julian_day()))
+}
 
 fn persons_by_id(persons: &[Person]) -> HashMap<PersonId, &Person> {
     persons.iter().map(|p| (p.id, p)).collect()
@@ -221,10 +227,19 @@ fn parents_of(person: PersonId, links: &[ParentLink]) -> HashSet<PersonId> {
 #[cfg(test)]
 mod tests {
     use my_fam_tree_domain::{FamilyId, Person, PersonId};
-    use time::Date;
+    use time::{Date, Duration};
     use uuid::Uuid;
 
     use super::*;
+
+    #[test]
+    fn days_between_counts_calendar_days() {
+        let a = Date::from_calendar_date(2000, time::Month::January, 1).unwrap();
+        let b = Date::from_calendar_date(2001, time::Month::January, 1).unwrap();
+        assert_eq!(days_between(a, b), 366, "2000 is a leap year");
+        assert_eq!(days_between(b, a), -366, "negative when reversed");
+        assert_eq!(days_between(a, a), 0, "same day");
+    }
 
     fn pid(n: u8) -> PersonId {
         let mut bytes = [0_u8; 16];

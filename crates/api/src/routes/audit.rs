@@ -13,6 +13,10 @@
 //! to land here with a different `family_id` is a forged URL.
 
 #![expect(
+    unused_qualifications,
+    reason = "utoipa::path re-emits the query type with a qualified path"
+)]
+#![expect(
     clippy::future_not_send,
     reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
 )]

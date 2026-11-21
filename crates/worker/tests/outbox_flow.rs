@@ -110,8 +110,8 @@ fn build_state(
 
 fn sample_insert(kind: &str, to_addr: &str) -> EmailOutboxInsert {
     EmailOutboxInsert {
-        kind: kind.to_string(),
-        to_addr: to_addr.to_string(),
+        kind: kind.to_owned(),
+        to_addr: to_addr.to_owned(),
         subject: "Hello".into(),
         text_body: "Body".into(),
         html_body: None,
@@ -131,7 +131,8 @@ async fn enqueue_then_process_one_sends_and_marks_sent() {
     // captures real-now + δ, the row stays unclaimed. A 60s shift is
     // generous against runner clock jitter.
     let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
-    let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
+    let state =
+        build_state(&db, clock as Arc<dyn Clock>, Arc::clone(&fake) as Arc<dyn EmailSender>, 3);
 
     state
         .outbox
@@ -247,7 +248,8 @@ async fn skip_locked_lets_two_pollers_drain_in_parallel_without_double_send() {
     let (db, _pg) = start_pg().await;
     let fake = Arc::new(FakeEmailSender::new());
     let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
-    let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
+    let state =
+        build_state(&db, clock as Arc<dyn Clock>, Arc::clone(&fake) as Arc<dyn EmailSender>, 3);
 
     for addr in ["a@example.com", "b@example.com", "c@example.com"] {
         state.outbox.enqueue(&sample_insert(EmailOutboxKind::INVITE, addr)).await.unwrap();

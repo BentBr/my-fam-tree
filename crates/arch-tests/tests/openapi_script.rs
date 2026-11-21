@@ -19,7 +19,7 @@ impl Sandbox {
     fn new(name: &str, spec_content: &str) -> Self {
         let dir =
             std::env::temp_dir().join(format!("openapi-script-{name}-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
+        drop(fs::remove_dir_all(&dir));
         assert!(fs::create_dir_all(&dir).is_ok(), "create sandbox dir");
         let spec = dir.join("openapi.json");
         assert!(fs::write(&spec, spec_content).is_ok(), "write spec");
@@ -45,7 +45,7 @@ impl Sandbox {
 
 impl Drop for Sandbox {
     fn drop(&mut self) {
-        let _ = fs::remove_dir_all(&self.dir);
+        drop(fs::remove_dir_all(&self.dir));
     }
 }
 

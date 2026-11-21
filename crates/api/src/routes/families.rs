@@ -64,7 +64,7 @@ fn validate_family_name(raw: &str) -> Result<String, ApiError> {
     if u32::try_from(trimmed.chars().count()).unwrap_or(u32::MAX) > FAMILY_NAME_MAX {
         return Err(string_too_long("/name", FAMILY_NAME_MAX));
     }
-    Ok(trimmed.to_string())
+    Ok(trimmed.to_owned())
 }
 
 // ---------------------------------------------------------------------------

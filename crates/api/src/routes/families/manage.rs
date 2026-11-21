@@ -116,7 +116,7 @@ pub async fn create(
     let claims_payload = crate::routes::auth::ConsumeRes {
         user_id: user.id.into_uuid(),
         email: user.email.clone(),
-        locale: user.locale.as_str().to_string(),
+        locale: user.locale.as_str().to_owned(),
         families: fams,
     };
     let response = CreateFamilyRes {

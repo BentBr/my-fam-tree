@@ -127,7 +127,7 @@ fn extract_claims(
     req: &ServiceRequest,
     issuer: &crate::auth::JwtIssuer,
 ) -> Option<(crate::auth::JwtClaims, Option<Uuid>)> {
-    let cookie_value = req.cookie(ACCESS_COOKIE).map(|c| c.value().to_string())?;
+    let cookie_value = req.cookie(ACCESS_COOKIE).map(|c| c.value().to_owned())?;
     let claims = issuer.verify(&cookie_value).ok()?;
     let header_family = req
         .headers()
@@ -235,9 +235,9 @@ pub const fn require_role(active: &ActiveFamily, needed: Role) -> Result<(), Api
 /// * [`ApiError::InsufficientRole`] when the row's role is below `needed`.
 /// * [`ApiError::Internal`] for DB transport / driver failures.
 pub async fn require_db_role(
-    state: &crate::AppState,
-    user_id: my_fam_tree_domain::UserId,
-    family_id: my_fam_tree_domain::FamilyId,
+    state: &AppState,
+    user_id: UserId,
+    family_id: FamilyId,
     needed: Role,
 ) -> Result<(), ApiError> {
     let membership = state

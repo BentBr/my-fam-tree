@@ -32,7 +32,7 @@ where
         >,
     B: actix_web::body::MessageBody,
 {
-    let _ = sign_in(stack, app, email).await;
+    drop(sign_in(stack, app, email).await);
     stack.state.users.find_by_email(email).await.expect("user lookup").expect("user exists").id
 }
 
@@ -105,7 +105,7 @@ where
 /// url-safe base64 (no padding), so any whitespace / quote terminates it.
 fn extract_transfer_token(body: &str) -> String {
     let after = body.split("token=").nth(1).expect("token= present");
-    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_string()
+    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -117,10 +117,10 @@ async fn owner_begins_transfer_to_admin_emits_two_emails() {
 
     // Drain whatever sign-in mails the stack captured so we only see the
     // two transfer mails.
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
 
     let access = fresh_access(&stack, &app, &fam.owner_email).await;
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let req = test::TestRequest::post()
         .uri(&format!("/api/v1/families/{}/transfer-owner", fam.family_id.into_uuid()))
         .cookie(Cookie::new("access", access))
@@ -169,19 +169,21 @@ async fn both_sides_confirm_completes_transfer_and_swaps_roles() {
     let stamp = u128::from(rand::random::<u32>());
     let fam = seed_owner_admin_family(&stack, &app, stamp).await;
 
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let owner_access = fresh_access(&stack, &app, &fam.owner_email).await;
-    let _ = stack.fake_email.drain();
-    let _ = test::call_service(
-        &app,
-        test::TestRequest::post()
-            .uri(&format!("/api/v1/families/{}/transfer-owner", fam.family_id.into_uuid()))
-            .cookie(Cookie::new("access", owner_access.clone()))
-            .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
-            .set_json(serde_json::json!({ "to_user_id": fam.admin_id.into_uuid() }))
-            .to_request(),
-    )
-    .await;
+    drop(stack.fake_email.drain());
+    drop(
+        test::call_service(
+            &app,
+            test::TestRequest::post()
+                .uri(&format!("/api/v1/families/{}/transfer-owner", fam.family_id.into_uuid()))
+                .cookie(Cookie::new("access", owner_access.clone()))
+                .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
+                .set_json(serde_json::json!({ "to_user_id": fam.admin_id.into_uuid() }))
+                .to_request(),
+        )
+        .await,
+    );
 
     let outbox = stack.fake_email.drain();
     assert_eq!(outbox.len(), 2);
@@ -264,19 +266,21 @@ async fn confirming_only_one_side_does_not_swap_roles() {
     let stamp = u128::from(rand::random::<u32>());
     let fam = seed_owner_admin_family(&stack, &app, stamp).await;
 
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let owner_access = fresh_access(&stack, &app, &fam.owner_email).await;
-    let _ = stack.fake_email.drain();
-    let _ = test::call_service(
-        &app,
-        test::TestRequest::post()
-            .uri(&format!("/api/v1/families/{}/transfer-owner", fam.family_id.into_uuid()))
-            .cookie(Cookie::new("access", owner_access.clone()))
-            .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
-            .set_json(serde_json::json!({ "to_user_id": fam.admin_id.into_uuid() }))
-            .to_request(),
-    )
-    .await;
+    drop(stack.fake_email.drain());
+    drop(
+        test::call_service(
+            &app,
+            test::TestRequest::post()
+                .uri(&format!("/api/v1/families/{}/transfer-owner", fam.family_id.into_uuid()))
+                .cookie(Cookie::new("access", owner_access.clone()))
+                .insert_header(("X-Family-Id", fam.family_id.into_uuid().to_string()))
+                .set_json(serde_json::json!({ "to_user_id": fam.admin_id.into_uuid() }))
+                .to_request(),
+        )
+        .await,
+    );
 
     let outbox = stack.fake_email.drain();
     let owner_mail = outbox.iter().find(|e| e.subject.contains("Confirm ownership")).unwrap();
@@ -320,7 +324,7 @@ async fn second_begin_while_pending_returns_409_owner_transfer_pending() {
     let stamp = u128::from(rand::random::<u32>());
     let fam = seed_owner_admin_family(&stack, &app, stamp).await;
 
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let owner_access = fresh_access(&stack, &app, &fam.owner_email).await;
 
     let req = test::TestRequest::post()

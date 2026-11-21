@@ -46,8 +46,8 @@ where
         _ => test::TestRequest::get(),
     }
     .uri(uri)
-    .cookie(Cookie::new("access", access.to_string()))
-    .insert_header(("X-Family-Id", family_id.to_string()));
+    .cookie(Cookie::new("access", access.to_owned()))
+    .insert_header(("X-Family-Id", family_id.to_owned()));
     if let Some(b) = body {
         req = req.set_json(b);
     }

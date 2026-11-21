@@ -97,7 +97,7 @@ async fn cancel_invite_removes_row_and_audits() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status().as_u16(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let invite_id = body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_string();
+    let invite_id = body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_owned();
 
     // DELETE it.
     let req = test::TestRequest::delete()

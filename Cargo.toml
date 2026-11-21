@@ -99,8 +99,10 @@ uuid = { version = "1", features = ["v4", "serde"] }
 [workspace.lints.rust]
 unsafe_code = "forbid"
 unused_must_use = "deny"
-missing_debug_implementations = "warn"
-unreachable_pub = "warn"
+missing_debug_implementations = "deny"
+unreachable_pub = "deny"
+unused_qualifications = "deny"
+let_underscore_drop = "deny"
 
 # Strict gate: `pedantic` + `nursery` at deny, all four big lint groups
 # enforced. Fix findings in source. Where a lint genuinely does not fit,
@@ -119,8 +121,23 @@ dbg_macro = "deny"
 print_stdout = "deny"
 print_stderr = "deny"
 indexing_slicing = "deny"
-float_arithmetic = "warn"
-shadow_unrelated = "warn"
+float_arithmetic = "deny"
+shadow_unrelated = "deny"
+# Tightened 2026-11 (measured; see PR "chore/rust-lint-regime"). Not adopted:
+# tests_outside_test_module (flags every integration test in tests/, 150 hits)
+# and as_conversions (42 hits, left for a separate decision).
+unwrap_in_result = "deny"
+get_unwrap = "deny"
+exit = "deny"
+mem_forget = "deny"
+rc_mutex = "deny"
+str_to_string = "deny"
+clone_on_ref_ptr = "deny"
+wildcard_dependencies = "deny"
+unused_result_ok = "deny"
+string_slice = "deny"
+arithmetic_side_effects = "deny"
+missing_assert_message = "deny"
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"
 

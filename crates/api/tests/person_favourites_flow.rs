@@ -49,14 +49,14 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 /// Helper: POST `is_favourite=true|false` for the calling user.
@@ -77,8 +77,8 @@ where
 {
     let req = test::TestRequest::patch()
         .uri(&format!("/api/v1/persons/{person_id}/favourite"))
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "is_favourite": is_favourite }))
         .to_request();
     let res = test::call_service(app, req).await;
@@ -107,11 +107,11 @@ where
 {
     let req = test::TestRequest::post()
         .uri(&format!("/api/v1/families/{family_id}/invites"))
-        .cookie(Cookie::new("access", owner_access.to_string()))
+        .cookie(Cookie::new("access", owner_access.to_owned()))
         .set_json(serde_json::json!({ "email": email, "role": "admin" }))
         .to_request();
     let res = test::call_service(app, req).await;
-    assert_eq!(res.status(), 200);
+    assert_eq!(res.status(), 200, "create invite");
     let captured = stack.fake_email.drain();
     let mail = captured.last().expect("invite email captured");
     let token = extract_token_from_link(&mail.text_body);
@@ -123,13 +123,13 @@ where
         .set_json(serde_json::json!({ "token": token }))
         .to_request();
     let res = test::call_service(app, req).await;
-    assert_eq!(res.status(), 200);
+    assert_eq!(res.status(), 200, "accept invite");
     res.response()
         .cookies()
         .find(|c| c.name() == "access")
         .expect("rotated access")
         .value()
-        .to_string()
+        .to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

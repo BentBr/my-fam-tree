@@ -99,13 +99,13 @@ pub fn render_owner_transfer_owner(
     let chrome = Chrome::new(locale, app_url, &privacy);
     let (subject, text, html) = match locale {
         Locale::En => (
-            "Confirm ownership transfer".to_string(),
+            "Confirm ownership transfer".to_owned(),
             OwnerTransferOwnerEn { family_name, to_user_display_name, link }.render()?,
             OwnerTransferOwnerHtmlEn { chrome, family_name, to_user_display_name, link }
                 .render()?,
         ),
         Locale::De => (
-            "Eigentumsübertragung bestätigen".to_string(),
+            "Eigentumsübertragung bestätigen".to_owned(),
             OwnerTransferOwnerDe { family_name, to_user_display_name, link }.render()?,
             OwnerTransferOwnerHtmlDe { chrome, family_name, to_user_display_name, link }
                 .render()?,

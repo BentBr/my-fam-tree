@@ -12,9 +12,9 @@ pub fn next_attempt(
     min_sec: u64,
     max_sec: u64,
 ) -> OffsetDateTime {
-    let exp = u32::try_from(attempt.max(1) - 1).unwrap_or(0);
+    let exp = u32::try_from(attempt.max(1).saturating_sub(1)).unwrap_or(0);
     let base = min_sec.saturating_mul(2_u64.saturating_pow(exp)).min(max_sec);
-    let jitter = rand::rng().random_range(0..=(base / 4 + 1));
+    let jitter = rand::rng().random_range(0..=(base / 4).saturating_add(1));
     let secs = i64::try_from(base.saturating_add(jitter)).unwrap_or(i64::MAX);
     now.saturating_add(Duration::seconds(secs))
 }

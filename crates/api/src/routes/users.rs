@@ -144,7 +144,7 @@ async fn profile_from(
         id: user.id.into_uuid(),
         email: user.email.clone(),
         display_name: user.display_name.clone(),
-        locale: user.locale.as_str().to_string(),
+        locale: user.locale.as_str().to_owned(),
         timezone: user.timezone.clone(),
         email_verified_at: user.email_verified_at,
         avatar_url,
@@ -219,7 +219,7 @@ pub async fn update(
             if u32::try_from(trimmed.chars().count()).unwrap_or(u32::MAX) > DISPLAY_NAME_MAX {
                 return Err(string_too_long("/display_name", DISPLAY_NAME_MAX));
             }
-            Some(trimmed.to_string())
+            Some(trimmed.to_owned())
         }
         None => None,
     };
@@ -322,7 +322,7 @@ pub async fn email_change_request(
             &hash,
             MagicLinkPurpose::EmailChange,
             OffsetDateTime::now_utc()
-                + Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds)),
+                .saturating_add(Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds))),
         )
         .await
         .map_err(internal)?;
@@ -341,7 +341,7 @@ pub async fn email_change_request(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::EMAIL_CHANGE.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::EMAIL_CHANGE.to_owned(),
             to_addr: user.email.clone(),
             subject: email_msg.subject,
             text_body: email_msg.text,
