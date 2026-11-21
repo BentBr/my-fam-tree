@@ -18,10 +18,10 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chrono::{Duration, NaiveDate};
 use my_fam_tree_domain::{
     ParentKind, ParentLink, Partnership, PartnershipEndReason, Person, PersonId,
 };
+use time::{Date, Duration};
 
 use crate::response::Warning;
 use crate::{ApiError, FieldViolation};
@@ -143,8 +143,8 @@ pub fn check_parent_link(
 pub fn check_partnership(
     partner_a_id: PersonId,
     partner_b_id: PersonId,
-    started_on: Option<NaiveDate>,
-    ended_on: Option<NaiveDate>,
+    started_on: Option<Date>,
+    ended_on: Option<Date>,
     end_reason: Option<PartnershipEndReason>,
     persons: &[Person],
     parent_links: &[ParentLink],
@@ -227,8 +227,8 @@ fn parents_of(person: PersonId, links: &[ParentLink]) -> HashSet<PersonId> {
     reason = "test code: assertion helpers may panic on unexpected variants"
 )]
 mod tests {
-    use chrono::{DateTime, NaiveDate, Utc};
     use my_fam_tree_domain::{FamilyId, Person, PersonId};
+    use time::Date;
     use uuid::Uuid;
 
     use super::*;
@@ -239,7 +239,7 @@ mod tests {
         PersonId::from_uuid(Uuid::from_bytes(bytes))
     }
 
-    fn person(id: PersonId, birth: Option<NaiveDate>, death: Option<NaiveDate>) -> Person {
+    fn person(id: PersonId, birth: Option<Date>, death: Option<Date>) -> Person {
         Person {
             id,
             family_id: FamilyId::from_uuid(Uuid::nil()),
@@ -254,13 +254,13 @@ mod tests {
             notes: String::new(),
             linked_user_id: None,
             photo_key: None,
-            created_at: DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
-            updated_at: DateTime::<Utc>::from_timestamp(0, 0).unwrap(),
+            created_at: time::OffsetDateTime::UNIX_EPOCH,
+            updated_at: time::OffsetDateTime::UNIX_EPOCH,
         }
     }
 
-    fn date(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn date(y: i32, m: u8, d: u8) -> Date {
+        my_fam_tree_domain::dates::date_from_ymd(y, m, d).unwrap()
     }
 
     fn link(child: PersonId, parent: PersonId, kind: ParentKind) -> ParentLink {

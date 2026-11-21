@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::{FamilyId, Role, UserId};
@@ -12,8 +12,8 @@ pub struct Invite {
     pub invited_role: Role,
     pub invited_by: UserId,
     pub person_id: Option<Uuid>,
-    pub expires_at: DateTime<Utc>,
-    pub accepted_at: Option<DateTime<Utc>>,
+    pub expires_at: OffsetDateTime,
+    pub accepted_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -37,7 +37,7 @@ pub trait FamilyInviteRepo: Send + Sync {
         invited_by: UserId,
         person_id: Option<Uuid>,
         token_hash: &[u8],
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, InviteRepoError>;
 
     /// Non-mutating lookup of a pending invite by token hash.
@@ -51,7 +51,7 @@ pub trait FamilyInviteRepo: Send + Sync {
     async fn find_pending(
         &self,
         token_hash: &[u8],
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Invite, InviteRepoError>;
 
     /// Atomic accept: marks `accepted_at` and returns the invite if not already accepted and
@@ -59,7 +59,7 @@ pub trait FamilyInviteRepo: Send + Sync {
     async fn accept(
         &self,
         token_hash: &[u8],
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
     ) -> Result<Invite, InviteRepoError>;
 
     async fn list_pending_for_family(

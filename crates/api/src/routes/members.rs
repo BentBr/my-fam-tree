@@ -14,9 +14,9 @@
 //! every call.
 
 use actix_web::{HttpRequest, delete, get, patch, web};
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{FamilyId, MembershipRepoError, Role, UserId};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -31,7 +31,8 @@ pub struct MemberDto {
     pub email: String,
     pub display_name: String,
     pub role: Role,
-    pub joined_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub joined_at: OffsetDateTime,
     /// Name of the `persons` row (in the active family) this user is
     /// linked to via `linked_user_id`, if any. The FE uses this as a
     /// fallback when the account's `display_name` is empty — most

@@ -13,9 +13,9 @@
 //! to land here with a different `family_id` is a forged URL.
 
 use actix_web::{HttpRequest, get, web};
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{AuditFilter, FamilyId, Role, UserId};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
@@ -30,9 +30,11 @@ pub struct AuditQuery {
     /// One of 50 / 100 / 200 / 500. Anything else falls back to 50.
     pub page_size: Option<u32>,
     /// Inclusive lower bound on `created_at`.
-    pub from: Option<DateTime<Utc>>,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub from: Option<OffsetDateTime>,
     /// Inclusive upper bound on `created_at`.
-    pub to: Option<DateTime<Utc>>,
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub to: Option<OffsetDateTime>,
     /// Short verb slug — e.g. `create`, `update`, `delete`, `invite`.
     pub action: Option<String>,
     /// Noun slug — e.g. `person`, `contact`, `membership`, `invite`.
@@ -44,7 +46,8 @@ pub struct AuditQuery {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuditRowDto {
     pub id: Uuid,
-    pub created_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
     pub action: String,
     pub entity_kind: String,
     pub entity_id: Option<Uuid>,

@@ -7,7 +7,7 @@
 //! deleted and chatty when it actually does work.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Duration, Utc};
+use time::{Duration, OffsetDateTime};
 
 /// Number of rows deleted by a single [`JanitorRepo::sweep_expired`] call.
 #[derive(Debug, Clone, Default)]
@@ -44,7 +44,7 @@ pub trait JanitorRepo: Send + Sync + 'static {
     /// reads better with the row present for a day or two.
     async fn sweep_expired(
         &self,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
         grace: Duration,
     ) -> Result<JanitorSweepReport, JanitorRepoError>;
 }

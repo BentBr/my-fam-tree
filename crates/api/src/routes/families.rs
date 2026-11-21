@@ -22,10 +22,10 @@
 //! (persons, contacts, reminders).
 
 use actix_web::{HttpRequest, HttpResponse, delete, get, patch, post, web};
-use chrono::{DateTime, Duration, Utc};
 use my_fam_tree_domain::{FamilyId, Role};
 use my_fam_tree_email::{Locale as EmailLocale, render_invite};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -77,8 +77,8 @@ pub struct FamilyView {
     /// Family creation time (RFC 3339). Present on `GET /families/me` so the
     /// switcher can disambiguate same-named families by date; `None` on the
     /// JWT-projection paths (rename, invite-accept) that don't carry it.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
+    pub created_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -127,7 +127,8 @@ pub struct LatestPersonView {
     pub id: Uuid,
     pub given_name: String,
     pub family_name: String,
-    pub created_at: DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: OffsetDateTime,
 }
 
 /// Aggregated stats for the admin "Family" overview page.
@@ -502,7 +503,8 @@ pub async fn invite(
             claims.user_id,
             body.person_id,
             &hash,
-            Utc::now() + Duration::seconds(seconds_i64(state.cfg.magic_link.invite_ttl_seconds)),
+            OffsetDateTime::now_utc()
+                + Duration::seconds(seconds_i64(state.cfg.magic_link.invite_ttl_seconds)),
         )
         .await
         .map_err(internal)?;

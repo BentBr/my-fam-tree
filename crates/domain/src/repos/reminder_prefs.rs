@@ -1,8 +1,17 @@
 //! A user's reminder settings: one row per user (see migration 0009).
 
 use async_trait::async_trait;
+use time::{Date, OffsetDateTime};
 
 use crate::UserId;
+
+/// A user whose digest is due: reminders are on and their local wall-clock
+/// is inside the digest hour. `local_date` is "today" in their zone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DueDigestUser {
+    pub user_id: UserId,
+    pub local_date: Date,
+}
 
 /// A user's reminder settings. `lead_days` is clamped 0..=21 at the API
 /// boundary and by a DB CHECK; 0 means "on the day".
@@ -58,10 +67,18 @@ pub trait ReminderPreferencesRepo: Send + Sync {
         prefs: ReminderPreferences,
     ) -> Result<(), ReminderPrefsRepoError>;
 
-    /// Every user with `emails_enabled = true`, ordered for determinism.
-    /// The worker walks this set each tick.
+    /// Every user with `emails_enabled = true` whose local time at `now` is
+    /// within hour `local_hour` (0–23), with their local date. The local time
+    /// is resolved in the database from `users.timezone` (IANA name, DST
+    /// aware); a zone name the database doesn't know falls back to
+    /// `fallback_tz`. Ordered by user id for determinism.
     ///
     /// # Errors
     /// Returns [`ReminderPrefsRepoError::Db`] on query failure.
-    async fn enabled_user_ids(&self) -> Result<Vec<UserId>, ReminderPrefsRepoError>;
+    async fn due_at_local_hour(
+        &self,
+        now: OffsetDateTime,
+        local_hour: u8,
+        fallback_tz: &str,
+    ) -> Result<Vec<DueDigestUser>, ReminderPrefsRepoError>;
 }

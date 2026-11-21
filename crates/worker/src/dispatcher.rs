@@ -50,7 +50,7 @@ pub async fn handle(state: &WorkerState, job: &ReminderJob) -> anyhow::Result<()
     // reflected. `today` is the digest's send_date; the window is
     // send_date + lead_days.
     let today = digest.send_date;
-    let target = today + chrono::Duration::days(i64::from(prefs.lead_days));
+    let target = today + time::Duration::days(i64::from(prefs.lead_days));
     let events = events_for_user_on(state, digest.user_id, &prefs, today, target).await?;
 
     if events.is_empty() {

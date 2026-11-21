@@ -40,9 +40,14 @@ PEXPIRE; `false` ⇒ lost lease ⇒ re-acquire) and `ticker::run_tick` once per
 `tick` interval, sleeping `refresh` between checks.
 
 - **Only the leader ticks**; dispatchers run on **all** replicas.
-- `run_tick`: for each `prefs.enabled_user_ids()`, if the user's local hour is
-  06, project events on `today + lead_days`, then `digests.ensure_pending`
-  (idempotent) and, if freshly inserted, `queue.push`. Safe to re-run hourly.
+- `run_tick`: `prefs.due_at_local_hour(now, DIGEST_LOCAL_HOUR, DEFAULT_TIMEZONE)`
+  returns the enabled users whose local hour is 06 plus their local date —
+  **resolved in Postgres** (`AT TIME ZONE` on `users.timezone`, DST-aware;
+  unknown zone names fall back to Europe/Berlin). There is no tz crate in the
+  workspace: dates/times are the `time` crate, zone math lives in SQL (see also
+  `TimeZoneRepo`). For each due user, project events on `local_date + lead_days`,
+  then `digests.ensure_pending` (idempotent) and, if freshly inserted,
+  `queue.push`. Safe to re-run hourly.
 - `handle`: load digest+user+prefs, **re-project at send time** (so edits land),
   render localized text, `email.send`. SMTP failure is not an error — it marks
   the row failed/retry via `backoff::next_attempt` and re-queues until
@@ -53,8 +58,9 @@ PEXPIRE; `false` ⇒ lost lease ⇒ re-acquire) and `ticker::run_tick` once per
 `FixedClock` (an `Arc<AtomicI64>` of micros) replaces `SystemClock` only under
 `--features test-fixtures`, so tests/E2E fast-forward time. The feature also
 compiles `test_clock_http`: an Actix listener on `WORKER_METRICS_BIND` exposing
-`POST /__test/advance-clock` `{ "to": <RFC3339> }` that sets the clock and runs
-a tick immediately. It runs on a **dedicated `std::thread` with its own actix
+`POST /__test/advance-clock` `{ "to": <RFC3339> }` or `{ "date": "YYYY-MM-DD" }`
+(→ 06:00 Europe/Berlin that day, resolved via `TimeZoneRepo`) that sets the
+clock and runs a tick immediately; responds `{ "now": <RFC3339>, "scheduled": n }`. It runs on a **dedicated `std::thread` with its own actix
 `System`** because `HttpServer`'s future is `!Send`. **NEVER** built into the
 prod image (the Dockerfile's release build is feature-free); the FE E2E advances
 the clock through this endpoint.

@@ -5,12 +5,12 @@
 //! [`my_fam_tree_domain::build_upcoming`] — the SAME projection the `/upcoming`
 //! route uses — so the digest can never drift from the Upcoming page.
 
-use chrono::NaiveDate;
 use my_fam_tree_domain::{
     MAX_LIMIT, ReminderPreferences, UpcomingEvent, UpcomingFilter, UpcomingKind, UserId,
     build_upcoming,
 };
 use my_fam_tree_email::Locale;
+use time::Date;
 
 use crate::state::WorkerState;
 
@@ -35,8 +35,8 @@ pub async fn events_for_user_on(
     state: &WorkerState,
     user_id: UserId,
     prefs: &ReminderPreferences,
-    today: NaiveDate,
-    target_date: NaiveDate,
+    today: Date,
+    target_date: Date,
 ) -> anyhow::Result<Vec<UpcomingEvent>> {
     let Some(filter) = filter_from_prefs(prefs) else { return Ok(Vec::new()) };
     let mut out: Vec<UpcomingEvent> = Vec::new();
@@ -117,7 +117,6 @@ fn render_line_de(e: &UpcomingEvent) -> String {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use chrono::NaiveDate;
 
     use super::*;
 
@@ -139,7 +138,7 @@ mod tests {
     ) -> UpcomingEvent {
         UpcomingEvent {
             kind,
-            next_date: NaiveDate::from_ymd_opt(2026, 6, 15).unwrap(),
+            next_date: time::macros::date!(2026 - 06 - 15),
             years,
             person_id: None,
             partnership_id: None,

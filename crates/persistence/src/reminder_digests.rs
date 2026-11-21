@@ -1,11 +1,11 @@
 //! Postgres-backed [`ReminderDigestRepo`] (`reminder_digests`, migration 0009).
 
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
 use my_fam_tree_domain::{
     DigestRepoError, DigestStatus, ReminderDigest, ReminderDigestRepo, UserId,
 };
 use sqlx::PgPool;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 fn status_from(s: &str) -> DigestStatus {
@@ -33,7 +33,7 @@ impl ReminderDigestRepo for PgReminderDigestRepo {
     async fn ensure_pending(
         &self,
         user_id: UserId,
-        send_date: NaiveDate,
+        send_date: Date,
         event_count: i32,
     ) -> Result<(Uuid, bool), DigestRepoError> {
         let inserted = sqlx::query!(
@@ -105,7 +105,7 @@ impl ReminderDigestRepo for PgReminderDigestRepo {
         &self,
         id: Uuid,
         error: &str,
-        next_attempt_at: Option<DateTime<Utc>>,
+        next_attempt_at: Option<OffsetDateTime>,
     ) -> Result<(), DigestRepoError> {
         match next_attempt_at {
             Some(when) => sqlx::query!(

@@ -11,8 +11,8 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use chrono::{Datelike, NaiveDate};
 use serde::Serialize;
+use time::Date;
 use uuid::Uuid;
 
 use crate::{
@@ -35,7 +35,7 @@ pub enum UpcomingKind {
 #[derive(Debug, Clone, Serialize)]
 pub struct UpcomingEvent {
     pub kind: UpcomingKind,
-    pub next_date: NaiveDate,
+    pub next_date: Date,
     pub years: u32,
     pub person_id: Option<Uuid>,
     pub partnership_id: Option<Uuid>,
@@ -82,15 +82,15 @@ impl UpcomingFilter {
 }
 
 /// Project a source month-day to the next occurrence on or after `today`.
-/// Returns `None` for Feb-29 in a candidate non-leap year (chrono's
-/// `with_year` returns `None`); the caller skips the event that cycle.
+/// Returns `None` for Feb-29 in a candidate non-leap year (`replace_year`
+/// errors); the caller skips the event that cycle.
 #[must_use]
-fn next_occurrence(source: NaiveDate, today: NaiveDate) -> Option<NaiveDate> {
-    let this_year = source.with_year(today.year())?;
+fn next_occurrence(source: Date, today: Date) -> Option<Date> {
+    let this_year = source.replace_year(today.year()).ok()?;
     if this_year >= today {
         Some(this_year)
     } else {
-        source.with_year(today.year().saturating_add(1))
+        source.replace_year(today.year().saturating_add(1)).ok()
     }
 }
 
@@ -104,7 +104,7 @@ fn full_name(p: &Person) -> String {
     }
 }
 
-fn person_birthday(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
+fn person_birthday(p: &Person, today: Date) -> Option<UpcomingEvent> {
     let birth = p.birth_date?;
     let next = next_occurrence(birth, today)?;
     let years = u32::try_from(next.year().saturating_sub(birth.year())).ok()?;
@@ -121,7 +121,7 @@ fn person_birthday(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
     })
 }
 
-fn person_death_anniv(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
+fn person_death_anniv(p: &Person, today: Date) -> Option<UpcomingEvent> {
     let death = p.death_date?;
     if death.year() == today.year() {
         return None;
@@ -141,11 +141,7 @@ fn person_death_anniv(p: &Person, today: NaiveDate) -> Option<UpcomingEvent> {
     })
 }
 
-fn wedding_anniv(
-    part: &Partnership,
-    persons: &[Person],
-    today: NaiveDate,
-) -> Option<UpcomingEvent> {
+fn wedding_anniv(part: &Partnership, persons: &[Person], today: Date) -> Option<UpcomingEvent> {
     if part.ended_on.is_some() {
         return None;
     }
@@ -183,7 +179,7 @@ pub async fn build_upcoming(
     favourites: &Arc<dyn PersonFavouriteRepo>,
     family_id: FamilyId,
     user_id: UserId,
-    today: NaiveDate,
+    today: Date,
     filter: UpcomingFilter,
     favourites_only: bool,
     limit: u32,
@@ -245,28 +241,22 @@ mod tests {
 
     #[test]
     fn next_occurrence_uses_this_year_when_still_ahead() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1980, 7, 4).unwrap();
-        assert_eq!(
-            next_occurrence(source, today).unwrap(),
-            NaiveDate::from_ymd_opt(2026, 7, 4).unwrap()
-        );
+        let today = time::macros::date!(2026 - 05 - 23);
+        let source = time::macros::date!(1980 - 07 - 04);
+        assert_eq!(next_occurrence(source, today).unwrap(), time::macros::date!(2026 - 07 - 04));
     }
 
     #[test]
     fn next_occurrence_rolls_to_next_year_when_passed() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1980, 4, 15).unwrap();
-        assert_eq!(
-            next_occurrence(source, today).unwrap(),
-            NaiveDate::from_ymd_opt(2027, 4, 15).unwrap()
-        );
+        let today = time::macros::date!(2026 - 05 - 23);
+        let source = time::macros::date!(1980 - 04 - 15);
+        assert_eq!(next_occurrence(source, today).unwrap(), time::macros::date!(2027 - 04 - 15));
     }
 
     #[test]
     fn next_occurrence_keeps_today_itself() {
-        let today = NaiveDate::from_ymd_opt(2026, 5, 23).unwrap();
-        let source = NaiveDate::from_ymd_opt(1990, 5, 23).unwrap();
+        let today = time::macros::date!(2026 - 05 - 23);
+        let source = time::macros::date!(1990 - 05 - 23);
         assert_eq!(next_occurrence(source, today).unwrap(), today);
     }
 }

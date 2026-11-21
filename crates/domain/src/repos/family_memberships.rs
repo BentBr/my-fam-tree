@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 use crate::{FamilyId, Role, UserId};
 
@@ -8,7 +8,7 @@ pub struct Membership {
     pub family_id: FamilyId,
     pub user_id: UserId,
     pub role: Role,
-    pub joined_at: DateTime<Utc>,
+    pub joined_at: OffsetDateTime,
 }
 
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ pub struct MembershipWithFamilyName {
     /// When the family was created (`families.created_at`). Display-only —
     /// lets the FE family switcher disambiguate same-named families. NOT
     /// carried in the JWT family claim (auth-critical, kept lean).
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
 }
 
 /// Member row enriched with the joined user's display fields.
@@ -34,7 +34,7 @@ pub struct MemberWithUser {
     pub email: String,
     pub display_name: String,
     pub role: Role,
-    pub joined_at: DateTime<Utc>,
+    pub joined_at: OffsetDateTime,
     /// Name of the `persons` row (in this family) that this user has
     /// been linked to via `linked_user_id`, if any. The admin Members
     /// view falls back to this when the user's account `display_name`

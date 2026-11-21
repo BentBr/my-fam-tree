@@ -21,9 +21,9 @@ mod common;
 
 use actix_web::cookie::Cookie;
 use actix_web::test;
-use chrono::{Datelike, Utc};
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
+use time::OffsetDateTime;
 
 /// Helper: POST a person with optional birth/death dates and return the new id.
 #[allow(clippy::future_not_send, clippy::too_many_arguments)]
@@ -142,7 +142,7 @@ async fn upcoming_filter_modes_sort_and_limit() {
     )
     .await;
     // Dora died THIS year ⇒ death_anniversary must be suppressed.
-    let this_year = Utc::now().date_naive().year();
+    let this_year = OffsetDateTime::now_utc().date().year();
     let dora_death = format!("{this_year}-12-31");
     let dora = create_person(
         &app,

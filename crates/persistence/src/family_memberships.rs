@@ -1,12 +1,12 @@
 //! Postgres-backed [`FamilyMembershipRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use my_fam_tree_domain::{
     FamilyId, FamilyMembershipRepo, MemberWithUser, Membership, MembershipRepoError,
     MembershipWithFamilyName, Role, UserId,
 };
 use sqlx::PgPool;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -45,7 +45,7 @@ struct MembershipRow {
     user_id: Uuid,
     #[sqlx(rename = "role!")]
     role: String,
-    joined_at: DateTime<Utc>,
+    joined_at: OffsetDateTime,
 }
 
 impl From<MembershipRow> for Membership {
@@ -66,7 +66,7 @@ struct MembershipWithFamilyNameRow {
     family_name: String,
     #[sqlx(rename = "role!")]
     role: String,
-    created_at: DateTime<Utc>,
+    created_at: OffsetDateTime,
 }
 
 impl From<MembershipWithFamilyNameRow> for MembershipWithFamilyName {

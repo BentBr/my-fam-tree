@@ -138,3 +138,5 @@ bare `Uuid`, so the type system catches mix-ups.
 | `cargo build --locked` fails in CI | You changed `Cargo.toml` without committing the `Cargo.lock` diff together. |
 | integration test hangs/errors connecting | Docker daemon not running (testcontainers), or the test needs `cargo-in-network.sh`. |
 | `HttpResponse` won't pass review | Return `Result<ApiResponse<T>, ApiError>`; only `response.rs` builds raw responses. |
+| Timestamp in JSON looks like `2026-06-08 4:00:00.0 +00:00:00` | `time`'s default serde is not RFC 3339. Annotate every `OffsetDateTime` field in a Serialize/Deserialize type with `#[serde(with = "time::serde::rfc3339")]` (`::option` + `default` for `Option`). `Date` is fine as-is ("YYYY-MM-DD"). `tests/time_wire_format.rs` pins this. |
+| Need a user's local time / IANA zone | Don't add a tz crate — resolve it in SQL (`AT TIME ZONE`) behind a repo method; see `TimeZoneRepo` / `due_at_local_hour`. |

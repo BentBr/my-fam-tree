@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::UserId;
@@ -28,8 +28,8 @@ pub struct MagicLinkRecord {
     pub user_id: Option<UserId>,
     pub email: String,
     pub purpose: MagicLinkPurpose,
-    pub expires_at: DateTime<Utc>,
-    pub consumed_at: Option<DateTime<Utc>>,
+    pub expires_at: OffsetDateTime,
+    pub consumed_at: Option<OffsetDateTime>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -51,7 +51,7 @@ pub trait MagicLinkRepo: Send + Sync {
         email: &str,
         token_hash: &[u8],
         purpose: MagicLinkPurpose,
-        expires_at: DateTime<Utc>,
+        expires_at: OffsetDateTime,
     ) -> Result<Uuid, MagicLinkRepoError>;
 
     /// Non-mutating lookup of a consumable (not-yet-consumed) token.

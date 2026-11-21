@@ -23,12 +23,12 @@
 //! convention.
 
 use actix_web::{HttpRequest, delete, get, post, web};
-use chrono::{Duration, Utc};
 use my_fam_tree_domain::{FamilyId, MembershipRepoError, OwnerTransferRepoError, Role, UserId};
 use my_fam_tree_email::{
     Locale as EmailLocale, render_owner_transfer_admin, render_owner_transfer_owner,
 };
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -64,7 +64,8 @@ pub struct TransferStatus {
     pub to_user_id: Uuid,
     pub from_confirmed: bool,
     pub to_confirmed: bool,
-    pub expires_at: chrono::DateTime<Utc>,
+    #[serde(with = "time::serde::rfc3339")]
+    pub expires_at: time::OffsetDateTime,
 }
 
 response_body!(pub TransferStatusResponseBody, TransferStatus);
@@ -194,7 +195,7 @@ pub async fn begin(
 
     let (from_token, from_hash) = generate_opaque_token();
     let (to_token, to_hash) = generate_opaque_token();
-    let expires_at = Utc::now() + Duration::hours(1);
+    let expires_at = OffsetDateTime::now_utc() + Duration::hours(1);
 
     let id = state
         .owner_transfers
@@ -309,7 +310,7 @@ pub async fn confirm(
 
     let claims = user_claims(&req)?;
     let token_hash = hash_token(body.token.trim());
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
 
     let (transfer, side) = state
         .owner_transfers
@@ -420,7 +421,7 @@ pub async fn cancel(
     if active.id != family_id {
         return Err(ApiError::Unauthenticated);
     }
-    state.owner_transfers.cancel(family_id, Utc::now()).await.map_err(internal)?;
+    state.owner_transfers.cancel(family_id, OffsetDateTime::now_utc()).await.map_err(internal)?;
     audit::record(
         &state.audit,
         family_id,

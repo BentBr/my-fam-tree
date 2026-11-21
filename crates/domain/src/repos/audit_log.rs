@@ -39,8 +39,8 @@ pub struct AuditEntry {
 #[derive(Debug, Clone)]
 pub struct AuditFilter {
     pub family_id: FamilyId,
-    pub from: Option<chrono::DateTime<chrono::Utc>>,
-    pub to: Option<chrono::DateTime<chrono::Utc>>,
+    pub from: Option<time::OffsetDateTime>,
+    pub to: Option<time::OffsetDateTime>,
     pub action: Option<String>,
     pub entity_kind: Option<String>,
     pub actor_user_id: Option<UserId>,
@@ -56,7 +56,7 @@ pub struct AuditFilter {
 #[derive(Debug, Clone)]
 pub struct AuditRow {
     pub id: Uuid,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: time::OffsetDateTime,
     pub action: String,
     pub entity_kind: String,
     pub entity_id: Option<Uuid>,

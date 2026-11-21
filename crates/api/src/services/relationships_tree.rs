@@ -7,12 +7,12 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use chrono::NaiveDate;
 use my_fam_tree_domain::{
     FamilyId, ParentLink, ParentLinkRepo, Partnership, PartnershipRepo, PersonFavouriteRepo,
     PersonId, PersonRepo, UserId,
 };
 use serde::Serialize;
+use time::Date;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -25,8 +25,8 @@ pub struct TreeNode {
     pub id: Uuid,
     pub given_name: String,
     pub family_name: String,
-    pub birth_date: Option<NaiveDate>,
-    pub death_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
+    pub death_date: Option<Date>,
     pub parent_ids: Vec<Uuid>,
     pub partner_ids: Vec<Uuid>,
     /// Set when this person row maps to a `users.id`. Used by the FE to
@@ -66,8 +66,8 @@ pub struct PartnerEdge {
     pub a: Uuid,
     pub b: Uuid,
     pub kind: String,
-    pub started_on: Option<NaiveDate>,
-    pub ended_on: Option<NaiveDate>,
+    pub started_on: Option<Date>,
+    pub ended_on: Option<Date>,
     pub end_reason: Option<String>,
 }
 

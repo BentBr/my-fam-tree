@@ -78,6 +78,24 @@ impl FieldViolation {
     }
 }
 
+/// Which part of the request failed to parse (see [`ApiError::MalformedRequest`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RequestPart {
+    Body,
+    Query,
+    Path,
+}
+
+impl std::fmt::Display for RequestPart {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Body => "request body",
+            Self::Query => "query string",
+            Self::Path => "path parameter",
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, ToSchema, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
@@ -99,6 +117,7 @@ pub enum ErrorCode {
     PartnershipDuplicate,
     ParentLinkDuplicate,
     ValidationFailed,
+    RequestMalformed,
     ImageInvalid,
     ConflictStale,
     EmailTaken,
@@ -134,6 +153,7 @@ impl ErrorCode {
             | Self::EmailTaken
             | Self::InviteDuplicate
             | Self::OwnerTransferPending => StatusCode::CONFLICT,
+            Self::RequestMalformed => StatusCode::BAD_REQUEST,
             Self::ValidationFailed | Self::ImageInvalid => StatusCode::UNPROCESSABLE_ENTITY,
             Self::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             Self::Upstream => StatusCode::BAD_GATEWAY,
@@ -162,6 +182,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "Partnership already exists",
             Self::ParentLinkDuplicate => "Parent link already exists",
             Self::ValidationFailed => "Validation failed",
+            Self::RequestMalformed => "Malformed request",
             Self::ImageInvalid => "Invalid image",
             Self::ConflictStale => "Stale state",
             Self::EmailTaken => "Email already in use",
@@ -194,6 +215,7 @@ impl ErrorCode {
             Self::PartnershipDuplicate => "partnership.duplicate",
             Self::ParentLinkDuplicate => "parent_link.duplicate",
             Self::ValidationFailed => "validation.failed",
+            Self::RequestMalformed => "request.malformed",
             Self::ImageInvalid => "image.invalid",
             Self::ConflictStale => "conflict.stale",
             Self::EmailTaken => "email.taken",
@@ -224,6 +246,7 @@ impl ErrorCode {
         Self::PartnershipDuplicate,
         Self::ParentLinkDuplicate,
         Self::ValidationFailed,
+        Self::RequestMalformed,
         Self::ImageInvalid,
         Self::ConflictStale,
         Self::EmailTaken,
@@ -273,6 +296,12 @@ pub enum ApiError {
     ParentLinkDuplicate,
     #[error("validation failed")]
     Validation(Vec<FieldViolation>),
+    /// The request body, query string or path could not be parsed into the
+    /// handler's input type (bad JSON, wrong type, impossible date, unknown
+    /// field, …). `detail` is the deserializer's message about the client's
+    /// own input.
+    #[error("malformed {location}: {detail}")]
+    MalformedRequest { location: RequestPart, detail: String },
     #[error("invalid image: {reason}")]
     ImageInvalid { reason: String },
     #[error("stale state")]
@@ -319,6 +348,7 @@ impl ApiError {
             Self::PartnershipDuplicate => ErrorCode::PartnershipDuplicate,
             Self::ParentLinkDuplicate => ErrorCode::ParentLinkDuplicate,
             Self::Validation(_) => ErrorCode::ValidationFailed,
+            Self::MalformedRequest { .. } => ErrorCode::RequestMalformed,
             Self::ImageInvalid { .. } => ErrorCode::ImageInvalid,
             Self::ConflictStale => ErrorCode::ConflictStale,
             Self::EmailTaken { .. } => ErrorCode::EmailTaken,
@@ -384,6 +414,7 @@ impl ResponseError for ApiError {
                 tracing::warn!(retry_after_secs = retry_after_secs, code = ?self.code(), "rate limited");
             }
             Self::Validation(_)
+            | Self::MalformedRequest { .. }
             | Self::PersonNotFound { .. }
             | Self::ContactNotFound { .. }
             | Self::MembershipNotFound { .. } => {

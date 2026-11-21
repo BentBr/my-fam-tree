@@ -459,6 +459,7 @@
         "end_reason_death_mismatch": "Heads up: end reason is 'death' but no partner has a matching date of death."
     },
     "errorCodes": {
+        "request_malformed": "The request could not be read. Please check your input and try again.",
         "validation_failed": "The submitted data is invalid.",
         "relationship_cycle": "That link would create a cycle in the family tree.",
         "partnership_duplicate": "A current partnership of the same kind already exists for these partners.",

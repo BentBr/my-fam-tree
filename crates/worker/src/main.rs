@@ -193,6 +193,8 @@ async fn main() -> anyhow::Result<()> {
     {
         let s = worker.clone();
         let fixed_handle = fixed.clone();
+        let zones: Arc<dyn my_fam_tree_domain::TimeZoneRepo> =
+            Arc::new(my_fam_tree_persistence::PgTimeZoneRepo::new(pool.clone()));
         std::thread::spawn(move || {
             actix_web::rt::System::new().block_on(ops_http::serve_with_test_fixtures(
                 hb_for_http,
@@ -200,6 +202,7 @@ async fn main() -> anyhow::Result<()> {
                 bind,
                 s,
                 fixed_handle,
+                zones,
             ));
         });
     }

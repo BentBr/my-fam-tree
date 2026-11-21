@@ -6,9 +6,10 @@
 
 use async_trait::async_trait;
 use my_fam_tree_domain::{
-    ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError, UserId,
+    DueDigestUser, ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError, UserId,
 };
 use sqlx::PgPool;
+use time::OffsetDateTime;
 
 #[derive(Clone, Debug)]
 pub struct PgReminderPrefsRepo {
@@ -72,13 +73,40 @@ impl ReminderPreferencesRepo for PgReminderPrefsRepo {
         Ok(())
     }
 
-    async fn enabled_user_ids(&self) -> Result<Vec<UserId>, ReminderPrefsRepoError> {
+    async fn due_at_local_hour(
+        &self,
+        now: OffsetDateTime,
+        local_hour: u8,
+        fallback_tz: &str,
+    ) -> Result<Vec<DueDigestUser>, ReminderPrefsRepoError> {
+        // `pg_timezone_names` reads the tz catalogue from disk; as a join
+        // input it is scanned once per query (not per user). A stored name it
+        // doesn't contain (typo, legacy value) falls back to $3.
         let rows = sqlx::query!(
-            "SELECT user_id FROM reminder_preferences WHERE emails_enabled = true ORDER BY user_id"
+            r#"WITH zones AS (SELECT name FROM pg_timezone_names)
+               SELECT rp.user_id AS "user_id!",
+                      (($1::timestamptz) AT TIME ZONE COALESCE(z.name, $3::text))::date
+                          AS "local_date!"
+                 FROM reminder_preferences rp
+                 JOIN users u ON u.id = rp.user_id
+            LEFT JOIN zones z ON z.name = u.timezone
+                WHERE rp.emails_enabled = true
+                  AND EXTRACT(HOUR FROM ($1::timestamptz) AT TIME ZONE COALESCE(z.name, $3::text))::int4
+                      = $2::int4
+             ORDER BY rp.user_id"#,
+            now,
+            i32::from(local_hour),
+            fallback_tz,
         )
         .fetch_all(&self.pool)
         .await
         .map_err(|e| ReminderPrefsRepoError::Db(e.to_string()))?;
-        Ok(rows.into_iter().map(|r| UserId::from_uuid(r.user_id)).collect())
+        Ok(rows
+            .into_iter()
+            .map(|r| DueDigestUser {
+                user_id: UserId::from_uuid(r.user_id),
+                local_date: r.local_date,
+            })
+            .collect())
     }
 }

@@ -10,7 +10,6 @@
 
 use std::time::Duration as StdDuration;
 
-use chrono::{Duration, Utc};
 use my_fam_tree_domain::{
     FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, Locale, MagicLinkPurpose, MagicLinkRepo,
     OwnerTransferRepo, OwnerTransferRepoError, ParentKind, ParentLinkRepo, ParentLinkRepoError,
@@ -24,6 +23,7 @@ use sqlx::PgPool;
 use testcontainers::ContainerAsync;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::postgres::Postgres;
+use time::{Duration, OffsetDateTime};
 
 /// Bundles the pool + container so the test owns both. When `TestDb` drops,
 /// the container's `Drop` impl asks the testcontainers reaper to stop and
@@ -81,7 +81,7 @@ async fn magic_link_consume_once() {
         &u.email,
         &hash,
         MagicLinkPurpose::Login,
-        Utc::now() + Duration::minutes(5),
+        OffsetDateTime::now_utc() + Duration::minutes(5),
     )
     .await
     .unwrap();
@@ -111,15 +111,25 @@ async fn refresh_token_rotation_preserves_absolute_expiry() {
     let users = PgUserRepo::new(db.pool.clone());
     let rts = PgRefreshTokenRepo::new(db.pool.clone());
     let u = users.create("x@y.z", Locale::De).await.unwrap();
-    let abs_exp = Utc::now() + Duration::days(90);
+    let abs_exp = OffsetDateTime::now_utc() + Duration::days(90);
     let h1 = [1_u8; 32];
     let h2 = [2_u8; 32];
-    rts.create(u.id, &h1, None, None, None, Utc::now() + Duration::days(30), abs_exp)
+    rts.create(
+        u.id,
+        &h1,
+        None,
+        None,
+        None,
+        OffsetDateTime::now_utc() + Duration::days(30),
+        abs_exp,
+    )
+    .await
+    .unwrap();
+    rts.rotate(&h1, &h2, OffsetDateTime::now_utc() + Duration::days(30), None, None, None)
         .await
         .unwrap();
-    rts.rotate(&h1, &h2, Utc::now() + Duration::days(30), None, None, None).await.unwrap();
     let new_rec = rts.find_active_by_hash(&h2).await.unwrap().expect("found");
-    assert_eq!(new_rec.absolute_expires_at.timestamp(), abs_exp.timestamp());
+    assert_eq!(new_rec.absolute_expires_at.unix_timestamp(), abs_exp.unix_timestamp());
     assert!(rts.find_active_by_hash(&h1).await.unwrap().is_none());
 }
 
@@ -195,13 +205,13 @@ async fn invite_accept_is_idempotent() {
         owner.id,
         None,
         &hash,
-        Utc::now() + Duration::days(14),
+        OffsetDateTime::now_utc() + Duration::days(14),
     )
     .await
     .unwrap();
-    let inv = invs.accept(&hash, Utc::now()).await.expect("accept");
+    let inv = invs.accept(&hash, OffsetDateTime::now_utc()).await.expect("accept");
     assert_eq!(inv.email, "new@x.y");
-    let second = invs.accept(&hash, Utc::now()).await;
+    let second = invs.accept(&hash, OffsetDateTime::now_utc()).await;
     assert!(matches!(second, Err(my_fam_tree_domain::InviteRepoError::NotFoundOrAccepted)));
 }
 
@@ -231,7 +241,7 @@ async fn complete_with_role_swap_rolls_back_when_incoming_membership_removed() {
             to_user.id,
             &[1_u8; 32],
             &[2_u8; 32],
-            Utc::now() + Duration::hours(1),
+            OffsetDateTime::now_utc() + Duration::hours(1),
         )
         .await
         .expect("begin transfer");
@@ -241,7 +251,7 @@ async fn complete_with_role_swap_rolls_back_when_incoming_membership_removed() {
     memberships.remove(family.id, to_user.id).await.expect("remove incoming");
 
     let res = transfers
-        .complete_with_role_swap(id, family.id, from_user.id, to_user.id, Utc::now())
+        .complete_with_role_swap(id, family.id, from_user.id, to_user.id, OffsetDateTime::now_utc())
         .await;
     assert!(
         matches!(res, Err(OwnerTransferRepoError::MembershipChanged)),

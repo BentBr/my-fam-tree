@@ -3,9 +3,9 @@
 //! cadence (see `crates/worker/src/janitor.rs`).
 
 use async_trait::async_trait;
-use chrono::{DateTime, Duration, Utc};
 use my_fam_tree_domain::{JanitorRepo, JanitorRepoError, JanitorSweepReport};
 use sqlx::PgPool;
+use time::{Duration, OffsetDateTime};
 
 #[derive(Clone, Debug)]
 pub struct PgJanitor {
@@ -27,7 +27,7 @@ fn map_err(e: &sqlx::Error) -> JanitorRepoError {
 impl JanitorRepo for PgJanitor {
     async fn sweep_expired(
         &self,
-        now: DateTime<Utc>,
+        now: OffsetDateTime,
         grace: Duration,
     ) -> Result<JanitorSweepReport, JanitorRepoError> {
         let cutoff = now - grace;

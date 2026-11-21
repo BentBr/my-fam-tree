@@ -225,7 +225,7 @@ impl my_fam_tree_domain::EmailOutboxRepo for SyncOutbox {
     }
     async fn claim_next_due(
         &self,
-        _now: chrono::DateTime<chrono::Utc>,
+        _now: time::OffsetDateTime,
     ) -> Result<Option<my_fam_tree_domain::EmailOutboxRow>, my_fam_tree_domain::EmailOutboxRepoError>
     {
         Ok(None)
@@ -233,14 +233,14 @@ impl my_fam_tree_domain::EmailOutboxRepo for SyncOutbox {
     async fn mark_sent(
         &self,
         _id: my_fam_tree_domain::EmailOutboxId,
-        _sent_at: chrono::DateTime<chrono::Utc>,
+        _sent_at: time::OffsetDateTime,
     ) -> Result<(), my_fam_tree_domain::EmailOutboxRepoError> {
         Ok(())
     }
     async fn mark_retry(
         &self,
         _id: my_fam_tree_domain::EmailOutboxId,
-        _next_attempt_at: chrono::DateTime<chrono::Utc>,
+        _next_attempt_at: time::OffsetDateTime,
         _last_error: &str,
     ) -> Result<(), my_fam_tree_domain::EmailOutboxRepoError> {
         Ok(())

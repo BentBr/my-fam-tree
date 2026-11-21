@@ -25,8 +25,7 @@ my-fam-tree-persistence = { path = "../persistence" }
 my-fam-tree-email = { path = "../email" }
 anyhow.workspace = true
 async-trait.workspace = true
-chrono.workspace = true
-chrono-tz.workspace = true
+time.workspace = true
 dotenvy.workspace = true
 rand.workspace = true
 redis.workspace = true

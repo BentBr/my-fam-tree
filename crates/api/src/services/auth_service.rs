@@ -7,12 +7,12 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use chrono::{Duration, Utc};
 use my_fam_tree_config::JwtConfig;
 use my_fam_tree_domain::{
     FamilyMembershipRepo, MagicLinkPurpose, MagicLinkRepo, RefreshTokenRepo, User, UserId,
 };
 use my_fam_tree_email::Locale;
+use time::{Duration, OffsetDateTime};
 
 use crate::auth::{FamilyClaim, JwtIssuer, generate_opaque_token};
 
@@ -67,7 +67,7 @@ pub async fn mint_refresh_token_for(
     user: &User,
 ) -> anyhow::Result<String> {
     let (token, hash) = generate_opaque_token();
-    let now = Utc::now();
+    let now = OffsetDateTime::now_utc();
     let ttl = i64::try_from(jwt_cfg.refresh_ttl_seconds).unwrap_or(i64::MAX);
     let abs = i64::try_from(jwt_cfg.refresh_absolute_ttl_seconds).unwrap_or(i64::MAX);
     refresh_tokens
@@ -113,7 +113,7 @@ pub async fn mint_magic_link_url(
             email,
             &hash,
             MagicLinkPurpose::Login,
-            Utc::now() + Duration::seconds(ttl),
+            OffsetDateTime::now_utc() + Duration::seconds(ttl),
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))

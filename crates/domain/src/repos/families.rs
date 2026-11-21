@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
+use time::OffsetDateTime;
 
 use crate::{FamilyId, UserId};
 
@@ -8,7 +8,7 @@ pub struct Family {
     pub id: FamilyId,
     pub name: String,
     pub created_by: UserId,
-    pub created_at: DateTime<Utc>,
+    pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, thiserror::Error)]

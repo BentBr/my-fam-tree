@@ -5,7 +5,7 @@
 //! invokes the sweep, and logs the per-table counts. Errors are logged and
 //! swallowed — a sweep failure must NOT take down the worker loop.
 
-use chrono::Duration;
+use time::Duration;
 
 use crate::state::WorkerState;
 

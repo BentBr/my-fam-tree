@@ -48,8 +48,6 @@ aws-sdk-s3 = { version = "1", default-features = false, features = ["behavior-ve
 aws-smithy-async = { version = "1", features = ["rt-tokio"] }
 base64 = "0.23"
 bytes = "1.10"
-chrono = { version = "0.4", features = ["serde"] }
-chrono-tz = "0.10"
 clap = { version = "4.6", features = ["derive", "env"] }
 deadpool-redis = "0.23"
 dotenvy = "0.15"
@@ -73,14 +71,19 @@ reqwest = { version = "0.13", features = ["json", "rustls"], default-features = 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sha2 = "0.11"
-sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "chrono", "macros", "migrate", "ipnetwork", "json"] }
+sqlx = { version = "0.9", default-features = false, features = ["postgres", "runtime-tokio", "tls-rustls", "uuid", "time", "macros", "migrate", "ipnetwork", "json"] }
 thiserror = "2"
+# Date/time. Replaces chrono (RUSTSEC-2026-0543, unmaintained). Timezone
+# conversion (IANA zones) is done in Postgres, so no tz crate is needed.
+# Timestamps serialize as RFC 3339 via `#[serde(with = "time::serde::rfc3339")]`
+# on every field; `serde-human-readable` makes `Date` serialize as "YYYY-MM-DD".
+time = { version = "0.3", features = ["serde-well-known", "serde-human-readable", "macros", "formatting", "parsing"] }
 url = "2.5"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-actix-web = "0.7"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-utoipa = { version = "6", features = ["actix_extras", "uuid", "chrono"] }
+utoipa = { version = "6", features = ["actix_extras", "uuid", "time"] }
 utoipa-swagger-ui = { version = "10", features = ["actix-web"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 

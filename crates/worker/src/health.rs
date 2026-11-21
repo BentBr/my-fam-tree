@@ -72,7 +72,8 @@ impl Heartbeat {
 }
 
 fn now_unix_ms() -> i64 {
-    chrono::Utc::now().timestamp_millis()
+    i64::try_from(time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000)
+        .unwrap_or(i64::MAX)
 }
 
 #[derive(Debug, Serialize)]

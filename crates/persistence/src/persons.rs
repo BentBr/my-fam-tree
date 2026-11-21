@@ -1,11 +1,11 @@
 //! Postgres-backed [`PersonRepo`] implementation.
 
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveDate, Utc};
 use my_fam_tree_domain::{
     FamilyId, Person, PersonDraft, PersonId, PersonRepo, PersonRepoError, UserId,
 };
 use sqlx::PgPool;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 #[derive(Clone, Debug)]
@@ -31,14 +31,14 @@ struct PersonRow {
     name_at_birth: String,
     nickname: String,
     gender: String,
-    birth_date: Option<NaiveDate>,
+    birth_date: Option<Date>,
     birth_place: String,
-    death_date: Option<NaiveDate>,
+    death_date: Option<Date>,
     notes: String,
     linked_user_id: Option<Uuid>,
     photo_key: Option<String>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
+    created_at: OffsetDateTime,
+    updated_at: OffsetDateTime,
 }
 
 impl From<PersonRow> for Person {

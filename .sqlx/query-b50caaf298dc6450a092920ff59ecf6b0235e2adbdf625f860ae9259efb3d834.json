@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (($1::date + $2::time) AT TIME ZONE $3::text) AS \"instant!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "instant!",
+        "type_info": "Timestamptz",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Time",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b50caaf298dc6450a092920ff59ecf6b0235e2adbdf625f860ae9259efb3d834"
+}
