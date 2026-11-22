@@ -1,6 +1,8 @@
 import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import prettier from '@vue/eslint-config-prettier'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
+import importX from 'eslint-plugin-import-x'
 import vue from 'eslint-plugin-vue'
 import globals from 'globals'
 
@@ -81,5 +83,16 @@ export default defineConfigWithVueTs(
         ignores: ['src/design-system/**'],
         plugins: { local: { rules: { 'no-raw-color': noRawColor } } },
         rules: { 'local/no-raw-color': 'error' },
+    },
+    {
+        files: ['src/**/*.{ts,vue}'],
+        plugins: { 'import-x': importX },
+        settings: {
+            'import-x/resolver-next': [createTypeScriptImportResolver({ project: './tsconfig.json' })],
+            // Without explicit parsers import-x cannot read dependency modules and silently finds no cycles.
+            'import-x/extensions': ['.ts', '.vue', '.js'],
+            'import-x/parsers': { '@typescript-eslint/parser': ['.ts'], 'vue-eslint-parser': ['.vue'] },
+        },
+        rules: { 'import-x/no-cycle': ['error', { maxDepth: 5 }] },
     },
 )
