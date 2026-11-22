@@ -5,13 +5,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 
 import { useSetFavourite } from '@/api/hooks/persons'
-import { useTree } from '@/api/hooks/relationships'
+import { useKinship, useTree } from '@/api/hooks/relationships'
+import type { KinshipRelation } from '@/api/types'
+import type { PathHighlight } from '@/components/tree/comparePath'
 import FamilyTree from '@/components/tree/FamilyTree.vue'
+import KinshipBanner from '@/components/tree/KinshipBanner.vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 
+import { nextComparePair, useCompareMode, withTreeQuery, type TreeQueryPatch } from './compareMode'
 import PersonDetail from './PersonDetail.vue'
 import PersonEdit from './PersonEdit.vue'
+import TreeModeToggles from './TreeModeToggles.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -51,14 +56,6 @@ const creating = ref(false)
 // Toggling it on closes any open drawer so the two interaction modes
 // don't fight; FamilyTree clears its own pin when the mode flips off.
 const highlightMode = ref(false)
-function toggleHighlightMode(): void {
-    highlightMode.value = !highlightMode.value
-    if (highlightMode.value) {
-        selectedId.value = null
-        creating.value = false
-        selectInUrl(null)
-    }
-}
 
 /**
  * Center-on-member resolution order:
@@ -78,14 +75,111 @@ const centerOnId = computed<string | null>(() => {
     return me?.id ?? null
 })
 
+/** Single writer for `?center=` / `?compare=` (see `withTreeQuery`). */
+function patchQuery(patch: TreeQueryPatch): void {
+    void router.replace({ query: withTreeQuery(route.query, patch) })
+}
+
 function selectInUrl(id: string | null): void {
-    const rest = { ...route.query }
-    if (id === null) {
-        delete rest['center']
-    } else {
-        rest['center'] = id
+    patchQuery({ center: id })
+}
+
+// The family the tree ON SCREEN belongs to. After a family switch the old
+// tree stays visible until the refetch lands; its person ids must not be
+// asked about under the new family's header. Unknown while a (re)fetch that
+// started before this view mounted is still running.
+const treeFamilyId = ref<string | null>(tree.isFetching.value ? null : family.activeFamilyId)
+watch(
+    () => tree.dataUpdatedAt.value,
+    () => {
+        treeFamilyId.value = family.activeFamilyId
+    },
+)
+const nodeIds = computed<ReadonlySet<string> | null>(() => {
+    const nodes = tree.data.value?.nodes
+    if (nodes === undefined || treeFamilyId.value !== family.activeFamilyId) return null
+    return new Set(nodes.map((n) => n.id))
+})
+
+// Compare mode: pick two persons, show how they are related. The pair lives
+// in `?compare=`. Browse / highlight / compare are mutually exclusive and the
+// drawer only exists in browse mode.
+const compare = useCompareMode(() => nodeIds.value)
+const kinship = useKinship(compare.a, compare.b)
+const activeRelation = ref<KinshipRelation | null>(null)
+const highlight = computed<PathHighlight | null>(() => {
+    const relation = compare.active.value ? activeRelation.value : null
+    return relation === null ? null : { path: relation.path, partnershipId: relation.via_partnership_id ?? null }
+})
+
+/** Every way into compare mode goes through here, so the exclusivity holds for URL changes too. */
+function enterCompare(): void {
+    compare.active.value = true
+    highlightMode.value = false
+    selectedId.value = null
+    creating.value = false
+}
+
+function toggleCompareMode(): void {
+    if (compare.active.value) {
+        compare.active.value = false
+        patchQuery({ compare: [] })
+        return
     }
-    void router.replace({ query: rest })
+    enterCompare()
+    patchQuery({ center: null })
+}
+
+function toggleHighlightMode(): void {
+    highlightMode.value = !highlightMode.value
+    if (highlightMode.value) {
+        compare.active.value = false
+        selectedId.value = null
+        creating.value = false
+        patchQuery({ center: null, compare: [] })
+    }
+}
+
+// A pair in the URL — deep link, or navigation while this view is mounted —
+// enters compare mode. An emptied `?compare=` only empties the selection: the
+// mode is left through the toggles or Add person, so the empty selection
+// right after switching compare on survives.
+watch(
+    compare.urlPair,
+    (ids) => {
+        if (ids.length > 0 && !compare.active.value) enterCompare()
+    },
+    { immediate: true },
+)
+
+// Once the tree on screen is known, rewrite `?compare=` to the usable pair
+// (lower-cased, deduplicated, unknown persons removed).
+// Immediate: a tree that is already cached is known from the first run.
+watch(
+    [compare.pair, nodeIds] as const,
+    ([ids, known]) => {
+        const raw = route.query['compare']
+        if (known !== null && raw !== undefined && raw !== ids.join(',')) patchQuery({ compare: ids })
+    },
+    { immediate: true },
+)
+
+function onCompareSelect(id: string): void {
+    patchQuery({ compare: nextComparePair(compare.pair.value, id) })
+}
+
+function onActiveRelation(relation: KinshipRelation | null): void {
+    activeRelation.value = relation
+}
+
+function onKinshipRetry(): void {
+    void kinship.refetch()
+}
+
+/** Display name from the already-loaded tree — the kinship payload carries ids + gender only. */
+function personName(id: string | null): string {
+    const node = id === null ? undefined : tree.data.value?.nodes.find((n) => n.id === id)
+    return node === undefined ? '' : `${node.given_name} ${node.family_name}`.trim()
 }
 
 function onSelect(id: string): void {
@@ -109,9 +203,10 @@ function onDrawerUpdate(open: boolean): void {
 }
 
 function onCreateClick(): void {
+    compare.active.value = false
     creating.value = true
     selectedId.value = null
-    selectInUrl(null)
+    patchQuery({ center: null, compare: [] })
 }
 
 function onChanged(): void {
@@ -149,6 +244,7 @@ onMounted(() => {
 
 watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
     if (!mounted) return
+    if (compare.active.value) return
     if (target === selectedId.value) return
     selectedId.value = target
     if (target !== null) family.setFocusedPerson(target)
@@ -188,36 +284,14 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
             >
                 {{ t('tree.fitToView') }}
             </v-btn>
-            <!-- Highlight-mode toggle. When ON, clicking a person pins
-                 their direct-line lineage (lit + sticky while panning)
-                 instead of opening the detail drawer — for tracing who's
-                 related up/down the line. Desktop: labelled toggle next
-                 to Fit-to-view; mobile: icon-only next to Add-person.
-                 The filled (flat/primary) variant signals the active
-                 state; text variant when off. -->
-            <v-btn
-                v-if="!smAndDown && tree.data.value !== undefined && tree.data.value.nodes.length > 0"
-                prepend-icon="waypoints"
-                :variant="highlightMode ? 'flat' : 'text'"
-                :color="highlightMode ? 'primary' : undefined"
-                :active="highlightMode"
-                :title="t('tree.highlightMode')"
-                data-testid="tree-highlight-mode"
-                @click="toggleHighlightMode"
-            >
-                {{ t('tree.highlightMode') }}
-            </v-btn>
-            <v-btn
-                v-if="smAndDown && tree.data.value !== undefined && tree.data.value.nodes.length > 0"
-                icon="waypoints"
-                :variant="highlightMode ? 'flat' : 'text'"
-                :color="highlightMode ? 'primary' : undefined"
-                :active="highlightMode"
-                size="default"
-                :title="t('tree.highlightMode')"
-                :aria-label="t('tree.highlightMode')"
-                data-testid="tree-highlight-mode"
-                @click="toggleHighlightMode"
+            <!-- Highlight / compare toggles (see TreeModeToggles). -->
+            <TreeModeToggles
+                v-if="tree.data.value !== undefined && tree.data.value.nodes.length > 0"
+                :compact="smAndDown"
+                :highlight="highlightMode"
+                :compare="compare.active.value"
+                @toggle-highlight="toggleHighlightMode"
+                @toggle-compare="toggleCompareMode"
             />
             <!-- Add-person CTA. Single button across breakpoints, sitting
                  in the toolbar row next to the title:
@@ -252,6 +326,18 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
 
         <div class="tree-row">
             <div class="canvas">
+                <KinshipBanner
+                    v-if="compare.active.value && tree.data.value"
+                    :name-a="personName(compare.a.value)"
+                    :name-b="personName(compare.b.value)"
+                    :gender-b="kinship.data.value?.person_b.gender ?? ''"
+                    :selected-count="compare.pair.value.length"
+                    :relations="kinship.data.value?.relations ?? null"
+                    :loading="kinship.isLoading.value"
+                    :failed="kinship.isError.value && kinship.data.value === undefined"
+                    @active-relation="onActiveRelation"
+                    @retry="onKinshipRetry"
+                />
                 <v-skeleton-loader v-if="tree.isLoading.value" type="image" />
                 <v-alert v-else-if="tree.error.value" type="error" data-testid="tree-error">
                     {{ t('tree.error') }}
@@ -297,6 +383,11 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
                     :center-on-id="centerOnId"
                     :current-user-id="auth.user?.id ?? null"
                     :highlight-mode="highlightMode"
+                    :compare-mode="compare.active.value"
+                    :compare-a-id="compare.a.value"
+                    :compare-b-id="compare.b.value"
+                    :highlight="highlight"
+                    @compare-select="onCompareSelect"
                     @select="onSelect"
                     @toggle-favourite="onToggleFavourite"
                 />
@@ -362,6 +453,8 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
 .canvas {
     flex: 1;
     min-width: 0;
+    /* Anchors the absolutely positioned kinship banner. */
+    position: relative;
 }
 .empty-state {
     display: flex;
