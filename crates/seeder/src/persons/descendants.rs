@@ -3,12 +3,13 @@
 use super::{PersonSeed, ymd};
 use crate::ids::{
     SEED_BOB_USER_ID, SEED_PERSON_EMMA_ID, SEED_PERSON_FELIX_ID, SEED_PERSON_HEINZ_ID,
-    SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID, SEED_PERSON_MAREN_ID,
-    SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID, SEED_PERSON_NOAH_ID,
-    SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID, SEED_PERSON_URSULA_ID,
+    SEED_PERSON_KENJI_ID, SEED_PERSON_LARS_ID, SEED_PERSON_LENA_ID, SEED_PERSON_LINA_ID,
+    SEED_PERSON_MAREN_ID, SEED_PERSON_MAX_ID, SEED_PERSON_METTE_ID, SEED_PERSON_MIA_ID,
+    SEED_PERSON_NOAH_ID, SEED_PERSON_PAUL_ID, SEED_PERSON_SVEN_ID, SEED_PERSON_TOM_ID,
+    SEED_PERSON_URSULA_ID,
 };
 
-pub(super) const ROWS: [PersonSeed; 14] = [
+pub(super) const ROWS: [PersonSeed; 16] = [
     // -------------------------------------------------------------
     // G3 Müller — Lina, Max, Mia (Klaus + Anna) and Felix (Klaus + Brigitte).
     // -------------------------------------------------------------
@@ -121,6 +122,32 @@ pub(super) const ROWS: [PersonSeed; 14] = [
         birth_place: "Berlin",
         death_date: None,
         notes: "Lina's son; G4, born after Emma.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_PAUL_ID,
+        given: "Paul",
+        family: "Weber-Schmidt",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(2025, 2, 14),
+        birth_place: "Hamburg",
+        death_date: None,
+        notes: "Lena's son; G4 — second cousin of Emma and Noah.",
+        linked_user_id: None,
+    },
+    PersonSeed {
+        id: SEED_PERSON_KENJI_ID,
+        given: "Kenji",
+        family: "Tanaka",
+        name_at_birth: "",
+        nickname: "",
+        gender: "male",
+        birth_date: ymd(2001, 6, 30),
+        birth_place: "Osaka",
+        death_date: None,
+        notes: "Yuki's son from an earlier relationship — step-sibling of Klaus's children.",
         linked_user_id: None,
     },
     // -------------------------------------------------------------

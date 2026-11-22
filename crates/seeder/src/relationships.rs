@@ -48,6 +48,20 @@ pub(crate) async fn upsert_parent_link(db: &SeedDb<'_>, r: &ParentLinkSeed) -> a
     Ok(())
 }
 
+/// The Müller family's parent-link rows, for tests that reason about the
+/// seeded graph without a database.
+#[cfg(test)]
+pub(crate) const fn parent_link_rows() -> &'static [ParentLinkSeed] {
+    &parent_links::PARENT_LINKS
+}
+
+/// The Müller family's partnership rows, for tests that reason about the
+/// seeded graph without a database.
+#[cfg(test)]
+pub(crate) const fn partnership_rows() -> &'static [PartnershipSeed] {
+    &partnerships::PARTNERSHIPS
+}
+
 /// Upsert every seeded `parent_link` row.
 ///
 /// # Errors

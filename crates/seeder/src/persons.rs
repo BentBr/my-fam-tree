@@ -145,9 +145,10 @@ mod tests {
     use std::collections::HashSet;
 
     use super::{descendants, elders, falke_krause, steinbach};
+    use crate::ids::SEED_PERSON_COUNT;
 
     #[test]
-    fn seed_table_has_fifty_unique_persons() {
+    fn seed_table_has_the_expected_number_of_unique_persons() {
         let ids: Vec<_> = [
             elders::ROWS.as_slice(),
             descendants::ROWS.as_slice(),
@@ -158,7 +159,7 @@ mod tests {
         .flatten()
         .map(|p| p.id)
         .collect();
-        assert_eq!(ids.len(), 50);
-        assert_eq!(ids.iter().collect::<HashSet<_>>().len(), 50);
+        assert_eq!(ids.len(), SEED_PERSON_COUNT);
+        assert_eq!(ids.iter().collect::<HashSet<_>>().len(), SEED_PERSON_COUNT);
     }
 }
