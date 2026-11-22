@@ -24,6 +24,7 @@ ruleTester.run('no-raw-color', noRawColor, {
         "const id = '#section'",
         'const tpl = `#/route/${id}`',
         "const themed = 'rgb(var(--v-theme-primary))'",
+        "const spaced = 'rgb( var(--v-theme-primary) )'",
     ],
     invalid: [
         { code: "const c = '#fff'", errors: [error] },
@@ -35,6 +36,7 @@ ruleTester.run('no-raw-color', noRawColor, {
         { code: 'const c = `#fff`', errors: [error] },
         { code: 'const c = `rgb(${r}, 0, 0)`', errors: [error] },
         { code: "const c = 'rgb(var(--v-theme-primary, 0 0 0))'", errors: [error] },
+        { code: "const c = 'rgb( var(--v-theme-primary, 0 0 0))'", errors: [error] },
     ],
 })
 
@@ -63,6 +65,7 @@ vueTester.run('no-raw-color (vue)', noRawColor, {
             '.x { color: rgba(var(--v-theme-on-surface), 0.5); background: rgb(var(--v-theme-primary) / 0.06); }',
         ),
         sfc('<div style="outline: 2px solid rgb(var(--v-theme-primary))" />'),
+        sfc('<div class="x" />', '.x { color: rgba( var(--v-theme-on-surface), 0.5); }'),
         sfc('<div class="x" />', '.x { color: var(--accent); border: 1px solid var(--line); }'),
         sfc('<div class="x" />', '/* was #fff, now a token */ .x { color: var(--accent); }'),
     ],
@@ -74,6 +77,7 @@ vueTester.run('no-raw-color (vue)', noRawColor, {
             errors: [error],
         },
         { ...sfc('<div style="color: hsl(var(--h, 0 0% 0%))">x</div>'), errors: [error] },
+        { ...sfc('<div style="color: hsl( var(--h, 0 0% 0%))">x</div>'), errors: [error] },
         { ...sfc('<div style="border: 1px solid #A1B2C3; color: #fff">x</div>'), errors: [error, error] },
         { ...sfc(`<div :style="{ color: '#fff' }" />`), errors: [error] },
         {

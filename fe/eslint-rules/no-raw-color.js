@@ -1,11 +1,12 @@
 // Colours belong in src/design-system (tokens / theme); everywhere else must reference them.
 const HEX = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 // `rgb(var(--v-theme-…))` reads a theme token (Vuetify stores theme colours as RGB triplets), so it is
-// allowed — but only without a fallback, which would smuggle a raw colour in.
-const COLOR_FN = /^(rgb|rgba|hsl|hsla)\(\s*(?!var\(--[\w-]+\s*\))/i
+// allowed — but only without a fallback, which would smuggle a raw colour in. The whitespace sits
+// inside the lookahead: outside it, `\s*` could backtrack to zero and flag `rgb( var(--x))`.
+const COLOR_FN = /^(rgb|rgba|hsl|hsla)\((?!\s*var\(--[\w-]+\s*\))/i
 // Unanchored variant for CSS text (style attributes and <style> blocks).
 const CSS_COLOR =
-    /(?<![\w#-])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![\w-])|\b(?:rgba?|hsla?)\(\s*(?!var\(--[\w-]+\s*\))/gi
+    /(?<![\w#-])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![\w-])|\b(?:rgba?|hsla?)\((?!\s*var\(--[\w-]+\s*\))/gi
 
 function isRawColor(text) {
     const value = text.trim()
