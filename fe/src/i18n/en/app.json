@@ -140,6 +140,41 @@
             "title": "No one here yet",
             "subtitle": "Start your family tree by adding the first person.",
             "cta": "Add your first person"
+        },
+        "kinship": {
+            "compareMode": "Compare",
+            "banner": {
+                "sentence": "{b} is {a}'s {relation}",
+                "selectFirst": "Select two persons to compare…",
+                "selectSecond": "Select a second person…",
+                "loading": "Working out the relation…",
+                "none": "No relation found",
+                "error": "The relation could not be loaded.",
+                "retry": "Try again"
+            },
+            "parent": { "m": "father", "f": "mother", "n": "parent" },
+            "child": { "m": "son", "f": "daughter", "n": "child" },
+            "grandparent": { "m": "grandfather", "f": "grandmother", "n": "grandparent" },
+            "grandchild": { "m": "grandson", "f": "granddaughter", "n": "grandchild" },
+            "sibling": { "m": "brother", "f": "sister", "n": "sibling" },
+            "auntUncle": { "m": "uncle", "f": "aunt", "n": "aunt/uncle" },
+            "grandAuntUncle": { "m": "great-uncle", "f": "great-aunt", "n": "great-aunt/-uncle" },
+            "nieceNephew": { "m": "nephew", "f": "niece", "n": "niece/nephew" },
+            "grandNieceNephew": { "m": "great-nephew", "f": "great-niece", "n": "great-niece/-nephew" },
+            "cousin": { "m": "{degree}-degree cousin", "f": "{degree}-degree cousin", "n": "{degree}-degree cousin" },
+            "cousinRemoved": {
+                "m": "{degree}-degree cousin, {removed}× removed",
+                "f": "{degree}-degree cousin, {removed}× removed",
+                "n": "{degree}-degree cousin, {removed}× removed"
+            },
+            "parentInLaw": { "m": "father-in-law", "f": "mother-in-law", "n": "parent-in-law" },
+            "childInLaw": { "m": "son-in-law", "f": "daughter-in-law", "n": "child-in-law" },
+            "siblingInLaw": { "m": "brother-in-law", "f": "sister-in-law", "n": "sibling-in-law" },
+            "spouse": { "m": "husband", "f": "wife", "n": "spouse" },
+            "partner": { "m": "partner", "f": "partner", "n": "partner" },
+            "prefix": { "great": "great-", "step": "step-", "half": "half-", "ex": "ex-" },
+            "suffix": { "byMarriage": " (by marriage)", "widowed": " (widowed)" },
+            "partnersRelative": "partner's {relation}"
         }
     },
     "person": {
@@ -449,6 +484,7 @@
         "string_too_long": "Must be at most {max} characters (got {actual}).",
         "string_too_short": "Must be at least {min} characters (got {actual}).",
         "value_required": "This field is required.",
+        "must_differ": "Choose two different persons.",
         "uuid_invalid": "Must be a valid UUID.",
         "parent_not_older_than_child": "A parent must be born before the child.",
         "parent_deceased_before_child": "A biological parent must be alive at conception (death more than nine months before the child's birth is not possible).",

@@ -140,6 +140,45 @@
             "title": "Noch niemand da",
             "subtitle": "Lege die erste Person an, um deinen Stammbaum zu starten.",
             "cta": "Erste Person hinzufügen"
+        },
+        "kinship": {
+            "compareMode": "Vergleichen",
+            "banner": {
+                "sentence": "{b} ist {relation} von {a}",
+                "selectFirst": "Zwei Personen zum Vergleichen wählen…",
+                "selectSecond": "Zweite Person wählen…",
+                "loading": "Beziehung wird ermittelt…",
+                "none": "Keine Verwandtschaft gefunden",
+                "error": "Die Beziehung konnte nicht geladen werden.",
+                "retry": "Erneut versuchen"
+            },
+            "parent": { "m": "Vater", "f": "Mutter", "n": "Elternteil" },
+            "child": { "m": "Sohn", "f": "Tochter", "n": "Kind" },
+            "grandparent": { "m": "Großvater", "f": "Großmutter", "n": "Großelternteil" },
+            "grandchild": { "m": "Enkel", "f": "Enkelin", "n": "Enkelkind" },
+            "sibling": { "m": "Bruder", "f": "Schwester", "n": "Geschwisterkind" },
+            "auntUncle": { "m": "Onkel", "f": "Tante", "n": "Onkel/Tante" },
+            "grandAuntUncle": { "m": "Großonkel", "f": "Großtante", "n": "Großonkel/-tante" },
+            "nieceNephew": { "m": "Neffe", "f": "Nichte", "n": "Neffe/Nichte" },
+            "grandNieceNephew": { "m": "Großneffe", "f": "Großnichte", "n": "Großneffe/-nichte" },
+            "cousin": {
+                "m": "Cousin {degree}. Grades",
+                "f": "Cousine {degree}. Grades",
+                "n": "Cousin/Cousine {degree}. Grades"
+            },
+            "cousinRemoved": {
+                "m": "Cousin {degree}. Grades, {removed}-fach entfernt",
+                "f": "Cousine {degree}. Grades, {removed}-fach entfernt",
+                "n": "Cousin/Cousine {degree}. Grades, {removed}-fach entfernt"
+            },
+            "parentInLaw": { "m": "Schwiegervater", "f": "Schwiegermutter", "n": "Schwiegerelternteil" },
+            "childInLaw": { "m": "Schwiegersohn", "f": "Schwiegertochter", "n": "Schwiegerkind" },
+            "siblingInLaw": { "m": "Schwager", "f": "Schwägerin", "n": "Schwager/Schwägerin" },
+            "spouse": { "m": "Ehemann", "f": "Ehefrau", "n": "Ehepartner" },
+            "partner": { "m": "Partner", "f": "Partnerin", "n": "Partner:in" },
+            "prefix": { "great": "Ur", "step": "Stief", "half": "Halb", "ex": "Ex-" },
+            "suffix": { "byMarriage": " (angeheiratet)", "widowed": " (verwitwet)" },
+            "partnersRelative": "{relation} des Partners/der Partnerin"
         }
     },
     "person": {
@@ -449,6 +488,7 @@
         "string_too_long": "Darf höchstens {max} Zeichen lang sein ({actual} eingegeben).",
         "string_too_short": "Muss mindestens {min} Zeichen lang sein ({actual} eingegeben).",
         "value_required": "Dieses Feld ist erforderlich.",
+        "must_differ": "Bitte zwei verschiedene Personen wählen.",
         "uuid_invalid": "Muss eine gültige UUID sein.",
         "parent_not_older_than_child": "Ein Elternteil muss vor dem Kind geboren sein.",
         "parent_deceased_before_child": "Ein leiblicher Elternteil muss bei der Empfängnis gelebt haben (ein Tod mehr als neun Monate vor der Geburt ist nicht möglich).",
