@@ -37,6 +37,10 @@ compose services fit together.
   `clippy.toml`.
 - Suppress a lint only with `#[expect(lint, reason = "…")]` — `#[allow]` is denied. Structural
   causes get one module-level `#![expect]` (e.g. actix handler modules).
+- Time comes from the injected `Clock` (`my_fam_tree_domain::clock`): `state.clock.now()` in the
+  api, repo methods take `now` instead of SQL `now()`. `clippy.toml` disallows
+  `OffsetDateTime::now_utc`, `std::env::var` and `std::thread::sleep`; tests pin time with
+  `stack.clock.set(..)`.
 - Crate boundaries live in `crates/arch-tests/src/rules.rs`. Only `persistence` talks to the
   database; all SQL lives there (the seeder's statements are in `persistence::seed`). Change a
   rule deliberately with a reason — never add an exception just to get green.
