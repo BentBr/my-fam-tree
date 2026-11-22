@@ -82,7 +82,7 @@ async function toApiError(response: Response): Promise<ApiClientError> {
             title: response.statusText || 'Request failed',
             status: response.status,
             code: 'internal',
-        } as ApiErrorBody)
+        })
     }
 }
 
@@ -92,7 +92,7 @@ async function toApiError(response: Response): Promise<ApiClientError> {
 // proxy forwards to the api service. Setting an absolute URL here would make the
 // browser bypass the proxy and fail from inside the compose network where the
 // api container only listens on 8080 (no port-80 routing inside docker).
-const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const familyIdInjector: Middleware = {
     onRequest({ request }) {

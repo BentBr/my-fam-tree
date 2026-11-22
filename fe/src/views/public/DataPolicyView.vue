@@ -21,7 +21,7 @@ const { t, rt } = i18n
 // `tm()` returns the raw catalogue value for a key — we use it to read
 // the rights array as a list, then `rt()` translates each entry through
 // the same interpolation pipeline as `t()`.
-const rights = i18n.tm('public.dataPolicy.sections.rights.items') as string[]
+const rights: string[] = i18n.tm('public.dataPolicy.sections.rights.items')
 
 // vue-i18n reserves `@` as the linked-message sigil (`@:other.key`), so
 // any literal `@` inside a translation string trips the message

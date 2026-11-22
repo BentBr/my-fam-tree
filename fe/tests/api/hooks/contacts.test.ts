@@ -74,7 +74,7 @@ describe('useCreateContact', () => {
     it('rejects on error', async () => {
         mocked.POST.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useCreateContact('p-1'))
-        await expect(result.mutateAsync({ kind: 'email', value: 'a@b' } as ContactInput)).rejects.toBeDefined()
+        await expect(result.mutateAsync({ kind: 'email', value: 'a@b' })).rejects.toBeDefined()
     })
 })
 
@@ -98,9 +98,7 @@ describe('useUpdateContact', () => {
     it('rejects on error', async () => {
         mocked.PATCH.mockResolvedValueOnce({ data: undefined, error: { msg: 'boom' } })
         const { result } = makeHookWrapper(() => useUpdateContact('p-1'))
-        await expect(
-            result.mutateAsync({ id: 'c-1', input: { kind: 'email', value: 'a@b' } as ContactInput }),
-        ).rejects.toBeDefined()
+        await expect(result.mutateAsync({ id: 'c-1', input: { kind: 'email', value: 'a@b' } })).rejects.toBeDefined()
     })
 })
 

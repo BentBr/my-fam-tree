@@ -12,7 +12,7 @@ import PublicLayout from '@/layouts/PublicLayout.vue'
 type Layout = 'login' | 'main' | 'public'
 
 const route = useRoute()
-const layout = computed<Layout>(() => (route.meta.layout as Layout | undefined) ?? 'main')
+const layout = computed<Layout>(() => route.meta.layout ?? 'main')
 
 // Single owner of the `<html data-theme>` attribute + Vuetify theme
 // sync; reads the persisted ThemeMode from `useUiStore`. Mounted at

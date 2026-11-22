@@ -106,7 +106,7 @@ export function useRenameFamily() {
                 email: auth.user?.email ?? '',
                 locale: auth.user?.locale ?? 'en',
                 families,
-            } as never)
+            })
             void qc.invalidateQueries({ queryKey: ['families', 'me'] })
             void qc.invalidateQueries({ queryKey: ['admin', 'family', 'overview'] })
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_renamed') })

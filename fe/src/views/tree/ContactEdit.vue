@@ -61,8 +61,8 @@ function extractTextValue(initial: InitialContact | undefined): string {
     if (typeof v !== 'object' || v === null) return ''
     const obj = v as Record<string, unknown>
     const key = textValueKey(initial.kind)
-    if (typeof obj[key] === 'string') return obj[key] as string
-    if (typeof obj['v'] === 'string') return obj['v'] as string
+    if (typeof obj[key] === 'string') return obj[key]
+    if (typeof obj['v'] === 'string') return obj['v']
     return ''
 }
 
@@ -92,7 +92,7 @@ function extractAddress(initial: InitialContact | undefined): AddressShape {
     const v = initial.value
     if (typeof v !== 'object' || v === null) return empty
     const obj = v as Record<string, unknown>
-    const s = (key: string): string => (typeof obj[key] === 'string' ? (obj[key] as string) : '')
+    const s = (key: string): string => (typeof obj[key] === 'string' ? obj[key] : '')
     return {
         street: s('street'),
         house_number: s('house_number'),

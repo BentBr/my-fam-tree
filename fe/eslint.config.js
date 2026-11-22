@@ -44,8 +44,6 @@ export default defineConfigWithVueTs(
         rules: {
             // Measured 187 hits, all numbers in template literals; numbers stringify safely.
             '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
-            // Measured 44 hits (> 40): not adopted yet, pending Bent's decision.
-            '@typescript-eslint/no-unnecessary-type-assertion': 'off',
             '@typescript-eslint/no-explicit-any': 'error',
             '@typescript-eslint/no-non-null-assertion': 'error',
             '@typescript-eslint/consistent-type-imports': 'error',

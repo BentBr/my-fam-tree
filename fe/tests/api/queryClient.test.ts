@@ -12,7 +12,7 @@ function body(over: Partial<ApiErrorBody> = {}): ApiErrorBody {
         status: 400,
         code: 'validation_failed',
         ...over,
-    } as ApiErrorBody
+    }
 }
 
 describe('queryClient onError handler (via QueryCache)', () => {

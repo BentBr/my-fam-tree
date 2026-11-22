@@ -8,12 +8,12 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
         observe(): void {}
         unobserve(): void {}
         disconnect(): void {}
-    } as unknown as typeof ResizeObserver
+    }
 }
 if (typeof window !== 'undefined' && typeof window.scrollTo !== 'function') {
     // happy-dom throws "Not implemented" for scrollTo; a no-op keeps the
     // router's scrollBehavior from crashing the prerender.
-    window.scrollTo = (() => {}) as typeof window.scrollTo
+    window.scrollTo = () => {}
 }
 
 import { VueQueryPlugin } from '@tanstack/vue-query'

@@ -76,7 +76,7 @@ describe('HealthView', () => {
             }),
             isLoading: ref(false),
             error: ref<Error | null>(null),
-        } as never)
+        })
         expect(w.find('[data-testid="health-ok"]').exists()).toBe(true)
         expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('success')
     })

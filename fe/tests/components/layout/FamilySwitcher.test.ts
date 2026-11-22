@@ -16,7 +16,6 @@ import FamilySwitcher from '@/components/layout/FamilySwitcher.vue'
 import { i18n } from '@/i18n'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
-import type { FamilyId } from '@/types/brand'
 import { memoryStorage } from '../../helpers/memory-storage'
 
 function mockStorage(): void {
@@ -129,7 +128,7 @@ describe('FamilySwitcher', () => {
         const { w } = await mountSwitcher()
         const family = useActiveFamilyStore()
         // Drive the select's @update:model-value directly via vm emit:
-        await w.findComponent({ name: 'VSelectStub' }).vm.$emit('update:modelValue', 'f-1' as FamilyId)
+        await w.findComponent({ name: 'VSelectStub' }).vm.$emit('update:modelValue', 'f-1')
         expect(family.activeFamilyId).toBe('f-1')
     })
 
