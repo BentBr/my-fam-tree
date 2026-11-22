@@ -13,6 +13,8 @@
  */
 import { computed } from 'vue'
 
+import { DEFAULT_AVATAR_PALETTE } from '@/design-system/tokens'
+
 const props = withDefaults(
     defineProps<{
         /** Presigned URL or null/undefined when the person has no photo. */
@@ -37,26 +39,6 @@ function djb2(str: string): number {
     return h >>> 0
 }
 
-/**
- * Curated palette: avoid yellow (low contrast on white text) and pure
- * red (alarming on a person card). HSL-ish bases with the same lightness
- * so the foreground text contrast is uniform.
- */
-const PALETTE = [
-    '#3949ab', // indigo
-    '#1e88e5', // blue
-    '#039be5', // light blue
-    '#00897b', // teal
-    '#43a047', // green
-    '#7cb342', // light green
-    '#fb8c00', // orange
-    '#f4511e', // deep orange
-    '#6d4c41', // brown
-    '#5e35b1', // deep purple
-    '#8e24aa', // purple
-    '#d81b60', // pink
-] as const
-
 const initials = computed(() => {
     const trimmed = props.name.trim()
     if (trimmed === '') return '?'
@@ -70,8 +52,8 @@ const initials = computed(() => {
 
 const bg = computed(() => {
     const key = props.name.trim() === '' ? '?' : props.name.trim()
-    const idx = djb2(key) % PALETTE.length
-    return PALETTE[idx] ?? PALETTE[0]
+    const idx = djb2(key) % DEFAULT_AVATAR_PALETTE.length
+    return DEFAULT_AVATAR_PALETTE[idx] ?? DEFAULT_AVATAR_PALETTE[0]
 })
 </script>
 

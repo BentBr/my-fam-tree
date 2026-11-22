@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { AVATAR_TONES, TREE_TOKENS, avatarTone, radii } from '@/design-system/tokens'
+import { AVATAR_TONES, DEFAULT_AVATAR_PALETTE, TREE_TOKENS, avatarTone, radii } from '@/design-system/tokens'
 
 describe('design-system tokens', () => {
     it('exposes the four avatar tone variants with hex bg + fg', () => {
@@ -33,5 +33,13 @@ describe('design-system tokens', () => {
         expect(radii.md).toBeLessThan(radii.lg)
         expect(radii.lg).toBeLessThan(radii.xl)
         expect(radii.pill).toBeGreaterThan(radii.xl)
+    })
+
+    it('default-avatar palette is a non-empty set of distinct 6-digit hex colours', () => {
+        expect(DEFAULT_AVATAR_PALETTE.length).toBeGreaterThan(0)
+        for (const colour of DEFAULT_AVATAR_PALETTE) {
+            expect(colour).toMatch(/^#[0-9a-f]{6}$/i)
+        }
+        expect(new Set(DEFAULT_AVATAR_PALETTE).size).toBe(DEFAULT_AVATAR_PALETTE.length)
     })
 })

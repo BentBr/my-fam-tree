@@ -4,6 +4,8 @@ import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescri
 import vue from 'eslint-plugin-vue'
 import globals from 'globals'
 
+import noRawColor from './eslint-rules/no-raw-color.js'
+
 const schemaImports = {
     group: ['@/api/schema*'],
     message: 'Import generated schema types only inside src/api/, not from views.',
@@ -77,5 +79,11 @@ export default defineConfigWithVueTs(
                 { ignorePattern: '^[\\s()·—:.❤-]+$', ignoreText: ['Rust', 'Vue.js'] },
             ],
         },
+    },
+    {
+        files: ['src/**/*.{ts,vue}'],
+        ignores: ['src/design-system/**'],
+        plugins: { local: { rules: { 'no-raw-color': noRawColor } } },
+        rules: { 'local/no-raw-color': 'error' },
     },
 )
