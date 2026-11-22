@@ -124,8 +124,8 @@ indexing_slicing = "deny"
 float_arithmetic = "deny"
 shadow_unrelated = "deny"
 # Tightened 2026-11 (measured; see PR "chore/rust-lint-regime"). Not adopted:
-# tests_outside_test_module (flags every integration test in tests/, 150 hits)
-# and as_conversions (42 hits, left for a separate decision).
+# tests_outside_test_module (flags every integration test in tests/, 150 hits).
+# as_conversions adopted 2026-11-22: use From/TryFrom or a typed binding for unsizing.
 unwrap_in_result = "deny"
 get_unwrap = "deny"
 exit = "deny"
@@ -137,6 +137,7 @@ wildcard_dependencies = "deny"
 unused_result_ok = "deny"
 string_slice = "deny"
 arithmetic_side_effects = "deny"
+as_conversions = "deny"
 missing_assert_message = "deny"
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"

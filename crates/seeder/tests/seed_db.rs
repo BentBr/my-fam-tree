@@ -2,11 +2,7 @@
 //! and idempotency. Lives in tests/ (not src/) because it runs migrations
 //! with sqlx directly — src/ stays SQL-free (arch-tests).
 
-#![expect(
-    clippy::expect_used,
-    clippy::cast_possible_wrap,
-    reason = "test code: setup failures abort the test with context; tiny fixture counts cannot wrap"
-)]
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
 
 use std::time::Duration;
 
@@ -22,8 +18,12 @@ use testcontainers_modules::postgres::Postgres;
 // Expected row counts mirror the canonical seed shape across ALL
 // three seeded families (Müller + Vellmar + Lang). Update these
 // numbers whenever any seed module's tables grow or shrink.
-const EXPECTED_PERSONS: i64 =
-    SEED_PERSON_COUNT as i64 + vellmar::PERSON_COUNT as i64 + lang::PERSON_COUNT as i64;
+const EXPECTED_PERSONS: usize = SEED_PERSON_COUNT + vellmar::PERSON_COUNT + lang::PERSON_COUNT;
+
+/// `EXPECTED_PERSONS` as the `i64` row count Postgres reports.
+fn expected_person_rows() -> i64 {
+    i64::try_from(EXPECTED_PERSONS).expect("person count fits in i64")
+}
 const EXPECTED_PARENT_LINKS: i64 = 44 + vellmar::PARENT_LINK_COUNT + lang::PARENT_LINK_COUNT;
 const EXPECTED_PARTNERSHIPS: i64 = 18 + vellmar::PARTNERSHIP_COUNT;
 const EXPECTED_CONTACTS: i64 = 9;
@@ -134,13 +134,13 @@ async fn seed_against_empty_db_inserts_expected_row_counts() {
     let report = run_seed(&SeedDb::new(&h.db), &h.cfg).await.expect("seed");
 
     assert_eq!(report.users_upserted, 3);
-    assert_eq!(report.persons_upserted, usize::try_from(EXPECTED_PERSONS).unwrap());
+    assert_eq!(report.persons_upserted, EXPECTED_PERSONS);
     assert_eq!(count(h.db.pool(), Table::Users).await, 3);
     // Three seeded families (Müller + Vellmar + Lang); every user is
     // a member of every family → 3 × 3 memberships.
     assert_eq!(count(h.db.pool(), Table::Families).await, 3);
     assert_eq!(count(h.db.pool(), Table::FamilyMemberships).await, 9);
-    assert_eq!(count(h.db.pool(), Table::Persons).await, EXPECTED_PERSONS);
+    assert_eq!(count(h.db.pool(), Table::Persons).await, expected_person_rows());
     assert_eq!(count(h.db.pool(), Table::ParentLinks).await, EXPECTED_PARENT_LINKS);
     assert_eq!(count(h.db.pool(), Table::Partnerships).await, EXPECTED_PARTNERSHIPS);
     assert_eq!(count(h.db.pool(), Table::PersonContacts).await, EXPECTED_CONTACTS);
@@ -163,7 +163,7 @@ async fn seed_is_idempotent_on_row_counts() {
     assert_eq!(count(h.db.pool(), Table::Users).await, 3);
     assert_eq!(count(h.db.pool(), Table::Families).await, 3);
     assert_eq!(count(h.db.pool(), Table::FamilyMemberships).await, 9);
-    assert_eq!(count(h.db.pool(), Table::Persons).await, EXPECTED_PERSONS);
+    assert_eq!(count(h.db.pool(), Table::Persons).await, expected_person_rows());
     assert_eq!(count(h.db.pool(), Table::ParentLinks).await, EXPECTED_PARENT_LINKS);
     assert_eq!(count(h.db.pool(), Table::Partnerships).await, EXPECTED_PARTNERSHIPS);
     assert_eq!(count(h.db.pool(), Table::PersonContacts).await, EXPECTED_CONTACTS);

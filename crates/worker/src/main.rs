@@ -119,7 +119,7 @@ async fn main() -> anyhow::Result<()> {
         .context("build redis pool")?;
     redis.ping().await.context("ping redis")?;
 
-    let email = Arc::new(
+    let email: Arc<dyn my_fam_tree_email::EmailSender> = Arc::new(
         SmtpSender::from_dsn(
             &cfg.email.dsn,
             &cfg.email.from_name,
@@ -128,7 +128,7 @@ async fn main() -> anyhow::Result<()> {
             cfg.email.timeout_seconds,
         )
         .context("build SMTP sender")?,
-    ) as Arc<dyn my_fam_tree_email::EmailSender>;
+    );
 
     #[cfg(feature = "test-fixtures")]
     let fixed = Arc::new(OffsetClock::default());

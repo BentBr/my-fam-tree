@@ -38,7 +38,7 @@ use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
 use my_fam_tree_api::{AppEnv, AppState, Config, LogFormat};
 use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
-use my_fam_tree_domain::clock::{Clock, FixedClock};
+use my_fam_tree_domain::clock::FixedClock;
 use my_fam_tree_email::FakeEmailSender;
 use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
@@ -108,13 +108,7 @@ pub async fn ephemeral_stack() -> TestStack {
         reason = "the harness clock starts at real now so DB-defaulted timestamps line up with it"
     )]
     let clock = FixedClock::new(time::OffsetDateTime::now_utc());
-    let issuer = JwtIssuer::new(
-        keys,
-        "iss".into(),
-        "aud".into(),
-        900,
-        Arc::new(clock.clone()) as Arc<dyn Clock>,
-    );
+    let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900, Arc::new(clock.clone()));
 
     let cfg = Config {
         app_env: AppEnv::Development,
@@ -201,9 +195,7 @@ pub async fn ephemeral_stack() -> TestStack {
         health: Arc::new(PgHealthRepo::new(pool.clone())),
         audit: Arc::new(PgAuditLogRepo::new(pool)),
         email: Arc::<FakeEmailSender>::clone(&fake_email),
-        outbox: Arc::new(SyncOutbox(
-            Arc::clone(&fake_email) as Arc<dyn my_fam_tree_email::EmailSender>
-        )),
+        outbox: Arc::new(SyncOutbox(Arc::<FakeEmailSender>::clone(&fake_email))),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
