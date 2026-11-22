@@ -95,7 +95,7 @@ test('upcoming favourites pill filters to caller favourites', async ({ page }) =
     const create = (given: string, birth: string): Promise<string> =>
         seedPerson(page.request, familyId, { given_name: given, family_name: 'Up', birth_date: birth })
     const klausId = await create('Klaus', '1960-04-12')
-    const annaId = await create('Anna', '1962-08-22')
+    await create('Anna', '1962-08-22')
 
     // Mark Klaus only via the API (faster than driving the tree UI here).
     const favRes = await page.request.patch(`/api/v1/persons/${klausId}/favourite`, {
@@ -112,8 +112,4 @@ test('upcoming favourites pill filters to caller favourites', async ({ page }) =
     // Toggle the favourites pill. Only Klaus's birthday remains.
     await page.getByTestId('upcoming-filter-favourites').click()
     await expect.poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 }).toBe(1)
-
-    // Verify the remaining row really is Klaus's (the BE returns the
-    // person_id on birthday events; the FE wires the click to it).
-    void annaId // referenced only for the seed; the assertion above is what counts
 })

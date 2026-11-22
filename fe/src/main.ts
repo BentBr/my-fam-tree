@@ -51,11 +51,11 @@ const smartIconComponent = SmartIcon as unknown as IconSetComponent
 // Pinia, i18n, Vuetify, VueQuery — in the setup callback, which runs in
 // BOTH the prerender (SSR) and the browser. Side effects that only make
 // sense in a real browser (session hydrate, chunk-reload, the client 401
-// navigator) are gated on `isClient`.
+// navigator) are gated on `!import.meta.env.SSR`.
 export const createApp = ViteSSG(
     App,
     { routes, base: import.meta.env.BASE_URL },
-    ({ app, router, initialState, onSSRAppRendered, isClient }) => {
+    ({ app, router, initialState, onSSRAppRendered }) => {
         // A fresh Pinia per render so prerendered pages never leak state
         // into one another (createPinia is a factory — safe to call here).
         const pinia = createPinia()
@@ -108,7 +108,7 @@ export const createApp = ViteSSG(
         // `registerGuards`).
         registerGuards(router)
 
-        if (isClient) {
+        if (!import.meta.env.SSR) {
             // The client 401 handler bounces to sign-in via the router —
             // injected here so `api/client.ts` needn't import a router
             // singleton (vite-ssg has none).

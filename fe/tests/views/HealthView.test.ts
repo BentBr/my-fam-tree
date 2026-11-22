@@ -52,16 +52,16 @@ function mountView(state: HealthRef) {
 describe('HealthView', () => {
     it('renders the loading state when isLoading is true', () => {
         const w = mountView({
-            data: ref(undefined),
+            data: ref<unknown>(undefined),
             isLoading: ref(true),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="health-loading"]').exists()).toBe(true)
     })
 
     it('renders the error state', () => {
         const w = mountView({
-            data: ref(undefined),
+            data: ref<unknown>(undefined),
             isLoading: ref(false),
             error: ref(new Error('boom')),
         } as never)
@@ -75,7 +75,7 @@ describe('HealthView', () => {
                 meta: { request_id: 'req-1' },
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="health-ok"]').exists()).toBe(true)
         expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('success')
@@ -88,7 +88,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(yellow.find('[data-testid="health-db"]').attributes('data-color')).toBe('warning')
 
@@ -98,7 +98,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(red.find('[data-testid="health-db"]').attributes('data-color')).toBe('error')
     })
@@ -110,7 +110,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('error')
     })
@@ -125,7 +125,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="health-db"]').attributes('data-color')).toBe('success')
         expect(w.find('[data-testid="health-server"]').attributes('data-color')).toBe('error')
@@ -147,7 +147,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         const worker = w.find('[data-testid="health-worker"]')
         expect(worker.exists()).toBe(true)
@@ -171,7 +171,7 @@ describe('HealthView', () => {
                 meta: {},
             }),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         const worker = w.find('[data-testid="health-worker"]')
         expect(worker.attributes('data-color')).toBe('error')

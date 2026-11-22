@@ -19,8 +19,6 @@ const props = defineProps<{
     isDimmed?: boolean
 }>()
 
-const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
-
 const emit = defineEmits<{
     (e: 'select', id: string): void
     (e: 'hover', id: string | null): void
@@ -29,6 +27,8 @@ const emit = defineEmits<{
      * never touches the network directly. */
     (e: 'toggle-favourite', id: string, next: boolean): void
 }>()
+
+const isDeceased = (): boolean => props.node.death_date !== null && props.node.death_date !== ''
 
 const { fullName, birthLabel, deathLabel, hasDates, ageLabel, initials } = useNodeLabels(() => props.node)
 

@@ -17,18 +17,10 @@ import { i18n } from '@/i18n'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 import type { FamilyId } from '@/types/brand'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 async function mountSwitcher() {

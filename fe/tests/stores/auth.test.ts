@@ -12,6 +12,7 @@ vi.mock('@/router', () => ({ router: { replace: vi.fn() } }))
 
 import { client } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { memoryStorage } from '../helpers/memory-storage'
 
 interface MockedClient {
     GET: ReturnType<typeof vi.fn>
@@ -21,20 +22,7 @@ interface MockedClient {
 const mocked = client as unknown as MockedClient
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    const api = {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-        key: (i: number) => Object.keys(store)[i] ?? null,
-        get length() {
-            return Object.keys(store).length
-        },
-    }
+    const api = memoryStorage()
     vi.stubGlobal('localStorage', api)
     vi.stubGlobal('sessionStorage', api)
 }

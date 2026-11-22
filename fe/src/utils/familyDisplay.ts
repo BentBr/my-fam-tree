@@ -10,7 +10,7 @@ export interface NamedFamily {
 }
 
 /** Names that appear more than once in `families`. */
-export function duplicateNameSet<T extends NamedFamily>(families: readonly T[]): Set<string> {
+export function duplicateNameSet(families: readonly NamedFamily[]): Set<string> {
     const counts = new Map<string, number>()
     for (const f of families) {
         counts.set(f.name, (counts.get(f.name) ?? 0) + 1)

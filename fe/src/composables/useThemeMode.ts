@@ -61,7 +61,7 @@ export function useThemeMode(): void {
         // `theme.change(name)` is Vuetify's supported setter; assigning to
         // `theme.global.name.value` directly is deprecated (and logs a warn).
         if (vuetifyTheme.global.name.value !== wantedVuetify) {
-            vuetifyTheme.change(wantedVuetify)
+            void vuetifyTheme.change(wantedVuetify)
         }
     }
 

@@ -64,12 +64,12 @@ const midY = computed(() => (props.ay + props.by) / 2)
 // rose-pink heart. The `ended` flag is orthogonal — it greys whichever
 // glyph is showing.
 const isMarriage = computed(() => props.partnershipKind === 'marriage')
-const isEnded = computed(() => props.ended === true)
+const isEnded = computed(() => props.ended)
 // For directly-adjacent partner pairs (the glyph sits between the two
 // nodes, fully visible), the dashed connecting line is redundant —
 // suppress it and let the glyph be the connector. Parent edges always
 // draw their line; this flag only affects partner edges.
-const showPartnerLine = computed(() => props.kind !== 'partner' || props.directlyAdjacent !== true)
+const showPartnerLine = computed(() => props.kind !== 'partner' || !props.directlyAdjacent)
 
 // Tailwind-style CSS class set so the stylesheet can pick the right
 // stroke/fill via class scoping. Keeping the conditional in TS rather

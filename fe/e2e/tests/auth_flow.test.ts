@@ -46,9 +46,6 @@ test('owner signs in, creates family, invites a guest, guest joins', async ({ br
         throw new Error('invite link not in email body')
     }
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) {
-        throw new Error('invite link match was empty')
-    }
 
     // 4. Guest signs in in a separate browser context (independent cookies).
     const { context: guestCtx, page: guest } = await signedInContext(browser, 'guest@example.com')

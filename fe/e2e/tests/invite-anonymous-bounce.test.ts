@@ -22,7 +22,6 @@ test('anonymous invite click signs the recipient in and joins the family in one 
     const inviteLinkMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteLinkMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteLinkMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link match was empty')
 
     // Recipient — brand new browser context, never logged in.
     const recipientCtx = await browser.newContext()

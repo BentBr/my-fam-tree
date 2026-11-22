@@ -15,6 +15,7 @@ import { setActivePinia, createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as ApiClientModule from '@/api/client'
+import { memoryStorage } from '../helpers/memory-storage'
 
 // Under vite-ssg there is no router singleton to mock — `main.ts` injects
 // a navigate callback via `setClientNavigator` at boot. The harness mirrors
@@ -28,16 +29,7 @@ async function importClient(): Promise<typeof ApiClientModule> {
 }
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 function jsonResponse(status: number, body: unknown, contentType = 'application/json'): Response {

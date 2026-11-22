@@ -43,7 +43,6 @@ test('user role can edit their own linked person row', async ({ browser }) => {
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link empty')
 
     // Recipient signs in + accepts in an isolated context.
     const { context: inviteeCtx, page: invitee } = await signedInContext(browser, inviteeEmail)

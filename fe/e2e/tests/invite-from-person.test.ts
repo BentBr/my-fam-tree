@@ -54,7 +54,6 @@ test('admin invites a person; recipient accepts and is linked', async ({ browser
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link empty')
 
     // New browser context = the recipient's session, isolated from the
     // owner's cookies + localStorage so the JWT carries the invitee's

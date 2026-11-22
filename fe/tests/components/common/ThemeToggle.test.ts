@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { i18n } from '@/i18n'
 import { useUiStore } from '@/stores/ui'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 // Stub the prefers-color-scheme query so `currentResolvedTheme()`
 // returns a deterministic value when the store's mode is `system`.
@@ -17,23 +18,7 @@ function stubMatchMedia(prefersDark: boolean): void {
 }
 
 function stubStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-        clear: () => {
-            for (const k of Object.keys(store)) delete store[k]
-        },
-        key: (i: number) => Object.keys(store)[i] ?? null,
-        get length() {
-            return Object.keys(store).length
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 describe('ThemeToggle', () => {

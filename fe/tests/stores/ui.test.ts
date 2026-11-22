@@ -2,27 +2,12 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useUiStore } from '@/stores/ui'
+import { memoryStorage } from '../helpers/memory-storage'
 
 describe('ui store', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
-        const store: Record<string, string> = {}
-        vi.stubGlobal('localStorage', {
-            getItem: (k: string) => store[k] ?? null,
-            setItem: (k: string, v: string) => {
-                store[k] = v
-            },
-            removeItem: (k: string) => {
-                delete store[k]
-            },
-            clear: () => {
-                for (const k of Object.keys(store)) delete store[k]
-            },
-            key: (i: number) => Object.keys(store)[i] ?? null,
-            get length() {
-                return Object.keys(store).length
-            },
-        })
+        vi.stubGlobal('localStorage', memoryStorage())
     })
 
     it('starts with sidebar expanded when no flag is stored', () => {

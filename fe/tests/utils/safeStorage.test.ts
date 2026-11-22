@@ -34,15 +34,23 @@ describe('safeLocal / safeSession', () => {
             },
         })
         expect(safeLocal.get('x')).toBeNull()
-        expect(() => safeLocal.set('x', '1')).not.toThrow()
-        expect(() => safeLocal.remove('x')).not.toThrow()
+        expect(() => {
+            safeLocal.set('x', '1')
+        }).not.toThrow()
+        expect(() => {
+            safeLocal.remove('x')
+        }).not.toThrow()
     })
 
     it('survives storage being entirely absent', () => {
         // Some embedded webviews throw on the property ACCESS itself.
         vi.stubGlobal('sessionStorage', undefined)
         expect(safeSession.get('x')).toBeNull()
-        expect(() => safeSession.set('x', '1')).not.toThrow()
-        expect(() => safeSession.remove('x')).not.toThrow()
+        expect(() => {
+            safeSession.set('x', '1')
+        }).not.toThrow()
+        expect(() => {
+            safeSession.remove('x')
+        }).not.toThrow()
     })
 })

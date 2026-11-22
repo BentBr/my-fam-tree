@@ -47,7 +47,6 @@ test('contact role + visibility gates', async ({ browser }) => {
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link empty')
     await guest.goto(rewriteEmailLink(inviteLink))
     // InviteAccept redirects to /tree on the existing-user success path.
     // 15s headroom matches the rest of the consume helpers (CI runner load

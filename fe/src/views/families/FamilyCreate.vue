@@ -47,13 +47,11 @@ async function actuallyCreate(n: string): Promise<void> {
     errorMsg.value = null
     try {
         const res = await create.mutateAsync(n)
-        if (res !== undefined) {
-            family.setActive(res.family.id as FamilyId)
-            // Flush reactivity so the family guard reads activeFamilyId BEFORE
-            // evaluating /tree — otherwise it can bounce back.
-            await nextTick()
-            await router.push('/tree')
-        }
+        family.setActive(res.family.id as FamilyId)
+        // Flush reactivity so the family guard reads activeFamilyId BEFORE
+        // evaluating /tree — otherwise it can bounce back.
+        await nextTick()
+        await router.push('/tree')
     } catch (e: unknown) {
         errorMsg.value = e instanceof Error ? e.message : 'unknown error'
     }

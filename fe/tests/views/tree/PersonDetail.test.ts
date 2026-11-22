@@ -83,8 +83,8 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 vi.mock('@/api/hooks/persons', () => ({
-    useListPersons: () => ({ data: listData, isLoading: ref(false), error: ref(null) }),
-    useGetPerson: () => ({ data: personGetData, isLoading: personGetIsLoading, error: ref(null) }),
+    useListPersons: () => ({ data: listData, isLoading: ref(false), error: ref<Error | null>(null) }),
+    useGetPerson: () => ({ data: personGetData, isLoading: personGetIsLoading, error: ref<Error | null>(null) }),
     useDeletePerson: () => ({ mutateAsync: delMutate, isPending: ref(false) }),
     useSetFavourite: () => ({ mutate: vi.fn(), isPending: ref(false) }),
     // PersonDetail's avatar slot drives photo upload through these two
@@ -104,7 +104,7 @@ vi.mock('@/api/hooks/invites', () => ({
 }))
 
 vi.mock('@/api/hooks/relationships', () => ({
-    useTree: () => ({ data: treeData, isLoading: ref(false), error: ref(null) }),
+    useTree: () => ({ data: treeData, isLoading: ref(false), error: ref<Error | null>(null) }),
     useAddParentLink: () => ({ mutateAsync: addParentMutate, isPending: ref(false) }),
     useCreatePartnership: () => ({ mutateAsync: partnerMutate, isPending: ref(false) }),
     useUpdatePartnership: () => ({ mutateAsync: updatePartnerMutate, isPending: ref(false) }),

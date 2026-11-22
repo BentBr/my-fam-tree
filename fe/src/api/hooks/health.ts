@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/vue-query'
 
 import { client } from '../client'
+import { throwIfError } from '../errors'
 import type { components } from '../schema'
 
 /**
@@ -42,7 +43,7 @@ export function useHealth() {
             const t0 = performance.now()
             const { data, error } = await client.GET('/api/v1/health')
             const networkMs = performance.now() - t0
-            if (error !== undefined) throw error
+            throwIfError(error)
             if (data === undefined) throw new Error('empty health response')
             return { ...data, network_round_trip_ms: networkMs }
         },

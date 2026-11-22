@@ -226,7 +226,6 @@ test('user-role member sees read-only PersonDetail with relations panels but no 
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email body')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link match was empty')
 
     // 2) User context: sign in in a separate browser context.
     const { context: userCtx, page: user } = await signedInContext(browser, userEmail)

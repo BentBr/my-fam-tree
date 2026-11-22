@@ -163,11 +163,17 @@ function applyTransform(
     transform: ReturnType<typeof zoomIdentity.translate>,
     animate: boolean,
 ): void {
-    if (zoomBehavior === null) return
+    const zoom = zoomBehavior
+    if (zoom === null) return
     if (animate) {
-        sel.transition().duration(600).ease(easeCubicInOut).call(zoomBehavior.transform, transform)
+        sel.transition()
+            .duration(600)
+            .ease(easeCubicInOut)
+            .call((t) => {
+                zoom.transform(t, transform)
+            })
     } else {
-        sel.call(zoomBehavior.transform, transform)
+        zoom.transform(sel, transform)
     }
 }
 
@@ -260,7 +266,11 @@ watch(
 // Imperative refit handle for the parent view's "Fit to view" toolbar
 // button. Lets the user recover from any panned/zoomed state with one
 // click instead of having to scroll the canvas back themselves.
-defineExpose({ refit: () => fitToView(true) })
+defineExpose({
+    refit: () => {
+        fitToView(true)
+    },
+})
 </script>
 
 <template>

@@ -1,8 +1,8 @@
-import { createHead, renderSSRHead } from '@unhead/vue/server'
+import { createHead } from '@unhead/vue/server'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, type FunctionalComponent, h, nextTick } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
@@ -14,7 +14,7 @@ import type { SupportedLocale } from '@/stores/locale'
 
 // A throwaway route component — `useRouteMeta` reads `route.name`, so
 // the meaningful state is the route record, not what the page renders.
-const Blank = defineComponent({ setup: () => () => h('div') })
+const Blank: FunctionalComponent = () => h('div')
 
 // Locale-prefixed like the real route table — `usePageMeta` derives the
 // canonical + hreflang URLs from the `/en`|`/de` prefix of the live path.
@@ -63,7 +63,7 @@ async function renderHeadAt(path: string, locale: SupportedLocale = 'en') {
     // to recompute against in the locale-switch test.
     localeStore.set(locale)
     await nextTick()
-    const payload = await renderSSRHead(head)
+    const payload = head.render()
     return { payload, router, head, wrapper }
 }
 

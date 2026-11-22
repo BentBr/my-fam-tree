@@ -95,7 +95,7 @@ async function toApiError(response: Response): Promise<ApiClientError> {
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
 
 const familyIdInjector: Middleware = {
-    async onRequest({ request }) {
+    onRequest({ request }) {
         const family = useActiveFamilyStore()
         const id = family.activeFamilyId
         if (id !== null && !request.headers.has('X-Family-Id')) {
@@ -122,7 +122,7 @@ let refreshing: Promise<void> | null = null
 const retryClones = new WeakMap<Request, Request>()
 
 const requestCloner: Middleware = {
-    async onRequest({ request }) {
+    onRequest({ request }) {
         // `clone()` snapshots method + url + headers + body for a
         // single replay. Future replays (rare, but possible if
         // refresh races) would need another clone — out of scope
@@ -181,14 +181,9 @@ const authRefresh: Middleware = {
         // verbatim, preserving the original error semantics for
         // `reportError`'s toast pipeline.
         const auth = useAuthStore()
-        refreshing ??= auth
-            .refresh()
-            .catch((e) => {
-                throw e
-            })
-            .finally(() => {
-                refreshing = null
-            })
+        refreshing ??= auth.refresh().finally(() => {
+            refreshing = null
+        })
         try {
             await refreshing
         } catch {

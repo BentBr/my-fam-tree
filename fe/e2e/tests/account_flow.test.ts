@@ -89,9 +89,6 @@ test.describe('FE account flow', () => {
             throw new Error('email-change link not in body')
         }
         const link = linkMatch[0]
-        if (link === undefined) {
-            throw new Error('email-change link match was empty')
-        }
 
         await page.goto(rewriteEmailLink(link))
         // EmailChangeConsumeView routes back to /account after the confirm

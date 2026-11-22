@@ -33,7 +33,7 @@ describe('ToastContainer', () => {
         expect(w.findAll('.snack-stub')).toHaveLength(0)
     })
 
-    it('renders one snackbar per pushed toast', async () => {
+    it('renders one snackbar per pushed toast', () => {
         const ui = useUiStore()
         ui.pushToast({ kind: 'info', message: 'hi' })
         ui.pushToast({ kind: 'error', message: 'fail', code: 'oops' })
@@ -41,7 +41,7 @@ describe('ToastContainer', () => {
         expect(w.findAll('.snack-stub')).toHaveLength(2)
     })
 
-    it('uses 8s timeout for errors and 4s for non-errors', async () => {
+    it('uses 8s timeout for errors and 4s for non-errors', () => {
         const ui = useUiStore()
         ui.pushToast({ kind: 'info', message: 'i' })
         ui.pushToast({ kind: 'error', message: 'e' })

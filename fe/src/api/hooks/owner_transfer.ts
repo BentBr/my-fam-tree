@@ -96,7 +96,7 @@ export function useConfirmOwnerTransfer() {
  */
 export function useCancelOwnerTransfer() {
     const family = useActiveFamilyStore()
-    return useApiMutation<void, void>({
+    return useApiMutation({
         mutationFn: () => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useCancelOwnerTransfer: no active family')

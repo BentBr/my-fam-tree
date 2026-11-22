@@ -41,7 +41,6 @@ async function inviteAndAccept(
     const m = mail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (m === null) throw new Error('invite link not in email')
     const link = m[0]
-    if (link === undefined) throw new Error('invite link empty')
     await inviteePage.goto(rewriteEmailLink(link))
     await expect(inviteePage).toHaveURL(/\/(tree|invite\/accept)/)
     return link

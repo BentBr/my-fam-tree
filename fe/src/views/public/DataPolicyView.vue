@@ -15,12 +15,13 @@
  */
 import { useI18n } from 'vue-i18n'
 
-const { t, tm, rt } = useI18n()
+const i18n = useI18n()
+const { t, rt } = i18n
 
 // `tm()` returns the raw catalogue value for a key — we use it to read
 // the rights array as a list, then `rt()` translates each entry through
 // the same interpolation pipeline as `t()`.
-const rights = tm('public.dataPolicy.sections.rights.items') as string[]
+const rights = i18n.tm('public.dataPolicy.sections.rights.items') as string[]
 
 // vue-i18n reserves `@` as the linked-message sigil (`@:other.key`), so
 // any literal `@` inside a translation string trips the message

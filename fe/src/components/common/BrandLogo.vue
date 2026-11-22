@@ -26,8 +26,6 @@ import sloth128 from '@/assets/brand/sloth-128.webp'
 import sloth256 from '@/assets/brand/sloth-256.webp'
 import sloth512 from '@/assets/brand/sloth-512.webp'
 
-const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
-
 const props = withDefaults(
     defineProps<{
         /** Visual scale. */
@@ -37,6 +35,8 @@ const props = withDefaults(
     }>(),
     { size: 'md', to: null },
 )
+
+const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
 
 const iconPx = computed(() => (props.size === 'lg' ? 48 : props.size === 'md' ? 36 : 24))
 const wordPx = computed(() => (props.size === 'lg' ? 22 : 18))

@@ -52,7 +52,6 @@ test('an invite-accept mints a refresh cookie so the recipient stays signed in p
     const m = mail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (m === null) throw new Error('invite link not in email')
     const link = m[0]
-    if (link === undefined) throw new Error('invite link empty')
 
     // ----- Guest: fresh browser context, accept the invite. -----
     const guestCtx = await browser.newContext()

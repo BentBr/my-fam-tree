@@ -51,7 +51,7 @@ export function useCreateFamily() {
             return payload
         },
         onSuccess: () => {
-            qc.invalidateQueries()
+            void qc.invalidateQueries()
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_created') })
         },
     })
@@ -125,7 +125,7 @@ export function useAcceptInvite() {
             return payload
         },
         onSuccess: () => {
-            qc.invalidateQueries()
+            void qc.invalidateQueries()
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.invite_accepted') })
         },
     })

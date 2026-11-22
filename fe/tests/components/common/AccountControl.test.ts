@@ -10,7 +10,7 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 // drives the activator branch via the auth store alone.
 const meRef = ref<{ avatar_url: string | null; display_name: string | null } | undefined>(undefined)
 vi.mock('@/api/hooks/users', () => ({
-    useMe: () => ({ data: meRef, isLoading: ref(false), error: ref(null) }),
+    useMe: () => ({ data: meRef, isLoading: ref(false), error: ref<Error | null>(null) }),
     // The mobile fold-in's locale picker runs through useLocaleSwitch,
     // which wires the backend write-through via useUpdateMe.
     useUpdateMe: () => ({ mutate: vi.fn() }),
@@ -25,25 +25,10 @@ vi.mock('vuetify', () => ({
 import AccountControl from '@/components/common/AccountControl.vue'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function stubStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-        clear: () => {
-            for (const k of Object.keys(store)) delete store[k]
-        },
-        key: (i: number) => Object.keys(store)[i] ?? null,
-        get length() {
-            return Object.keys(store).length
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 const stubs = {

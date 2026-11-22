@@ -20,9 +20,10 @@ describe('unwrap', () => {
         await expect(unwrap(Promise.resolve({ data: { data: null }, error: undefined }))).resolves.toBeNull()
     })
 
-    it('throws the error when one is present', async () => {
-        await expect(unwrap(Promise.resolve({ data: undefined, error: { msg: 'boom' } }))).rejects.toEqual({
-            msg: 'boom',
+    it('throws the error, wrapped in an ApiResponseError, when one is present', async () => {
+        await expect(unwrap(Promise.resolve({ data: undefined, error: { msg: 'boom' } }))).rejects.toMatchObject({
+            name: 'ApiResponseError',
+            body: { msg: 'boom' },
         })
     })
 
@@ -37,7 +38,10 @@ describe('expectOk', () => {
     })
 
     it('throws the error when present', async () => {
-        await expect(expectOk(Promise.resolve({ error: { msg: 'no' } }))).rejects.toEqual({ msg: 'no' })
+        await expect(expectOk(Promise.resolve({ error: { msg: 'no' } }))).rejects.toMatchObject({
+            name: 'ApiResponseError',
+            body: { msg: 'no' },
+        })
     })
 })
 
@@ -65,7 +69,7 @@ describe('useApiMutation', () => {
 
     it('resolves the success key via a function of the vars', async () => {
         const { result } = makeHookWrapper(() =>
-            useApiMutation<{ on: boolean }, void>({
+            useApiMutation<{ on: boolean }>({
                 mutationFn: () => Promise.resolve(),
                 success: (vars) => (vars.on ? 'toasts.on' : 'toasts.off'),
             }),
@@ -89,7 +93,7 @@ describe('useApiMutation', () => {
 
     it('does not toast or invalidate when the mutation rejects', async () => {
         const { result, queryClient } = makeHookWrapper(() =>
-            useApiMutation<void, void>({
+            useApiMutation({
                 mutationFn: () => Promise.reject(new Error('fail')),
                 success: 'toasts.nope',
                 invalidate: () => [['things']],

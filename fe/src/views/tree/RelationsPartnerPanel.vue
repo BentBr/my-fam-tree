@@ -69,7 +69,7 @@ function todayIso(): string {
 function startEditing(row: PartnerRow): void {
     openId.value = row.id
     draft.value = {
-        kind: (row.kind as PartnerDraft['kind']) ?? 'partnership',
+        kind: row.kind as PartnerDraft['kind'],
         started_on: row.started_on,
         ended_on: row.ended_on,
         end_reason: row.end_reason as PartnerDraft['end_reason'] | null,
@@ -81,7 +81,7 @@ function endPartnership(row: PartnerRow): void {
     // still adjust before pressing Save.
     openId.value = row.id
     draft.value = {
-        kind: (row.kind as PartnerDraft['kind']) ?? 'partnership',
+        kind: row.kind as PartnerDraft['kind'],
         started_on: row.started_on,
         ended_on: todayIso(),
         end_reason: 'divorce',

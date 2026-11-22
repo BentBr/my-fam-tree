@@ -99,7 +99,7 @@ describe('UpcomingView', () => {
                 },
             ]),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="upcoming-list"]').exists()).toBe(true)
         expect(w.find('[data-testid="upcoming-row-birthday"]').exists()).toBe(true)
@@ -111,14 +111,14 @@ describe('UpcomingView', () => {
         const w = mountView({
             data: ref([]),
             isLoading: ref(false),
-            error: ref(null),
+            error: ref<Error | null>(null),
         } as never)
         expect(w.find('[data-testid="upcoming-empty"]').exists()).toBe(true)
     })
 
     it('renders the error state when the query errors', () => {
         const w = mountView({
-            data: ref(undefined),
+            data: ref<unknown>(undefined),
             isLoading: ref(false),
             error: ref(new Error('boom')),
         } as never)
@@ -134,7 +134,7 @@ describe('UpcomingView', () => {
         let capturedFilter: { value: string } | null = null
         mocked.mockImplementation((filterRef: { value: string }) => {
             capturedFilter = filterRef
-            return { data: ref([]), isLoading: ref(false), error: ref(null) }
+            return { data: ref([]), isLoading: ref(false), error: ref<Error | null>(null) }
         })
 
         const w = mount(UpcomingView, {

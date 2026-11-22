@@ -31,7 +31,7 @@ describe('FamilyTree', () => {
         expect(w.findAll('.tree-edge-stub')).toHaveLength(1)
     })
 
-    it('mounts with centerOnId targeting an existing node', async () => {
+    it('mounts with centerOnId targeting an existing node', () => {
         const w = mount(FamilyTree, {
             props: { tree: tree(), selectedId: null, centerOnId: 'b', currentUserId: null },
             attachTo: document.body,
