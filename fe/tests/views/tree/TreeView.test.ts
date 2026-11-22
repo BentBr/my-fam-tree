@@ -36,7 +36,12 @@ vi.mock('@/api/hooks/relationships', () => ({
         error: treeError,
         refetch,
     }),
-    useKinship: () => ({ data: ref<unknown>(undefined), isLoading: ref(false), isError: ref(false), refetch: vi.fn() }),
+    useKinship: () => ({
+        data: ref<unknown>(undefined),
+        isFetching: ref(false),
+        isError: ref(false),
+        refetch: vi.fn(),
+    }),
 }))
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 

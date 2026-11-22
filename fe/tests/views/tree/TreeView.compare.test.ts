@@ -38,6 +38,7 @@ const treeIsFetching = ref(false)
 const treeUpdatedAt = ref(0)
 const kinshipData = ref<KinshipPayload | undefined>(undefined)
 const kinshipIsError = ref(false)
+const kinshipIsFetching = ref(false)
 const kinshipRefetch = vi.fn()
 /** The id refs TreeView handed to `useKinship` — i.e. the pair it would ask about. */
 const requested: { a: Ref<string | null> | null; b: Ref<string | null> | null } = { a: null, b: null }
@@ -55,7 +56,7 @@ vi.mock('@/api/hooks/relationships', () => ({
     useKinship: (a: Ref<string | null>, b: Ref<string | null>) => {
         requested.a = a
         requested.b = b
-        return { data: kinshipData, isLoading: ref(false), isError: kinshipIsError, refetch: kinshipRefetch }
+        return { data: kinshipData, isFetching: kinshipIsFetching, isError: kinshipIsError, refetch: kinshipRefetch }
     },
 }))
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
@@ -170,6 +171,7 @@ describe('TreeView compare mode', () => {
         treeUpdatedAt.value = 1
         kinshipData.value = undefined
         kinshipIsError.value = false
+        kinshipIsFetching.value = false
         kinshipRefetch.mockReset()
         requested.a = null
         requested.b = null
@@ -204,12 +206,14 @@ describe('TreeView compare mode', () => {
     })
 
     it('switching compare off removes the pair, the banner and the highlight', async () => {
-        const w = await mountTree(`?compare=${A},${B}`)
+        // A center param that survived the deep link goes too: the drawer would
+        // not reopen for it, so the URL must not claim it is open.
+        const w = await mountTree(`?center=${C}&compare=${A},${B}`)
         kinshipData.value = kinshipOf([relation([A, B])])
         await flushPromises()
         expect(canvas(w).props('highlight')).toEqual({ path: [A, B], partnershipId: null })
         await click(w, 'tree-compare-mode')
-        expect(compareParam()).toBeUndefined()
+        expect(router.currentRoute.value.query).toEqual({})
         expect(w.find('[data-testid="kinship-banner"]').exists()).toBe(false)
         expect(canvas(w).props('compareMode')).toBe(false)
         expect(canvas(w).props('highlight')).toBeNull()
@@ -320,5 +324,17 @@ describe('TreeView compare mode', () => {
         expect(canvas(w).props('highlight')).toBeNull()
         await click(w, 'kinship-retry')
         expect(kinshipRefetch).toHaveBeenCalledTimes(1)
+        // While the retry runs the banner shows the spinner, not the stale error.
+        kinshipIsFetching.value = true
+        await flushPromises()
+        expect(w.find('[data-testid="kinship-loading"]').exists()).toBe(true)
+        expect(w.find('[data-testid="kinship-error"]').exists()).toBe(false)
+    })
+
+    it('shows no banner over the empty-family state', async () => {
+        treeData.value = treeOf()
+        const w = await mountTree(`?compare=${A},${B}`)
+        expect(w.find('[data-testid="tree-empty"]').exists()).toBe(true)
+        expect(w.find('[data-testid="kinship-banner"]').exists()).toBe(false)
     })
 })

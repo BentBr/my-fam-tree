@@ -123,7 +123,9 @@ function enterCompare(): void {
 function toggleCompareMode(): void {
     if (compare.active.value) {
         compare.active.value = false
-        patchQuery({ compare: [] })
+        // A `?center=` that survived a deep link goes too: the drawer does
+        // not reopen for it, so the URL must not claim it is open.
+        patchQuery({ center: null, compare: [] })
         return
     }
     enterCompare()
@@ -327,13 +329,13 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
         <div class="tree-row">
             <div class="canvas">
                 <KinshipBanner
-                    v-if="compare.active.value && tree.data.value"
+                    v-if="compare.active.value && tree.data.value && tree.data.value.nodes.length > 0"
                     :name-a="personName(compare.a.value)"
                     :name-b="personName(compare.b.value)"
                     :gender-b="kinship.data.value?.person_b.gender ?? ''"
                     :selected-count="compare.pair.value.length"
                     :relations="kinship.data.value?.relations ?? null"
-                    :loading="kinship.isLoading.value"
+                    :loading="kinship.isFetching.value && kinship.data.value === undefined"
                     :failed="kinship.isError.value && kinship.data.value === undefined"
                     @active-relation="onActiveRelation"
                     @retry="onKinshipRetry"

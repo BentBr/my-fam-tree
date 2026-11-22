@@ -72,6 +72,17 @@ describe('KinshipBanner', () => {
         expect(w.emitted('active-relation')?.at(-1)).toEqual([null])
     })
 
+    it('keeps showing the loading state while a retry is running', () => {
+        const w = mountBanner({ loading: true, failed: true })
+        expect(w.find('[data-testid="kinship-loading"]').exists()).toBe(true)
+        expect(w.find('[data-testid="kinship-error"]').exists()).toBe(false)
+    })
+
+    it('never renders an empty card: a pair without result, error or fetch (offline) reads as loading', () => {
+        const w = mountBanner({ relations: null, loading: false, failed: false })
+        expect(w.find('[data-testid="kinship-loading"]').exists()).toBe(true)
+    })
+
     it('shows the error with a retry action when there is no result', async () => {
         const w = mountBanner({ failed: true })
         expect(w.get('[data-testid="kinship-error"]').text()).toContain('could not be loaded')
