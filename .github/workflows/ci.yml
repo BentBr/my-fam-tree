@@ -80,6 +80,9 @@ jobs:
                           - '.claude/agents/**'
                           - 'README.md'
                           - 'CLAUDE.md'
+                          # Diffed against the Rust-generated schema by
+                          # backend-ts-bindings (openapi drift).
+                          - 'fe/openapi.json'
                       frontend:
                           - *infra
                           - 'fe/**'

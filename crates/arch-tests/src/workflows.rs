@@ -41,9 +41,58 @@ pub fn check_timeouts(path: &str, yaml: &str, max_minutes: u32) -> Vec<Violation
         .collect()
 }
 
+/// Path globs of one `dorny/paths-filter` group (`group`) in the workflow's
+/// `changes` job, with YAML anchors (`*infra`) flattened in. Empty when the
+/// job, the filter step or the group is missing.
+#[must_use]
+pub fn path_filter(yaml: &str, group: &str) -> Vec<String> {
+    fn flatten(node: &Yaml, out: &mut Vec<String>) {
+        match node {
+            Yaml::String(s) => out.push(s.clone()),
+            Yaml::Array(items) => items.iter().for_each(|i| flatten(i, out)),
+            _ => {}
+        }
+    }
+    let docs = YamlLoader::load_from_str(yaml).unwrap_or_default();
+    let steps = docs
+        .first()
+        .and_then(|d| key(d, "jobs"))
+        .and_then(|j| key(j, "changes"))
+        .and_then(|c| key(c, "steps"))
+        .and_then(Yaml::as_vec);
+    let mut out = Vec::new();
+    for filters in
+        steps.into_iter().flatten().filter_map(|s| key(s, "with")).filter_map(|w| key(w, "filters"))
+    {
+        let parsed = filters.as_str().map(YamlLoader::load_from_str).and_then(Result::ok);
+        if let Some(node) = parsed.as_ref().and_then(|d| d.first()).and_then(|d| key(d, group)) {
+            flatten(node, &mut out);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const FILTERED: &str = "jobs:\n  changes:\n    timeout-minutes: 5\n    steps:\n      - uses: actions/checkout@v7\n      - uses: dorny/paths-filter@v4\n        with:\n          filters: |\n            infra: &infra\n              - 'compose.yaml'\n            backend:\n              - *infra\n              - 'crates/**'\n";
+
+    #[test]
+    fn path_filter_flattens_anchors() {
+        assert_eq!(
+            path_filter(FILTERED, "backend"),
+            vec!["compose.yaml", "crates/**"],
+            "anchor + own glob"
+        );
+    }
+
+    #[test]
+    fn path_filter_missing_group_is_empty() {
+        assert!(path_filter(FILTERED, "frontend").is_empty(), "no such group");
+        assert!(path_filter("jobs: {}\n", "backend").is_empty(), "no changes job");
+        assert!(path_filter("jobs: [\n", "backend").is_empty(), "invalid yaml");
+    }
 
     fn check(yaml: &str) -> Vec<Violation> {
         check_timeouts("w.yml", yaml, MAX_TIMEOUT_MINUTES)
