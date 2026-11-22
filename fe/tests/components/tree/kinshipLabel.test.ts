@@ -52,7 +52,7 @@ describe('kinshipLabel de', () => {
         [rel({ up: 0, down: 2 }), 'female', 'Enkelin'],
         [rel({ up: 0, down: 3 }), 'male', 'Urenkel'],
         [rel({ up: 1, down: 1 }), 'male', 'Bruder'],
-        [rel({ up: 1, down: 1 }), '', 'Geschwisterkind'],
+        [rel({ up: 1, down: 1 }), '', 'Geschwister'],
         [rel({ up: 1, down: 1, half: true }), 'male', 'Halbbruder'],
         [rel({ up: 1, down: 1, step: true }), 'female', 'Stiefschwester'],
         [rel({ up: 1, down: 0, step: true }), 'female', 'Stiefmutter'],
