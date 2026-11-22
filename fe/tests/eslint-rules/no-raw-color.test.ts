@@ -34,6 +34,7 @@ ruleTester.run('no-raw-color', noRawColor, {
         { code: "const c = 'hsl(0 0% 0%)'", errors: [error] },
         { code: 'const c = `#fff`', errors: [error] },
         { code: 'const c = `rgb(${r}, 0, 0)`', errors: [error] },
+        { code: "const c = 'rgb(var(--v-theme-primary, 0 0 0))'", errors: [error] },
     ],
 })
 
@@ -68,6 +69,11 @@ vueTester.run('no-raw-color (vue)', noRawColor, {
     invalid: [
         { ...sfc('<v-icon color="#fff" />'), errors: [{ ...error, line: 2 }] },
         { ...sfc('<div style="color: rgb(1, 2, 3)">x</div>'), errors: [error] },
+        {
+            ...sfc('<div class="x" />', '.x { background: rgb(var(--v-theme-surface-variant, 240 240 240)); }'),
+            errors: [error],
+        },
+        { ...sfc('<div style="color: hsl(var(--h, 0 0% 0%))">x</div>'), errors: [error] },
         { ...sfc('<div style="border: 1px solid #A1B2C3; color: #fff">x</div>'), errors: [error, error] },
         { ...sfc(`<div :style="{ color: '#fff' }" />`), errors: [error] },
         {
