@@ -1175,6 +1175,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Link a child to a parent. Rejects cycles and duplicate edges.",
         "operationId": "parent_links_create",
         "requestBody": {
           "content": {
@@ -1222,6 +1223,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Remove one parent link.",
         "operationId": "parent_links_delete",
         "parameters": [
           {
@@ -1278,6 +1280,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Create a partnership between two persons of the active family.",
         "operationId": "partnerships_create",
         "requestBody": {
           "content": {
@@ -1325,6 +1328,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Delete a partnership.",
         "operationId": "partnerships_delete",
         "parameters": [
           {
@@ -1369,6 +1373,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Edit or end a partnership; omitted fields keep their value.",
         "operationId": "partnerships_update",
         "parameters": [
           {
@@ -1969,6 +1974,7 @@
         "tags": [
           "relationships"
         ],
+        "description": "Full denormalized family tree for the active family: every person with their parent / partner adjacency lists plus the raw parent and partner edges, in one payload the client renders without further round-trips.",
         "operationId": "tree",
         "responses": {
           "200": {
@@ -1983,6 +1989,66 @@
           },
           "401": {
             "description": "No session"
+          }
+        },
+        "security": [
+          {
+            "cookie_access": []
+          }
+        ]
+      }
+    },
+    "/api/v1/relationships/kinship": {
+      "get": {
+        "tags": [
+          "relationships"
+        ],
+        "description": "Compute the kinship relations between two persons of the active family.\n\nRelations come back as structured descriptors so the client renders localized labels itself (the server is locale-free). Order: blood relations first, then direct partners, then in-law and step relations — by distance within each group, so a cousin is listed before a spouse. `up` / `down` count the generations from A up to the lowest common ancestor and back down to B: `(1,0)` is a parent, `(2,1)` an aunt or uncle, `(2,2)` a first cousin. `half`, `step` and `in_law` qualify the relation; `(0,0)` with a `partnership` is a direct partner. `path` lists the person ids from A to B for highlighting; `via_partnership_id` names the one partnership the path crosses.\n\nSeveral relations can hold at once (a cousin who is also a sibling-in-law). Blood relations are reported once per lowest common ancestor and searched up to 32 generations; in-laws cross exactly one partnership that is open or ended by death. An empty `relations` array means the two persons are not related — a normal `200`, not an error.",
+        "operationId": "relationships_kinship",
+        "parameters": [
+          {
+            "name": "a",
+            "in": "query",
+            "description": "Person A — the perspective the relations are described from",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "description": "Person B — the person every returned relation names",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The relations between the two persons (possibly empty)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KinshipPayloadResponseBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`a` or `b` is missing or not a UUID"
+          },
+          "401": {
+            "description": "No session"
+          },
+          "404": {
+            "description": "Either person is not in the active family"
+          },
+          "422": {
+            "description": "`a` and `b` are the same person, or no active family header"
           }
         },
         "security": [
@@ -3324,6 +3390,194 @@
           "sub": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "KinshipInLaw": {
+        "type": "string",
+        "description": "Which side the single partner hop of an in-law relation sits on.",
+        "enum": [
+          "via_own_partner",
+          "via_relatives_partner"
+        ]
+      },
+      "KinshipPartnership": {
+        "type": "object",
+        "description": "The partnership behind a direct-partner relation.",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`divorce`, `separation` or `death`; `null` while open."
+          },
+          "ended_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "End date; `null` while the partnership is open."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`marriage`, `civil_union` or `partnership`."
+          }
+        }
+      },
+      "KinshipPayload": {
+        "type": "object",
+        "required": [
+          "person_a",
+          "person_b",
+          "relations"
+        ],
+        "properties": {
+          "person_a": {
+            "$ref": "#/components/schemas/KinshipPerson"
+          },
+          "person_b": {
+            "$ref": "#/components/schemas/KinshipPerson"
+          },
+          "relations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipRelation"
+            },
+            "description": "Blood relations first, then direct partners, then in-law / step\nrelations; by distance within each group. Empty when unrelated."
+          }
+        }
+      },
+      "KinshipPayloadResponseBody": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/KinshipPayload"
+          },
+          "meta": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "KinshipPerson": {
+        "type": "object",
+        "description": "One of the two compared persons.",
+        "required": [
+          "id",
+          "gender"
+        ],
+        "properties": {
+          "gender": {
+            "type": "string",
+            "description": "Free-form gender as stored on the person. Labels use `male` /\n`female`; clients treat every other value as neutral."
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "KinshipQuery": {
+        "type": "object",
+        "required": [
+          "a",
+          "b"
+        ],
+        "properties": {
+          "a": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Person A — the perspective the relations are described from."
+          },
+          "b": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Person B — the person every returned relation names."
+          }
+        }
+      },
+      "KinshipRelation": {
+        "type": "object",
+        "description": "One relation in descriptor form, read from A's perspective and naming B.\nThe client maps it to a localized label.",
+        "required": [
+          "up",
+          "down",
+          "half",
+          "step",
+          "path"
+        ],
+        "properties": {
+          "down": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Generations from the common ancestor down to B (0 when B is A's ancestor).",
+            "minimum": 0
+          },
+          "half": {
+            "type": "boolean",
+            "description": "Known half-siblings: one shared parent and each has another recorded\nparent. Only ever set for `up = down = 1`."
+          },
+          "in_law": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KinshipInLaw",
+                "description": "Set when the relation crosses one partnership; `null` for blood relations."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "partnership": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KinshipPartnership",
+                "description": "Set when A and B are direct partners (`up = down = 0`)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Person ids from A to B, both ends included, no person twice."
+          },
+          "step": {
+            "type": "boolean",
+            "description": "The relation runs through a step parent-link or a parent's partner."
+          },
+          "up": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Generations from A up to the common ancestor (0 when B descends from A).",
+            "minimum": 0
+          },
+          "via_partnership_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid",
+            "description": "Id of the one partnership the path crosses — the partnership itself\nfor direct partners, the connecting one for in-law and step relations;\n`null` for blood relations. Every other step of `path` is a parent link."
           }
         }
       },
@@ -4786,7 +5040,7 @@
     },
     {
       "name": "relationships",
-      "description": "Parent links, partnerships, tree"
+      "description": "Family tree, kinship comparison, parent links and partnerships"
     },
     {
       "name": "contacts",
