@@ -11,7 +11,7 @@ function body(overrides: Partial<ApiErrorBody> = {}): ApiErrorBody {
         detail: 'name must be set',
         instance: 'req-abc',
         ...overrides,
-    } as ApiErrorBody
+    }
 }
 
 describe('ApiClientError', () => {

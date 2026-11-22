@@ -1,32 +1,13 @@
 // @vitest-environment node
-import { fileURLToPath } from 'node:url'
-
-import { ESLint } from 'eslint'
 import { beforeAll, describe, expect, it } from 'vitest'
 
-const feRoot = fileURLToPath(new URL('../..', import.meta.url))
-const layerRules = new Set(['no-restricted-imports', 'no-restricted-syntax'])
+import { realConfigLinter } from './real-config'
 
-// The real flat config, limited to the layer rules. Type-aware parsing is
-// switched off because the snippets below do not exist on disk.
-const eslint = new ESLint({
-    cwd: feRoot,
-    ruleFilter: ({ ruleId }) => layerRules.has(ruleId),
-    overrideConfig: { languageOptions: { parserOptions: { projectService: false } } },
-})
-
-async function layerErrors(filePath: string, code: string): Promise<string[]> {
-    const [result] = await eslint.lintText(code, { filePath })
-    if (result === undefined) throw new Error(`no lint result for ${filePath}`)
-    const fatal = result.messages.filter((m) => m.fatal === true)
-    if (fatal.length > 0) throw new Error(`parse error in ${filePath}: ${fatal.map((m) => m.message).join('; ')}`)
-    return result.messages.map((m) => m.ruleId ?? 'unknown')
-}
+const { warmUp, ruleHits: layerErrors } = realConfigLinter(['no-restricted-imports', 'no-restricted-syntax'])
 
 describe('folder layer imports', () => {
-    // Loading the flat config (vue + typescript-eslint) takes seconds on a cold container.
     beforeAll(async () => {
-        await eslint.lintText('', { filePath: 'src/stores/x.ts' })
+        await warmUp('src/stores/x.ts')
     }, 60_000)
 
     it.each([

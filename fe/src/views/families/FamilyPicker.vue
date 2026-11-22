@@ -23,7 +23,7 @@ const myFamiliesQ = useMyFamilies()
 const createdById = computed(() => {
     const map = new Map<string, string>()
     for (const m of myFamiliesQ.data.value ?? []) {
-        map.set(m.id as string, m.created_at ?? '')
+        map.set(m.id, m.created_at ?? '')
     }
     return map
 })

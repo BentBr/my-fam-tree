@@ -88,7 +88,7 @@ describe('useLocaleSwitch', () => {
         pick('de')
         expect(patchSpy).not.toHaveBeenCalled()
 
-        useAuthStore().applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'de', families: [] } as never)
+        useAuthStore().applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'de', families: [] })
         pick('en')
         expect(patchSpy).toHaveBeenCalledWith({ locale: 'en' })
     })

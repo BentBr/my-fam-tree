@@ -105,7 +105,7 @@ describe('InviteAccept', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as never)
+        })
         mutateAsync.mockRejectedValueOnce(new Error('bad'))
         const w = await mountInvite('token=tok-auth-err')
         await flushPromises()

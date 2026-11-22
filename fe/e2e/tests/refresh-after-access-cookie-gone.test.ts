@@ -20,12 +20,13 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('the FE refreshes the session when the access cookie disappears but the refresh cookie survives', async ({
     browser,
 }) => {
     // Fresh context so we own the cookie jar — isolated from other tests.
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const email = `refresh-after-expiry-${stamp}@example.com`
     const { context: ctx, page } = await signedInContext(browser, email)
     await createFamily(page, `RefreshFam-${stamp}`)

@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest'
 
 import { layoutTree, NODE_W, type TreeInput } from '@/components/tree/layout'
 
+/** Id of the i-th person in generation g. */
+function gridKey(g: number, i: number): string {
+    return `g${String(g)}-${String(i)}`
+}
+
 function person(
     id: string,
     parents: string[] = [],
@@ -73,7 +78,7 @@ describe('layoutTree (regression: grandparent does not drop nodes)', () => {
         // No two distinct persons may occupy the SAME (x, y) — that's the
         // "card vanished" symptom (one rect covers another and the partner
         // hidden behind it is undetectable to the user).
-        const xy = out.nodes.map((n) => `${n.x},${n.y}`)
+        const xy = out.nodes.map((n) => `${String(n.x)},${String(n.y)}`)
         const dupes = xy.filter((s, i) => xy.indexOf(s) !== i)
         expect(dupes).toEqual([])
         // Adjacent same-row cards must be at least NODE_W apart to avoid
@@ -115,19 +120,19 @@ describe('layoutTree (regression: grandparent does not drop nodes)', () => {
         const partnerEdges: TreeInput['partner_edges'] = []
         for (let g = 0; g < generations; g += 1) {
             for (let i = 0; i < perGen; i += 1) {
-                const id = `g${g}-${i}`
+                const id = gridKey(g, i)
                 const parents: string[] = []
                 if (g > 0) {
-                    parents.push(`g${g - 1}-${i}`)
-                    parents.push(`g${g - 1}-${(i + 1) % perGen}`)
+                    parents.push(gridKey(g - 1, i))
+                    parents.push(gridKey(g - 1, (i + 1) % perGen))
                 }
-                const partners = i % 2 === 0 ? [`g${g}-${i + 1}`] : []
-                nodes.push(person(id, parents, partners, `${1900 + g * 2}-01-01`))
+                const partners = i % 2 === 0 ? [gridKey(g, i + 1)] : []
+                nodes.push(person(id, parents, partners, `${String(1900 + g * 2)}-01-01`))
                 for (const p of parents) {
                     parentEdges.push({ a: id, b: p })
                 }
                 if (i % 2 === 0 && i + 1 < perGen) {
-                    partnerEdges.push({ a: id, b: `g${g}-${i + 1}` })
+                    partnerEdges.push({ a: id, b: gridKey(g, i + 1) })
                 }
             }
         }
@@ -135,7 +140,7 @@ describe('layoutTree (regression: grandparent does not drop nodes)', () => {
         const out = layoutTree({ nodes, parent_edges: parentEdges, partner_edges: partnerEdges })
         const elapsed = performance.now() - start
         expect(out.nodes).toHaveLength(generations * perGen)
-        const xy = out.nodes.map((n) => `${n.x},${n.y}`)
+        const xy = out.nodes.map((n) => `${String(n.x)},${String(n.y)}`)
         const dupes = xy.filter((s, i) => xy.indexOf(s) !== i)
         expect(dupes).toEqual([])
         const byY = new Map<number, number[]>()

@@ -37,7 +37,7 @@ const myFamiliesQ = useMyFamilies()
 const createdById = computed(() => {
     const map = new Map<string, string>()
     for (const m of myFamiliesQ.data.value ?? []) {
-        map.set(m.id as string, m.created_at ?? '')
+        map.set(m.id, m.created_at ?? '')
     }
     return map
 })
@@ -46,11 +46,11 @@ const duplicates = computed(() => duplicateNameSet(auth.families))
 const items = computed(() => {
     const familyItems = auth.families.map((f) => {
         const item: { value: string; title: string; props?: Record<string, unknown> } = {
-            value: f.id as string,
+            value: f.id,
             title: f.name,
         }
         if (duplicates.value.has(f.name)) {
-            const date = formatFamilyDate(createdById.value.get(f.id as string), locale.locale)
+            const date = formatFamilyDate(createdById.value.get(f.id), locale.locale)
             if (date !== null) {
                 item.props = { subtitle: t('family.disambiguator', { date, role: f.role }) }
             }

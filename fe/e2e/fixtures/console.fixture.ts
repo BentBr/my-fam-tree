@@ -68,7 +68,7 @@ export const test = baseTest.extend<{ consoleErrors: string[] }>({
         // point double-failing it and burying the real message.
         if (testInfo.status === 'passed' && errors.length > 0) {
             const summary = errors.map((line) => `  - ${line}`).join('\n')
-            expect.soft(errors, `Browser console emitted ${errors.length} entries:\n${summary}`).toEqual([])
+            expect.soft(errors, `Browser console emitted ${String(errors.length)} entries:\n${summary}`).toEqual([])
         }
     },
 })

@@ -34,7 +34,7 @@ function claims(over: Partial<ClaimsPayload> = {}): ClaimsPayload {
         locale: 'en',
         families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         ...over,
-    } as ClaimsPayload
+    }
 }
 
 function errBody(over: Partial<ApiErrorBody> = {}): ApiErrorBody {
@@ -82,7 +82,7 @@ describe('auth store', () => {
 
     it('applyClaimsPayload normalises an unknown locale to "en"', () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload(claims({ locale: 'fr' as 'en' }))
+        auth.applyClaimsPayload(claims({ locale: 'fr' }))
         expect(auth.user?.locale).toBe('en')
     })
 

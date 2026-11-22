@@ -89,7 +89,7 @@ function displayValue(kind: string, v: unknown): string {
     if (kind === 'address') {
         if (typeof v !== 'object' || v === null) return ''
         const o = v as Record<string, unknown>
-        const s = (k: string): string => (typeof o[k] === 'string' ? (o[k] as string) : '')
+        const s = (k: string): string => (typeof o[k] === 'string' ? o[k] : '')
         const line1 = [s('street'), s('house_number')].filter((p) => p !== '').join(' ')
         const line2 = [s('zip'), s('city')].filter((p) => p !== '').join(' ')
         const country = s('country')
@@ -99,8 +99,8 @@ function displayValue(kind: string, v: unknown): string {
     if (typeof v === 'object' && v !== null) {
         const obj = v as Record<string, unknown>
         const key = kind === 'email' ? 'email' : kind === 'phone' ? 'number' : kind === 'url' ? 'url' : 'text'
-        if (typeof obj[key] === 'string') return obj[key] as string
-        if (typeof obj['v'] === 'string') return obj['v'] as string
+        if (typeof obj[key] === 'string') return obj[key]
+        if (typeof obj['v'] === 'string') return obj['v']
     }
     return ''
 }

@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/console.fixture'
 import { clearMailpit } from '../fixtures/mailpit.fixture'
 import { LoginPage } from '../page-objects/login.page'
 import { consumeLinkFromEmail } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 /**
  * Verifies the public-page account dropdown drives both auth paths:
@@ -37,7 +38,7 @@ async function consumeMagicLink(page: Page, email: string): Promise<void> {
 test.setTimeout(90_000)
 
 test('account-menu Register flow signs a new user up; Login afterwards reauthenticates them', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const email = `account-menu-auth-${stamp}@example.com`
 
     // Start at the public home — anonymous, account dropdown shows the
@@ -101,7 +102,7 @@ test('Login menu item on /auth/sign-in resets a sent confirmation back to the fo
     // fresh form.
     const login = new LoginPage(page)
     await login.goto()
-    await login.signIn(`menu-reset-${Date.now()}@example.com`)
+    await login.signIn(`menu-reset-${uniqueStamp()}@example.com`)
     await expect(login.sent).toBeVisible({ timeout: 10_000 })
 
     await page.getByTestId('user-menu').click()

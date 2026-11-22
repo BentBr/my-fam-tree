@@ -16,6 +16,7 @@ import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { createFamily, signedInContext } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 /**
  * Owner sends an API invite at `role` and the invitee (which may or may not
@@ -63,7 +64,7 @@ async function createOwnedDuplicate(page: Page, name: string): Promise<string> {
 }
 
 test('23.1: existing-account invite + re-accepting the same link is graceful, not a 500', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     const { context: ownerCtx, page: owner } = await signedInContext(browser, `edge-owner-${stamp}@example.com`)
     const familyId = await createFamily(owner, `EdgeFam-${stamp}`)
@@ -87,7 +88,7 @@ test('23.1: existing-account invite + re-accepting the same link is graceful, no
 })
 
 test('23.2: same user creates two same-named families — both appear and are distinguishable', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const name = `Müller-${stamp}`
 
     const { context: ctx, page } = await signedInContext(browser, `edge-dup-${stamp}@example.com`)
@@ -119,7 +120,7 @@ test('23.2: same user creates two same-named families — both appear and are di
 })
 
 test('23.3: invited into the correct same-named family — no cross-family person leak', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const sameName = `Müller-${stamp}`
 
     // Owner A creates Müller #1 and a person "AliceA-{stamp}" in it.

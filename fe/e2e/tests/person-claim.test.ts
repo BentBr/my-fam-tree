@@ -5,9 +5,10 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('owner can claim a person row as themselves without an invite email', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const ownerEmail = `claim-owner-${stamp}@example.com`
     await signIn(page, ownerEmail)
     await createFamily(page, `ClaimFam-${stamp}`)

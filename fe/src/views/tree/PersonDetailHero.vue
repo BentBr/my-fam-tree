@@ -110,7 +110,7 @@ async function removePhoto(): Promise<void> {
     aspect-ratio: 1 / 1;
     border-radius: 8px;
     overflow: hidden;
-    background: rgb(var(--v-theme-surface-variant, 240 240 240));
+    background: rgb(var(--v-theme-surface-variant));
 }
 
 .person-detail-hero-img {

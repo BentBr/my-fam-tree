@@ -88,7 +88,7 @@ describe('router guards', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as never)
+        })
         await router.push('/tree')
         expect(router.currentRoute.value.path).toBe('/en/families/create')
     })

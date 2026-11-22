@@ -1,9 +1,10 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('upcoming dates page filters by birthday + anniversary toggles', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `upcoming-${stamp}@example.com`)
     await createFamily(page, `Upcoming-${stamp}`)
 

@@ -3,9 +3,10 @@ import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedContact, seedPerson } from '../page-objects/seed'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('contact role + visibility gates', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // ----- Owner context: signs in, creates family, sets up two persons. -----
     const ownerEmail = `owner-contacts-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)

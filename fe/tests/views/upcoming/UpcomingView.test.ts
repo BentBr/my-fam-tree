@@ -100,7 +100,7 @@ describe('UpcomingView', () => {
             ]),
             isLoading: ref(false),
             error: ref<Error | null>(null),
-        } as never)
+        })
         expect(w.find('[data-testid="upcoming-list"]').exists()).toBe(true)
         expect(w.find('[data-testid="upcoming-row-birthday"]').exists()).toBe(true)
         expect(w.find('[data-testid="upcoming-row-wedding_anniversary"]').exists()).toBe(true)
@@ -112,7 +112,7 @@ describe('UpcomingView', () => {
             data: ref([]),
             isLoading: ref(false),
             error: ref<Error | null>(null),
-        } as never)
+        })
         expect(w.find('[data-testid="upcoming-empty"]').exists()).toBe(true)
     })
 
@@ -121,7 +121,7 @@ describe('UpcomingView', () => {
             data: ref<unknown>(undefined),
             isLoading: ref(false),
             error: ref(new Error('boom')),
-        } as never)
+        })
         expect(w.find('[data-testid="upcoming-error"]').exists()).toBe(true)
     })
 

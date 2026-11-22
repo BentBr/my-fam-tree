@@ -42,7 +42,7 @@ export async function seedParentLink(
         data: { child_id: childId, parent_id: parentId, kind },
     })
     if (!res.ok()) {
-        console.error(`parent-link POST failed ${res.status()}:`, await res.text())
+        console.error(`parent-link POST failed ${String(res.status())}:`, await res.text())
     }
     expect(res.ok()).toBeTruthy()
 }
@@ -83,7 +83,7 @@ export async function seedPartnership(
         data,
     })
     if (!res.ok()) {
-        console.error(`partnership POST failed ${res.status()}:`, await res.text())
+        console.error(`partnership POST failed ${String(res.status())}:`, await res.text())
     }
     expect(res.ok()).toBeTruthy()
 }
@@ -104,6 +104,11 @@ export const TOTAL = GENERATIONS * PER_GEN
 /** Map of synthetic id (`g0-3`) → server-assigned uuid. */
 export type BulkResult = { idMap: Map<string, string> }
 
+/** Seed key of the i-th person in generation g. */
+function gridKey(g: number, i: number): string {
+    return `g${String(g)}-${String(i)}`
+}
+
 export async function bulkSeedFamily(request: APIRequestContext, familyId: string): Promise<BulkResult> {
     const idMap = new Map<string, string>()
 
@@ -114,14 +119,14 @@ export async function bulkSeedFamily(request: APIRequestContext, familyId: strin
     const personRequests: Array<() => Promise<void>> = []
     for (let g = 0; g < GENERATIONS; g += 1) {
         for (let i = 0; i < PER_GEN; i += 1) {
-            const key = `g${g}-${i}`
+            const key = gridKey(g, i)
             personRequests.push(async () => {
                 const id = await seedPerson(request, familyId, {
-                    given_name: `P${g}_${i}`,
+                    given_name: `P${String(g)}_${String(i)}`,
                     family_name: 'Stress',
                     // Distribute birth years so the generation-rank algorithm
                     // has signal: gen 0 ~1900, gen 9 ~1980.
-                    birth_date: `${1900 + g * 9}-01-01`,
+                    birth_date: `${String(1900 + g * 9)}-01-01`,
                 })
                 idMap.set(key, id)
             })
@@ -141,8 +146,8 @@ export async function bulkSeedFamily(request: APIRequestContext, familyId: strin
     // and dodges the abort/retry dance.
     for (let g = 1; g < GENERATIONS; g += 1) {
         for (let i = 0; i < PER_GEN; i += 1) {
-            const childId = idMap.get(`g${g}-${i}`)
-            const parentId = idMap.get(`g${g - 1}-${i}`)
+            const childId = idMap.get(gridKey(g, i))
+            const parentId = idMap.get(gridKey(g - 1, i))
             if (childId === undefined || parentId === undefined) continue
             await seedParentLink(request, familyId, childId, parentId)
         }

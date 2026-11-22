@@ -2,7 +2,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ClaimsPayload } from '@/api/types'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 import type { FamilyId } from '@/types/brand'
@@ -25,7 +24,7 @@ function applyTwoFamilies(): void {
             { id: 'f-1', name: 'F1', role: 'owner' },
             { id: 'f-2', name: 'F2', role: 'user' },
         ],
-    } as ClaimsPayload)
+    })
 }
 
 describe('activeFamily store', () => {
@@ -87,7 +86,7 @@ describe('activeFamily store', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as ClaimsPayload)
+        })
         localStorage.setItem('my-fam-tree:activeFamily', 'stale')
         const family = useActiveFamilyStore()
         expect(family.activeFamily).toBeNull()
@@ -105,7 +104,7 @@ describe('activeFamily store', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as ClaimsPayload)
+        })
         family.pickFirstAvailable()
         expect(family.activeFamilyId).toBeNull()
     })
