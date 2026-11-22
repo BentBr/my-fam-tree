@@ -25,7 +25,7 @@ mechanics.
 | `src/routes/mod.rs` | `api_scope()` — `/api/v1` public + auth-wrapped sub-scope. One file per resource under `routes/`. |
 | `src/auth/` | `JwtIssuer`/`JwtKeyset` (Ed25519 PEM, `kid` rotation), `JwtClaims`/`FamilyClaim`, `AuthMiddleware`, `user_claims*`, `require_role`, token helpers. |
 | `src/middleware/` | `PanicCatcher`, `RequestId`. |
-| `src/services/` | `auth_service`, `audit`, `relationships_tree`, `upcoming` — orchestration between repos and thin handlers. |
+| `src/services/` | `auth_service`, `audit`, `relationships_kinship`, `relationships_tree`, `upcoming` — orchestration between repos and thin handlers. |
 | `src/validation/` | request validation (`looks_like_email`, `email_invalid`, `string_too_long`, …) incl. `relationships`. |
 | `src/openapi_doc.rs` | `ApiDoc` aggregating every `utoipa::path` + schema. |
 

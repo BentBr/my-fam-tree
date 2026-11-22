@@ -23,6 +23,7 @@ for the strict-lint/test regime see `rust-foundations`.
 | `src/role.rs` | `Role` enum `User < Admin < Owner` (snake_case serde); `Role::at_least(needed)`. |
 | `src/capabilities.rs` | `Capability` enum + `capabilities_of(role) -> &'static [Capability]` + `has(role, cap)`. |
 | `src/relationships.rs` | `would_create_cycle(edges, child, parent)`, `canonicalize_pair(a, b) -> Option<(min, max)>`. Pure, no DB. |
+| `src/kinship/` | `compute_kinship(parent_links, partnerships, a, b) -> Vec<Kinship>`: relations between two persons (blood via lowest common ancestors, partners, in-laws, derived step). Pure, no DB. |
 | `src/upcoming.rs` | `build_upcoming(...)`, `UpcomingEvent`, `UpcomingKind`, `UpcomingFilter`, `DEFAULT_LIMIT`/`MAX_LIMIT`. |
 | `src/repos/*.rs` | One trait + `FooRepoError` + Row/Draft types per aggregate. |
 
