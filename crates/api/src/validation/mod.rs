@@ -189,7 +189,6 @@ pub fn locale_invalid(path: &str) -> ApiError {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::panic)]
 mod tests {
     use super::*;
 

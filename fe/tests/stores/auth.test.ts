@@ -12,6 +12,7 @@ vi.mock('@/router', () => ({ router: { replace: vi.fn() } }))
 
 import { client } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { memoryStorage } from '../helpers/memory-storage'
 
 interface MockedClient {
     GET: ReturnType<typeof vi.fn>
@@ -21,20 +22,7 @@ interface MockedClient {
 const mocked = client as unknown as MockedClient
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    const api = {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-        key: (i: number) => Object.keys(store)[i] ?? null,
-        get length() {
-            return Object.keys(store).length
-        },
-    }
+    const api = memoryStorage()
     vi.stubGlobal('localStorage', api)
     vi.stubGlobal('sessionStorage', api)
 }
@@ -46,7 +34,7 @@ function claims(over: Partial<ClaimsPayload> = {}): ClaimsPayload {
         locale: 'en',
         families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         ...over,
-    } as ClaimsPayload
+    }
 }
 
 function errBody(over: Partial<ApiErrorBody> = {}): ApiErrorBody {
@@ -94,7 +82,7 @@ describe('auth store', () => {
 
     it('applyClaimsPayload normalises an unknown locale to "en"', () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload(claims({ locale: 'fr' as 'en' }))
+        auth.applyClaimsPayload(claims({ locale: 'fr' }))
         expect(auth.user?.locale).toBe('en')
     })
 

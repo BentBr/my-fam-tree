@@ -45,16 +45,14 @@ onMounted(async () => {
     }
     try {
         const res = await accept.mutateAsync(token)
-        if (res !== undefined) {
-            // Hydrate the auth store from the BE's response so the
-            // freshly-issued cookie is reflected in the SPA's reactive
-            // state without a refresh-token round-trip.
-            await auth.hydrate()
-            // CRITICAL: select the newly-joined family before navigating,
-            // otherwise the family guard sees activeFamilyId === null and
-            // bounces /health → /families/pick.
-            family.setActive(res.family.id as FamilyId)
-        }
+        // Hydrate the auth store from the BE's response so the
+        // freshly-issued cookie is reflected in the SPA's reactive
+        // state without a refresh-token round-trip.
+        await auth.hydrate()
+        // CRITICAL: select the newly-joined family before navigating,
+        // otherwise the family guard sees activeFamilyId === null and
+        // bounces /health → /families/pick.
+        family.setActive(res.family.id as FamilyId)
     } catch (err) {
         // 422 invite_email_mismatch is surfaced as a `Validation` ApiError
         // — the FE-readable hint lives inside `body.fields[].code`. We
@@ -65,8 +63,7 @@ onMounted(async () => {
         const topCode = e?.code
         const fieldCodes = e?.body?.fields ?? []
         const mismatched =
-            topCode === 'invite_email_mismatch' ||
-            fieldCodes.some((f) => f?.code === 'validation.invite_email_mismatch')
+            topCode === 'invite_email_mismatch' || fieldCodes.some((f) => f.code === 'validation.invite_email_mismatch')
         status.value = mismatched ? 'mismatch' : 'error'
         return
     }

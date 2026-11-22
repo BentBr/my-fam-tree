@@ -123,14 +123,16 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,
+        now: OffsetDateTime,
     ) -> Result<(), RefreshRepoError> {
         let ip_net = ip.map(sqlx::types::ipnetwork::IpNetwork::from);
         let mut tx = self.pool.begin().await.map_err(|e| RefreshRepoError::Db(e.to_string()))?;
         let row = sqlx::query!(
-            r#"UPDATE refresh_tokens SET revoked_at = now()
+            r#"UPDATE refresh_tokens SET revoked_at = $2
                 WHERE token_hash = $1 AND revoked_at IS NULL
                 RETURNING user_id, absolute_expires_at"#,
-            old_hash
+            old_hash,
+            now,
         )
         .fetch_optional(&mut *tx)
         .await
@@ -157,11 +159,16 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         Ok(())
     }
 
-    async fn revoke_by_hash(&self, token_hash: &[u8]) -> Result<(), RefreshRepoError> {
+    async fn revoke_by_hash(
+        &self,
+        token_hash: &[u8],
+        now: OffsetDateTime,
+    ) -> Result<(), RefreshRepoError> {
         sqlx::query!(
-            r#"UPDATE refresh_tokens SET revoked_at = now()
+            r#"UPDATE refresh_tokens SET revoked_at = $2
                 WHERE token_hash = $1 AND revoked_at IS NULL"#,
-            token_hash
+            token_hash,
+            now,
         )
         .execute(&self.pool)
         .await
@@ -169,11 +176,16 @@ impl RefreshTokenRepo for PgRefreshTokenRepo {
         Ok(())
     }
 
-    async fn revoke_all_for_user(&self, user_id: UserId) -> Result<u64, RefreshRepoError> {
+    async fn revoke_all_for_user(
+        &self,
+        user_id: UserId,
+        now: OffsetDateTime,
+    ) -> Result<u64, RefreshRepoError> {
         let res = sqlx::query!(
-            r#"UPDATE refresh_tokens SET revoked_at = now()
+            r#"UPDATE refresh_tokens SET revoked_at = $2
                 WHERE user_id = $1 AND revoked_at IS NULL"#,
-            user_id.into_uuid()
+            user_id.into_uuid(),
+            now,
         )
         .execute(&self.pool)
         .await

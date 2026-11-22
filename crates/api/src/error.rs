@@ -374,7 +374,7 @@ impl ApiError {
             status: code.http_status().as_u16(),
             code,
             detail: None,
-            instance: request_id.map(str::to_string),
+            instance: request_id.map(str::to_owned),
             fields: None,
         };
         match self {
@@ -383,7 +383,7 @@ impl ApiError {
             }
             Self::Internal(_) => {
                 body.detail = Some(request_id.map_or_else(
-                    || "Something went wrong. Please try again.".to_string(),
+                    || "Something went wrong. Please try again.".to_owned(),
                     |rid| {
                         format!(
                             "Something went wrong. Please try again. If the problem persists, reference request id {rid}.",
@@ -437,11 +437,9 @@ impl ResponseError for ApiError {
     }
 }
 
-#[allow(clippy::result_large_err)]
 pub type ApiResult<T> = Result<crate::ApiResponse<T>, ApiError>;
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use actix_web::body::to_bytes;
 

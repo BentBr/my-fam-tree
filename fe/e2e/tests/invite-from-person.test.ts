@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 /**
  * Create a person row through the FE so the e2e flow exercises real
@@ -27,7 +28,7 @@ async function createPerson(page: Page, givenName: string, familyName: string): 
 }
 
 test('admin invites a person; recipient accepts and is linked', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // Owner sets up the family + creates the person to invite-as.
     const ownerEmail = `invite-owner-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
@@ -54,7 +55,6 @@ test('admin invites a person; recipient accepts and is linked', async ({ browser
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link empty')
 
     // New browser context = the recipient's session, isolated from the
     // owner's cookies + localStorage so the JWT carries the invitee's
@@ -90,7 +90,7 @@ test('admin invites a person; recipient accepts and is linked', async ({ browser
 })
 
 test('admin cancels a pending invite from /admin/invites', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const ownerEmail = `invite-cancel-owner-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
     const familyId = await createFamily(owner, `CancelFam-${stamp}`)

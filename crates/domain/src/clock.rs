@@ -1,6 +1,16 @@
-//! Clock abstraction so the worker's "now" is injectable in tests + E2E.
+//! Clock abstraction so "now" is injectable in tests + E2E (api and worker).
 //!
-//! Two implementations of [`Clock`] live here:
+//! The injected clock governs every expiry decision and every
+//! "consumed / accepted / revoked at" timestamp: persistence methods take
+//! `now` as a parameter instead of reading SQL `now()`, and JWT `iat`/`exp`
+//! are issued and checked against it. Postgres `now()` stays only for pure
+//! bookkeeping that no decision reads: `email_outbox.updated_at`,
+//! `reminder_digests.dispatched_at`, `users.email_verified_at` and the
+//! column defaults (`created_at`, `joined_at`). Real wall-clock reads that
+//! must stay real (rate-limit windows, the worker heartbeat) carry an
+//! `#[expect(clippy::disallowed_methods)]` with the reason.
+//!
+//! Three implementations of [`Clock`] live here (plus [`SystemClock`]):
 //!
 //! - [`FixedClock`] — frozen at a stored instant. Used by deterministic
 //!   unit tests where reads must repeatedly observe the same `now`.
@@ -11,6 +21,11 @@
 //!   never become due. `OffsetClock` advances with real time between
 //!   `set(...)` calls, so the outbox drains normally while the digest
 //!   ticker can still be fast-forwarded.
+
+#![expect(
+    clippy::disallowed_methods,
+    reason = "the clock module is the one sanctioned reader of the wall clock (SystemClock, OffsetClock); its tests sleep to observe real time passing"
+)]
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
@@ -25,7 +40,7 @@ fn to_micros(t: OffsetDateTime) -> i64 {
 /// Inverse of [`to_micros`]; falls back to the wall clock for an
 /// out-of-range value (never happens for real instants).
 fn from_micros(micros: i64) -> OffsetDateTime {
-    OffsetDateTime::from_unix_timestamp_nanos(i128::from(micros) * 1_000)
+    OffsetDateTime::from_unix_timestamp_nanos(i128::from(micros).saturating_mul(1_000))
         .unwrap_or_else(|_| OffsetDateTime::now_utc())
 }
 
@@ -122,7 +137,6 @@ impl Clock for OffsetClock {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

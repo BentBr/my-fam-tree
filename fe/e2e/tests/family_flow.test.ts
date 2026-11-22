@@ -1,9 +1,10 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test.describe('FE family flow', () => {
     test('fresh user lands on /families/create', async ({ page }) => {
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `fresh-${stamp}@example.com`)
         // No families yet — the second router guard funnels straight to the
         // create view rather than the picker.
@@ -11,7 +12,7 @@ test.describe('FE family flow', () => {
     })
 
     test('family switcher is always visible with "create new" even when empty', async ({ page }) => {
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `empty-switcher-${stamp}@example.com`)
         await expect(page).toHaveURL(/\/families\/create$/)
         // T7: the switcher renders even with zero families; only the "create new"
@@ -24,7 +25,7 @@ test.describe('FE family flow', () => {
     })
 
     test('single-family user is auto-selected and lands on /tree directly', async ({ page }) => {
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `auto-${stamp}@example.com`)
         await createFamily(page, `Auto-${stamp}`)
         // From /health, navigate to /tree — the single-family guard branch
@@ -39,7 +40,7 @@ test.describe('FE family flow', () => {
     })
 
     test('/tree without an active family does not error — guard redirects', async ({ page }) => {
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `redirect-${stamp}@example.com`)
         // Brand-new user with zero families: the consume redirect lands on
         // /families/create. Now try jumping straight to /tree — the family

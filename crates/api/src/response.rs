@@ -84,10 +84,6 @@ impl<T: Serialize> ApiResponse<T> {
     }
 
     #[must_use]
-    #[allow(
-        clippy::needless_pass_by_value,
-        reason = "ergonomic builder API: `impl Into<String>` accepts both &str and String"
-    )]
     pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
         let mut meta = self.meta.take().unwrap_or_default();
         meta.request_id = Some(request_id.into());
@@ -132,7 +128,6 @@ impl<T: Serialize> Responder for ApiResponse<T> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use actix_web::body::to_bytes;
     use actix_web::test;

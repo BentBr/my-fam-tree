@@ -1,43 +1,20 @@
 /**
- * Drive the three openapi-fetch middlewares (familyIdInjector, authRefresh,
- * errorTranslator) by stubbing `fetch` and issuing client calls. The
- * middlewares are anonymous closures registered via `client.use(...)` and
- * can only be exercised through the public client surface.
- *
- * openapi-fetch runs middlewares in registration order on the response. The
- * tests below cover:
- *   - Happy 200 → all 3 middlewares pass through cleanly + verb surface is wired.
- *   - 401 with application/problem+json: authRefresh decides whether to refresh
- *     or end-session+throw based on the body's `code`.
- *   - 4xx with application/problem+json: errorTranslator converts to ApiClientError.
+ * Drive the openapi-fetch middlewares (familyIdInjector, requestCloner,
+ * errorTranslator, warningsBroadcaster, authRefresh) through the public
+ * client surface with a stubbed `fetch`. The client knows nothing about
+ * stores: session behaviour comes from the hooks passed to
+ * `configureClient` (spies from `fakeSessionHooks` here; the real wiring
+ * is covered in tests/plugins/apiSession.test.ts).
  */
-import { setActivePinia, createPinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 
 import type * as ApiClientModule from '@/api/client'
+import type { FamilyId } from '@/types/brand'
 
-// Under vite-ssg there is no router singleton to mock — `main.ts` injects
-// a navigate callback via `setClientNavigator` at boot. The harness mirrors
-// that: `importClient()` wires this spy right after each fresh import.
-const routerReplace = vi.fn()
+import { fakeSessionHooks } from '../helpers/client-session'
 
 async function importClient(): Promise<typeof ApiClientModule> {
-    const mod = await import('@/api/client')
-    mod.setClientNavigator(routerReplace)
-    return mod
-}
-
-function mockStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-    })
+    return import('@/api/client')
 }
 
 function jsonResponse(status: number, body: unknown, contentType = 'application/json'): Response {
@@ -47,21 +24,28 @@ function jsonResponse(status: number, body: unknown, contentType = 'application/
     })
 }
 
+const expired = { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }
+
+async function caught(call: Promise<unknown>): Promise<unknown> {
+    try {
+        await call
+    } catch (e) {
+        return e
+    }
+    return undefined
+}
+
 describe('@/api/client middlewares', () => {
-    let fetchSpy: ReturnType<typeof vi.fn>
+    let fetchSpy: Mock<typeof fetch>
 
     beforeEach(() => {
-        vi.stubGlobal('navigator', { language: 'en-US' })
-        mockStorage()
-        setActivePinia(createPinia())
         // openapi-fetch captures globalThis.fetch at client-creation time.
         // Replace fetch BEFORE importing the client module so the closure
         // picks up our spy, and reset modules so each test gets a fresh
-        // module + closure.
-        fetchSpy = vi.fn()
+        // module (and fresh, unconfigured hooks).
+        fetchSpy = vi.fn<typeof fetch>()
         vi.stubGlobal('fetch', fetchSpy)
         vi.resetModules()
-        routerReplace.mockReset()
     })
 
     afterEach(() => {
@@ -69,7 +53,6 @@ describe('@/api/client middlewares', () => {
     })
 
     it('exposes the openapi-fetch verbs', async () => {
-        fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
         const { client } = await importClient()
         expect(typeof client.GET).toBe('function')
         expect(typeof client.POST).toBe('function')
@@ -77,17 +60,18 @@ describe('@/api/client middlewares', () => {
         expect(typeof client.DELETE).toBe('function')
     })
 
-    it('familyIdInjector adds X-Family-Id when active family is set', async () => {
-        localStorage.setItem('my-fam-tree:activeFamily', 'f-1')
-        const { client } = await importClient()
+    it('familyIdInjector sets X-Family-Id from the familyId hook', async () => {
+        const { client, configureClient } = await importClient()
+        configureClient(fakeSessionHooks({ familyId: () => 'f-1' as FamilyId }))
         fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
         await client.GET('/api/v1/health' as never)
         const req = fetchSpy.mock.calls[0]?.[0] as Request
         expect(req.headers.get('X-Family-Id')).toBe('f-1')
     })
 
-    it('familyIdInjector omits header when no active family', async () => {
-        const { client } = await importClient()
+    it('familyIdInjector omits the header when the hook returns null', async () => {
+        const { client, configureClient } = await importClient()
+        configureClient(fakeSessionHooks())
         fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
         await client.GET('/api/v1/health' as never)
         const req = fetchSpy.mock.calls[0]?.[0] as Request
@@ -100,140 +84,135 @@ describe('@/api/client middlewares', () => {
         fetchSpy.mockResolvedValueOnce(
             jsonResponse(
                 400,
-                {
-                    type: 'about:blank',
-                    title: 'Bad',
-                    status: 400,
-                    code: 'validation_failed',
-                },
+                { type: 'about:blank', title: 'Bad', status: 400, code: 'validation_failed' },
                 'application/problem+json',
             ),
         )
-        let thrown: unknown
-        try {
-            await client.GET('/api/v1/health' as never)
-        } catch (e) {
-            thrown = e
-        }
-        expect(thrown).toBeInstanceOf(ApiClientError)
+        expect(await caught(client.GET('/api/v1/health' as never))).toBeInstanceOf(ApiClientError)
     })
 
-    it('warningsBroadcaster surfaces meta.warnings as info toasts on POST', async () => {
-        const { client } = await importClient()
-        const { useUiStore } = await import('@/stores/ui')
-        fetchSpy.mockResolvedValueOnce(
-            jsonResponse(200, {
-                data: { id: 'x' },
-                meta: {
-                    warnings: [
-                        {
-                            code: 'warning.sibling_partnership',
-                            message: 'english fallback',
-                            path: null,
-                        },
-                    ],
-                },
-            }),
-        )
+    it('warningsBroadcaster passes meta.warnings with the translated message on POST', async () => {
+        const { client, configureClient } = await importClient()
+        const hooks = fakeSessionHooks()
+        configureClient(hooks)
+        const warning = { code: 'warning.sibling_partnership', message: 'english fallback', path: null }
+        fetchSpy.mockResolvedValueOnce(jsonResponse(200, { data: { id: 'x' }, meta: { warnings: [warning] } }))
         await client.POST(
             '/api/v1/partnerships' as never,
-            {
-                body: { partner_a_id: 'a', partner_b_id: 'b', kind: 'marriage' },
-            } as never,
+            { body: { partner_a_id: 'a', partner_b_id: 'b', kind: 'marriage' } } as never,
         )
-        const toasts = useUiStore().toasts
-        expect(toasts).toHaveLength(1)
-        expect(toasts[0]?.kind).toBe('info')
-        expect(toasts[0]?.code).toBe('warning.sibling_partnership')
-        expect(toasts[0]?.message).toContain('share at least one parent')
+        expect(hooks.notifyWarning).toHaveBeenCalledTimes(1)
+        expect(hooks.notifyWarning).toHaveBeenCalledWith(warning, expect.stringContaining('share at least one parent'))
     })
 
     it('warningsBroadcaster does not fire on GET responses', async () => {
-        const { client } = await importClient()
-        const { useUiStore } = await import('@/stores/ui')
+        const { client, configureClient } = await importClient()
+        const hooks = fakeSessionHooks()
+        configureClient(hooks)
         fetchSpy.mockResolvedValueOnce(
             jsonResponse(200, {
                 data: { status: 'ok' },
-                meta: {
-                    warnings: [{ code: 'warning.parent_child_age_gap_under_14y', message: 'x', path: null }],
-                },
+                meta: { warnings: [{ code: 'warning.parent_child_age_gap_under_14y', message: 'x', path: null }] },
             }),
         )
         await client.GET('/api/v1/health' as never)
-        expect(useUiStore().toasts).toHaveLength(0)
+        expect(hooks.notifyWarning).not.toHaveBeenCalled()
     })
 
-    it('authRefresh throws ApiClientError on a non-expired 401', async () => {
-        const { client } = await importClient()
-        const { ApiClientError } = await import('@/api/errors')
-        fetchSpy.mockResolvedValueOnce(
-            jsonResponse(
-                401,
-                {
-                    type: 'about:blank',
-                    title: 'Unauthorized',
-                    status: 401,
-                    code: 'auth_required',
-                },
-                'application/problem+json',
-            ),
-        )
-        let thrown: unknown
-        try {
-            await client.GET('/api/v1/health' as never)
-        } catch (e) {
-            thrown = e
-        }
-        // The middleware throws ApiClientError regardless of whether
-        // endSession mutates the (anonymous) store. The auth-side
-        // mutation is covered directly in tests/stores/auth.test.ts.
-        expect(thrown).toBeInstanceOf(ApiClientError)
-    })
-
-    it('refreshes on auth_token_expired then retries the original request', async () => {
-        const { client } = await importClient()
+    it('refreshes on a 401 then retries the original request', async () => {
+        const { client, configureClient } = await importClient()
+        const hooks = fakeSessionHooks()
+        configureClient(hooks)
         fetchSpy
-            // 1) original GET → 401 expired (plain json so errorTranslator
-            //    passes it through to authRefresh)
-            .mockResolvedValueOnce(
-                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
-            )
-            // 2) the refresh POST issued by auth.refresh() → success
-            .mockResolvedValueOnce(
-                jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }),
-            )
-            // 3) the retried original GET → success
+            .mockResolvedValueOnce(jsonResponse(401, expired))
             .mockResolvedValueOnce(jsonResponse(200, { data: { ok: true } }))
-
         const { data } = await client.GET('/api/v1/relationships' as never)
         expect(data).toEqual({ data: { ok: true } })
-        expect(routerReplace).not.toHaveBeenCalled()
-        // original + refresh + retry = 3 fetches
-        expect(fetchSpy).toHaveBeenCalledTimes(3)
+        expect(hooks.refreshSession).toHaveBeenCalledTimes(1)
+        expect(hooks.endSession).not.toHaveBeenCalled()
+        // original + retry; the refresh itself goes through the hook
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('shares one in-flight refresh between concurrent 401s', async () => {
+        const { client, configureClient } = await importClient()
+        let release = (): void => {}
+        const pending = new Promise<void>((resolve) => {
+            release = resolve
+        })
+        const hooks = fakeSessionHooks({ refreshSession: vi.fn(() => pending) })
+        configureClient(hooks)
+        fetchSpy
+            .mockResolvedValueOnce(jsonResponse(401, expired))
+            .mockResolvedValueOnce(jsonResponse(401, expired))
+            .mockImplementation(() => Promise.resolve(jsonResponse(200, { data: { ok: true } })))
+        const both = Promise.all([client.GET('/api/v1/relationships' as never), client.GET('/api/v1/persons' as never)])
+        await vi.waitFor(() => {
+            expect(fetchSpy).toHaveBeenCalledTimes(2)
+        })
+        // Let both 401 responses reach the refresh gate before it resolves.
+        await new Promise((resolve) => setTimeout(resolve, 20))
+        release()
+        await both
+        expect(hooks.refreshSession).toHaveBeenCalledTimes(1)
+        expect(fetchSpy).toHaveBeenCalledTimes(4)
+    })
+
+    it('ends the session and rethrows the original 401 when the refresh fails', async () => {
+        const { client, configureClient } = await importClient()
+        const { ApiClientError } = await import('@/api/errors')
+        const hooks = fakeSessionHooks({ refreshSession: vi.fn(() => Promise.reject(new Error('refresh failed'))) })
+        configureClient(hooks)
+        fetchSpy.mockResolvedValueOnce(jsonResponse(401, expired))
+        const thrown = await caught(client.GET('/api/v1/relationships' as never))
+        expect(thrown).toBeInstanceOf(ApiClientError)
+        expect(thrown).toMatchObject({ code: 'auth_token_expired', status: 401 })
+        expect(hooks.endSession).toHaveBeenCalledTimes(1)
     })
 
     it('ends the session when the retried request is still 401', async () => {
-        const { client } = await importClient()
+        const { client, configureClient } = await importClient()
         const { ApiClientError } = await import('@/api/errors')
-        fetchSpy
-            .mockResolvedValueOnce(
-                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
-            )
-            .mockResolvedValueOnce(
-                jsonResponse(200, { data: { user_id: 'u', email: 'a@b', locale: 'en', families: [] } }),
-            )
-            // retry STILL 401 — refresh didn't actually recover the session
-            .mockResolvedValueOnce(
-                jsonResponse(401, { type: 'about:blank', title: 'Expired', status: 401, code: 'auth_token_expired' }),
-            )
+        const hooks = fakeSessionHooks()
+        configureClient(hooks)
+        fetchSpy.mockResolvedValueOnce(jsonResponse(401, expired)).mockResolvedValueOnce(jsonResponse(401, expired))
+        expect(await caught(client.GET('/api/v1/relationships' as never))).toBeInstanceOf(ApiClientError)
+        expect(hooks.endSession).toHaveBeenCalledTimes(1)
+    })
 
-        let thrown: unknown
-        try {
-            await client.GET('/api/v1/relationships' as never)
-        } catch (e) {
-            thrown = e
-        }
-        expect(thrown).toBeInstanceOf(ApiClientError)
-        expect(routerReplace).toHaveBeenCalledWith('/auth/sign-in')
+    it('never refreshes a 401 from /auth/refresh itself', async () => {
+        const { client, configureClient } = await importClient()
+        const hooks = fakeSessionHooks()
+        configureClient(hooks)
+        fetchSpy.mockResolvedValueOnce(jsonResponse(401, expired))
+        await caught(client.POST('/api/v1/auth/refresh'))
+        expect(hooks.refreshSession).not.toHaveBeenCalled()
+    })
+
+    describe('before configureClient', () => {
+        it('sends no family header', async () => {
+            const { client } = await importClient()
+            fetchSpy.mockResolvedValueOnce(jsonResponse(200, { ok: true }))
+            await client.GET('/api/v1/health' as never)
+            const req = fetchSpy.mock.calls[0]?.[0] as Request
+            expect(req.headers.get('X-Family-Id')).toBeNull()
+        })
+
+        it('rethrows a 401 as ApiClientError without retrying', async () => {
+            const { client } = await importClient()
+            const { ApiClientError } = await import('@/api/errors')
+            fetchSpy.mockResolvedValueOnce(jsonResponse(401, expired))
+            expect(await caught(client.GET('/api/v1/relationships' as never))).toBeInstanceOf(ApiClientError)
+            expect(fetchSpy).toHaveBeenCalledTimes(1)
+        })
+
+        it('ignores warnings', async () => {
+            const { client } = await importClient()
+            fetchSpy.mockResolvedValueOnce(
+                jsonResponse(200, { data: {}, meta: { warnings: [{ code: 'warning.x', message: 'x', path: null }] } }),
+            )
+            const { data } = await client.POST('/api/v1/partnerships' as never, { body: {} } as never)
+            expect(data).toEqual({ data: {}, meta: { warnings: [{ code: 'warning.x', message: 'x', path: null }] } })
+        })
     })
 })

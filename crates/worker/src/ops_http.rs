@@ -13,10 +13,12 @@
 use std::sync::Arc;
 
 use actix_web::{App, HttpServer, web};
+#[cfg(feature = "test-fixtures")]
+use my_fam_tree_domain::clock::OffsetClock;
 
 use crate::health::{HealthState, Heartbeat};
 #[cfg(feature = "test-fixtures")]
-use crate::{clock::OffsetClock, state::WorkerState};
+use crate::state::WorkerState;
 
 /// Bind the configured `HttpServer` to `bind` and run it to completion.
 /// Both `serve()` and `serve_with_test_fixtures()` share this tail, so
@@ -92,12 +94,12 @@ mod test_fixtures {
 
     use actix_web::{HttpResponse, post, web};
     use my_fam_tree_domain::TimeZoneRepo;
+    use my_fam_tree_domain::clock::OffsetClock;
     use my_fam_tree_domain::dates::{DEFAULT_TIMEZONE, DIGEST_LOCAL_HOUR};
     use serde::Deserialize;
     use time::format_description::well_known::Rfc3339;
     use time::{Date, OffsetDateTime, Time};
 
-    use crate::clock::OffsetClock;
     use crate::state::WorkerState;
     use crate::ticker;
 
@@ -124,6 +126,10 @@ mod test_fixtures {
         }
         let date = match req.date {
             Some(d) => d,
+            #[expect(
+                clippy::disallowed_methods,
+                reason = "an omitted date means today in real time, independent of where the fixture clock was moved"
+            )]
             None => zones.local_date(OffsetDateTime::now_utc(), DEFAULT_TIMEZONE).await?,
         };
         let six = Time::from_hms(DIGEST_LOCAL_HOUR, 0, 0).unwrap_or(Time::MIDNIGHT);
@@ -138,10 +144,6 @@ mod test_fixtures {
     }
 
     #[post("/__test/advance-clock")]
-    #[allow(
-        unreachable_pub,
-        reason = "the #[post] proc-macro replaces this fn with a unit struct; pub is required for actix's HttpServiceFactory wiring"
-    )]
     pub(super) async fn advance(
         ts: web::Data<TestState>,
         body: web::Json<AdvanceReq>,

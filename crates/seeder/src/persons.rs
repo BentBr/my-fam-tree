@@ -23,7 +23,7 @@ mod elders;
 mod falke_krause;
 mod steinbach;
 
-use sqlx::PgPool;
+use my_fam_tree_persistence::seed::{PersonRow, SeedDb};
 use time::Date;
 use uuid::Uuid;
 
@@ -49,7 +49,7 @@ pub(crate) struct PersonSeed {
     pub(crate) linked_user_id: Option<Uuid>,
 }
 
-#[allow(
+#[expect(
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]
@@ -65,7 +65,7 @@ pub(crate) const fn ymd(y: i32, m: u8, d: u8) -> Date {
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT … DO
 /// UPDATE` statements.
-pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn seed_persons(db: &SeedDb<'_>) -> anyhow::Result<()> {
     let rows: Vec<&PersonSeed> = [
         elders::ROWS.as_slice(),
         descendants::ROWS.as_slice(),
@@ -88,10 +88,10 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
     // nukes any user-added person rows on a re-seed, matching the
     // partnership-reset behaviour already in `seed_partnerships`.
     let seed_ids: Vec<Uuid> = rows.iter().map(|p| p.id).collect();
-    delete_non_seed_persons(pool, SEED_FAMILY_ID, &seed_ids).await?;
+    delete_non_seed_persons(db, SEED_FAMILY_ID, &seed_ids).await?;
 
     for p in &rows {
-        upsert_person(pool, SEED_FAMILY_ID, p).await?;
+        upsert_person(db, SEED_FAMILY_ID, p).await?;
     }
     Ok(())
 }
@@ -105,15 +105,11 @@ pub async fn seed_persons(pool: &PgPool) -> anyhow::Result<()> {
 /// # Errors
 /// Propagates any Postgres error from the `DELETE`.
 pub(crate) async fn delete_non_seed_persons(
-    pool: &PgPool,
+    db: &SeedDb<'_>,
     family_id: Uuid,
     keep: &[Uuid],
 ) -> anyhow::Result<()> {
-    sqlx::query("DELETE FROM persons WHERE family_id = $1 AND id <> ALL($2)")
-        .bind(family_id)
-        .bind(keep)
-        .execute(pool)
-        .await?;
+    db.delete_persons_except(family_id, keep).await?;
     Ok(())
 }
 
@@ -123,43 +119,24 @@ pub(crate) async fn delete_non_seed_persons(
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT`.
 pub(crate) async fn upsert_person(
-    pool: &PgPool,
+    db: &SeedDb<'_>,
     family_id: Uuid,
     p: &PersonSeed,
 ) -> anyhow::Result<()> {
-    sqlx::query(
-        "INSERT INTO persons \
-             (id, family_id, given_name, family_name, name_at_birth, nickname, gender, \
-              birth_date, birth_place, death_date, notes, \
-              linked_user_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
-         ON CONFLICT (id) DO UPDATE SET \
-             family_id = EXCLUDED.family_id, \
-             given_name = EXCLUDED.given_name, \
-             family_name = EXCLUDED.family_name, \
-             name_at_birth = EXCLUDED.name_at_birth, \
-             nickname = EXCLUDED.nickname, \
-             gender = EXCLUDED.gender, \
-             birth_date = EXCLUDED.birth_date, \
-             birth_place = EXCLUDED.birth_place, \
-             death_date = EXCLUDED.death_date, \
-             notes = EXCLUDED.notes, \
-             linked_user_id = EXCLUDED.linked_user_id",
-    )
-    .bind(p.id)
-    .bind(family_id)
-    .bind(p.given)
-    .bind(p.family)
-    .bind(p.name_at_birth)
-    .bind(p.nickname)
-    .bind(p.gender)
-    .bind(p.birth_date)
-    .bind(p.birth_place)
-    .bind(p.death_date)
-    .bind(p.notes)
-    .bind(p.linked_user_id)
-    .execute(pool)
-    .await?;
+    let row = PersonRow {
+        id: p.id,
+        given_name: p.given,
+        family_name: p.family,
+        name_at_birth: p.name_at_birth,
+        nickname: p.nickname,
+        gender: p.gender,
+        birth_date: p.birth_date,
+        birth_place: p.birth_place,
+        death_date: p.death_date,
+        notes: p.notes,
+        linked_user_id: p.linked_user_id,
+    };
+    db.upsert_person(family_id, &row).await?;
     Ok(())
 }
 

@@ -1,11 +1,12 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // Input that can't be parsed (wrong type, impossible date, broken JSON, bad
 // query string) must come back as the RFC 7807 problem+json envelope the FE
 // error mapper understands, not as actix's plain-text 400.
 test('unparseable requests return a problem+json 400 with request_malformed', async ({ page }) => {
-    await signIn(page, `api-errors-${Date.now()}@example.com`)
+    await signIn(page, `api-errors-${uniqueStamp()}@example.com`)
 
     const wrongType = await page.request.put('/api/v1/reminder-preferences', {
         headers: { 'content-type': 'application/json' },

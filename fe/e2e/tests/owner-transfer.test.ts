@@ -3,9 +3,10 @@ import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { inviteAndAccept } from '../page-objects/invites'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('owner transfers ownership to admin; both sides confirm; roles swap', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     // Owner sets up a fresh family + invites one admin.
     const ownerEmail = `xfer-owner-${stamp}@example.com`

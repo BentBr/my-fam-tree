@@ -17,17 +17,12 @@
 //! contract being asserted. The cap on `/users/me/email-change` is 5/hour
 //! and IS tested in `security_input_validation.rs`.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -39,7 +34,10 @@ use my_fam_tree_api::build_app;
 
 /// Create a person and return its id. Mirrors the helper in
 /// `person_photo_flow.rs` so each test file stays self-contained.
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(app: &S, access: &str, family_id: &str, given_name: &str) -> String
 where
     S: actix_web::dev::Service<
@@ -51,14 +49,14 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +244,7 @@ async fn email_taken_response_does_not_echo_the_email() {
 
     // Two existing users — A is the caller, B owns the target address.
     let (access_a, _r) = sign_in(&stack, &app, "audit-et-caller@example.com").await;
-    let _ = sign_in(&stack, &app, "audit-et-owner@example.com").await;
+    drop(sign_in(&stack, &app, "audit-et-owner@example.com").await);
 
     // Caller tries to swap their email to B's address.
     let req = test::TestRequest::post()

@@ -18,7 +18,7 @@ pub struct FamilyClaim {
     pub role: Role,
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref, reason = "serde with-style hooks require &T")]
+#[expect(clippy::trivially_copy_pass_by_ref, reason = "serde with-style hooks require &T")]
 fn ser_role<S: serde::Serializer>(r: &Role, s: S) -> Result<S::Ok, S::Error> {
     let v = match r {
         Role::User => "user",

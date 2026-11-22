@@ -1,6 +1,8 @@
 ---
 name: crate-cache
 description: Use when working in the cache crate (package my-fam-tree-cache, crate my_fam_tree_cache) — the Redis access layer providing the connection pool, rate limiter, and reminder job queue. Triggers — adding/changing Redis-backed pooling, rate limiting, or the digest queue; wiring these into api or worker; deciding key namespacing. Keywords — RedisPool, RedisRateLimiter, RedisReminderQueue, rate limit, leader lock, job queue, key prefix, deadpool-redis.
+paths:
+  - "crates/cache/**"
 ---
 
 # crate-cache — Redis access layer

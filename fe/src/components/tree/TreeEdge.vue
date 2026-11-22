@@ -48,12 +48,17 @@ const props = defineProps<{
 // Parent edges draw a vertical cubic Bezier from child top up to parent bottom
 // so multi-generation stacks read as smooth lineages. Partner edges are flat
 // horizontal lines so the relationship glyph sits naturally on the midpoint.
+/** One SVG path coordinate pair. */
+function point(x: number, y: number): string {
+    return `${String(x)} ${String(y)}`
+}
+
 const path = computed(() => {
     if (props.kind === 'parent') {
         const midY = (props.ay + props.by) / 2
-        return `M ${props.ax} ${props.ay} C ${props.ax} ${midY}, ${props.bx} ${midY}, ${props.bx} ${props.by}`
+        return `M ${point(props.ax, props.ay)} C ${point(props.ax, midY)}, ${point(props.bx, midY)}, ${point(props.bx, props.by)}`
     }
-    return `M ${props.ax} ${props.ay} L ${props.bx} ${props.by}`
+    return `M ${point(props.ax, props.ay)} L ${point(props.bx, props.by)}`
 })
 
 const midX = computed(() => (props.ax + props.bx) / 2)
@@ -64,12 +69,12 @@ const midY = computed(() => (props.ay + props.by) / 2)
 // rose-pink heart. The `ended` flag is orthogonal — it greys whichever
 // glyph is showing.
 const isMarriage = computed(() => props.partnershipKind === 'marriage')
-const isEnded = computed(() => props.ended === true)
+const isEnded = computed(() => props.ended)
 // For directly-adjacent partner pairs (the glyph sits between the two
 // nodes, fully visible), the dashed connecting line is redundant —
 // suppress it and let the glyph be the connector. Parent edges always
 // draw their line; this flag only affects partner edges.
-const showPartnerLine = computed(() => props.kind !== 'partner' || props.directlyAdjacent !== true)
+const showPartnerLine = computed(() => props.kind !== 'partner' || !props.directlyAdjacent)
 
 // Tailwind-style CSS class set so the stylesheet can pick the right
 // stroke/fill via class scoping. Keeping the conditional in TS rather

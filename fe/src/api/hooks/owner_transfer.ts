@@ -33,12 +33,12 @@ export function useOwnerTransfer() {
         queryFn: async (): Promise<TransferStatusRow | null> => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useOwnerTransfer: no active family')
-            const status = await unwrap(
+            const status = await unwrap<TransferStatusRow | null>(
                 client.GET('/api/v1/families/{family_id}/transfer-owner', {
                     params: { path: { family_id: familyId } },
                 }),
             )
-            return (status as TransferStatusRow | null) ?? null
+            return status ?? null
         },
     })
 }
@@ -59,7 +59,7 @@ export function useBeginOwnerTransfer() {
                     params: { path: { family_id: familyId } },
                     body: { to_user_id: toUserId },
                 }),
-            ) as Promise<TransferStatusRow>
+            )
         },
         success: 'toasts.transfer_started',
         invalidate: () => [['owner-transfer'], ['members']],
@@ -83,7 +83,7 @@ export function useConfirmOwnerTransfer() {
                     params: { path: { family_id: familyId } },
                     body: { token },
                 }),
-            ) as Promise<TransferStatusRow>
+            )
         },
         success: 'toasts.transfer_confirmed',
         invalidate: () => [['owner-transfer'], ['members']],
@@ -96,7 +96,7 @@ export function useConfirmOwnerTransfer() {
  */
 export function useCancelOwnerTransfer() {
     const family = useActiveFamilyStore()
-    return useApiMutation<void, void>({
+    return useApiMutation({
         mutationFn: () => {
             const familyId = family.activeFamilyId
             if (familyId === null) throw new Error('useCancelOwnerTransfer: no active family')

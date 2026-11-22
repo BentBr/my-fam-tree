@@ -5,16 +5,17 @@ use std::env;
 use ed25519_dalek::SigningKey;
 use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
 use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
+use my_fam_tree_domain::clock::{Clock, SystemClock};
 use rand::rand_core::UnwrapErr;
 use rand::rngs::SysRng;
 
-#[allow(
+#[expect(
     clippy::print_stdout,
     reason = "this binary's sole purpose is to print key material and env lines to stdout"
 )]
 fn main() -> anyhow::Result<()> {
     let kid = env::args().nth(1).unwrap_or_else(|| {
-        let now = time::OffsetDateTime::now_utc();
+        let now = SystemClock.now();
         let fmt = time::macros::format_description!("[year][month][day]-[hour][minute][second]");
         format!("local-{}", now.format(fmt).unwrap_or_default())
     });

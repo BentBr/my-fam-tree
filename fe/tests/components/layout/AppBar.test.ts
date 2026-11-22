@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 // Atoms are stubbed below; we don't need /users/me here either.
 vi.mock('@/api/hooks/users', () => ({
-    useMe: () => ({ data: ref(undefined), isLoading: ref(false), error: ref(null) }),
+    useMe: () => ({ data: ref<unknown>(undefined), isLoading: ref(false), error: ref<Error | null>(null) }),
 }))
 // AppBar now reads `useDisplay().smAndDown` to fold inline tools into
 // the AccountControl menu on phones. Mocking the helper avoids dragging

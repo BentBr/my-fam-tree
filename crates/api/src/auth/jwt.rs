@@ -3,21 +3,27 @@
 //! Verification looks up the verifying key by the `kid` header so retired
 //! kids can still validate tokens issued before rotation.
 
+use std::sync::Arc;
+
 use anyhow::{Context, anyhow};
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, decode_header, encode,
 };
-use time::OffsetDateTime;
+use my_fam_tree_domain::clock::Clock;
 use uuid::Uuid;
 
 use super::claims::{FamilyClaim, JwtClaims};
 use super::keys::JwtKeyset;
+
+/// Clock-skew tolerance when checking `exp`.
+const LEEWAY_SECONDS: i64 = 5;
 
 pub struct JwtIssuer {
     keys: JwtKeyset,
     issuer: String,
     audience: String,
     access_ttl_seconds: i64,
+    clock: Arc<dyn Clock>,
 }
 
 impl std::fmt::Debug for JwtIssuer {
@@ -26,6 +32,7 @@ impl std::fmt::Debug for JwtIssuer {
             .field("issuer", &self.issuer)
             .field("audience", &self.audience)
             .field("access_ttl_seconds", &self.access_ttl_seconds)
+            .field("clock", &self.clock)
             .field("keys", &self.keys)
             .finish()
     }
@@ -38,8 +45,9 @@ impl JwtIssuer {
         issuer: String,
         audience: String,
         access_ttl_seconds: i64,
+        clock: Arc<dyn Clock>,
     ) -> Self {
-        Self { keys, issuer, audience, access_ttl_seconds }
+        Self { keys, issuer, audience, access_ttl_seconds, clock }
     }
 
     /// Issue an access token signed with the active signing key.
@@ -54,16 +62,16 @@ impl JwtIssuer {
         locale: &str,
         families: Vec<FamilyClaim>,
     ) -> anyhow::Result<String> {
-        let now = OffsetDateTime::now_utc().unix_timestamp();
+        let now = self.clock.now().unix_timestamp();
         let claims = JwtClaims {
             iss: self.issuer.clone(),
             aud: self.audience.clone(),
             sub,
-            email: email.to_string(),
-            locale: locale.to_string(),
+            email: email.to_owned(),
+            locale: locale.to_owned(),
             families,
             iat: now,
-            exp: now + self.access_ttl_seconds,
+            exp: now.saturating_add(self.access_ttl_seconds),
             jti: Uuid::new_v4().to_string(),
         };
         let mut header = Header::new(Algorithm::EdDSA);
@@ -88,32 +96,44 @@ impl JwtIssuer {
         let mut validation = Validation::new(Algorithm::EdDSA);
         validation.set_issuer(&[&self.issuer]);
         validation.set_audience(&[&self.audience]);
-        validation.leeway = 5;
+        // Expiry is checked against the injected clock below, not by
+        // jsonwebtoken (which reads system time). `exp` stays a required claim.
+        validation.validate_exp = false;
+        validation.validate_nbf = false;
         let decoding = DecodingKey::from_ed_pem(verify_pem.as_bytes())
             .context("DecodingKey::from_ed_pem (Ed25519 SPKI PEM expected)")?;
         let data = decode::<JwtClaims>(token, &decoding, &validation).context("verify JWT")?;
+        let now = self.clock.now().unix_timestamp();
+        if data.claims.exp.saturating_add(LEEWAY_SECONDS) < now {
+            return Err(anyhow!("verify JWT: token expired"));
+        }
         Ok(data.claims)
     }
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use ed25519_dalek::pkcs8::spki::der::pem::LineEnding;
     use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
+    use my_fam_tree_domain::clock::FixedClock;
     use rand::rand_core::UnwrapErr;
     use rand::rngs::SysRng;
+    use time::{Duration, OffsetDateTime};
 
     use super::*;
 
     fn fixture_issuer(kid: &str) -> JwtIssuer {
+        fixture_issuer_with_clock(kid, Arc::new(my_fam_tree_domain::clock::SystemClock))
+    }
+
+    fn fixture_issuer_with_clock(kid: &str, clock: Arc<dyn Clock>) -> JwtIssuer {
         let sk = ed25519_dalek::SigningKey::generate(&mut UnwrapErr(SysRng));
         let priv_pem = sk.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
         let pub_pem = sk.verifying_key().to_public_key_pem(LineEnding::LF).unwrap();
         let public_json =
             serde_json::json!([{"kid": kid, "public_pem": pub_pem.trim_end()}]).to_string();
         let keys = JwtKeyset::load(&priv_pem, kid, &public_json).unwrap();
-        JwtIssuer::new(keys, "iss".into(), "aud".into(), 900)
+        JwtIssuer::new(keys, "iss".into(), "aud".into(), 900, clock)
     }
 
     #[test]
@@ -143,5 +163,35 @@ mod tests {
         let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
         issuer.audience = "other-aud".into();
         assert!(issuer.verify(&token).is_err());
+    }
+
+    const T: OffsetDateTime = time::macros::datetime!(2040-01-01 00:00 UTC);
+
+    #[test]
+    fn jwt_follows_injected_clock() {
+        let clock = FixedClock::new(T);
+        let issuer = fixture_issuer_with_clock("kid-1", Arc::new(clock.clone()));
+        let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
+
+        clock.set(T + Duration::seconds(900 - 1));
+        let claims = issuer.verify(&token).expect("valid just before exp by the injected clock");
+        assert_eq!(claims.iat, T.unix_timestamp(), "iat comes from the injected clock");
+        assert_eq!(claims.exp, T.unix_timestamp() + 900, "exp = iat + access ttl");
+
+        clock.set(T + Duration::seconds(900 + 5 + 1));
+        assert!(issuer.verify(&token).is_err(), "expired past ttl + leeway by the injected clock");
+    }
+
+    #[test]
+    fn verification_ignores_system_time() {
+        let clock = FixedClock::new(my_fam_tree_domain::clock::SystemClock.now());
+        let issuer = fixture_issuer_with_clock("kid-1", Arc::new(clock.clone()));
+        let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
+
+        clock.set(T);
+        assert!(
+            issuer.verify(&token).is_err(),
+            "a token issued at real time is expired when the clock reads 2040"
+        );
     }
 }

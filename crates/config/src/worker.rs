@@ -160,9 +160,7 @@ impl WorkerConfig {
 }
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
+#[expect(
     clippy::result_large_err,
     reason = "figment::Jail::expect_with's closure returns figment::Result; the large-err variant is its design"
 )]

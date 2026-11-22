@@ -4,7 +4,11 @@
 //! so the suite stays green locally without infrastructure; CI runs redis as a
 //! service. Each test uses a unique key prefix so parallel runs don't collide.
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "integration test opts in via REDIS_URL from the test environment; there is no app config to read it through"
+)]
 
 use my_fam_tree_cache::{RedisPool, RedisReminderQueue, ReminderJob, ReminderJobQueue};
 use uuid::Uuid;

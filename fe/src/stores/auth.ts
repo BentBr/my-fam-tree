@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { client } from '@/api/client'
-import { ApiClientError } from '@/api/errors'
+import { ApiClientError, throwIfError } from '@/api/errors'
 import type { ClaimsPayload } from '@/api/types'
 import type { FamilyId, UserId } from '@/types/brand'
 
@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function hydrate(): Promise<void> {
         try {
             const { data, error } = await client.GET('/api/v1/auth/me')
-            if (error !== undefined) throw error
+            throwIfError(error)
             if (data !== undefined) {
                 applyClaimsPayload(data.data)
             }
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function refresh(): Promise<void> {
         const { data, error } = await client.POST('/api/v1/auth/refresh')
-        if (error !== undefined) throw error
+        throwIfError(error)
         if (data !== undefined) {
             applyClaimsPayload(data.data)
         }
@@ -88,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     async function logout(): Promise<void> {
         try {
             const { error } = await client.POST('/api/v1/auth/logout')
-            if (error !== undefined) throw error
+            throwIfError(error)
         } catch {
             // Backend revocation can fail (e.g., token already revoked, or the
             // network is gone). Either way, still clear local state so the UI

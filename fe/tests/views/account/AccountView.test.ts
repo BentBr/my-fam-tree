@@ -31,6 +31,7 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 
 import { i18n } from '@/i18n'
 import AccountView from '@/views/account/AccountView.vue'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 async function mountView() {
     const router = createRouter({
@@ -90,16 +91,7 @@ describe('AccountView', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.stubGlobal('navigator', { language: 'en-US' })
-        const store: Record<string, string> = {}
-        vi.stubGlobal('localStorage', {
-            getItem: (k: string) => store[k] ?? null,
-            setItem: (k: string, v: string) => {
-                store[k] = v
-            },
-            removeItem: (k: string) => {
-                delete store[k]
-            },
-        })
+        vi.stubGlobal('localStorage', memoryStorage())
         meData.value = undefined
         updateMutate.mockReset()
         requestEmailMutate.mockReset()

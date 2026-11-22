@@ -2,15 +2,23 @@
 //!
 //! The handler delegates the projection / sort / limit to
 //! [`crate::services::upcoming::build_upcoming`] and only wraps the result
-//! in `ApiResponse`. Today's date is read from `time::OffsetDateTime::now_utc()` —
+//! in `ApiResponse`. Today's date is read from the injected `state.clock` —
 //! the inevitable "midnight rollover" off-by-one across timezones is
 //! acceptable for an MVP list view; persons whose birthday is "today
 //! in their timezone but not yet in UTC" will simply appear one day
 //! earlier than they otherwise might.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 use serde::Deserialize;
-use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::auth::user_claims_with_family;
@@ -54,8 +62,6 @@ response_body!(pub UpcomingResponseBody, Vec<UpcomingEvent>);
     security(("cookie_access" = [])),
     tag = "upcoming",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/upcoming")]
 pub async fn list(
     state: web::Data<AppState>,
@@ -66,7 +72,7 @@ pub async fn list(
     let filter = UpcomingFilter::parse(query.filter.as_deref());
     let limit = query.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
     let favourites_only = query.favourites_only.unwrap_or(false);
-    let today = OffsetDateTime::now_utc().date();
+    let today = state.clock.now().date();
     let events = build_upcoming(
         &state.persons,
         &state.partnerships,

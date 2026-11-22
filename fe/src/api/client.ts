@@ -1,68 +1,41 @@
 import createClient, { type Middleware } from 'openapi-fetch'
 
 import { i18n } from '@/i18n'
-import { useActiveFamilyStore } from '@/stores/activeFamily'
-import { useAuthStore } from '@/stores/auth'
-import { useUiStore } from '@/stores/ui'
+import type { FamilyId } from '@/types/brand'
 
 import { ApiClientError, type ApiErrorBody, type Warning } from './errors'
 import type { paths } from './schema'
 
-// The client must bounce a hard-expired session to `/auth/sign-in`, but
-// it can no longer import the router as a module-level singleton: under
-// `vite-ssg` the router is created per render (and per request during
-// prerender), so there is no single instance to import. Instead the app
-// boot (`main.ts`, inside the ViteSSG setup) injects a navigate callback
-// once the router exists. Until then — and during SSR/prerender, where a
-// 401 redirect is meaningless — calls are a safe no-op.
-type Navigate = (to: string) => void
-let navigate: Navigate = () => {}
-
-/** Wire the redirect callback the 401 path uses. Called once at boot. */
-export function setClientNavigator(fn: Navigate): void {
-    navigate = fn
+/**
+ * Session behaviour the client needs but must not own: the stores import
+ * the client, so the client importing the stores would be an import cycle.
+ * `src/plugins/apiSession.ts` wires the store-backed hooks at app start.
+ */
+export interface ClientSessionHooks {
+    /** Active family for the `X-Family-Id` header, or null for none. */
+    familyId: () => FamilyId | null
+    /** Refresh the access cookie; rejects when the session cannot be renewed. */
+    refreshSession: () => Promise<void>
+    /** Hard logout after a 401 that refreshing could not fix. */
+    endSession: () => void
+    /** Surface a soft-validation warning; `message` is already translated. */
+    notifyWarning: (warning: Warning, message: string) => void
 }
 
-// On any 401 the FE cannot silently refresh (refresh itself failed
-// too), clear the in-memory session, drop the HttpOnly cookies
-// server-side, and bounce to sign-in.
-//
-// HttpOnly cookies cannot be cleared from JavaScript — only the BE's
-// `Set-Cookie max-age=0` response drops them from the browser. We
-// POST `/auth/logout` (public + idempotent — see
-// `crates/api/src/routes/mod.rs`) which always emits the clearing
-// headers; without this, stale refresh cookies would sit in the
-// browser until their 30-day TTL and a returning user would keep
-// hitting the same failure loop.
-//
-// The user-facing "session expired" toast is owned by `reportError`
-// in queryClient.ts so all error messaging lives in exactly one
-// place. The route guard would catch them on the next navigation
-// anyway; we redirect on the failed request itself so the stale
-// authenticated UI doesn't linger.
-function endSession(): void {
-    const auth = useAuthStore()
-    // Already-anonymous callers (initial hydrate, mid-sign-in flows)
-    // skip everything: there's no session for the route guards to
-    // race against, and a never-signed-in caller has no cookies for
-    // the BE wipe to clear (any cross-tab staleness rides out the
-    // cookie's natural TTL).
-    if (auth.status === 'anonymous') return
-    // Sync local-state flip so route guards on the next tick see
-    // `anonymous` immediately and don't race with the async BE call.
-    auth.applyClaimsPayload(null)
-    // Async BE cookie wipe via the public /auth/logout endpoint. The
-    // store's `logout()` wraps the BE call with the localStorage /
-    // sessionStorage cleanup so app-owned state goes too. Fire-and-
-    // forget: a network failure must not block the redirect, and the
-    // in-flight request's response doesn't need to wait on this
-    // side-effect. The redundant `applyClaimsPayload(null)` inside
-    // `auth.logout()` is a harmless idempotent safety net.
-    void auth.logout()
-    // `replace` semantics (the expired page never sits in history) live in
-    // the injected navigator. Fire-and-forget: middleware must finish
-    // before the caller awaits and unmounts the source view.
-    navigate('/auth/sign-in')
+// Safe until `configureClient` runs (and in tests that never call it): no
+// family header, a 401 is rethrown as-is, warnings are dropped.
+const unconfigured: ClientSessionHooks = {
+    familyId: () => null,
+    refreshSession: () => Promise.reject(new Error('api client: no session hooks configured')),
+    endSession: () => {},
+    notifyWarning: () => {},
+}
+
+let hooks: ClientSessionHooks = unconfigured
+
+/** Install the session hooks. Called once per app (re)initialisation. */
+export function configureClient(next: ClientSessionHooks): void {
+    hooks = next
 }
 
 // Parse an error response body into the typed `ApiClientError`. Shared by
@@ -82,7 +55,7 @@ async function toApiError(response: Response): Promise<ApiClientError> {
             title: response.statusText || 'Request failed',
             status: response.status,
             code: 'internal',
-        } as ApiErrorBody)
+        })
     }
 }
 
@@ -92,12 +65,11 @@ async function toApiError(response: Response): Promise<ApiClientError> {
 // proxy forwards to the api service. Setting an absolute URL here would make the
 // browser bypass the proxy and fail from inside the compose network where the
 // api container only listens on 8080 (no port-80 routing inside docker).
-const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? ''
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const familyIdInjector: Middleware = {
-    async onRequest({ request }) {
-        const family = useActiveFamilyStore()
-        const id = family.activeFamilyId
+    onRequest({ request }) {
+        const id = hooks.familyId()
         if (id !== null && !request.headers.has('X-Family-Id')) {
             request.headers.set('X-Family-Id', id)
         }
@@ -122,7 +94,7 @@ let refreshing: Promise<void> | null = null
 const retryClones = new WeakMap<Request, Request>()
 
 const requestCloner: Middleware = {
-    async onRequest({ request }) {
+    onRequest({ request }) {
         // `clone()` snapshots method + url + headers + body for a
         // single replay. Future replays (rare, but possible if
         // refresh races) would need another clone — out of scope
@@ -169,7 +141,7 @@ const authRefresh: Middleware = {
         //
         // Genuinely-anonymous callers (no refresh cookie either) get a
         // 401 on the refresh attempt itself and fall through to
-        // `endSession()` — which short-circuits when the auth store is
+        // `hooks.endSession()` — whose store wiring short-circuits when the auth store is
         // already `anonymous`, so a never-signed-in visitor on a
         // public page stays put instead of being bounced.
         //
@@ -180,15 +152,9 @@ const authRefresh: Middleware = {
         // `body` is retained so the refresh-fail path can rethrow it
         // verbatim, preserving the original error semantics for
         // `reportError`'s toast pipeline.
-        const auth = useAuthStore()
-        refreshing ??= auth
-            .refresh()
-            .catch((e) => {
-                throw e
-            })
-            .finally(() => {
-                refreshing = null
-            })
+        refreshing ??= hooks.refreshSession().finally(() => {
+            refreshing = null
+        })
         try {
             await refreshing
         } catch {
@@ -197,7 +163,7 @@ const authRefresh: Middleware = {
             // (no-op if already anonymous) + rethrow the ORIGINAL 401
             // body so `reportError` shows the right toast — e.g.,
             // "session expired" rather than "refresh invalid".
-            endSession()
+            hooks.endSession()
             throw new ApiClientError(body)
         }
         // Retry the original request now that the cookie is fresh. The
@@ -220,7 +186,7 @@ const authRefresh: Middleware = {
         const replay = retryClones.get(request) ?? request
         const retried = await fetch(replay)
         if (!retried.ok) {
-            if (retried.status === 401) endSession()
+            if (retried.status === 401) hooks.endSession()
             throw await toApiError(retried)
         }
         return retried
@@ -258,10 +224,9 @@ const warningsBroadcaster: Middleware = {
         }
         const warnings = envelope.meta?.warnings ?? []
         if (warnings.length === 0) return response
-        const ui = useUiStore()
         for (const w of warnings) {
             const msg = i18n.global.te(w.code) ? i18n.global.t(w.code) : w.message
-            ui.pushToast({ kind: 'info', message: msg, code: w.code })
+            hooks.notifyWarning(w, msg)
         }
         return response
     },

@@ -10,10 +10,8 @@
 // on the multi-thread runtime fine. These are internal, not a library API
 // contract, so allow crate-wide rather than tagging every fn (matches how the
 // api crate handles the same lint per-handler).
-#![allow(clippy::future_not_send)]
 
 pub mod backoff;
-pub mod clock;
 pub mod digest;
 pub mod dispatcher;
 pub mod health;

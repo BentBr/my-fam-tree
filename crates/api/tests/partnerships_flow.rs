@@ -5,16 +5,12 @@
 //! Transitively covers `crates/persistence/src/partnerships.rs` against a
 //! real Postgres via testcontainers.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -26,7 +22,10 @@ use my_fam_tree_api::build_app;
 use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(app: &S, access: &str, family_id: &str, given_name: &str) -> String
 where
     S: actix_web::dev::Service<
@@ -38,14 +37,14 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -72,10 +71,10 @@ async fn partnerships_full_crud_and_duplicate_open_arm() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let partnership_id = body["data"]["id"].as_str().expect("partnership id").to_string();
+    let partnership_id = body["data"]["id"].as_str().expect("partnership id").to_owned();
     // The repo canonicalises the pair so partner_a_id < partner_b_id.
-    let a_uuid = body["data"]["partner_a_id"].as_str().unwrap().to_string();
-    let b_uuid = body["data"]["partner_b_id"].as_str().unwrap().to_string();
+    let a_uuid = body["data"]["partner_a_id"].as_str().unwrap().to_owned();
+    let b_uuid = body["data"]["partner_b_id"].as_str().unwrap().to_owned();
     assert!(a_uuid < b_uuid, "canonical order should be partner_a < partner_b");
     assert_eq!(body["data"]["kind"], "marriage");
     assert_eq!(body["data"]["note"], "hello");
@@ -199,11 +198,11 @@ async fn partnerships_user_role_blocked_on_all_mutations() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let partnership_id = body["data"]["id"].as_str().unwrap().to_string();
+    let partnership_id = body["data"]["id"].as_str().unwrap().to_owned();
 
     // Seed a regular user.
     let regular = "pp-regular@example.com";
-    let _ = sign_in(&stack, &app, regular).await;
+    drop(sign_in(&stack, &app, regular).await);
     let user = stack.state.users.find_by_email(regular).await.expect("lookup").expect("user");
     let fam_uuid = Uuid::parse_str(&family_id).expect("uuid");
     stack

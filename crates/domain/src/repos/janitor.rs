@@ -22,9 +22,9 @@ impl JanitorSweepReport {
     #[must_use]
     pub const fn total(&self) -> u64 {
         self.magic_links_deleted
-            + self.refresh_tokens_deleted
-            + self.family_invites_deleted
-            + self.owner_transfers_deleted
+            .saturating_add(self.refresh_tokens_deleted)
+            .saturating_add(self.family_invites_deleted)
+            .saturating_add(self.owner_transfers_deleted)
     }
 }
 
@@ -47,4 +47,31 @@ pub trait JanitorRepo: Send + Sync + 'static {
         now: OffsetDateTime,
         grace: Duration,
     ) -> Result<JanitorSweepReport, JanitorRepoError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::JanitorSweepReport;
+
+    #[test]
+    fn total_sums_all_tables() {
+        let r = JanitorSweepReport {
+            magic_links_deleted: 1,
+            refresh_tokens_deleted: 2,
+            family_invites_deleted: 3,
+            owner_transfers_deleted: 4,
+        };
+        assert_eq!(r.total(), 10, "sum of the four tables");
+    }
+
+    #[test]
+    fn total_saturates_instead_of_overflowing() {
+        let r = JanitorSweepReport {
+            magic_links_deleted: u64::MAX,
+            refresh_tokens_deleted: 1,
+            family_invites_deleted: 0,
+            owner_transfers_deleted: 0,
+        };
+        assert_eq!(r.total(), u64::MAX, "saturates at u64::MAX");
+    }
 }

@@ -9,7 +9,7 @@ vi.mock('@/api/client', () => ({
         // useMyFamilies (added Phase 5 Task 23) calls client.GET('/families/me');
         // stub it to return an empty list so the picker falls back to role-only
         // subtitles in the default-render test.
-        GET: vi.fn(async () => ({ data: { data: { families: [] } } })),
+        GET: vi.fn(() => Promise.resolve({ data: { data: { families: [] } } })),
         POST: vi.fn(),
     },
 }))
@@ -18,6 +18,7 @@ import { i18n } from '@/i18n'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 import FamilyPicker from '@/views/families/FamilyPicker.vue'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function makeRouter(): Router {
     return createRouter({
@@ -58,16 +59,7 @@ describe('FamilyPicker', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.stubGlobal('navigator', { language: 'en-US' })
-        const store: Record<string, string> = {}
-        vi.stubGlobal('localStorage', {
-            getItem: (k: string) => store[k] ?? null,
-            setItem: (k: string, v: string) => {
-                store[k] = v
-            },
-            removeItem: (k: string) => {
-                delete store[k]
-            },
-        })
+        vi.stubGlobal('localStorage', memoryStorage())
     })
 
     it('renders one item per family', async () => {

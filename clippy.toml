@@ -1,0 +1,17 @@
+# Test code may unwrap / expect / index / panic / print; production code may
+# not (workspace lints deny them). Covers #[test] fns and #[cfg(test)] modules.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-print-in-tests = true
+allow-dbg-in-tests = false
+
+# Wall clock, environment and blocking sleep go through one door each.
+# Legitimate sites carry #[expect(clippy::disallowed_methods, reason = "…")].
+disallowed-methods = [
+    { path = "time::OffsetDateTime::now_utc", reason = "use the injected Clock (my_fam_tree_domain::clock)" },
+    { path = "std::env::var", reason = "read configuration via my-fam-tree-config" },
+    { path = "std::env::var_os", reason = "read configuration via my-fam-tree-config" },
+    { path = "std::thread::sleep", reason = "blocks the tokio runtime; use tokio::time::sleep" },
+]

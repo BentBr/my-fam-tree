@@ -1,6 +1,8 @@
 ---
 name: crate-email
 description: Use when touching the my-fam-tree-email crate (package `my-fam-tree-email`, crate `my_fam_tree_email`, under crates/email) — adding or changing the EmailSender trait or OutboundEmail, the real SmtpSender (lettre) or FakeEmailSender, the locale-aware Askama text templates (en/de), `render_*` helpers, or the Mailpit integration test. Symptoms: how do I add a new transactional email, why does the Mailpit test skip, where do en/de bodies live, from_dsn schemes.
+paths:
+  - "crates/email/**"
 ---
 
 # crate-email (`my-fam-tree-email`)

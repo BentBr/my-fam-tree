@@ -3,12 +3,13 @@ import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { signIn, signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // Owner marks Klaus as favourite via the tree star and reloads — the
 // gold-filled state must survive the round-trip, proving the mark is
 // persisted (not just a local UI toggle).
 test('owner stars a tree node and the favourite survives reload', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `fav-tree-${stamp}@example.com`)
     await createFamily(page, `FavTree-${stamp}`)
 
@@ -36,7 +37,7 @@ test('owner stars a tree node and the favourite survives reload', async ({ page 
 // Two users in the same family see independent favourite state on the
 // same person row. Proves favourites are per-user, not shared.
 test('two users see independent favourite state on the same person', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // Owner context: creates the family + invites user B.
     const { context: ownerCtx, page: ownerPage } = await signedInContext(browser, `fav-pair-owner-${stamp}@example.com`)
     await createFamily(ownerPage, `FavPair-${stamp}`)
@@ -87,7 +88,7 @@ test('two users see independent favourite state on the same person', async ({ br
 // the signed-in caller. Klaus is favourited; Anna isn't — toggling the
 // pill drops Anna's birthday and keeps Klaus's.
 test('upcoming favourites pill filters to caller favourites', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `fav-upcoming-${stamp}@example.com`)
     await createFamily(page, `FavUp-${stamp}`)
     const familyId = await page.evaluate(() => localStorage.getItem('my-fam-tree:activeFamily') ?? '')
@@ -95,7 +96,7 @@ test('upcoming favourites pill filters to caller favourites', async ({ page }) =
     const create = (given: string, birth: string): Promise<string> =>
         seedPerson(page.request, familyId, { given_name: given, family_name: 'Up', birth_date: birth })
     const klausId = await create('Klaus', '1960-04-12')
-    const annaId = await create('Anna', '1962-08-22')
+    await create('Anna', '1962-08-22')
 
     // Mark Klaus only via the API (faster than driving the tree UI here).
     const favRes = await page.request.patch(`/api/v1/persons/${klausId}/favourite`, {
@@ -112,8 +113,4 @@ test('upcoming favourites pill filters to caller favourites', async ({ page }) =
     // Toggle the favourites pill. Only Klaus's birthday remains.
     await page.getByTestId('upcoming-filter-favourites').click()
     await expect.poll(async () => page.locator('[data-testid^="upcoming-row-"]').count(), { timeout: 5_000 }).toBe(1)
-
-    // Verify the remaining row really is Klaus's (the BE returns the
-    // person_id on birthday events; the FE wires the click to it).
-    void annaId // referenced only for the seed; the assertion above is what counts
 })

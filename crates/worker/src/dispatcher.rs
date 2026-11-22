@@ -50,7 +50,7 @@ pub async fn handle(state: &WorkerState, job: &ReminderJob) -> anyhow::Result<()
     // reflected. `today` is the digest's send_date; the window is
     // send_date + lead_days.
     let today = digest.send_date;
-    let target = today + time::Duration::days(i64::from(prefs.lead_days));
+    let target = today.saturating_add(time::Duration::days(i64::from(prefs.lead_days)));
     let events = events_for_user_on(state, digest.user_id, &prefs, today, target).await?;
 
     if events.is_empty() {
@@ -97,7 +97,7 @@ pub async fn handle(state: &WorkerState, job: &ReminderJob) -> anyhow::Result<()
             } else {
                 Some(next_attempt(
                     now,
-                    digest.attempt_count + 1,
+                    digest.attempt_count.saturating_add(1),
                     state.retry_min_seconds,
                     state.retry_max_seconds,
                 ))

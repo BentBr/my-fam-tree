@@ -3,17 +3,10 @@
 //! (`964c299`) and the free-text / family-name length + CR/LF caps
 //! (`cf0c9b2`). See `security_regressions.rs` for the audit overview.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;

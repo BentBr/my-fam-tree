@@ -51,7 +51,7 @@ export function useCreateFamily() {
             return payload
         },
         onSuccess: () => {
-            qc.invalidateQueries()
+            void qc.invalidateQueries()
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_created') })
         },
     })
@@ -106,7 +106,7 @@ export function useRenameFamily() {
                 email: auth.user?.email ?? '',
                 locale: auth.user?.locale ?? 'en',
                 families,
-            } as never)
+            })
             void qc.invalidateQueries({ queryKey: ['families', 'me'] })
             void qc.invalidateQueries({ queryKey: ['admin', 'family', 'overview'] })
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.family_renamed') })
@@ -125,7 +125,7 @@ export function useAcceptInvite() {
             return payload
         },
         onSuccess: () => {
-            qc.invalidateQueries()
+            void qc.invalidateQueries()
             ui.pushToast({ kind: 'success', message: i18n.global.t('toasts.invite_accepted') })
         },
     })

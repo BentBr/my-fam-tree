@@ -17,13 +17,3 @@ export const brand = {
     person: (s: string): PersonId => s as PersonId,
     familyMembership: (s: string): FamilyMembershipId => s as FamilyMembershipId,
 } as const
-
-/**
- * Escape hatch with audit trail. Logged in dev so reviewers can spot it.
- */
-export function unsafeCast<T>(value: unknown, reason: string): T {
-    if (import.meta.env.DEV) {
-        console.warn(`[unsafeCast] ${reason}`)
-    }
-    return value as T
-}

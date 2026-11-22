@@ -1,5 +1,14 @@
 //! `POST /persons/{id}/claim` — consent-safe self-link.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, post, web};
 use my_fam_tree_domain::{PersonId, Role};
 use uuid::Uuid;
@@ -53,8 +62,6 @@ use crate::{ApiError, AppState};
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/persons/{id}/claim")]
 pub async fn claim(
     state: web::Data<AppState>,

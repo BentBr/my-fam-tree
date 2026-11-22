@@ -5,16 +5,12 @@
 //! then exercises the filter / sort / limit behaviour against the
 //! real Postgres + Redis stack via testcontainers.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -23,10 +19,13 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
-use time::OffsetDateTime;
+use my_fam_tree_domain::clock::Clock;
 
 /// Helper: POST a person with optional birth/death dates and return the new id.
-#[allow(clippy::future_not_send, clippy::too_many_arguments)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread; test helper mirrors the full request shape"
+)]
 async fn create_person<S, B>(
     app: &S,
     access: &str,
@@ -56,17 +55,20 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_partnership<S, B>(
     app: &S,
     access: &str,
@@ -98,20 +100,20 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/partnerships")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create partnership should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("partnership id").to_string()
+    body["data"]["id"].as_str().expect("partnership id").to_owned()
 }
 
 /// All three filter modes share the same seed so we only build the
 /// graph once. Open partnership ⇒ `wedding_anniversary`; ended
 /// partnership ⇒ no event. Death-this-year is suppressed.
-#[allow(
+#[expect(
     clippy::too_many_lines,
     reason = "single end-to-end scenario covering all three filter modes"
 )]
@@ -142,7 +144,7 @@ async fn upcoming_filter_modes_sort_and_limit() {
     )
     .await;
     // Dora died THIS year ⇒ death_anniversary must be suppressed.
-    let this_year = OffsetDateTime::now_utc().date().year();
+    let this_year = stack.clock.now().date().year();
     let dora_death = format!("{this_year}-12-31");
     let dora = create_person(
         &app,
@@ -256,8 +258,9 @@ async fn upcoming_empty_anniversary_when_no_partnership_no_death() {
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
     let (access, _r) = sign_in(&stack, &app, "upcoming-empty@example.com").await;
     let (access, family_id) = create_family(&app, &access, "Birthdays").await;
-    let _ =
-        create_person(&app, &access, &family_id, "Solo", "Person", Some("1990-01-15"), None).await;
+    drop(
+        create_person(&app, &access, &family_id, "Solo", "Person", Some("1990-01-15"), None).await,
+    );
 
     let req = test::TestRequest::get()
         .uri("/api/v1/upcoming?filter=anniversary")

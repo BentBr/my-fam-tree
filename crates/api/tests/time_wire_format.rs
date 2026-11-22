@@ -5,16 +5,15 @@
 //! `time::serde::rfc3339`; these tests fail if one regresses, so the FE
 //! contract (`format: date-time` / `format: date` in openapi.json) holds.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: panics are test failures; test steps rebind the same response/body names"
+)]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "asserts DB-stamped created_at is close to wall time"
 )]
 
 mod common;
@@ -35,7 +34,7 @@ fn assert_rfc3339(v: &serde_json::Value, what: &str) -> OffsetDateTime {
 
 /// Within a few minutes of now — catches epoch/offset mix-ups.
 fn assert_recent(t: OffsetDateTime, what: &str) {
-    let age = (OffsetDateTime::now_utc() - t).whole_seconds().abs();
+    let age = OffsetDateTime::now_utc().unix_timestamp().saturating_sub(t.unix_timestamp()).abs();
     assert!(age < 300, "{what} should be ~now, is {t}");
 }
 

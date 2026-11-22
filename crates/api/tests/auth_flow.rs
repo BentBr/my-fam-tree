@@ -17,13 +17,10 @@
 //! `Drop` impls trigger the testcontainers reaper. Without that we'd accumulate
 //! orphan Postgres + Redis containers on every run.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -60,9 +57,9 @@ async fn magic_link_then_consume_then_me_then_create_family_then_refresh() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200, "consume should succeed");
     let access = res.response().cookies().find(|c| c.name() == "access").expect("access cookie");
-    let access_value = access.value().to_string();
+    let access_value = access.value().to_owned();
     let refresh = res.response().cookies().find(|c| c.name() == "refresh").expect("refresh cookie");
-    let refresh_value = refresh.value().to_string();
+    let refresh_value = refresh.value().to_owned();
 
     // 4. /auth/me echoes the freshly minted session.
     let req = test::TestRequest::get()
@@ -86,7 +83,7 @@ async fn magic_link_then_consume_then_me_then_create_family_then_refresh() {
     assert_eq!(res.status(), 200);
     let new_access =
         res.response().cookies().find(|c| c.name() == "access").expect("new access cookie");
-    let new_access_value = new_access.value().to_string();
+    let new_access_value = new_access.value().to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["data"]["family"]["name"], "Müller");
     assert_eq!(body["data"]["claims"]["families"].as_array().unwrap().len(), 1);
@@ -177,12 +174,12 @@ async fn logout_is_idempotent_and_reachable_without_session() {
     assert_eq!(refresh.value(), "", "cleared refresh cookie is empty");
     assert_eq!(
         access.max_age().expect("access cookie has Max-Age"),
-        actix_web::cookie::time::Duration::seconds(0),
+        time::Duration::seconds(0),
         "access cookie must have Max-Age=0"
     );
     assert_eq!(
         refresh.max_age().expect("refresh cookie has Max-Age"),
-        actix_web::cookie::time::Duration::seconds(0),
+        time::Duration::seconds(0),
         "refresh cookie must have Max-Age=0"
     );
 

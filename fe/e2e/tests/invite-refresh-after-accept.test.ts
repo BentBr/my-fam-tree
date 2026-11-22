@@ -24,11 +24,12 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { createFamily, signedInContext } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('an invite-accept mints a refresh cookie so the recipient stays signed in past access-token expiry', async ({
     browser,
 }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     // ----- Owner: sign in + create family + send invite. -----
     const { context: ownerCtx, page: owner } = await signedInContext(
@@ -52,7 +53,6 @@ test('an invite-accept mints a refresh cookie so the recipient stays signed in p
     const m = mail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (m === null) throw new Error('invite link not in email')
     const link = m[0]
-    if (link === undefined) throw new Error('invite link empty')
 
     // ----- Guest: fresh browser context, accept the invite. -----
     const guestCtx = await browser.newContext()

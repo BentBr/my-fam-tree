@@ -35,7 +35,7 @@ vi.mock('@/api/hooks/owner_transfer', async (importOriginal) => {
     const actual = await importOriginal<typeof OwnerTransferHooks>()
     return {
         ...actual,
-        useOwnerTransfer: () => ({ data: transferData, isLoading: ref(false), error: ref(null) }),
+        useOwnerTransfer: () => ({ data: transferData, isLoading: ref(false), error: ref<Error | null>(null) }),
         useBeginOwnerTransfer: () => ({ mutateAsync: beginTransferMutate, isPending: ref(false) }),
         useCancelOwnerTransfer: () => ({ mutate: cancelTransferMutate, isPending: ref(false) }),
     }

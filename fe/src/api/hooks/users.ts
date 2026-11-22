@@ -98,10 +98,7 @@ export function useSetMyAvatar() {
 
 export function useClearMyAvatar() {
     return useApiMutation({
-        // useApiMutation's TVars infers from mutationFn — accept and ignore
-        // a void arg so call sites can still `mutateAsync()` cleanly via
-        // a no-arg call when the type allows it.
-        mutationFn: (_: void) => expectOk(client.DELETE('/api/v1/users/me/avatar')),
+        mutationFn: () => expectOk(client.DELETE('/api/v1/users/me/avatar')),
         success: 'toasts.user_avatar_cleared',
         // Same fan-out as the set path — the BE clears every linked
         // person's photo too.

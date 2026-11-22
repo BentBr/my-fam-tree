@@ -5,15 +5,10 @@
 //! `worker::outbox::process_one` so the retry/backoff bookkeeping is
 //! validated end-to-end (the API tests use a `SyncOutbox` double).
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::indexing_slicing,
-    clippy::future_not_send,
-    clippy::similar_names,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded"
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "worker repo tests compare against rows Postgres stamps with now(); the reference has to be wall time"
 )]
 
 use std::sync::Arc;
@@ -21,13 +16,13 @@ use std::time::Duration as StdDuration;
 
 use async_trait::async_trait;
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
+use my_fam_tree_domain::clock::{Clock, FixedClock};
 use my_fam_tree_domain::{EmailOutboxInsert, EmailOutboxKind};
 use my_fam_tree_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
 use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::{Clock, FixedClock};
 use my_fam_tree_worker::outbox;
 use my_fam_tree_worker::state::WorkerState;
 use testcontainers::ContainerAsync;
@@ -119,8 +114,8 @@ fn build_state(
 
 fn sample_insert(kind: &str, to_addr: &str) -> EmailOutboxInsert {
     EmailOutboxInsert {
-        kind: kind.to_string(),
-        to_addr: to_addr.to_string(),
+        kind: kind.to_owned(),
+        to_addr: to_addr.to_owned(),
         subject: "Hello".into(),
         text_body: "Body".into(),
         html_body: None,
@@ -140,7 +135,7 @@ async fn enqueue_then_process_one_sends_and_marks_sent() {
     // captures real-now + δ, the row stays unclaimed. A 60s shift is
     // generous against runner clock jitter.
     let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
-    let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
+    let state = build_state(&db, clock, Arc::<FakeEmailSender>::clone(&fake), 3);
 
     state
         .outbox
@@ -181,8 +176,8 @@ async fn failing_send_marks_retry_with_attempts_incremented_and_backoff_schedule
     let clock = Arc::new(FixedClock::new(now));
     let state = build_state(
         &db,
-        clock as Arc<dyn Clock>,
-        Arc::new(FailingEmail) as Arc<dyn EmailSender>,
+        clock,
+        Arc::new(FailingEmail),
         5, // plenty of retries left
     );
 
@@ -215,12 +210,7 @@ async fn failing_at_max_retries_marks_failed_permanent() {
     let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
     // max_retries=1 ⇒ the very first failure pushes attempts (0+1) >=
     // max_retries, so the row goes terminal-failed in one cycle.
-    let state = build_state(
-        &db,
-        clock as Arc<dyn Clock>,
-        Arc::new(FailingEmail) as Arc<dyn EmailSender>,
-        1,
-    );
+    let state = build_state(&db, clock, Arc::new(FailingEmail), 1);
 
     state
         .outbox
@@ -256,7 +246,7 @@ async fn skip_locked_lets_two_pollers_drain_in_parallel_without_double_send() {
     let (db, _pg) = start_pg().await;
     let fake = Arc::new(FakeEmailSender::new());
     let clock = Arc::new(FixedClock::new(OffsetDateTime::now_utc() + time::Duration::seconds(60)));
-    let state = build_state(&db, clock as Arc<dyn Clock>, fake.clone() as Arc<dyn EmailSender>, 3);
+    let state = build_state(&db, clock, Arc::<FakeEmailSender>::clone(&fake), 3);
 
     for addr in ["a@example.com", "b@example.com", "c@example.com"] {
         state.outbox.enqueue(&sample_insert(EmailOutboxKind::INVITE, addr)).await.unwrap();

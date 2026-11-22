@@ -31,7 +31,6 @@ fn base64_urlsafe(bytes: &[u8]) -> String {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

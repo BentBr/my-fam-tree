@@ -292,7 +292,7 @@ export function registerGuards(router: Router): void {
     router.beforeEach((to) => {
         const lang = typeof to.params['lang'] === 'string' ? to.params['lang'] : undefined
         if (lang === 'en' || lang === 'de') {
-            useLocaleStore().applyFromUrl(lang as SupportedLocale)
+            useLocaleStore().applyFromUrl(lang)
         }
         return true
     })

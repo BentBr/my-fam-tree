@@ -7,16 +7,10 @@
 //! helper so the JWT carries `families` claims that mirror the
 //! database — `require_role` only sees what's in the token.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -225,5 +219,5 @@ async fn nobody_can_target_self_even_with_owner_role() {
     assert_eq!(still_owner.role, Role::Owner);
 
     // Suppress unused warning for the fields not exercised in this test.
-    let _ = (fam.admin_id, fam.user_email);
+    drop((fam.admin_id, fam.user_email));
 }

@@ -64,7 +64,7 @@ fn validate_family_name(raw: &str) -> Result<String, ApiError> {
     if u32::try_from(trimmed.chars().count()).unwrap_or(u32::MAX) > FAMILY_NAME_MAX {
         return Err(string_too_long("/name", FAMILY_NAME_MAX));
     }
-    Ok(trimmed.to_string())
+    Ok(trimmed.to_owned())
 }
 
 // ---------------------------------------------------------------------------
@@ -186,13 +186,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send
-)]
 mod tests {
     use my_fam_tree_domain::{FamilyId, Role, UserId};
     use uuid::Uuid;

@@ -4,13 +4,10 @@
 //! `ephemeral_stack()`. These tests exercise the validation, membership, and
 //! invite-token paths that ride on top of the auth chain covered elsewhere.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -58,9 +55,9 @@ async fn invite_rejects_owner_role_and_invalid_email() {
         .find(|c| c.name() == "access")
         .expect("rotated access")
         .value()
-        .to_string();
+        .to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
+    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_owned();
 
     // Inviting as owner is disallowed by the validation rule.
     let req = test::TestRequest::post()
@@ -117,9 +114,9 @@ async fn invite_accept_happy_path_and_email_mismatch() {
         .find(|c| c.name() == "access")
         .expect("rotated access")
         .value()
-        .to_string();
+        .to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
+    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_owned();
 
     // Invite #1: addressed to user-mismatch@..., used to drive the email
     // mismatch arm without burning the user-b@... invite.
@@ -173,13 +170,8 @@ async fn invite_accept_happy_path_and_email_mismatch() {
         .to_request();
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status(), 200);
-    let new_access_value = res
-        .response()
-        .cookies()
-        .find(|c| c.name() == "access")
-        .expect("access")
-        .value()
-        .to_string();
+    let new_access_value =
+        res.response().cookies().find(|c| c.name() == "access").expect("access").value().to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["data"]["family"]["role"], "admin");
 
@@ -221,9 +213,9 @@ async fn family_operations_require_membership_and_role() {
         .find(|c| c.name() == "access")
         .expect("access a")
         .value()
-        .to_string();
+        .to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_alpha = body["data"]["family"]["id"].as_str().expect("alpha id").to_string();
+    let family_alpha = body["data"]["family"]["id"].as_str().expect("alpha id").to_owned();
 
     let (access_b, _r_b) = sign_in(&stack, &app, "user-b2@example.com").await;
     let req = test::TestRequest::post()
@@ -233,7 +225,7 @@ async fn family_operations_require_membership_and_role() {
         .to_request();
     let res = test::call_service(&app, req).await;
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_beta = body["data"]["family"]["id"].as_str().expect("beta id").to_string();
+    let family_beta = body["data"]["family"]["id"].as_str().expect("beta id").to_owned();
 
     // A tries to rename Beta — 403 NotFamilyMember.
     let req = test::TestRequest::patch()

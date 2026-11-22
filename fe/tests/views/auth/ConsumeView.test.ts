@@ -74,7 +74,7 @@ describe('ConsumeView', () => {
     it('a second mount of the same token does not re-POST (module dedup)', async () => {
         // First mount consumes the single-use token.
         mutateAsync.mockResolvedValueOnce(undefined)
-        const first = await mountConsume('token=tok-double')
+        await mountConsume('token=tok-double')
         await flushPromises()
         expect(mutateAsync).toHaveBeenCalledTimes(1)
         // A racing re-mount with the SAME token must short-circuit — not fire
@@ -83,7 +83,6 @@ describe('ConsumeView', () => {
         await flushPromises()
         expect(mutateAsync).toHaveBeenCalledTimes(1)
         expect(second.find('[data-testid="consume-error"]').exists()).toBe(false)
-        void first
     })
 
     it('a 401 is benign when a racing fire already authenticated', async () => {

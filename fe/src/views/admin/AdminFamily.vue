@@ -176,7 +176,7 @@ function fullName(p: { given_name: string; family_name: string }): string {
                         v-for="p in family.latest_persons"
                         :key="p.id"
                         :to="centerHref(p.id)"
-                        :prepend-icon="'user'"
+                        prepend-icon="user"
                         :title="fullName(p)"
                         :subtitle="t('admin.family.addedOn', { date: fmtDate(p.created_at) })"
                         :data-testid="`admin-family-latest-${p.id}`"

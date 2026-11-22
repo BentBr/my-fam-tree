@@ -90,7 +90,7 @@ migrations/     SQLx migrations
 .docker/        Per-service Dockerfiles
 .github/        Actions workflows, Dependabot, PR template
 .githooks/      Pre-push and commit-msg hooks
-scripts/        Helper scripts (file-size check, hooks installer, fe-in-container wrapper)
+scripts/        Helper scripts (see "Helper scripts" below)
 compose.yaml    Postgres, Redis, Mailpit, api, worker, migrator, fe
 .dockerignore   Build-context exclusions
 .env.example    Every supported env var with comments
@@ -105,18 +105,41 @@ compose.yaml    Postgres, Redis, Mailpit, api, worker, migrator, fe
 | `rdt shell`             | Open a shell in the api container                                          |
 | `rdt migrate` / `rdt m` | Apply pending DB migrations                                                |
 | `rdt migrate-status`    | Show applied vs pending                                                    |
+| `rdt migrate-check`     | Exit non-zero if any migrations are pending                                |
+| `rdt sqlx-prepare`      | Regenerate `.sqlx/` offline query metadata (needs `DATABASE_URL`)          |
 | `rdt openapi`           | Dump OpenAPI spec + regenerate FE types (routed through the fe container)  |
-| `rdt openapi-check`     | Fail if the committed spec drifted                                         |
+| `rdt openapi-check`     | Fail if the committed spec drifted (or the generator fails)                |
 | `rdt lint` / `rdt l`    | All linters (rust + fe + file-size); FE checks run inside the fe container |
 | `rdt test` / `rdt t`    | All unit tests                                                             |
 | `rdt test-e2e`          | Playwright E2E against the running stack                                   |
 | `rdt coverage`          | Coverage report                                                            |
+| `rdt deny`              | Supply-chain checks: `cargo deny check` + `cargo machete`                  |
+| `rdt fe`                | Start the Vite dev server (`docker compose up fe`)                         |
+| `rdt worker`            | Run the reminder worker locally                                            |
+| `rdt trigger-clock`     | Advance the worker test clock to 06:00 Berlin + tick (see below)           |
 | `rdt gen-jwt-keys`      | Print a fresh Ed25519 keypair for .env                                     |
 | `rdt seed`              | Run the deterministic seed (idempotent UPSERTs; prints MAGIC_LINK URLs)    |
 | `rdt build`             | Rebuild the local stack with test features                                 |
 | `rdt reset`             | Drop dev DB volume, re-migrate, and re-seed                                |
 
 Run `rdt help` for the full list. FE commands (`pnpm lint`, `pnpm test`, codegen) are always dispatched via `scripts/fe-in-container.sh` — you never invoke pnpm on the host.
+
+Every `[commands.*]` entry in `.rusty_dev_tool/config.toml` must have a row here — `crates/arch-tests` fails otherwise.
+
+## Helper scripts (`scripts/`)
+
+| Script                                         | What it does                                                                                         |
+|------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| `./scripts/install-hooks.sh`                   | Point git at `.githooks/` (pre-push + commit-msg)                                                    |
+| `./scripts/fe-in-container.sh <pnpm-script>`   | Run a pnpm script inside the `fe` compose service (`test:e2e` routes to the playwright service)      |
+| `./scripts/cargo-in-network.sh <cargo args>`   | Run cargo inside the compose network so integration tests reach postgres/redis/mailpit by hostname   |
+| `./scripts/openapi.sh check\|write`            | Generate the OpenAPI spec; `check` fails on drift or generator failure, `write` updates `fe/openapi.json` only on success |
+| `./scripts/check-file-size.sh`                 | Enforce source soft 300 / hard 500 and test hard 500 line limits                                     |
+| `./scripts/coverage.sh profile\|lcov\|…`       | Workspace `cargo llvm-cov` wrapper; single source of the Rust coverage excludes + threshold         |
+| `./scripts/fe-coverage.sh run\|threshold`      | Vitest coverage wrapper; single source of the FE coverage threshold                                  |
+| `./scripts/trigger-clock.sh [YYYY-MM-DD]`      | Advance the worker clock to 06:00 Berlin and tick once (needs `WORKER_FEATURES=test-fixtures`)       |
+
+Every file in `scripts/` must have a row here — `crates/arch-tests` fails otherwise.
 
 ## Testing
 

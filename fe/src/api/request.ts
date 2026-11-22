@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { i18n } from '@/i18n'
 import { useUiStore } from '@/stores/ui'
 
+import { throwIfError } from './errors'
+
 /**
  * Single unwrap for every openapi-fetch call.
  *
@@ -23,7 +25,7 @@ export async function unwrap<T>(
     call: Promise<{ data?: { data?: T | null } | undefined; error?: unknown }>,
 ): Promise<T> {
     const { data, error } = await call
-    if (error !== undefined) throw error
+    throwIfError(error)
     if (data === undefined) throw new Error('empty response from API')
     return data.data as T
 }
@@ -36,7 +38,7 @@ export async function unwrap<T>(
  */
 export async function expectOk(call: Promise<{ error?: unknown }>): Promise<void> {
     const { error } = await call
-    if (error !== undefined) throw error
+    throwIfError(error)
 }
 
 type SuccessMessage<TVars, TData> = string | ((vars: TVars, data: TData) => string)
@@ -52,7 +54,7 @@ type SuccessMessage<TVars, TData> = string | ((vars: TVars, data: TData) => stri
  * queryClient's `MutationCache.onError` (the single report point), so
  * error/validation messaging lives in exactly one place.
  */
-export function useApiMutation<TVars, TData>(opts: {
+export function useApiMutation<TVars = void, TData = void>(opts: {
     mutationFn: (vars: TVars) => Promise<TData>
     success?: SuccessMessage<TVars, TData>
     invalidate?: (vars: TVars, data: TData) => unknown[][]

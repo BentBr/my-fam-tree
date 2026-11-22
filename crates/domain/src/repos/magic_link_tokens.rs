@@ -65,8 +65,13 @@ pub trait MagicLinkRepo: Send + Sync {
     async fn find_consumable(
         &self,
         token_hash: &[u8],
+        now: OffsetDateTime,
     ) -> Result<MagicLinkRecord, MagicLinkRepoError>;
 
-    /// Atomically marks consumed and returns the record. Caller verifies `expires_at`.
-    async fn consume(&self, token_hash: &[u8]) -> Result<MagicLinkRecord, MagicLinkRepoError>;
+    /// Atomically marks consumed and returns the record. Rejects with `Expired` when `expires_at < now`; `consumed_at` is set to `now`.
+    async fn consume(
+        &self,
+        token_hash: &[u8],
+        now: OffsetDateTime,
+    ) -> Result<MagicLinkRecord, MagicLinkRepoError>;
 }

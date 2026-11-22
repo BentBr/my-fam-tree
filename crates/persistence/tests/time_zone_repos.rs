@@ -3,7 +3,11 @@
 //! `PgTimeZoneRepo`. Runs against a real Postgres (testcontainers) because
 //! the whole point is that the tz database + DST rules live there.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    reason = "test code: setup failures abort the test; setup failures abort the test with context"
+)]
 
 use std::time::Duration as StdDuration;
 

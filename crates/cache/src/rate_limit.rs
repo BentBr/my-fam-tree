@@ -76,6 +76,10 @@ impl RateLimiter for RedisRateLimiter {
         // Durations longer than i64::MAX seconds (~292 billion years) can't
         // realistically happen, but `try_from` keeps us lint-clean either way.
         let window_secs = i64::try_from(window.as_secs()).unwrap_or(i64::MAX);
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "the sliding window is real time: Redis expires the key by wall clock, an injected test clock would desync it"
+        )]
         let now_ms =
             i64::try_from(time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000)
                 .unwrap_or(i64::MAX);
@@ -104,7 +108,6 @@ impl RateLimiter for RedisRateLimiter {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

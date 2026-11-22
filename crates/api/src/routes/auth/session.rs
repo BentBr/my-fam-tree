@@ -1,5 +1,14 @@
 //! `POST /auth/logout` and `GET /auth/me`.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, post, web};
 
 use super::{ConsumeRes, LogoutRes, LogoutResponseBody, MeResponseBody, build_consume_response};
@@ -34,7 +43,6 @@ use crate::{ApiError, ApiResponse, AppState};
 // "why public" lives at the call site so future reviewers can audit
 // without chasing references. Localised allow keeps the nursery lint
 // in place for other items where shorter docs are still preferable.
-#[allow(clippy::too_long_first_doc_paragraph)]
 #[utoipa::path(
     post,
     path = "/api/v1/auth/logout",
@@ -43,8 +51,6 @@ use crate::{ApiError, ApiResponse, AppState};
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/logout")]
 pub async fn logout(
     state: web::Data<AppState>,
@@ -53,7 +59,9 @@ pub async fn logout(
     if let Some(c) = req.cookie(REFRESH_COOKIE) {
         let hash = hash_token(c.value());
         // Best-effort: a refresh-row revoke failure must not block logout.
-        let _ = state.refresh_tokens.revoke_by_hash(&hash).await;
+        if let Err(e) = state.refresh_tokens.revoke_by_hash(&hash, state.clock.now()).await {
+            tracing::warn!(error = %e, "logout: refresh token revoke failed");
+        }
     }
     let mut resp = HttpResponse::Ok().json(ApiResponse::ok(LogoutRes { status: "logged out" }));
     let _ = resp.add_cookie(&revoked(&state.cfg, ACCESS_COOKIE, "/"));
@@ -75,8 +83,6 @@ pub async fn logout(
     security(("cookie_access" = [])),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[actix_web::get("/auth/me")]
 pub async fn me(req: HttpRequest) -> Result<ApiResponse<ConsumeRes>, ApiError> {
     let claims = crate::auth::user_claims(&req)?;

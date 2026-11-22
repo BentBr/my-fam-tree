@@ -5,16 +5,10 @@
 //! are denied owner-only endpoints, non-admins are denied admin-only endpoints
 //! (403 `family_insufficient_role`), and every role keeps its read access.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing integration-test convention"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -25,7 +19,10 @@ use common::{ephemeral_stack, fresh_access, seed_three_role_family};
 use my_fam_tree_api::build_app;
 
 /// Issue a request as `access` against `family_id` and return the HTTP status.
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn status<S, B>(
     app: &S,
     access: &str,
@@ -49,8 +46,8 @@ where
         _ => test::TestRequest::get(),
     }
     .uri(uri)
-    .cookie(Cookie::new("access", access.to_string()))
-    .insert_header(("X-Family-Id", family_id.to_string()));
+    .cookie(Cookie::new("access", access.to_owned()))
+    .insert_header(("X-Family-Id", family_id.to_owned()));
     if let Some(b) = body {
         req = req.set_json(b);
     }

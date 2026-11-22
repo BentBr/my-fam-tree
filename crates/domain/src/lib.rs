@@ -1,6 +1,7 @@
 //! Core domain types and repository traits. No I/O.
 
 pub mod capabilities;
+pub mod clock;
 pub mod dates;
 pub mod ids;
 pub mod relationships;

@@ -7,6 +7,15 @@
 //! - `PATCH /partnerships/{id}` — update kind / dates / `end_reason` / note.
 //! - `DELETE /partnerships/{id}` — remove.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, delete, patch, post, web};
 use my_fam_tree_domain::{
     Partnership, PartnershipDraft, PartnershipEndReason, PartnershipKind, PartnershipRepoError,
@@ -100,10 +109,10 @@ fn to_view(p: Partnership) -> PartnershipView {
         family_id: p.family_id.into_uuid(),
         partner_a_id: p.partner_a_id.into_uuid(),
         partner_b_id: p.partner_b_id.into_uuid(),
-        kind: kind_to_str(p.kind).to_string(),
+        kind: kind_to_str(p.kind).to_owned(),
         started_on: p.started_on,
         ended_on: p.ended_on,
-        end_reason: p.end_reason.map(|r| end_to_str(r).to_string()),
+        end_reason: p.end_reason.map(|r| end_to_str(r).to_owned()),
         note: p.note,
     }
 }
@@ -138,8 +147,6 @@ fn map_repo_err(e: PartnershipRepoError, id: Option<Uuid>) -> ApiError {
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/partnerships")]
 pub async fn create(
     state: web::Data<AppState>,
@@ -259,8 +266,6 @@ pub async fn create(
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/partnerships/{id}")]
 pub async fn update(
     state: web::Data<AppState>,
@@ -349,8 +354,6 @@ pub async fn update(
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/partnerships/{id}")]
 pub async fn delete(
     state: web::Data<AppState>,

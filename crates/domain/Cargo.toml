@@ -13,7 +13,12 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
-utoipa.workspace = true
+utoipa = { workspace = true, optional = true }
+
+[features]
+# OpenAPI schema derives for the API crate. Keeps the pure domain free of
+# the OpenAPI toolchain for every other consumer (arch-tests enforces this).
+openapi = ["dep:utoipa"]
 
 [lints]
 workspace = true

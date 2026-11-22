@@ -6,7 +6,11 @@
 //! tells the testcontainers reaper to stop the container. Without that we
 //! leak running postgres instances on the docker host across runs.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing, clippy::print_stderr)]
+#![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "repo smoke tests stamp rows relative to the wall clock; there is no app clock at this layer"
+)]
 
 use std::time::Duration as StdDuration;
 
@@ -85,9 +89,9 @@ async fn magic_link_consume_once() {
     )
     .await
     .unwrap();
-    let rec = mls.consume(&hash).await.expect("first consume");
+    let rec = mls.consume(&hash, OffsetDateTime::now_utc()).await.expect("first consume");
     assert_eq!(rec.user_id, Some(u.id));
-    let second = mls.consume(&hash).await;
+    let second = mls.consume(&hash, OffsetDateTime::now_utc()).await;
     assert!(second.is_err());
 }
 
@@ -125,9 +129,17 @@ async fn refresh_token_rotation_preserves_absolute_expiry() {
     )
     .await
     .unwrap();
-    rts.rotate(&h1, &h2, OffsetDateTime::now_utc() + Duration::days(30), None, None, None)
-        .await
-        .unwrap();
+    rts.rotate(
+        &h1,
+        &h2,
+        OffsetDateTime::now_utc() + Duration::days(30),
+        None,
+        None,
+        None,
+        OffsetDateTime::now_utc(),
+    )
+    .await
+    .unwrap();
     let new_rec = rts.find_active_by_hash(&h2).await.unwrap().expect("found");
     assert_eq!(new_rec.absolute_expires_at.unix_timestamp(), abs_exp.unix_timestamp());
     assert!(rts.find_active_by_hash(&h1).await.unwrap().is_none());

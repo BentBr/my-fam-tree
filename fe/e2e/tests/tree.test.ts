@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
 import { seedParentLink, seedPartnership, seedPerson } from '../page-objects/seed'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // The TreeNode SVG emits sibling `<text>` elements with non-UUID testids
 // (`tree-node-name`, `tree-node-birth`, `tree-node-death`) for granular
@@ -64,7 +65,7 @@ async function clickTreeNode(page: Page, id: string): Promise<void> {
 }
 
 test('empty tree shows the CTA card and opens the create drawer on click', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `empty-tree-${stamp}@example.com`)
     await createFamily(page, `Empty-${stamp}`)
 
@@ -88,7 +89,7 @@ test('empty tree shows the CTA card and opens the create drawer on click', async
 })
 
 test('family switcher "create new" routes to /families/create', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `fam-switch-${stamp}@example.com`)
     await createFamily(page, `Switch-${stamp}`)
 
@@ -110,7 +111,7 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
     // Unique per-run email + family so the truncate-on-teardown can't race a
     // re-run before postgres has finished cleanup (defense in depth — global
     // teardown already truncates, but timestamped data keeps the test idempotent).
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `tree-${stamp}@example.com`)
     await createFamily(page, `Tree-${stamp}`)
 
@@ -172,7 +173,7 @@ test('owner adds people, links a parent and a partner, tree renders edges', asyn
 // peter old) get `dimmed`. Builds the seeded family graph inline so the
 // test doesn't depend on the seeder having run.
 test('hovering Klaus highlights his lineage and dims the rest', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `hover-${stamp}@example.com`)
     await createFamily(page, `Hover-${stamp}`)
     await page.goto('/tree')

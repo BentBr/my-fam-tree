@@ -8,12 +8,12 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
         observe(): void {}
         unobserve(): void {}
         disconnect(): void {}
-    } as unknown as typeof ResizeObserver
+    }
 }
 if (typeof window !== 'undefined' && typeof window.scrollTo !== 'function') {
     // happy-dom throws "Not implemented" for scrollTo; a no-op keeps the
     // router's scrollBehavior from crashing the prerender.
-    window.scrollTo = (() => {}) as typeof window.scrollTo
+    window.scrollTo = () => {}
 }
 
 import { VueQueryPlugin } from '@tanstack/vue-query'
@@ -22,7 +22,6 @@ import { ViteSSG } from 'vite-ssg'
 import { createVuetify, type IconOptions } from 'vuetify'
 import 'vuetify/styles'
 
-import { setClientNavigator } from './api/client'
 import { queryClient } from './api/queryClient'
 import App from './App.vue'
 import SmartIcon from './components/common/SmartIcon.vue'
@@ -32,6 +31,7 @@ import { vuetifyDefaults, vuetifyTheme } from './design-system'
 import './design-system/tokens.css'
 import './design-system/transitions.css'
 import { createAppI18n, i18n } from './i18n'
+import { installApiSession } from './plugins/apiSession'
 import { registerGuards, routes } from './router'
 import { installChunkReload } from './router/chunkReload'
 import { useLocaleStore } from './stores/locale'
@@ -50,12 +50,12 @@ const smartIconComponent = SmartIcon as unknown as IconSetComponent
 // `usePageMeta` composable on both server + client. We install the rest —
 // Pinia, i18n, Vuetify, VueQuery — in the setup callback, which runs in
 // BOTH the prerender (SSR) and the browser. Side effects that only make
-// sense in a real browser (session hydrate, chunk-reload, the client 401
-// navigator) are gated on `isClient`.
+// sense in a real browser (session hydrate, chunk-reload, the 401 sign-in
+// redirect) are gated on `!import.meta.env.SSR`.
 export const createApp = ViteSSG(
     App,
     { routes, base: import.meta.env.BASE_URL },
-    ({ app, router, initialState, onSSRAppRendered, isClient }) => {
+    ({ app, router, initialState, onSSRAppRendered }) => {
         // A fresh Pinia per render so prerendered pages never leak state
         // into one another (createPinia is a factory — safe to call here).
         const pinia = createPinia()
@@ -84,7 +84,7 @@ export const createApp = ViteSSG(
         // itself immediately after this callback returns. Installing it
         // again triggers Vue's "Plugin has already been applied" warning.
         // We still receive the `router` instance to attach guards + the
-        // client navigator / chunk-reload below, which don't need install.
+        // API session redirect / chunk-reload below, which don't need install.
         app.use(i18nInstance)
         app.use(vuetify)
         app.use(VueQueryPlugin, { queryClient })
@@ -108,13 +108,17 @@ export const createApp = ViteSSG(
         // `registerGuards`).
         registerGuards(router)
 
-        if (isClient) {
-            // The client 401 handler bounces to sign-in via the router —
-            // injected here so `api/client.ts` needn't import a router
-            // singleton (vite-ssg has none).
-            setClientNavigator((to) => {
-                void router.replace(to)
-            })
+        // Session hooks for the API client on both paths; the sign-in
+        // redirect only makes sense in the browser.
+        installApiSession(
+            import.meta.env.SSR
+                ? () => {}
+                : (to) => {
+                      void router.replace(to)
+                  },
+        )
+
+        if (!import.meta.env.SSR) {
             // Auto-reload a tab whose lazy route chunk 404s after a deploy.
             installChunkReload(router)
         }

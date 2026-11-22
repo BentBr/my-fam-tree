@@ -12,28 +12,11 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import InviteAccept from '@/views/auth/InviteAccept.vue'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function mockStorage(): void {
-    const local: Record<string, string> = {}
-    const session: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => local[k] ?? null,
-        setItem: (k: string, v: string) => {
-            local[k] = v
-        },
-        removeItem: (k: string) => {
-            delete local[k]
-        },
-    })
-    vi.stubGlobal('sessionStorage', {
-        getItem: (k: string) => session[k] ?? null,
-        setItem: (k: string, v: string) => {
-            session[k] = v
-        },
-        removeItem: (k: string) => {
-            delete session[k]
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
+    vi.stubGlobal('sessionStorage', memoryStorage())
 }
 
 function makeRouter(): Router {
@@ -122,7 +105,7 @@ describe('InviteAccept', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as never)
+        })
         mutateAsync.mockRejectedValueOnce(new Error('bad'))
         const w = await mountInvite('token=tok-auth-err')
         await flushPromises()

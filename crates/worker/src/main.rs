@@ -7,16 +7,16 @@ use std::time::Duration;
 use anyhow::Context;
 use my_fam_tree_cache::{RedisPool, RedisReminderQueue};
 use my_fam_tree_config::WorkerConfig;
+use my_fam_tree_domain::clock::Clock;
+#[cfg(feature = "test-fixtures")]
+use my_fam_tree_domain::clock::OffsetClock;
+#[cfg(not(feature = "test-fixtures"))]
+use my_fam_tree_domain::clock::SystemClock;
 use my_fam_tree_email::SmtpSender;
 use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::Clock;
-#[cfg(feature = "test-fixtures")]
-use my_fam_tree_worker::clock::OffsetClock;
-#[cfg(not(feature = "test-fixtures"))]
-use my_fam_tree_worker::clock::SystemClock;
 use my_fam_tree_worker::health::Heartbeat;
 use my_fam_tree_worker::state::WorkerState;
 use my_fam_tree_worker::{dispatcher, janitor, leader, ops_http, outbox, ticker};
@@ -84,11 +84,15 @@ async fn run_leader_loop(
 // launch. Splitting it into a sub-fn just moves the cfg-gated branches
 // to a new boundary without making either side simpler, so we accept
 // the length here.
-#[allow(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
+#[expect(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
+)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
     let cfg = WorkerConfig::from_env().context("load worker config")?;
 
@@ -115,7 +119,7 @@ async fn main() -> anyhow::Result<()> {
         .context("build redis pool")?;
     redis.ping().await.context("ping redis")?;
 
-    let email = Arc::new(
+    let email: Arc<dyn my_fam_tree_email::EmailSender> = Arc::new(
         SmtpSender::from_dsn(
             &cfg.email.dsn,
             &cfg.email.from_name,
@@ -124,12 +128,12 @@ async fn main() -> anyhow::Result<()> {
             cfg.email.timeout_seconds,
         )
         .context("build SMTP sender")?,
-    ) as Arc<dyn my_fam_tree_email::EmailSender>;
+    );
 
     #[cfg(feature = "test-fixtures")]
     let fixed = Arc::new(OffsetClock::default());
     #[cfg(feature = "test-fixtures")]
-    let clock: Arc<dyn Clock> = fixed.clone();
+    let clock: Arc<dyn Clock> = Arc::<OffsetClock>::clone(&fixed);
     #[cfg(not(feature = "test-fixtures"))]
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
 
@@ -175,7 +179,8 @@ async fn main() -> anyhow::Result<()> {
     // jitter margin so a one-cycle blip doesn't flip the probe to red.
     // The refresh interval is the loop's natural cadence; anything past
     // two of those is almost certainly a wedged loop, not just slow.
-    let refresh_ms = i64::try_from(cfg.worker.leader_refresh_seconds * 1000).unwrap_or(i64::MAX);
+    let refresh_ms =
+        i64::try_from(cfg.worker.leader_refresh_seconds.saturating_mul(1000)).unwrap_or(i64::MAX);
     let stale_after_ms = refresh_ms.saturating_mul(2).saturating_add(5_000);
 
     // actix-web's HttpServer future is not Send (Rc internals), so it
@@ -184,7 +189,7 @@ async fn main() -> anyhow::Result<()> {
     // trick the old test-fixtures listener used; now hosts /health
     // unconditionally + /__test/advance-clock when the feature is on.
     let bind = cfg.worker.metrics_bind.clone();
-    let hb_for_http = heartbeat.clone();
+    let hb_for_http = Arc::clone(&heartbeat);
     #[cfg(not(feature = "test-fixtures"))]
     std::thread::spawn(move || {
         actix_web::rt::System::new().block_on(ops_http::serve(hb_for_http, stale_after_ms, bind));
@@ -192,7 +197,7 @@ async fn main() -> anyhow::Result<()> {
     #[cfg(feature = "test-fixtures")]
     {
         let s = worker.clone();
-        let fixed_handle = fixed.clone();
+        let fixed_handle = Arc::clone(&fixed);
         let zones: Arc<dyn my_fam_tree_domain::TimeZoneRepo> =
             Arc::new(my_fam_tree_persistence::PgTimeZoneRepo::new(pool.clone()));
         std::thread::spawn(move || {

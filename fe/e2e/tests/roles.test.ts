@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
 import { inviteAndAccept } from '../page-objects/invites'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 async function createPerson(page: Page, givenName: string, familyName: string): Promise<void> {
     await page.goto('/tree')
@@ -14,7 +15,7 @@ async function createPerson(page: Page, givenName: string, familyName: string): 
 }
 
 test('user role gets a read-only person detail and no admin nav for a row they do not own', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     // Owner sets up the family and a person the user is NOT linked to.
     const ownerEmail = `roles-owner-${stamp}@example.com`

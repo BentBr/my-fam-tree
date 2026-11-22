@@ -1,6 +1,8 @@
 ---
 name: crate-worker
 description: Use when working in the worker crate (package my-fam-tree-worker, crate my_fam_tree_worker) — the leader-locked scheduler + dispatcher pool that sends daily digest emails. Triggers when editing the leader loop, ticker, dispatcher, backoff, digest projection, the Clock abstraction, or the test-fixtures advance-clock endpoint. Keywords reminder worker, digest, leader lock, ticker, dispatcher, Clock, FixedClock, SystemClock, test-fixtures, advance-clock, backoff, WorkerState.
+paths:
+  - "crates/worker/**"
 ---
 
 # crate-worker
@@ -23,7 +25,6 @@ send. It is a thin wrapper: orchestration lives in the lib so integration tests
 | `main.rs` | Wires prod collaborators into `WorkerState`, spawns dispatchers, runs the leader loop. Inline tracing init (json vs pretty). |
 | `state.rs` | `WorkerState` DI container: `clock` + repos + `queue` + `email`, all `Arc<dyn …>`; plus `web_public_url`, `max_retries`, `retry_min/max_seconds`. |
 | `config.rs` | `Config::from_env()` via `envy` — all `WORKER_*` + db/redis/email vars. |
-| `clock.rs` | `Clock` trait; `SystemClock` (prod) vs `FixedClock` (settable atomic). |
 | `leader.rs` | Redis-lease single-leader election. |
 | `ticker.rs` | `run_tick(&state)` — schedules digests, returns count. |
 | `dispatcher.rs` | `run_dispatcher(state)` loop + `handle(&state, &job)`. |
@@ -55,7 +56,8 @@ PEXPIRE; `false` ⇒ lost lease ⇒ re-acquire) and `ticker::run_tick` once per
 
 ## The test-fixtures feature (clock control)
 
-`FixedClock` (an `Arc<AtomicI64>` of micros) replaces `SystemClock` only under
+The `Clock` trait and its impls live in `my_fam_tree_domain::clock` (shared with the
+api). `OffsetClock` (wall clock plus a settable offset) replaces `SystemClock` only under
 `--features test-fixtures`, so tests/E2E fast-forward time. The feature also
 compiles `test_clock_http`: an Actix listener on `WORKER_METRICS_BIND` exposing
 `POST /__test/advance-clock` `{ "to": <RFC3339> }` or `{ "date": "YYYY-MM-DD" }`

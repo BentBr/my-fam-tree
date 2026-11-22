@@ -61,7 +61,7 @@ export const useUiStore = defineStore('ui', () => {
         )
         if (duplicate) return
         toastIdSeq += 1
-        toasts.value.push({ ...t, id: `toast-${toastIdSeq}` })
+        toasts.value.push({ ...t, id: `toast-${String(toastIdSeq)}` })
     }
 
     function dismissToast(id: string): void {

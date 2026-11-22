@@ -65,9 +65,9 @@ pub async fn mint_refresh_token_for(
     refresh_tokens: &Arc<dyn RefreshTokenRepo>,
     jwt_cfg: &JwtConfig,
     user: &User,
+    now: OffsetDateTime,
 ) -> anyhow::Result<String> {
     let (token, hash) = generate_opaque_token();
-    let now = OffsetDateTime::now_utc();
     let ttl = i64::try_from(jwt_cfg.refresh_ttl_seconds).unwrap_or(i64::MAX);
     let abs = i64::try_from(jwt_cfg.refresh_absolute_ttl_seconds).unwrap_or(i64::MAX);
     refresh_tokens
@@ -77,8 +77,8 @@ pub async fn mint_refresh_token_for(
             None,
             None,
             None,
-            now + Duration::seconds(ttl),
-            now + Duration::seconds(abs),
+            now.saturating_add(Duration::seconds(ttl)),
+            now.saturating_add(Duration::seconds(abs)),
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))
@@ -104,6 +104,7 @@ pub async fn mint_magic_link_url(
     web_public_url: &str,
     locale: Locale,
     ttl_seconds: u64,
+    now: OffsetDateTime,
 ) -> anyhow::Result<String> {
     let (token, hash) = generate_opaque_token();
     let ttl = i64::try_from(ttl_seconds).unwrap_or(i64::MAX);
@@ -113,7 +114,7 @@ pub async fn mint_magic_link_url(
             email,
             &hash,
             MagicLinkPurpose::Login,
-            OffsetDateTime::now_utc() + Duration::seconds(ttl),
+            now.saturating_add(Duration::seconds(ttl)),
         )
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))

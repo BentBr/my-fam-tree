@@ -237,7 +237,7 @@ export function useSetFavourite() {
                 })
             }
             for (const [key, value] of prevPerson) {
-                if (value !== undefined && value !== null) {
+                if (value !== undefined) {
                     qc.setQueryData(key, { ...value, is_favourite_for_me: vars.isFavourite })
                 }
             }

@@ -13,6 +13,7 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import FamilyCreate from '@/views/families/FamilyCreate.vue'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function makeRouter(): Router {
     return createRouter({
@@ -71,16 +72,7 @@ describe('FamilyCreate', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.stubGlobal('navigator', { language: 'en-US' })
-        const store: Record<string, string> = {}
-        vi.stubGlobal('localStorage', {
-            getItem: (k: string) => store[k] ?? null,
-            setItem: (k: string, v: string) => {
-                store[k] = v
-            },
-            removeItem: (k: string) => {
-                delete store[k]
-            },
-        })
+        vi.stubGlobal('localStorage', memoryStorage())
         mutateAsync.mockReset()
     })
 

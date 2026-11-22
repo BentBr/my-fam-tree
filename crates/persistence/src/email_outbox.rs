@@ -69,7 +69,7 @@ impl EmailOutboxRepo for PgEmailOutboxRepo {
         // UPDATE moves next_attempt_at forward by a short claim window
         // (60 s) and returns the row. The poller has 60s to finish; if it
         // dies, the row becomes claimable again automatically.
-        let claim_horizon = now + time::Duration::seconds(60);
+        let claim_horizon = now.saturating_add(time::Duration::seconds(60));
         let row = sqlx::query!(
             "UPDATE email_outbox \
              SET next_attempt_at = $2, updated_at = $1 \

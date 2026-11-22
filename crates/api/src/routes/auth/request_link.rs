@@ -1,5 +1,14 @@
 //! `POST /auth/magic-link` — issue + email a single-use sign-in link.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use std::time::Duration as StdDuration;
 
 use actix_web::{HttpRequest, post, web};
@@ -26,8 +35,6 @@ use crate::{ApiError, ApiResponse, AppState};
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/magic-link")]
 pub async fn magic_link(
     state: web::Data<AppState>,
@@ -61,7 +68,7 @@ pub async fn magic_link(
     // `realip_remote_addr()` returns the peer addr (or the leading X-Forwarded-For
     // entry when a trusted proxy sets it); `"unknown"` is a safe fallback that
     // keeps the per-IP bucket usable even when actix can't resolve the peer.
-    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_string();
+    let ip = req.connection_info().realip_remote_addr().unwrap_or("unknown").to_owned();
     let ip_decision = state
         .rate_limiter
         .check(
@@ -114,6 +121,7 @@ pub async fn magic_link(
         &state.cfg.web.public_url,
         locale,
         state.cfg.magic_link.ttl_seconds,
+        state.clock.now(),
     )
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
@@ -136,7 +144,7 @@ pub async fn magic_link(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::MAGIC_LINK.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::MAGIC_LINK.to_owned(),
             to_addr: user.email.clone(),
             subject: msg.subject,
             text_body: msg.text,

@@ -66,9 +66,7 @@ impl S3ObjectStore {
             // builder leaves them disabled and the retry runtime never
             // calls sleep at all.
             .timeout_config(
-                TimeoutConfig::builder()
-                    .operation_attempt_timeout(std::time::Duration::from_secs(30))
-                    .build(),
+                TimeoutConfig::builder().operation_attempt_timeout(Duration::from_secs(30)).build(),
             )
             .force_path_style(cfg.force_path_style);
         if let Some(ep) = cfg.endpoint_url.as_ref() {
@@ -109,7 +107,7 @@ impl ObjectStore for S3ObjectStore {
                 if let Some(svc) = e.as_service_error()
                     && svc.is_no_such_key()
                 {
-                    StorageError::NotFound(key.to_string())
+                    StorageError::NotFound(key.to_owned())
                 } else {
                     backend(e)
                 }
@@ -132,6 +130,6 @@ impl ObjectStore for S3ObjectStore {
             PresigningConfig::builder().expires_in(expires_in).build().map_err(backend)?;
         let req = self.client.get_object().bucket(&self.bucket).key(key);
         let presigned = req.presigned(presign_cfg).await.map_err(backend)?;
-        Ok(presigned.uri().to_string())
+        Ok(presigned.uri().to_owned())
     }
 }

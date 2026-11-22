@@ -1,6 +1,9 @@
 // Mutex lock failure here means another thread panicked while holding it;
 // poisoning is unrecoverable so panicking is the correct behavior.
-#![allow(clippy::expect_used)]
+#![expect(
+    clippy::expect_used,
+    reason = "a poisoned test-fake mutex means another thread already panicked"
+)]
 
 use std::sync::Mutex;
 
@@ -58,7 +61,6 @@ impl EmailSender for FakeEmailSender {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 

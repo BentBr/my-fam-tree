@@ -105,7 +105,7 @@ export function useNodeLabels(source: MaybeRefOrGetter<Positioned>): NodeLabels 
         const deathDate = parseIsoDate(deathStr)
         if (deathDate === null) return ''
         const years = fullYearsBetween(birthDate, deathDate)
-        return years >= 0 ? `${years} (†)` : ''
+        return years >= 0 ? `${String(years)} (†)` : ''
     })
 
     const initials = computed(() => {

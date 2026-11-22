@@ -79,7 +79,6 @@ pub fn revoked<'a>(cfg: &Config, name: &'static str, path: &'static str) -> Cook
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use actix_web::cookie::SameSite;
     use my_fam_tree_config::storage::StorageDriver;
@@ -165,7 +164,7 @@ mod tests {
         assert_eq!(c.secure(), Some(true));
         assert_eq!(c.same_site(), Some(SameSite::Lax));
         assert_eq!(c.path(), Some("/"));
-        assert_eq!(c.max_age().map(actix_web::cookie::time::Duration::whole_seconds), Some(900));
+        assert_eq!(c.max_age().map(Duration::whole_seconds), Some(900));
     }
 
     #[test]
@@ -176,7 +175,7 @@ mod tests {
         assert_eq!(c.path(), Some(REFRESH_COOKIE_PATH));
         assert_eq!(c.same_site(), Some(SameSite::Strict));
         assert_eq!(c.http_only(), Some(true));
-        assert_eq!(c.max_age().map(actix_web::cookie::time::Duration::whole_seconds), Some(86_400));
+        assert_eq!(c.max_age().map(Duration::whole_seconds), Some(86_400));
     }
 
     #[test]
@@ -187,7 +186,7 @@ mod tests {
         assert_eq!(c.value(), "");
         assert_eq!(c.path(), Some("/"));
         assert_eq!(c.http_only(), Some(true));
-        assert_eq!(c.max_age().map(actix_web::cookie::time::Duration::whole_seconds), Some(0));
+        assert_eq!(c.max_age().map(Duration::whole_seconds), Some(0));
     }
 
     #[test]

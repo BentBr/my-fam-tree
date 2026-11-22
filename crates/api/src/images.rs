@@ -170,7 +170,6 @@ fn extract_extension(filename: &str) -> Option<&str> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
 
@@ -242,7 +241,7 @@ mod tests {
             DetectedFormat::detect(&[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00]),
             Some(DetectedFormat::Png)
         );
-        let mut webp = Vec::from(b"RIFF\0\0\0\0WEBP" as &[u8]);
+        let mut webp = b"RIFF\0\0\0\0WEBP".to_vec();
         webp.push(0);
         assert_eq!(DetectedFormat::detect(&webp), Some(DetectedFormat::WebP));
     }

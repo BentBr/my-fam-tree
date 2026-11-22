@@ -90,7 +90,7 @@ impl ObjectStore for LocalObjectStore {
         let mut file = match fs::File::open(&path).await {
             Ok(f) => f,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                return Err(StorageError::NotFound(key.to_string()));
+                return Err(StorageError::NotFound(key.to_owned()));
             }
             Err(e) => return Err(backend(e)),
         };
@@ -124,7 +124,6 @@ impl ObjectStore for LocalObjectStore {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
     use super::*;
 
     #[tokio::test]

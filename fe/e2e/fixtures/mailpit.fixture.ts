@@ -53,5 +53,5 @@ export async function waitForEmail(
         await new Promise((resolve) => setTimeout(resolve, 500))
     }
     const tail = recipient !== undefined ? ` for ${recipient}` : ''
-    throw new Error(`no matching email arrived${tail} in ${timeoutMs}ms`)
+    throw new Error(`no matching email arrived${tail} in ${String(timeoutMs)}ms`)
 }

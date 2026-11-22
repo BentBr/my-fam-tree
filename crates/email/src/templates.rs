@@ -80,7 +80,6 @@ pub use owner_transfer::{render_owner_transfer_admin, render_owner_transfer_owne
 pub use sign_in::{render_magic_link, render_welcome};
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -224,7 +223,7 @@ mod tests {
     #[test]
     fn renders_de_digest_with_two_lines() {
         let lines =
-            vec!["Anna — 40. Geburtstag".to_string(), "Klaus & Maria — 10. Jahrestag".to_string()];
+            vec!["Anna — 40. Geburtstag".to_owned(), "Klaus & Maria — 10. Jahrestag".to_owned()];
         let email = render_reminder_digest(
             Locale::De,
             APP,
@@ -249,7 +248,7 @@ mod tests {
 
     #[test]
     fn renders_en_digest_day_of_singular() {
-        let lines = vec!["Bob — 30th birthday".to_string()];
+        let lines = vec!["Bob — 30th birthday".to_owned()];
         let email = render_reminder_digest(
             Locale::En,
             APP,

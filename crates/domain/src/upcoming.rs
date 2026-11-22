@@ -169,7 +169,7 @@ fn wedding_anniv(part: &Partnership, persons: &[Person], today: Date) -> Option<
 /// # Errors
 /// Propagates any error surfaced by the underlying repos (DB connectivity,
 /// query failure).
-#[allow(
+#[expect(
     clippy::too_many_arguments,
     reason = "projection orchestrator: explicit repo+scope+filter args keep call sites self-documenting"
 )]
@@ -235,7 +235,6 @@ pub async fn build_upcoming(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 

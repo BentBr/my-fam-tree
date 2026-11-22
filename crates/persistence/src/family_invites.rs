@@ -127,11 +127,12 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
     ) -> Result<Invite, InviteRepoError> {
         let row = sqlx::query_as!(
             InviteRow,
-            r#"UPDATE family_invites SET accepted_at = now()
+            r#"UPDATE family_invites SET accepted_at = $2
                 WHERE token_hash = $1 AND accepted_at IS NULL
                 RETURNING id, family_id, email::text AS "email!", invited_role::text AS "role!",
                           invited_by, person_id, expires_at, accepted_at"#,
-            token_hash
+            token_hash,
+            now,
         )
         .fetch_optional(&self.pool)
         .await
@@ -147,15 +148,17 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
     async fn list_pending_for_family(
         &self,
         family_id: FamilyId,
+        now: OffsetDateTime,
     ) -> Result<Vec<Invite>, InviteRepoError> {
         let rows = sqlx::query_as!(
             InviteRow,
             r#"SELECT id, family_id, email::text AS "email!", invited_role::text AS "role!",
                       invited_by, person_id, expires_at, accepted_at
                  FROM family_invites
-                WHERE family_id = $1 AND accepted_at IS NULL AND expires_at > now()
+                WHERE family_id = $1 AND accepted_at IS NULL AND expires_at > $2
                 ORDER BY created_at DESC"#,
-            family_id.into_uuid()
+            family_id.into_uuid(),
+            now,
         )
         .fetch_all(&self.pool)
         .await
@@ -167,6 +170,7 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
         &self,
         family_id: FamilyId,
         email: &str,
+        now: OffsetDateTime,
     ) -> Result<Option<Invite>, InviteRepoError> {
         let row = sqlx::query_as!(
             InviteRow,
@@ -176,10 +180,11 @@ impl FamilyInviteRepo for PgFamilyInviteRepo {
                 WHERE family_id = $1
                   AND lower(email::text) = lower($2)
                   AND accepted_at IS NULL
-                  AND expires_at > now()
+                  AND expires_at > $3
                 LIMIT 1"#,
             family_id.into_uuid(),
             email,
+            now,
         )
         .fetch_optional(&self.pool)
         .await

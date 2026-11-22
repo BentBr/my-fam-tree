@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ApiClientError, type ApiErrorBody } from '@/api/errors'
+import { ApiClientError, type ApiErrorBody, ApiResponseError, throwIfError } from '@/api/errors'
 
 function body(overrides: Partial<ApiErrorBody> = {}): ApiErrorBody {
     return {
@@ -11,7 +11,7 @@ function body(overrides: Partial<ApiErrorBody> = {}): ApiErrorBody {
         detail: 'name must be set',
         instance: 'req-abc',
         ...overrides,
-    } as ApiErrorBody
+    }
 }
 
 describe('ApiClientError', () => {
@@ -36,5 +36,37 @@ describe('ApiClientError', () => {
 
     it('is an instance of Error', () => {
         expect(new ApiClientError(body())).toBeInstanceOf(Error)
+    })
+})
+
+describe('throwIfError', () => {
+    it('does nothing when there is no error', () => {
+        expect(() => {
+            throwIfError(undefined)
+        }).not.toThrow()
+    })
+
+    it('rethrows an Error unchanged', () => {
+        const err = new ApiClientError(body())
+        expect(() => {
+            throwIfError(err)
+        }).toThrow(err)
+    })
+
+    it('wraps a non-Error body in an ApiResponseError that keeps the body', () => {
+        let caught: unknown
+        try {
+            throwIfError({ msg: 'boom' })
+        } catch (e) {
+            caught = e
+        }
+        expect(caught).toBeInstanceOf(ApiResponseError)
+        expect(caught).toMatchObject({ name: 'ApiResponseError', body: { msg: 'boom' } })
+    })
+
+    it('wraps a null body too (only undefined means "no error")', () => {
+        expect(() => {
+            throwIfError(null)
+        }).toThrow(ApiResponseError)
     })
 })

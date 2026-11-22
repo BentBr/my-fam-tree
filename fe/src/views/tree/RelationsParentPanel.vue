@@ -210,7 +210,7 @@ watch(
 <style scoped>
 .relation-row {
     padding: 6px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border);
 }
 .relation-row:last-child {
     border-bottom: none;
@@ -218,7 +218,7 @@ watch(
 .inline-editor {
     margin-top: 8px;
     padding: 8px;
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-2);
     border-radius: 6px;
 }
 

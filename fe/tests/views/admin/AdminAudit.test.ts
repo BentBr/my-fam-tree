@@ -38,7 +38,7 @@ vi.mock('@/api/hooks/audit', async (importOriginal) => {
             // Mirror the real hook's `toValue` so a ref/computed is unwrapped
             // — the component passes a `computed<AuditFilter>`.
             const f = filter as { value?: unknown }
-            lastFilter = f?.value ?? f
+            lastFilter = f.value ?? f
             return { data: auditData, isLoading: auditIsLoading, error: auditError }
         },
     }

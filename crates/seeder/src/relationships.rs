@@ -8,7 +8,7 @@
 mod parent_links;
 mod partnerships;
 
-use sqlx::PgPool;
+use my_fam_tree_persistence::seed::{ParentLinkRow, PartnershipRow, SeedDb};
 use time::Date;
 use uuid::Uuid;
 
@@ -42,19 +42,9 @@ pub(crate) struct ParentLinkSeed {
 ///
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT`.
-pub(crate) async fn upsert_parent_link(pool: &PgPool, r: &ParentLinkSeed) -> anyhow::Result<()> {
-    sqlx::query(
-        "INSERT INTO parent_links (child_id, parent_id, kind, note) \
-         VALUES ($1, $2, ($3::text)::parent_link_kind, '') \
-         ON CONFLICT (child_id, parent_id) DO UPDATE SET \
-             kind = EXCLUDED.kind, \
-             note = EXCLUDED.note",
-    )
-    .bind(r.child)
-    .bind(r.parent)
-    .bind(r.kind)
-    .execute(pool)
-    .await?;
+pub(crate) async fn upsert_parent_link(db: &SeedDb<'_>, r: &ParentLinkSeed) -> anyhow::Result<()> {
+    db.upsert_parent_link(&ParentLinkRow { child: r.child, parent: r.parent, kind: r.kind })
+        .await?;
     Ok(())
 }
 
@@ -63,9 +53,9 @@ pub(crate) async fn upsert_parent_link(pool: &PgPool, r: &ParentLinkSeed) -> any
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT … DO
 /// UPDATE` statements.
-pub async fn seed_parent_links(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn seed_parent_links(db: &SeedDb<'_>) -> anyhow::Result<()> {
     for r in &parent_links::PARENT_LINKS {
-        upsert_parent_link(pool, r).await?;
+        upsert_parent_link(db, r).await?;
     }
     Ok(())
 }
@@ -83,7 +73,7 @@ pub(crate) struct PartnershipSeed {
     pub(crate) note: &'static str,
 }
 
-#[allow(
+#[expect(
     clippy::panic,
     reason = "const-fn date constructor: arguments are static literals validated at build time"
 )]
@@ -99,7 +89,7 @@ const fn ymd(y: i32, m: u8, d: u8) -> Date {
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT (id) DO
 /// UPDATE` statements.
-pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn seed_partnerships(db: &SeedDb<'_>) -> anyhow::Result<()> {
     // Wipe any partnerships in the seeded family that ARE NOT one of the
     // hardcoded seed rows. Reason: the historical seed inserted Otto +
     // Hannelore etc. with `gen_random_uuid()` ids and relied on a partial
@@ -128,14 +118,10 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
         SEED_PARTNERSHIP_STB_FELIX_BEATE_ID,
         SEED_PARTNERSHIP_FLK_EDGAR_GISELA_ID,
     ];
-    sqlx::query("DELETE FROM partnerships WHERE family_id = $1 AND id <> ALL($2)")
-        .bind(SEED_FAMILY_ID)
-        .bind(&seed_ids[..])
-        .execute(pool)
-        .await?;
+    db.delete_partnerships_except(SEED_FAMILY_ID, &seed_ids).await?;
 
     for p in &partnerships::PARTNERSHIPS {
-        upsert_partnership(pool, SEED_FAMILY_ID, p).await?;
+        upsert_partnership(db, SEED_FAMILY_ID, p).await?;
     }
     Ok(())
 }
@@ -147,15 +133,11 @@ pub async fn seed_partnerships(pool: &PgPool) -> anyhow::Result<()> {
 /// # Errors
 /// Propagates any Postgres error from the `DELETE`.
 pub(crate) async fn delete_non_seed_partnerships(
-    pool: &PgPool,
+    db: &SeedDb<'_>,
     family_id: Uuid,
     keep: &[Uuid],
 ) -> anyhow::Result<()> {
-    sqlx::query("DELETE FROM partnerships WHERE family_id = $1 AND id <> ALL($2)")
-        .bind(family_id)
-        .bind(keep)
-        .execute(pool)
-        .await?;
+    db.delete_partnerships_except(family_id, keep).await?;
     Ok(())
 }
 
@@ -165,37 +147,21 @@ pub(crate) async fn delete_non_seed_partnerships(
 /// # Errors
 /// Propagates any Postgres error from the `INSERT … ON CONFLICT`.
 pub(crate) async fn upsert_partnership(
-    pool: &PgPool,
+    db: &SeedDb<'_>,
     family_id: Uuid,
     p: &PartnershipSeed,
 ) -> anyhow::Result<()> {
-    sqlx::query(
-        "INSERT INTO partnerships \
-             (id, family_id, partner_a_id, partner_b_id, kind, started_on, ended_on, \
-              end_reason, note) \
-         VALUES ($1, $2, $3, $4, ($5::text)::partnership_kind, $6, $7, \
-                 $8::text::partnership_end_reason, $9) \
-         ON CONFLICT (id) DO UPDATE SET \
-             family_id = EXCLUDED.family_id, \
-             partner_a_id = EXCLUDED.partner_a_id, \
-             partner_b_id = EXCLUDED.partner_b_id, \
-             kind = EXCLUDED.kind, \
-             started_on = EXCLUDED.started_on, \
-             ended_on = EXCLUDED.ended_on, \
-             end_reason = EXCLUDED.end_reason, \
-             note = EXCLUDED.note",
-    )
-    .bind(p.id)
-    .bind(family_id)
-    .bind(p.partner_a)
-    .bind(p.partner_b)
-    .bind(p.kind)
-    .bind(p.started_on)
-    .bind(p.ended_on)
-    .bind(p.end_reason)
-    .bind(p.note)
-    .execute(pool)
-    .await?;
+    let row = PartnershipRow {
+        id: p.id,
+        partner_a: p.partner_a,
+        partner_b: p.partner_b,
+        kind: p.kind,
+        started_on: p.started_on,
+        ended_on: p.ended_on,
+        end_reason: p.end_reason,
+        note: p.note,
+    };
+    db.upsert_partnership(family_id, &row).await?;
     Ok(())
 }
 

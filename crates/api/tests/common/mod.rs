@@ -6,16 +6,24 @@
 //! compile this module as a standalone binary.
 //!
 //! Each downstream test file pulls a different subset of these helpers,
-//! so `#![allow(dead_code)]` is needed to keep clippy quiet across all
+//! so `#![expect(dead_code, reason = "shared test helpers; not every test binary uses every helper")]` is needed to keep clippy quiet across all
 //! integration crates.
 
-#![allow(dead_code)]
-#![allow(unreachable_pub)]
-#![allow(
+#![expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
+#![expect(dead_code, reason = "shared test helpers; not every test binary uses every helper")]
+#![expect(
+    unreachable_pub,
+    reason = "shared test helpers are pub for the test binaries that include them"
+)]
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    reason = "test code: setup failures abort the test; setup failures abort the test with context; indexes into known fixture/response shapes; long linear set-up reads best in one place"
 )]
 
 pub mod invites;
@@ -30,6 +38,7 @@ use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
 use my_fam_tree_api::{AppEnv, AppState, Config, LogFormat};
 use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
+use my_fam_tree_domain::clock::FixedClock;
 use my_fam_tree_email::FakeEmailSender;
 use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
@@ -52,6 +61,9 @@ use testcontainers_modules::redis::Redis;
 pub struct TestStack {
     pub state: AppState,
     pub fake_email: Arc<FakeEmailSender>,
+    /// The clock every handler and the JWT issuer read. Starts at real "now";
+    /// tests pin it with `stack.clock.set(..)`.
+    pub clock: FixedClock,
     pub _pg: ContainerAsync<Postgres>,
     pub _redis: ContainerAsync<Redis>,
 }
@@ -91,7 +103,12 @@ pub async fn ephemeral_stack() -> TestStack {
     let public_json =
         serde_json::json!([{"kid": "t", "public_pem": pub_pem.trim_end()}]).to_string();
     let keys = JwtKeyset::load(&priv_pem, "t", &public_json).expect("load keys");
-    let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900);
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the harness clock starts at real now so DB-defaulted timestamps line up with it"
+    )]
+    let clock = FixedClock::new(time::OffsetDateTime::now_utc());
+    let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900, Arc::new(clock.clone()));
 
     let cfg = Config {
         app_env: AppEnv::Development,
@@ -177,8 +194,8 @@ pub async fn ephemeral_stack() -> TestStack {
         reminder_digests: Arc::new(PgReminderDigestRepo::new(pool.clone())),
         health: Arc::new(PgHealthRepo::new(pool.clone())),
         audit: Arc::new(PgAuditLogRepo::new(pool)),
-        email: fake_email.clone(),
-        outbox: Arc::new(SyncOutbox(fake_email.clone() as Arc<dyn my_fam_tree_email::EmailSender>)),
+        email: Arc::<FakeEmailSender>::clone(&fake_email),
+        outbox: Arc::new(SyncOutbox(Arc::<FakeEmailSender>::clone(&fake_email))),
         rate_limiter: Arc::new(RedisRateLimiter::new(redis_pool.clone())),
         redis: redis_pool,
         jwt_issuer: Arc::new(issuer),
@@ -190,9 +207,10 @@ pub async fn ephemeral_stack() -> TestStack {
             std::env::temp_dir().join(format!("my-fam-tree-test-{}", uuid::Uuid::new_v4())),
             "http://test.invalid/uploads".into(),
         )),
+        clock: Arc::new(clock.clone()),
     };
 
-    TestStack { state, fake_email, _pg: pg, _redis: redis_container }
+    TestStack { state, fake_email, clock, _pg: pg, _redis: redis_container }
 }
 
 /// Test double for [`my_fam_tree_domain::EmailOutboxRepo`]: bypasses the
@@ -261,7 +279,7 @@ impl my_fam_tree_domain::EmailOutboxRepo for SyncOutbox {
 /// splitting on `token=` is independent of the locale prefix.
 pub fn extract_token_from_link(body: &str) -> String {
     let after = body.split("token=").nth(1).expect("token= present");
-    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_string()
+    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_owned()
 }
 
 /// Call the service tolerantly: middlewares such as `AuthMiddleware::required`
@@ -270,7 +288,6 @@ pub fn extract_token_from_link(body: &str) -> String {
 /// `test::call_service` would panic. We catch the error and rebuild the
 /// `ServiceResponse` via `HttpResponse::from_error`, matching what the actix
 /// server does for a real client.
-#[allow(clippy::future_not_send)]
 pub async fn try_call<S, B>(
     app: &S,
     req: actix_http::Request,
@@ -307,7 +324,6 @@ where
 /// inherits the same constraint — perfectly fine inside `#[tokio::test]`
 /// runners, but clippy's `future_not_send` lint trips because the helper is
 /// `pub`-shaped to the test crate. The lint is irrelevant for test-only code.
-#[allow(clippy::future_not_send)]
 pub async fn sign_in<S, B>(stack: &TestStack, app: &S, email: &str) -> (String, String)
 where
     S: actix_web::dev::Service<
@@ -335,7 +351,7 @@ where
     assert_eq!(res.status(), 200, "consume should succeed for {email}");
     let access = res.response().cookies().find(|c| c.name() == "access").expect("access cookie");
     let refresh = res.response().cookies().find(|c| c.name() == "refresh").expect("refresh cookie");
-    (access.value().to_string(), refresh.value().to_string())
+    (access.value().to_owned(), refresh.value().to_owned())
 }
 
 /// Create a family for the caller (becomes Owner) and return the rotated
@@ -346,7 +362,6 @@ where
 /// and the response body's `data.family.id` carries the UUID. Test code
 /// then attaches `X-Family-Id` to subsequent requests against the
 /// persons / parent-links / partnerships / relationships scope.
-#[allow(clippy::future_not_send)]
 pub async fn create_family<S, B>(app: &S, access: &str, name: &str) -> (String, String)
 where
     S: actix_web::dev::Service<
@@ -358,7 +373,7 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/families")
-        .cookie(actix_web::cookie::Cookie::new("access", access.to_string()))
+        .cookie(actix_web::cookie::Cookie::new("access", access.to_owned()))
         .set_json(serde_json::json!({ "name": name }))
         .to_request();
     let res = test::call_service(app, req).await;
@@ -369,9 +384,9 @@ where
         .find(|c| c.name() == "access")
         .expect("rotated access cookie")
         .value()
-        .to_string();
+        .to_owned();
     let body: serde_json::Value = test::read_body_json(res).await;
-    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_string();
+    let family_id = body["data"]["family"]["id"].as_str().expect("family id").to_owned();
     (new_access, family_id)
 }
 
@@ -384,7 +399,6 @@ where
 
 /// Sign `email` in (provisions the `users` row) and return its `UserId`. The
 /// session cookies are discarded — callers re-sign-in after memberships exist.
-#[allow(clippy::future_not_send)]
 pub async fn provision_user<S, B>(
     stack: &TestStack,
     app: &S,
@@ -398,14 +412,13 @@ where
         >,
     B: actix_web::body::MessageBody,
 {
-    let _ = sign_in(stack, app, email).await;
+    drop(sign_in(stack, app, email).await);
     stack.state.users.find_by_email(email).await.expect("user lookup").expect("user exists").id
 }
 
 /// Insert (or update) a membership row directly via the repo.
-#[allow(clippy::future_not_send)]
 pub async fn ensure_membership(
-    state: &my_fam_tree_api::AppState,
+    state: &AppState,
     family_id: my_fam_tree_domain::FamilyId,
     user_id: my_fam_tree_domain::UserId,
     role: my_fam_tree_domain::Role,
@@ -429,7 +442,6 @@ pub struct ThreeRoleFamily {
 
 /// Seed a fresh family with an owner, an admin and a user. `stamp` keeps the
 /// emails unique across parallel tests.
-#[allow(clippy::future_not_send)]
 pub async fn seed_three_role_family<S, B>(
     stack: &TestStack,
     app: &S,
@@ -462,7 +474,6 @@ where
 
 /// Sign `email` in and return just the access-cookie value (JWT now carries
 /// the member's current role for the seeded family).
-#[allow(clippy::future_not_send)]
 pub async fn fresh_access<S, B>(stack: &TestStack, app: &S, email: &str) -> String
 where
     S: actix_web::dev::Service<

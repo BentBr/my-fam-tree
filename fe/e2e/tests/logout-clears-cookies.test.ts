@@ -6,10 +6,11 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signedInContext } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('signing out clears both the access and refresh HttpOnly cookies', async ({ browser }) => {
     // Fresh context so we own the cookie jar; isolated from other tests.
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const email = `logout-cookies-${stamp}@example.com`
     const { context: ctx, page } = await signedInContext(browser, email)
 

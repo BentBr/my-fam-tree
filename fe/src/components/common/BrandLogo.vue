@@ -15,6 +15,7 @@
  * a router-link (used by the AppBar so clicking it returns home).
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 // Importing the brand raster lets Vite rewrite the resolved URL with a
@@ -26,8 +27,6 @@ import sloth128 from '@/assets/brand/sloth-128.webp'
 import sloth256 from '@/assets/brand/sloth-256.webp'
 import sloth512 from '@/assets/brand/sloth-512.webp'
 
-const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
-
 const props = withDefaults(
     defineProps<{
         /** Visual scale. */
@@ -37,6 +36,10 @@ const props = withDefaults(
     }>(),
     { size: 'md', to: null },
 )
+
+const { t } = useI18n()
+
+const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
 
 const iconPx = computed(() => (props.size === 'lg' ? 48 : props.size === 'md' ? 36 : 24))
 const wordPx = computed(() => (props.size === 'lg' ? 22 : 18))
@@ -63,8 +66,8 @@ const linked = computed(() => props.to !== null)
             alt=""
         />
         <span v-if="showText" class="brand-lockup__text">
-            <span class="brand-lockup__word display" :style="{ fontSize: `${wordPx}px` }">My Family Tree</span>
-            <span class="brand-lockup__sub" :style="{ fontSize: `${subPx}px` }">by Slothlike</span>
+            <span class="brand-lockup__word display" :style="{ fontSize: `${wordPx}px` }">{{ t('app.title') }}</span>
+            <span class="brand-lockup__sub" :style="{ fontSize: `${subPx}px` }">{{ t('app.byline') }}</span>
         </span>
     </component>
 </template>

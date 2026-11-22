@@ -1,6 +1,9 @@
 dist
+coverage
 node_modules
+.pnpm-store
 src/api/schema.d.ts
 playwright-report
 test-results
 openapi.json
+pnpm-lock.yaml

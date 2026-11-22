@@ -23,9 +23,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const photoBusy = computed(() => setPhoto.isPending.value || clearPhoto.isPending.value)
 const displayName = computed(() => {
     if (props.person === null) return ''
-    const first = props.person.given_name ?? ''
-    const last = props.person.family_name ?? ''
-    return `${first} ${last}`.trim()
+    return `${props.person.given_name} ${props.person.family_name}`.trim()
 })
 
 function openPhotoPicker(): void {
@@ -112,7 +110,7 @@ async function removePhoto(): Promise<void> {
     aspect-ratio: 1 / 1;
     border-radius: 8px;
     overflow: hidden;
-    background: rgb(var(--v-theme-surface-variant, 240 240 240));
+    background: rgb(var(--v-theme-surface-variant));
 }
 
 .person-detail-hero-img {

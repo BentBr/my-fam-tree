@@ -26,16 +26,17 @@ my-fam-tree-api = { path = "../api" }
 my-fam-tree-config = { path = "../config" }
 my-fam-tree-domain = { path = "../domain" }
 my-fam-tree-email = { path = "../email" }
-my-fam-tree-persistence = { path = "../persistence" }
+my-fam-tree-persistence = { path = "../persistence", features = ["seed"] }
 anyhow.workspace = true
 time.workspace = true
 dotenvy.workspace = true
 serde_json.workspace = true
-sqlx.workspace = true
 tokio.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+# tests/ run migrations against a throwaway Postgres; src/ has no SQL.
+sqlx.workspace = true
 testcontainers = "0.27"
 testcontainers-modules = { version = "0.15", features = ["postgres"] }
 

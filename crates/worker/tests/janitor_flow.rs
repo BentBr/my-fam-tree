@@ -3,15 +3,15 @@
 //! Uses testcontainers like the digest-flow test; CI's backend-tests job runs
 //! it on the Docker daemon there.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::panic,
-    clippy::indexing_slicing,
-    clippy::future_not_send,
     clippy::similar_names,
     clippy::too_many_lines,
-    reason = "test code: testcontainers + assertions may panic and aren't Send-bounded; the long set-up enumerates fixtures for four tables in one fn for readability"
+    reason = "test code: setup failures abort the test with context; fixture names mirror the domain; long linear set-up reads best in one place"
+)]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "worker repo tests compare against rows Postgres stamps with now(); the reference has to be wall time"
 )]
 
 use std::time::Duration as StdDuration;
@@ -79,9 +79,9 @@ async fn sweep_deletes_expired_rows_across_all_four_tables() {
          VALUES ($1, $2, 'login', 'old@test.local', $3), \
                 ($1, $4, 'login', 'new@test.local', $5)",
         user_id,
-        b"old-magic" as &[u8],
+        b"old-magic".as_slice(),
         expired,
-        b"new-magic" as &[u8],
+        b"new-magic".as_slice(),
         fresh,
     )
     .execute(&pool)
@@ -93,9 +93,9 @@ async fn sweep_deletes_expired_rows_across_all_four_tables() {
         "INSERT INTO refresh_tokens (user_id, token_hash, expires_at, absolute_expires_at) \
          VALUES ($1, $2, $3, $3), ($1, $4, $5, $5)",
         user_id,
-        b"old-refresh" as &[u8],
+        b"old-refresh".as_slice(),
         expired,
-        b"new-refresh" as &[u8],
+        b"new-refresh".as_slice(),
         fresh,
     )
     .execute(&pool)
@@ -109,9 +109,9 @@ async fn sweep_deletes_expired_rows_across_all_four_tables() {
                 ($1, 'new-inv@test.local', 'user', $2, $5, $6)",
         family_id,
         user_id,
-        b"old-invite" as &[u8],
+        b"old-invite".as_slice(),
         expired,
-        b"new-invite" as &[u8],
+        b"new-invite".as_slice(),
         fresh,
     )
     .execute(&pool)
@@ -135,13 +135,13 @@ async fn sweep_deletes_expired_rows_across_all_four_tables() {
                 ($7, $2, $2, $8, $9, $10, NULL)",
         family_id,
         user_id,
-        b"old-from" as &[u8],
-        b"old-to" as &[u8],
+        b"old-from".as_slice(),
+        b"old-to".as_slice(),
         expired,
         expired,
         family2_id,
-        b"new-from" as &[u8],
-        b"new-to" as &[u8],
+        b"new-from".as_slice(),
+        b"new-to".as_slice(),
         fresh,
     )
     .execute(&pool)

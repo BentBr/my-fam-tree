@@ -1,6 +1,10 @@
 ---
 name: crate-ops-binaries
 description: Use when running, debugging, or modifying the three thin operational binaries — migrator, seeder, openapi — or their rdt commands. Triggers only. Keywords: run_migrations, sqlx migrate, seed, MAGIC_LINK, openapi-dump, openapi spec, ApiDoc, migrate-status, migrate-check, drift.
+paths:
+  - "crates/migrator/**"
+  - "crates/seeder/**"
+  - "crates/openapi/**"
 ---
 
 # Crate Ops Binaries (migrator / seeder / openapi)
@@ -34,6 +38,8 @@ Package `my-fam-tree-seeder` (lib + bin `seed`). UPSERTs a fixed dataset (3 user
 hardcoded in `crates/seeder/src/ids.rs` (structured hex blocks: `…0001…` users,
 `…0002…` family, `…0003…` persons, `…0004…` partnerships) for idempotency,
 including closed partnership rows. Orchestrator: `crates/seeder/src/lib.rs`.
+The seeder holds the data only; every statement lives in `persistence::seed`
+(`SeedDb`, feature `seed`) — the seeder has no SQL and no sqlx dependency.
 
 It mints one fresh login magic link per user via the shared `mint_magic_link_url`
 and prints grep-friendly `MAGIC_LINK <email> <url>` lines (`src/main.rs`) — paste

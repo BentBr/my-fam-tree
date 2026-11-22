@@ -7,11 +7,16 @@ use std::time::Duration;
 use anyhow::Context;
 use my_fam_tree_api::{Config, init_tracing};
 use my_fam_tree_persistence::Database;
+use my_fam_tree_persistence::seed::SeedDb;
 use my_fam_tree_seeder::run_seed;
 
-#[allow(
+#[expect(
     clippy::print_stdout,
     reason = "this binary's job is to surface seeded magic-link URLs on stdout"
+)]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
 )]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -19,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
         // Optional .env, same handling as the api binary — ignore missing/parse
         // errors here because tracing isn't initialized yet and the workspace
         // forbids println/eprintln outside the seeder's main itself.
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
 
     let cfg = Config::from_env().context("load config from environment")?;
@@ -34,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     .await
     .context("connect postgres pool")?;
 
-    let report = run_seed(db.pool(), &cfg).await.context("run seed")?;
+    let report = run_seed(&SeedDb::new(&db), &cfg).await.context("run seed")?;
 
     println!("seeded {} users, {} persons", report.users_upserted, report.persons_upserted);
     for (email, url) in &report.magic_links {

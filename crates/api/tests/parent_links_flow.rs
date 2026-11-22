@@ -5,16 +5,12 @@
 //! Transitively covers `crates/persistence/src/parent_links.rs` against a
 //! real Postgres via testcontainers.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -27,7 +23,10 @@ use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
 
 /// Create a person under the active family and return its id as a string.
-#[allow(clippy::future_not_send)]
+#[expect(
+    clippy::future_not_send,
+    reason = "actix test service futures are !Send; tests run them on the current thread"
+)]
 async fn create_person<S, B>(app: &S, access: &str, family_id: &str, given_name: &str) -> String
 where
     S: actix_web::dev::Service<
@@ -39,14 +38,14 @@ where
 {
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "given_name": given_name }))
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -223,7 +222,7 @@ async fn parent_links_user_role_cannot_create_or_delete() {
 
     // Seed a regular user.
     let regular_email = "pl-regular@example.com";
-    let _ = sign_in(&stack, &app, regular_email).await;
+    drop(sign_in(&stack, &app, regular_email).await);
     let user =
         stack.state.users.find_by_email(regular_email).await.expect("lookup").expect("user exists");
     let fam_uuid = Uuid::parse_str(&family_id).expect("uuid");

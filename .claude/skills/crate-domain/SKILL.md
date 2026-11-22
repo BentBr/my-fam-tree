@@ -1,6 +1,8 @@
 ---
 name: crate-domain
 description: Use when touching the my-fam-tree-domain crate (crate `my_fam_tree_domain`, under crates/domain) — adding/changing a repo trait or its `FooRepoError`/Row/Draft types, working with newtype IDs (UserId/FamilyId/PersonId/FamilyMembershipId, `id_newtype!`, from_uuid/into_uuid/as_uuid), `Role`/`Capability`/`capabilities_of`/`has`/`at_least`, the relationship invariants `would_create_cycle`/`canonicalize_pair`, or the `build_upcoming`/UpcomingEvent/UpcomingFilter projection. Symptoms: where do I define a repo method, why is domain pure, exhaustive Capability match.
+paths:
+  - "crates/domain/**"
 ---
 
 # crate-domain (`my-fam-tree-domain`)
@@ -43,7 +45,7 @@ for the strict-lint/test regime see `rust-foundations`.
 
 ## Adding a repo method (workflow)
 
-1. Edit the **trait in `crates/domain/src/repos/foo.rs` FIRST** — add the
+1. Edit the **trait in `crates/domain/src/repos/<area>.rs` FIRST** — add the
    `async fn` signature; extend `FooRepoError`/Row/Draft if needed.
 2. Implement it in `crate-persistence` (SQLx); see `rust-foundations` for
    `sqlx-prepare` + `.sqlx` cache discipline.

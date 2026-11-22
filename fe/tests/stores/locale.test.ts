@@ -3,18 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useLocaleStore } from '@/stores/locale'
+import { memoryStorage } from '../helpers/memory-storage'
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 describe('locale store', () => {

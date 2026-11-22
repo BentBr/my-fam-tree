@@ -31,6 +31,26 @@ export function avatarTone(sex: Sex, deceased: boolean): { bg: string; fg: strin
     return AVATAR_TONES[sex === 'unknown' ? 'diverse' : sex]
 }
 
+/**
+ * Default-avatar fills, picked by a hash of the name. Avoids yellow (low
+ * contrast on white text) and pure red (alarming on a person card); similar
+ * lightness so the foreground text contrast is uniform.
+ */
+export const DEFAULT_AVATAR_PALETTE = [
+    '#3949ab', // indigo
+    '#1e88e5', // blue
+    '#039be5', // light blue
+    '#00897b', // teal
+    '#43a047', // green
+    '#7cb342', // light green
+    '#fb8c00', // orange
+    '#f4511e', // deep orange
+    '#6d4c41', // brown
+    '#5e35b1', // deep purple
+    '#8e24aa', // purple
+    '#d81b60', // pink
+] as const
+
 /** Tree connector colours, per theme. Used by the SVG renderer where
  *  CSS variables can't reach (raw `<line stroke>` attributes). The Vue
  *  side of the tree resolves these through `tokens.css` instead. */

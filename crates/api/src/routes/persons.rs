@@ -60,7 +60,7 @@ use crate::response_body;
 // (the lint's "use a custom enum" suggestion would require also writing
 // the serde glue every time). Localised allow rather than crate-wide so
 // other accidental Option<Option<T>>s still fire.
-#[allow(clippy::option_option)]
+#[expect(clippy::option_option, reason = "serde triple state for PATCH: absent vs null vs value")]
 fn deserialize_optional_field<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
 where
     T: Deserialize<'de>,
@@ -114,7 +114,6 @@ pub struct PersonCreateReq {
 //
 // `clippy::option_option` is silenced for the date fields here — see
 // the comment on `deserialize_optional_field` for why.
-#[allow(clippy::option_option)]
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PersonUpdateReq {

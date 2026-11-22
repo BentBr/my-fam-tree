@@ -5,9 +5,10 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('uncheck deceased + save actually clears death_date round-trip', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `deceased-clear-${stamp}@example.com`)
     await createFamily(page, `DeceasedFam-${stamp}`)
 

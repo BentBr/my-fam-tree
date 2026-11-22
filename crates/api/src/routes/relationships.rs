@@ -1,5 +1,14 @@
 //! `GET /api/v1/relationships` — full denormalized tree for the active family.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 
 use crate::auth::user_claims_with_family;
@@ -19,8 +28,6 @@ response_body!(pub TreePayloadResponseBody, TreePayload);
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/relationships")]
 pub async fn tree(
     state: web::Data<AppState>,

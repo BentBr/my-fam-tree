@@ -2,9 +2,10 @@ import { expect, test } from '../fixtures/console.fixture'
 import { inviteAndAccept } from '../page-objects/invites'
 import { seedContact, seedPerson } from '../page-objects/seed'
 import { signIn, signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('admin sees audit log and entity link navigates back to tree', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `audit-owner-${stamp}@example.com`)
     const familyId = await createFamily(page, `AuditFam-${stamp}`)
 
@@ -57,7 +58,7 @@ test('admin sees audit log and entity link navigates back to tree', async ({ pag
 })
 
 test('admin sidebar swaps in the admin items + back-to-tree link', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `admin-nav-owner-${stamp}@example.com`)
     await createFamily(page, `AdminNav-${stamp}`)
 
@@ -77,7 +78,7 @@ test('admin sidebar swaps in the admin items + back-to-tree link', async ({ page
 })
 
 test('invite audit row shows invitee email + role as a secondary line', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `audit-invite-owner-${stamp}@example.com`)
     const familyId = await createFamily(page, `AuditInvite-${stamp}`)
 
@@ -106,7 +107,7 @@ test('invite audit row shows invitee email + role as a secondary line', async ({
 })
 
 test('user role cannot reach /admin/audit (redirects to /tree)', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // Owner sets up the family.
     const ownerEmail = `audit-gate-owner-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)

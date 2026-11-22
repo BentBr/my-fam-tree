@@ -6,16 +6,10 @@
 //! end-to-end so the audit + email side-effects are exercised together with
 //! the persistence path.
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -25,6 +19,7 @@ use actix_web::test;
 use common::ephemeral_stack;
 use common::invites::seed_admin_family_with_person;
 use my_fam_tree_api::build_app;
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{AuditFilter, FamilyId};
 use uuid::Uuid;
 
@@ -103,7 +98,7 @@ async fn cancel_invite_removes_row_and_audits() {
     let res = test::call_service(&app, req).await;
     assert_eq!(res.status().as_u16(), 200);
     let body: serde_json::Value = test::read_body_json(res).await;
-    let invite_id = body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_string();
+    let invite_id = body["data"]["data"][0]["id"].as_str().expect("invite id in list").to_owned();
 
     // DELETE it.
     let req = test::TestRequest::delete()
@@ -114,8 +109,12 @@ async fn cancel_invite_removes_row_and_audits() {
     assert_eq!(res.status().as_u16(), 200, "cancel should succeed");
 
     // Row is gone.
-    let remaining =
-        stack.state.invites.list_pending_for_family(family_id).await.expect("list pending");
+    let remaining = stack
+        .state
+        .invites
+        .list_pending_for_family(family_id, stack.clock.now())
+        .await
+        .expect("list pending");
     assert!(remaining.is_empty(), "no pending invites after cancel");
 
     // Audit row written with (cancel, invite).

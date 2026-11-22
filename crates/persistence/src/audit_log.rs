@@ -47,7 +47,7 @@ impl AuditLogRepo for PgAuditLogRepo {
             r#"INSERT INTO audit_log (family_id, actor_user_id, action, entity_kind, entity_id, metadata)
                VALUES ($1, $2, $3, $4, $5, $6)"#,
             entry.family_id.into_uuid(),
-            entry.actor_user_id.map(my_fam_tree_domain::UserId::into_uuid),
+            entry.actor_user_id.map(UserId::into_uuid),
             entry.action,
             entry.entity_kind,
             entry.entity_id,
@@ -59,7 +59,7 @@ impl AuditLogRepo for PgAuditLogRepo {
         Ok(())
     }
 
-    #[allow(
+    #[expect(
         clippy::too_many_lines,
         reason = "single dynamic-filter query — splitting would obscure the SQL"
     )]
@@ -72,7 +72,7 @@ impl AuditLogRepo for PgAuditLogRepo {
             50 | 100 | 200 | 500 => filter.page_size,
             _ => 50,
         };
-        let offset: i64 = i64::from(page.saturating_sub(1)) * i64::from(page_size);
+        let offset: i64 = i64::from(page.saturating_sub(1)).saturating_mul(i64::from(page_size));
         let limit: i64 = i64::from(page_size);
 
         // Dynamic `sqlx::query` (not `query!`) so the optional filter

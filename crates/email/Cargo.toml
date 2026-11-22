@@ -9,9 +9,7 @@ publish = false
 askama.workspace = true
 async-trait.workspace = true
 lettre.workspace = true
-serde.workspace = true
 thiserror.workspace = true
-tracing.workspace = true
 tokio.workspace = true
 url.workspace = true
 

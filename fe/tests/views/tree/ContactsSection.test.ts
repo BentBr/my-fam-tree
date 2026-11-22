@@ -32,7 +32,7 @@ vi.mock('@/stores/auth', () => ({
 }))
 
 vi.mock('@/api/hooks/contacts', () => ({
-    useContacts: () => ({ data: contactsData, isLoading: ref(false), error: ref(null) }),
+    useContacts: () => ({ data: contactsData, isLoading: ref(false), error: ref<Error | null>(null) }),
     useCreateContact: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
     useUpdateContact: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),
     useDeleteContact: () => ({ mutateAsync: vi.fn(), isPending: ref(false) }),

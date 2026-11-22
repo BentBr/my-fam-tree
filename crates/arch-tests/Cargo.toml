@@ -1,0 +1,16 @@
+[package]
+name = "my-fam-tree-arch-tests"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Repository rules (crate boundaries, package refs, CI hygiene) enforced as tests"
+
+[dependencies]
+cargo_metadata.workspace = true
+yaml-rust2.workspace = true
+proc-macro2 = { workspace = true, features = ["span-locations"] }
+syn.workspace = true
+
+[lints]
+workspace = true

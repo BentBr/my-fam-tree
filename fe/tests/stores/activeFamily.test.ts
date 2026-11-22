@@ -2,29 +2,16 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ClaimsPayload } from '@/api/types'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
 import type { FamilyId } from '@/types/brand'
+import { memoryStorage } from '../helpers/memory-storage'
 
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 vi.mock('@/router', () => ({ router: { replace: vi.fn() } }))
 
 function mockStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-        key: (i: number) => Object.keys(store)[i] ?? null,
-        get length() {
-            return Object.keys(store).length
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 function applyTwoFamilies(): void {
@@ -37,7 +24,7 @@ function applyTwoFamilies(): void {
             { id: 'f-1', name: 'F1', role: 'owner' },
             { id: 'f-2', name: 'F2', role: 'user' },
         ],
-    } as ClaimsPayload)
+    })
 }
 
 describe('activeFamily store', () => {
@@ -79,7 +66,9 @@ describe('activeFamily store', () => {
     it('setActive throws when family is unknown', () => {
         applyTwoFamilies()
         const family = useActiveFamilyStore()
-        expect(() => family.setActive('not-a-member' as FamilyId)).toThrow(/not a member/)
+        expect(() => {
+            family.setActive('not-a-member' as FamilyId)
+        }).toThrow(/not a member/)
     })
 
     it('activeFamily / activeRole resolve through auth.families', () => {
@@ -97,7 +86,7 @@ describe('activeFamily store', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as ClaimsPayload)
+        })
         localStorage.setItem('my-fam-tree:activeFamily', 'stale')
         const family = useActiveFamilyStore()
         expect(family.activeFamily).toBeNull()
@@ -115,7 +104,7 @@ describe('activeFamily store', () => {
             email: 'a@b',
             locale: 'en',
             families: [],
-        } as ClaimsPayload)
+        })
         family.pickFirstAvailable()
         expect(family.activeFamilyId).toBeNull()
     })

@@ -2,9 +2,10 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('anonymous invite click signs the recipient in and joins the family in one step', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     // Owner creates a family + an invite.
     const { context: ownerCtx, page: owner } = await signedInContext(browser, `invite-owner-${stamp}@example.com`)
@@ -22,7 +23,6 @@ test('anonymous invite click signs the recipient in and joins the family in one 
     const inviteLinkMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteLinkMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteLinkMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link match was empty')
 
     // Recipient — brand new browser context, never logged in.
     const recipientCtx = await browser.newContext()

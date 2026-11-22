@@ -4,7 +4,10 @@
 //! `redis`). Silently returns when unset so the test is a no-op locally
 //! without infrastructure.
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "integration test opts in via REDIS_URL from the test environment; there is no app config to read it through"
+)]
 
 use std::time::Duration;
 

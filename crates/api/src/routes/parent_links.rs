@@ -7,6 +7,15 @@
 //!   The plan defers a SERIALIZABLE-tx hardening to Phase 5.
 //! - `DELETE /parent-links/{child}/{parent}` — remove the edge.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, delete, post, web};
 use my_fam_tree_domain::{ParentKind, ParentLinkRepoError, PersonId, Role, would_create_cycle};
 use serde::Deserialize;
@@ -65,8 +74,6 @@ fn parse_kind(raw: &str) -> Option<ParentKind> {
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/parent-links")]
 pub async fn create(
     state: web::Data<AppState>,
@@ -177,8 +184,6 @@ pub async fn create(
     security(("cookie_access" = [])),
     tag = "relationships",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/parent-links/{child}/{parent}")]
 pub async fn delete(
     state: web::Data<AppState>,

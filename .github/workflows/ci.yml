@@ -36,6 +36,7 @@ jobs:
     # ============================================================================
     changes:
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         outputs:
             backend: ${{ steps.filter.outputs.backend || steps.default.outputs.backend }}
             frontend: ${{ steps.filter.outputs.frontend || steps.default.outputs.frontend }}
@@ -69,6 +70,16 @@ jobs:
                           - '.sqlx/**'
                           - 'deny.toml'
                           - 'rust-toolchain.toml'
+                          - 'clippy.toml'
+                          # Read by crates/arch-tests (package refs, docs
+                          # coverage, skill paths). Any file a check reads
+                          # must be in the filter of the job that runs it.
+                          - '.githooks/**'
+                          - '.rusty_dev_tool/**'
+                          - '.claude/skills/**'
+                          - '.claude/agents/**'
+                          - 'README.md'
+                          - 'CLAUDE.md'
                       frontend:
                           - *infra
                           - 'fe/**'
@@ -96,6 +107,7 @@ jobs:
     commit-lint:
         if: ${{ github.event_name == 'pull_request' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - uses: actions/checkout@v7
               with:
@@ -137,6 +149,7 @@ jobs:
     branch-name:
         if: ${{ github.event_name == 'pull_request' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - name: Validate branch name
               env:
@@ -161,9 +174,22 @@ jobs:
     # ============================================================================
     file-size:
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             - uses: actions/checkout@v7
             - run: ./scripts/check-file-size.sh
+
+    # Repo rules (crates/arch-tests). Unfiltered: they read files from every
+    # area (skills, fe/openapi.json, workflows, README), so a frontend-only or
+    # docs-only change must run them too. No services needed.
+    arch-tests:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+            - uses: dtolnay/rust-toolchain@nightly
+            - uses: Swatinem/rust-cache@v2
+            - run: cargo test -p my-fam-tree-arch-tests
 
     # ============================================================================
     # Backend prepare - warm cargo caches + cargo-bin tools once. Downstream
@@ -173,6 +199,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -206,6 +233,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -218,6 +246,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -229,6 +258,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -246,11 +276,20 @@ jobs:
                       cargo install cargo-deny --locked
                   fi
             - run: cargo deny check
+            - name: Install cargo-machete
+              run: |
+                  if ! command -v cargo-machete >/dev/null 2>&1; then
+                      # Pinned: 0.10.x needs Path::is_empty, unstable on our pinned nightly.
+                      cargo install cargo-machete --version 0.9.2 --locked
+                  fi
+            - name: Unused dependencies
+              run: cargo machete
 
     backend-tests:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         services:
             postgres:
                 image: postgres:18-alpine
@@ -349,6 +388,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
@@ -359,6 +399,7 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         services:
             postgres:
                 image: postgres:18-alpine
@@ -527,14 +568,13 @@ jobs:
         needs: [changes, backend-prepare]
         if: ${{ needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: dtolnay/rust-toolchain@nightly
             - uses: Swatinem/rust-cache@v2
-            - name: Dump live OpenAPI
-              run: cargo run -p my-fam-tree-openapi --bin openapi-dump > /tmp/openapi.json
-            - name: Diff against committed fe/openapi.json
-              run: diff -u fe/openapi.json /tmp/openapi.json
+            - name: Diff live OpenAPI against committed fe/openapi.json
+              run: ./scripts/openapi.sh check
 
     # ============================================================================
     # Frontend prepare - install deps once into the repo-local pnpm store.
@@ -545,6 +585,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 30
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -567,6 +608,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -582,6 +624,7 @@ jobs:
                   restore-keys: ${{ runner.os }}-pnpm-store-
             - run: cd fe && pnpm install --frozen-lockfile
             - run: cd fe && pnpm openapi-codegen
+            - run: cd fe && pnpm format:check
             - run: cd fe && pnpm lint
             - run: cd fe && pnpm knip
 
@@ -589,6 +632,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 20
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -610,6 +654,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -632,6 +677,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -653,6 +699,7 @@ jobs:
         needs: [changes, frontend-prepare]
         if: ${{ needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: pnpm/action-setup@v6
@@ -734,6 +781,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 45
         services:
             postgres:
                 image: postgres:18-alpine
@@ -990,6 +1038,7 @@ jobs:
         needs: changes
         if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' }}
         runs-on: ubuntu-latest
+        timeout-minutes: 40
         steps:
             - uses: actions/checkout@v7
             - uses: docker/setup-buildx-action@v4
@@ -1035,6 +1084,7 @@ jobs:
             - branch-name
             - commit-lint
             - file-size
+            - arch-tests
             - backend-clippy
             - backend-format
             - backend-audit
@@ -1051,6 +1101,7 @@ jobs:
             - docker-build
         if: ${{ always() }}
         runs-on: ubuntu-latest
+        timeout-minutes: 5
         steps:
             # Strict: every upstream job that was *required to run* must report
             # `success`. `skipped` is treated as failure when the change filter
@@ -1065,6 +1116,7 @@ jobs:
                   BRANCH_NAME_RESULT: ${{ needs.branch-name.result }}
                   COMMIT_LINT_RESULT: ${{ needs.commit-lint.result }}
                   FILE_SIZE_RESULT: ${{ needs.file-size.result }}
+                  ARCH_TESTS_RESULT: ${{ needs.arch-tests.result }}
                   BACKEND_NEEDED: ${{ needs.changes.outputs.backend }}
                   FRONTEND_NEEDED: ${{ needs.changes.outputs.frontend }}
                   BACKEND_CLIPPY: ${{ needs.backend-clippy.result }}
@@ -1095,6 +1147,7 @@ jobs:
                       fi
                   }
                   require_success file-size "$FILE_SIZE_RESULT"
+                  require_success arch-tests "$ARCH_TESTS_RESULT"
                   # PR-only gates
                   if [[ "$EVENT_NAME" == "pull_request" ]]; then
                       require_success branch-name "$BRANCH_NAME_RESULT"

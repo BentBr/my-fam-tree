@@ -1,6 +1,8 @@
 ---
 name: crate-config
 description: Use when reading or changing how my-fam-tree loads runtime configuration — the centralised my-fam-tree-config crate that backs ApiConfig and WorkerConfig. Triggers — adding a new env var; renaming/removing one; tweaking validation (JWT kid, production cookie flags, storage driver); wiring a new field into AppState or WorkerState; debugging "missing/invalid env var" errors. Keywords — figment, Env::raw, ApiConfig, WorkerConfig, FlatApiConfig, FlatWorkerConfig, load_flat, ConfigError, AppEnv, LogFormat, StorageDriver, from_env, validate.
+paths:
+  - "crates/config/**"
 ---
 
 # crate-config — single source of truth for env-derived config
@@ -94,7 +96,7 @@ If you add a new top-level config (e.g. a future `JobsConfig`), copy this exact 
   goes through `Config`. The single exception is dotenvy in the binary entry-points —
   load `.env` BEFORE `Config::from_env()`.
 - **Test injection.** Integration tests build a `Config` literal (see
-  `crates/api/tests/common/mod.rs::test_cfg()`) — no env round-trip. Use the same
+  `ephemeral_stack()` in `crates/api/tests/common/mod.rs`) — no env round-trip. Use the same
   shape; if a sub-config changes, update the helper.
 - **`figment::Jail` in unit tests.** Inside `crates/config/src/api.rs` the unit tests
   scope env mutations through `figment::Jail::expect_with` (behind the

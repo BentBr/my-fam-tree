@@ -5,13 +5,10 @@
 //! deterministic. CI runs these; they no-op-skip nowhere — they need Docker,
 //! so they only run where a Docker socket is available (CI's backend-tests).
 
-#![allow(
+#![expect(
     clippy::unwrap_used,
     clippy::expect_used,
-    clippy::panic,
-    clippy::future_not_send,
-    clippy::indexing_slicing,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded"
+    reason = "test code: setup failures abort the test; setup failures abort the test with context"
 )]
 
 use std::collections::VecDeque;
@@ -20,6 +17,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
+use my_fam_tree_domain::clock::{Clock, FixedClock};
 use my_fam_tree_domain::{
     DigestStatus, FamilyMembershipRepo, FamilyRepo, Locale, PersonDraft, PersonRepo,
     ReminderPreferences, ReminderPreferencesRepo, Role, UserId, UserRepo,
@@ -30,7 +28,6 @@ use my_fam_tree_persistence::{
     PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo,
     PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::{Clock, FixedClock};
 use my_fam_tree_worker::state::WorkerState;
 use my_fam_tree_worker::{dispatcher, ticker};
 use testcontainers::ContainerAsync;
@@ -194,9 +191,9 @@ async fn schedules_then_sends_digest_and_is_idempotent() {
     let fixed = berlin_0600_june_8();
     let state = build_state(
         &db,
-        Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email.clone() as Arc<dyn EmailSender>,
+        Arc::new(fixed),
+        Arc::<FakeQueue>::clone(&queue),
+        Arc::<FakeEmailSender>::clone(&email),
     );
 
     // First tick schedules + enqueues exactly one digest.
@@ -230,12 +227,8 @@ async fn retries_on_smtp_failure() {
 
     let queue = Arc::new(FakeQueue::default());
     let fixed = berlin_0600_june_8();
-    let state = build_state(
-        &db,
-        Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        Arc::new(FailingEmail) as Arc<dyn EmailSender>,
-    );
+    let state =
+        build_state(&db, Arc::new(fixed), Arc::<FakeQueue>::clone(&queue), Arc::new(FailingEmail));
 
     ticker::run_tick(&state).await.unwrap();
     let job = ReminderJobQueue::try_pop(&*queue).await.unwrap().expect("a queued job");
@@ -257,12 +250,7 @@ async fn no_digest_outside_the_0600_hour() {
     let email = Arc::new(FakeEmailSender::new());
     // 10:00 Europe/Berlin (08:00 UTC) — outside the firing window.
     let fixed = FixedClock::new(time::macros::datetime!(2026-06-08 08:00:00 UTC));
-    let state = build_state(
-        &db,
-        Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email as Arc<dyn EmailSender>,
-    );
+    let state = build_state(&db, Arc::new(fixed), Arc::<FakeQueue>::clone(&queue), email);
 
     assert_eq!(ticker::run_tick(&state).await.unwrap(), 0, "no scheduling outside 06:00");
     assert_eq!(queue.len(), 0);
@@ -278,12 +266,7 @@ async fn disabled_user_is_never_scheduled() {
     let queue = Arc::new(FakeQueue::default());
     let email = Arc::new(FakeEmailSender::new());
     let fixed = berlin_0600_june_8();
-    let state = build_state(
-        &db,
-        Arc::new(fixed) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email as Arc<dyn EmailSender>,
-    );
+    let state = build_state(&db, Arc::new(fixed), Arc::<FakeQueue>::clone(&queue), email);
 
     assert_eq!(ticker::run_tick(&state).await.unwrap(), 0, "emails-disabled user is skipped");
     assert_eq!(queue.len(), 0);
@@ -308,9 +291,9 @@ async fn user_in_another_timezone_fires_at_their_local_0600() {
     let fixed = berlin_0600_june_8();
     let state = build_state(
         &db,
-        Arc::new(fixed.clone()) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        email.clone() as Arc<dyn EmailSender>,
+        Arc::new(fixed.clone()),
+        Arc::<FakeQueue>::clone(&queue),
+        Arc::<FakeEmailSender>::clone(&email),
     );
 
     // 06:00 Berlin is 00:00 in New York — not their hour.
@@ -339,9 +322,9 @@ async fn unknown_timezone_falls_back_to_berlin() {
     let queue = Arc::new(FakeQueue::default());
     let state = build_state(
         &db,
-        Arc::new(berlin_0600_june_8()) as Arc<dyn Clock>,
-        queue.clone() as Arc<dyn ReminderJobQueue>,
-        Arc::new(FakeEmailSender::new()) as Arc<dyn EmailSender>,
+        Arc::new(berlin_0600_june_8()),
+        Arc::<FakeQueue>::clone(&queue),
+        Arc::new(FakeEmailSender::new()),
     );
 
     assert_eq!(ticker::run_tick(&state).await.unwrap(), 1, "invalid zone → Berlin 06:00");

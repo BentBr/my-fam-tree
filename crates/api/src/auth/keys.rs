@@ -82,7 +82,7 @@ impl JwtKeyset {
             return Err(anyhow!("JWT_PRIVATE_KEY_ID {active_kid} not present in JWT_PUBLIC_KEYS"));
         }
         Ok(Self {
-            active_kid: active_kid.to_string(),
+            active_kid: active_kid.to_owned(),
             signing_pem,
             signing,
             verifying_pem,
@@ -92,7 +92,6 @@ impl JwtKeyset {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 mod tests {
     use super::*;
     use crate::auth::jwt::JwtIssuer;
@@ -121,7 +120,13 @@ mod tests {
     #[test]
     fn fixed_key_pair_signs_and_verifies_jwt() {
         let keys = JwtKeyset::load(PRIVATE_PEM, "k1", &public_json("k1")).unwrap();
-        let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900);
+        let issuer = JwtIssuer::new(
+            keys,
+            "iss".into(),
+            "aud".into(),
+            900,
+            std::sync::Arc::new(my_fam_tree_domain::clock::SystemClock),
+        );
         let token = issuer.issue(uuid::Uuid::new_v4(), "a@b.c", "en", vec![]).unwrap();
         assert_eq!(issuer.verify(&token).unwrap().email, "a@b.c");
     }

@@ -1,6 +1,8 @@
 ---
 name: crate-storage
 description: Use when working with object storage in my-fam-tree — the my-fam-tree-storage crate that abstracts MinIO/S3 (prod) and a filesystem fallback (test/dev). Triggers — adding a new upload/download endpoint, wiring the store into AppState/WorkerState, deciding on storage key conventions, sanitising user-supplied keys, switching driver between S3 and Local. Keywords — ObjectStore trait, S3ObjectStore, LocalObjectStore, StorageError, S3Config, StorageConfig, StorageDriver, presigned_get, put, get, delete, AWS SDK, aws-sdk-s3, MinIO, path traversal, image upload, person photo, user avatar.
+paths:
+  - "crates/storage/**"
 ---
 
 # crate-storage — S3-compatible object store

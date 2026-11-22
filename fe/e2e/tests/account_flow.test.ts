@@ -2,13 +2,14 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test.describe('FE account flow', () => {
     test('user can update display name and locale', async ({ page }) => {
         // Unique per run: previous runs flipped this user's locale to German,
         // which makes the v-select option titles render as "Deutsch" — the
         // `getByRole('option', { name: 'German' })` lookup then misses.
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `profile-${stamp}@example.com`)
         await createFamily(page, `Profile-Test-${stamp}`)
 
@@ -60,7 +61,7 @@ test.describe('FE account flow', () => {
         // renamed the user away, and `change-new@…` now exists with
         // `email.taken`). A timestamp suffix sidesteps the need to truncate
         // postgres between runs.
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         const fromEmail = `change-${stamp}@example.com`
         const toEmail = `change-new-${stamp}@example.com`
 
@@ -89,9 +90,6 @@ test.describe('FE account flow', () => {
             throw new Error('email-change link not in body')
         }
         const link = linkMatch[0]
-        if (link === undefined) {
-            throw new Error('email-change link match was empty')
-        }
 
         await page.goto(rewriteEmailLink(link))
         // EmailChangeConsumeView routes back to /account after the confirm

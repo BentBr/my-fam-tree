@@ -16,18 +16,10 @@ import { useLocalizedPath } from '@/composables/useLocalizedPath'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
+import { memoryStorage } from '../helpers/memory-storage'
 
 function stubStorage(): void {
-    const store: Record<string, string> = {}
-    vi.stubGlobal('localStorage', {
-        getItem: (k: string) => store[k] ?? null,
-        setItem: (k: string, v: string) => {
-            store[k] = v
-        },
-        removeItem: (k: string) => {
-            delete store[k]
-        },
-    })
+    vi.stubGlobal('localStorage', memoryStorage())
 }
 
 function makeRouter(start = '/en'): Router {
@@ -96,7 +88,7 @@ describe('useLocaleSwitch', () => {
         pick('de')
         expect(patchSpy).not.toHaveBeenCalled()
 
-        useAuthStore().applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'de', families: [] } as never)
+        useAuthStore().applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'de', families: [] })
         pick('en')
         expect(patchSpy).toHaveBeenCalledWith({ locale: 'en' })
     })

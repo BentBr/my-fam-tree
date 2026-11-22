@@ -5,13 +5,10 @@
 //! profile reads, partial updates, and the two-step old-mail-confirms
 //! email-change handshake (request → magic link → confirm).
 
-#![allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
+#![expect(
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same
+    reason = "test code: test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -202,7 +199,7 @@ async fn user_email_change_rejects_taken_email() {
     let app = test::init_service(build_app(stack.state.clone(), None)).await;
 
     // Pre-create the "taken" account.
-    let _ = sign_in(&stack, &app, "taken@example.com").await;
+    drop(sign_in(&stack, &app, "taken@example.com").await);
     stack.fake_email.drain();
 
     let (access, _refresh) = sign_in(&stack, &app, "hopeful@example.com").await;

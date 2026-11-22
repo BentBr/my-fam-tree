@@ -95,8 +95,8 @@ const workerText = computed(() => (workerOk.value ? t('health.workerAlive') : t(
                     </v-chip>
                 </div>
                 <v-list density="compact">
-                    <v-list-item :prepend-icon="'tag'" :title="t('health.version', { version })" />
-                    <v-list-item :prepend-icon="'fingerprint'" :title="t('health.requestId', { id: requestId })" />
+                    <v-list-item prepend-icon="tag" :title="t('health.version', { version })" />
+                    <v-list-item prepend-icon="fingerprint" :title="t('health.requestId', { id: requestId })" />
                 </v-list>
             </div>
         </v-card-text>

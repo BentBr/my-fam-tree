@@ -34,6 +34,7 @@ vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 
 import { i18n } from '@/i18n'
 import TreeView from '@/views/tree/TreeView.vue'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 function makeRouter(): Router {
     return createRouter({
@@ -90,16 +91,7 @@ describe('TreeView', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
         vi.stubGlobal('navigator', { language: 'en-US' })
-        const store: Record<string, string> = {}
-        vi.stubGlobal('localStorage', {
-            getItem: (k: string) => store[k] ?? null,
-            setItem: (k: string, v: string) => {
-                store[k] = v
-            },
-            removeItem: (k: string) => {
-                delete store[k]
-            },
-        })
+        vi.stubGlobal('localStorage', memoryStorage())
         treeData.value = undefined
         treeIsLoading.value = false
         treeError.value = null

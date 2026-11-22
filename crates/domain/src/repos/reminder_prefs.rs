@@ -15,7 +15,7 @@ pub struct DueDigestUser {
 
 /// A user's reminder settings. `lead_days` is clamped 0..=21 at the API
 /// boundary and by a DB CHECK; 0 means "on the day".
-#[allow(
+#[expect(
     clippy::struct_excessive_bools,
     reason = "independent user-facing toggles mirroring the reminder_preferences columns, not a state machine"
 )]

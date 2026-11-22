@@ -1,9 +1,18 @@
 //! `POST /auth/consume` and `POST /auth/refresh` — token exchange +
 //! refresh-cookie rotation.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, post, web};
 use my_fam_tree_domain::MagicLinkRepoError;
-use time::{Duration, OffsetDateTime};
+use time::Duration;
 
 use super::{ConsumeReq, ConsumeResponseBody, build_consume_response, rate_limit_ip, seconds_i64};
 use crate::auth::{generate_opaque_token, hash_token};
@@ -25,8 +34,6 @@ use crate::{ApiError, ApiResponse, AppState};
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/consume")]
 pub async fn consume(
     state: web::Data<AppState>,
@@ -44,12 +51,13 @@ pub async fn consume(
     }
 
     let hash = hash_token(token);
-    let record = state.magic_links.consume(&hash).await.map_err(|e| match e {
-        MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
-            ApiError::MagicLinkInvalid
-        }
-        MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
-    })?;
+    let record =
+        state.magic_links.consume(&hash, state.clock.now()).await.map_err(|e| match e {
+            MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
+                ApiError::MagicLinkInvalid
+            }
+            MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
+        })?;
 
     let user_id = record.user_id.ok_or(ApiError::MagicLinkInvalid)?;
     let user = state
@@ -75,6 +83,7 @@ pub async fn consume(
         &state.refresh_tokens,
         &state.cfg.jwt,
         &user,
+        state.clock.now(),
     )
     .await
     .map_err(ApiError::Internal)?;
@@ -82,7 +91,7 @@ pub async fn consume(
     let response = build_consume_response(
         user.id.into_uuid(),
         user.email.clone(),
-        user.locale.as_str().to_string(),
+        user.locale.as_str().to_owned(),
         families,
     );
 
@@ -105,8 +114,6 @@ pub async fn consume(
     ),
     tag = "auth",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/auth/refresh")]
 pub async fn refresh(
     state: web::Data<AppState>,
@@ -136,7 +143,11 @@ pub async fn refresh(
             .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?
             && rec.revoked_at.is_some()
         {
-            let _ = state.refresh_tokens.revoke_all_for_user(rec.user_id).await;
+            if let Err(e) =
+                state.refresh_tokens.revoke_all_for_user(rec.user_id, state.clock.now()).await
+            {
+                tracing::warn!(error = %e, "refresh reuse: revoking all user sessions failed");
+            }
             tracing::warn!(
                 user_id = %rec.user_id.into_uuid(),
                 "refresh token reuse detected; revoked all sessions for user"
@@ -145,7 +156,7 @@ pub async fn refresh(
         return Err(ApiError::RefreshInvalid);
     };
 
-    let now = OffsetDateTime::now_utc();
+    let now = state.clock.now();
     if record.expires_at < now || record.absolute_expires_at < now {
         return Err(ApiError::RefreshInvalid);
     }
@@ -165,10 +176,11 @@ pub async fn refresh(
         .rotate(
             &old_hash,
             &new_hash,
-            now + Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds)),
+            now.saturating_add(Duration::seconds(seconds_i64(state.cfg.jwt.refresh_ttl_seconds))),
             record.device_label.as_deref(),
             None,
             None,
+            now,
         )
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;
@@ -179,7 +191,7 @@ pub async fn refresh(
     let response = build_consume_response(
         user.id.into_uuid(),
         user.email.clone(),
-        user.locale.as_str().to_string(),
+        user.locale.as_str().to_owned(),
         families,
     );
 

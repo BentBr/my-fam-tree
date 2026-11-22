@@ -15,6 +15,15 @@
 //! place; `families.rs` only owns the `POST` half because the existing
 //! `families::invite` handler ships from there.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, HttpResponse, delete, get, post, web};
 use my_fam_tree_domain::{FamilyId, InviteRepoError, Locale, PersonId, Role, UserId};
 use serde::{Deserialize, Serialize};
@@ -106,8 +115,6 @@ fn internal<E: std::fmt::Display>(e: E) -> ApiError {
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/invites/accept")]
 pub async fn accept(
     state: web::Data<AppState>,
@@ -127,13 +134,13 @@ pub async fn accept(
     // scope: actix's empty-path sibling-scope resolution stops at the
     // first scope and would 404 anonymous callers if the middleware were
     // applied.
-    let existing_claims_email_and_id: Option<(String, my_fam_tree_domain::UserId)> = req
+    let existing_claims_email_and_id: Option<(String, UserId)> = req
         .cookie(ACCESS_COOKIE)
         .and_then(|c| state.jwt_issuer.verify(c.value()).ok())
-        .map(|jwt| (jwt.email.clone(), my_fam_tree_domain::UserId::from_uuid(jwt.sub)));
+        .map(|jwt| (jwt.email.clone(), UserId::from_uuid(jwt.sub)));
 
     let hash = hash_token(body.token.trim());
-    let now = OffsetDateTime::now_utc();
+    let now = state.clock.now();
 
     // SECURITY: validate the acting user BEFORE the single-use token is
     // burned. We FIRST do a non-mutating `find_pending` lookup, resolve /
@@ -243,6 +250,7 @@ pub async fn accept(
         &state.refresh_tokens,
         &state.cfg.jwt,
         &user,
+        state.clock.now(),
     )
     .await
     .map_err(ApiError::Internal)?;
@@ -253,7 +261,7 @@ pub async fn accept(
         claims: super::auth::ConsumeRes {
             user_id: user.id.into_uuid(),
             email: user.email.clone(),
-            locale: user.locale.as_str().to_string(),
+            locale: user.locale.as_str().to_owned(),
             families: fams,
         },
     };
@@ -283,8 +291,6 @@ pub async fn accept(
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/families/{id}/invites")]
 pub async fn list_invites(
     state: web::Data<AppState>,
@@ -298,7 +304,7 @@ pub async fn list_invites(
 
     let invites = state
         .invites
-        .list_pending_for_family(FamilyId::from_uuid(family_id))
+        .list_pending_for_family(FamilyId::from_uuid(family_id), state.clock.now())
         .await
         .map_err(internal)?;
     let data = invites
@@ -336,8 +342,6 @@ pub async fn list_invites(
     security(("cookie_access" = [])),
     tag = "invites",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[delete("/families/{id}/invites/{invite_id}")]
 pub async fn cancel_invite(
     state: web::Data<AppState>,
@@ -372,7 +376,6 @@ pub async fn cancel_invite(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

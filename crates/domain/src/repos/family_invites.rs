@@ -28,7 +28,10 @@ pub enum InviteRepoError {
 
 #[async_trait]
 pub trait FamilyInviteRepo: Send + Sync {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "an invite row is created with its full audit context in one call"
+    )]
     async fn create(
         &self,
         family_id: FamilyId,
@@ -65,6 +68,7 @@ pub trait FamilyInviteRepo: Send + Sync {
     async fn list_pending_for_family(
         &self,
         family_id: FamilyId,
+        now: OffsetDateTime,
     ) -> Result<Vec<Invite>, InviteRepoError>;
 
     /// Lookup a pending (not-accepted, not-expired) invite by email within
@@ -74,6 +78,7 @@ pub trait FamilyInviteRepo: Send + Sync {
         &self,
         family_id: FamilyId,
         email: &str,
+        now: OffsetDateTime,
     ) -> Result<Option<Invite>, InviteRepoError>;
 
     async fn cancel(&self, id: Uuid, family_id: FamilyId) -> Result<(), InviteRepoError>;

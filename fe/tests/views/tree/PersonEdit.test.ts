@@ -155,7 +155,7 @@ describe('PersonEdit', () => {
             mode: 'edit',
             initial: { id: 'p-1', given_name: 'Urahn', birth_date: '1870-12-03', death_date: '1931-04-17' },
         })
-        expect(MIN_DATE < '1650-01-01').toBe(true)
+        expect(Number(MIN_DATE.slice(0, 4))).toBeLessThan(1650)
         for (const id of ['person-birth-date', 'person-death-date']) {
             const input = w.get<HTMLInputElement>(`[data-testid="${id}"]`)
             expect(input.attributes('type')).toBe('date')

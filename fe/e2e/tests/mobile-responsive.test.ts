@@ -1,5 +1,6 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // Phase 5 Task 20 — mobile responsiveness smoketest.
 //
@@ -21,7 +22,7 @@ test.describe('mobile responsiveness', () => {
     }) => {
         await page.setViewportSize(MOBILE)
 
-        const stamp = Date.now()
+        const stamp = uniqueStamp()
         await signIn(page, `mobile-${stamp}@example.com`)
         // A long family name is the worst case for the heading: "Family tree of
         // <name>" must still not push the toolbar past the viewport edge.

@@ -51,7 +51,7 @@ pub fn build_app(
         InitError = (),
     > + use<>,
 > {
-    let cfg = state.cfg.clone();
+    let cfg = std::sync::Arc::clone(&state.cfg);
     let api_enable_docs = cfg.api.enable_docs;
     let allowed: Vec<&str> = cfg.api.cors_allowed_origins.split(',').map(str::trim).collect();
     // With `supports_credentials()`, the `CORS` spec forbids wildcards.

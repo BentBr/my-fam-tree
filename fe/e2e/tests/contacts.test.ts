@@ -3,9 +3,10 @@ import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedContact, seedPerson } from '../page-objects/seed'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('contact role + visibility gates', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // ----- Owner context: signs in, creates family, sets up two persons. -----
     const ownerEmail = `owner-contacts-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
@@ -47,7 +48,6 @@ test('contact role + visibility gates', async ({ browser }) => {
     const inviteMatch = inviteMail.text.match(/https?:\/\/\S+\/invite\/accept\?token=\S+/)
     if (inviteMatch === null) throw new Error('invite link not in email')
     const inviteLink = inviteMatch[0]
-    if (inviteLink === undefined) throw new Error('invite link empty')
     await guest.goto(rewriteEmailLink(inviteLink))
     // InviteAccept redirects to /tree on the existing-user success path.
     // 15s headroom matches the rest of the consume helpers (CI runner load

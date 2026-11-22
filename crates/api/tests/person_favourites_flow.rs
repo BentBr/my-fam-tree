@@ -11,16 +11,13 @@
 //!      events whose owning person (or either partner, for wedding
 //!      anniversaries) is favourited by the caller.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
     clippy::indexing_slicing,
-    clippy::panic,
     clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing is the convention used by the existing API integration tests"
+    reason = "test code: setup failures abort the test with context; indexes into known fixture/response shapes; actix test service futures are !Send and run on the current thread; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -31,7 +28,6 @@ use common::{create_family, ephemeral_stack, extract_token_from_link, sign_in};
 use my_fam_tree_api::build_app;
 
 /// Helper: create a person under the active family and return its id.
-#[allow(clippy::future_not_send)]
 async fn create_person<S, B>(
     app: &S,
     access: &str,
@@ -53,18 +49,17 @@ where
     }
     let req = test::TestRequest::post()
         .uri("/api/v1/persons")
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(body)
         .to_request();
     let res = test::call_service(app, req).await;
     assert_eq!(res.status(), 200, "create person `{given_name}` should succeed");
     let body: serde_json::Value = test::read_body_json(res).await;
-    body["data"]["id"].as_str().expect("person id").to_string()
+    body["data"]["id"].as_str().expect("person id").to_owned()
 }
 
 /// Helper: POST `is_favourite=true|false` for the calling user.
-#[allow(clippy::future_not_send)]
 async fn set_favourite<S, B>(
     app: &S,
     access: &str,
@@ -82,8 +77,8 @@ where
 {
     let req = test::TestRequest::patch()
         .uri(&format!("/api/v1/persons/{person_id}/favourite"))
-        .cookie(Cookie::new("access", access.to_string()))
-        .insert_header(("X-Family-Id", family_id.to_string()))
+        .cookie(Cookie::new("access", access.to_owned()))
+        .insert_header(("X-Family-Id", family_id.to_owned()))
         .set_json(serde_json::json!({ "is_favourite": is_favourite }))
         .to_request();
     let res = test::call_service(app, req).await;
@@ -95,7 +90,6 @@ where
 /// user with the same email. Returns the rotated access cookie carrying the
 /// joined family membership. Mirrors the helper pattern used in
 /// `family_invite_flows.rs`.
-#[allow(clippy::future_not_send)]
 async fn invite_and_join<S, B>(
     stack: &common::TestStack,
     app: &S,
@@ -113,11 +107,11 @@ where
 {
     let req = test::TestRequest::post()
         .uri(&format!("/api/v1/families/{family_id}/invites"))
-        .cookie(Cookie::new("access", owner_access.to_string()))
+        .cookie(Cookie::new("access", owner_access.to_owned()))
         .set_json(serde_json::json!({ "email": email, "role": "admin" }))
         .to_request();
     let res = test::call_service(app, req).await;
-    assert_eq!(res.status(), 200);
+    assert_eq!(res.status(), 200, "create invite");
     let captured = stack.fake_email.drain();
     let mail = captured.last().expect("invite email captured");
     let token = extract_token_from_link(&mail.text_body);
@@ -129,13 +123,13 @@ where
         .set_json(serde_json::json!({ "token": token }))
         .to_request();
     let res = test::call_service(app, req).await;
-    assert_eq!(res.status(), 200);
+    assert_eq!(res.status(), 200, "accept invite");
     res.response()
         .cookies()
         .find(|c| c.name() == "access")
         .expect("rotated access")
         .value()
-        .to_string()
+        .to_owned()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

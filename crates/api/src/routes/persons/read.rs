@@ -1,5 +1,14 @@
 //! `GET /persons` and `GET /persons/{id}`.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, web};
 use my_fam_tree_domain::PersonId;
 use uuid::Uuid;
@@ -32,8 +41,6 @@ const PERSONS_LIST_MAX_LIMIT: u32 = 100;
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/persons")]
 pub async fn list(
     state: web::Data<AppState>,
@@ -86,8 +93,6 @@ pub async fn list(
     security(("cookie_access" = [])),
     tag = "persons",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/persons/{id}")]
 pub async fn get_one(
     state: web::Data<AppState>,

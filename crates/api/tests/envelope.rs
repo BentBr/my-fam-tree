@@ -4,8 +4,6 @@
 //! test fails — the compiler doesn't enforce exhaustiveness across separate
 //! `match` blocks so this safety net does.
 
-#![allow(clippy::unwrap_used, clippy::expect_used)]
-
 use my_fam_tree_api::ErrorCode;
 
 #[test]

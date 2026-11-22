@@ -3,17 +3,11 @@
 //! BEFORE consuming the token, and refresh-token reuse revokes every
 //! session. See `security_regressions.rs` for the audit overview.
 
-#![allow(
-    clippy::unwrap_used,
+#![expect(
     clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send,
     clippy::shadow_unrelated,
     clippy::shadow_reuse,
-    clippy::shadow_same,
-    clippy::too_many_lines,
-    reason = "test code: testcontainers + assertion helpers may panic and aren't Send-bounded; shadowing matches the existing flow tests"
+    reason = "test code: setup failures abort the test with context; test steps rebind the same response/body names"
 )]
 
 mod common;
@@ -22,6 +16,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
 
@@ -29,7 +24,7 @@ use uuid::Uuid;
 /// helper used by the invite / owner-transfer flow tests.
 fn token_from_link(body: &str) -> String {
     let after = body.split("token=").nth(1).expect("token= present");
-    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_string()
+    after.split(|c: char| c.is_whitespace() || c == '"').next().expect("token chars").to_owned()
 }
 
 // ---------------------------------------------------------------------------
@@ -80,7 +75,12 @@ async fn invite_accept_wrong_session_does_not_burn_token() {
     assert_eq!(body["code"], "validation_failed");
 
     // The invite is STILL pending after the rejected attempt.
-    let pending = stack.state.invites.list_pending_for_family(family_id).await.expect("pending");
+    let pending = stack
+        .state
+        .invites
+        .list_pending_for_family(family_id, stack.clock.now())
+        .await
+        .expect("pending");
     assert_eq!(pending.len(), 1, "invite must remain pending after wrong-session 422");
 
     // The rightful invitee can now accept it → membership inserted.
@@ -124,14 +124,14 @@ async fn owner_transfer_confirm_rejects_wrong_actor_without_burning_side() {
         create_family(&app, &owner_access, &format!("Xfer3-{stamp}")).await;
     let family_id = FamilyId::from_uuid(family_id_str.parse::<Uuid>().unwrap());
 
-    let _ = sign_in(&stack, &app, &admin_email).await;
+    drop(sign_in(&stack, &app, &admin_email).await);
     let admin_id =
         stack.state.users.find_by_email(&admin_email).await.expect("lookup").expect("admin").id;
     stack.state.memberships.insert(family_id, admin_id, Role::Admin).await.expect("admin member");
 
     // Owner begins the transfer (two emails dispatched). The access cookie
     // from `create_family` already carries the owner role.
-    let _ = stack.fake_email.drain();
+    drop(stack.fake_email.drain());
     let req = test::TestRequest::post()
         .uri(&format!("/api/v1/families/{family_id_str}/transfer-owner"))
         .cookie(Cookie::new("access", owner_access))
@@ -254,7 +254,7 @@ async fn refresh_token_reuse_revokes_all_sessions() {
         .find(|c| c.name() == "refresh")
         .expect("rotated refresh cookie")
         .value()
-        .to_string();
+        .to_owned();
     assert_ne!(refresh_new, refresh_old, "rotation must mint a new token");
 
     // Re-present the OLD (now revoked) token → reuse detected → 401.

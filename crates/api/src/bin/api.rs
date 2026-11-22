@@ -11,6 +11,7 @@ use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
 use my_fam_tree_api::{ApiDoc, AppEnv, AppState, Config, build_app, init_tracing};
 use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
 use my_fam_tree_config::storage::StorageDriver;
+use my_fam_tree_domain::clock::{Clock, SystemClock};
 use my_fam_tree_email::SmtpSender;
 use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgEmailOutboxRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo,
@@ -20,6 +21,10 @@ use my_fam_tree_persistence::{
 };
 use my_fam_tree_storage::{LocalObjectStore, ObjectStore, S3Config, S3ObjectStore};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
+)]
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {
@@ -27,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
         // errors here because tracing isn't initialized yet and the binary
         // lints forbid `eprintln!`/`println!`. Any real misconfiguration will
         // surface from `Config::load_from_env` below.
-        let _ = dotenvy::dotenv();
+        drop(dotenvy::dotenv()); // optional .env: missing or unparsable is fine
     }
 
     let cfg = Config::from_env().context("load config from environment")?;
@@ -66,11 +71,13 @@ async fn main() -> anyhow::Result<()> {
     let keyset =
         JwtKeyset::load(&cfg.jwt.private_key, &cfg.jwt.private_key_id, &cfg.jwt.public_keys)
             .context("load JWT keyset")?;
+    let clock: Arc<dyn Clock> = Arc::new(SystemClock);
     let jwt_issuer = JwtIssuer::new(
         keyset,
         cfg.jwt.issuer.clone(),
         cfg.jwt.audience.clone(),
         i64::try_from(cfg.jwt.access_ttl_seconds).unwrap_or(i64::MAX),
+        Arc::clone(&clock),
     );
 
     let object_store: Arc<dyn ObjectStore> = match cfg.storage.driver {
@@ -116,6 +123,7 @@ async fn main() -> anyhow::Result<()> {
         redis: redis.clone(),
         jwt_issuer: Arc::new(jwt_issuer),
         object_store,
+        clock,
     };
 
     let bind = format!("{}:{}", state.cfg.api.host, state.cfg.api.port);

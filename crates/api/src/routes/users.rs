@@ -19,6 +19,15 @@
 //! confirm step additionally cross-checks `record.user_id == claims.user_id`
 //! so a leaked token never lets one user steal another's email.
 
+#![expect(
+    clippy::future_not_send,
+    reason = "actix handlers hold !Send request types (HttpRequest, Multipart); actix runs each worker on a single thread"
+)]
+#![expect(
+    unreachable_pub,
+    reason = "actix route macros turn each handler into a pub service struct"
+)]
+
 use actix_web::{HttpRequest, get, patch, post, web};
 use my_fam_tree_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
 use my_fam_tree_email::{Locale as EmailLocale, render_email_change};
@@ -135,7 +144,7 @@ async fn profile_from(
         id: user.id.into_uuid(),
         email: user.email.clone(),
         display_name: user.display_name.clone(),
-        locale: user.locale.as_str().to_string(),
+        locale: user.locale.as_str().to_owned(),
         timezone: user.timezone.clone(),
         email_verified_at: user.email_verified_at,
         avatar_url,
@@ -158,8 +167,6 @@ async fn profile_from(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[get("/users/me")]
 pub async fn me(
     state: web::Data<AppState>,
@@ -192,8 +199,6 @@ pub async fn me(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[patch("/users/me")]
 pub async fn update(
     state: web::Data<AppState>,
@@ -214,7 +219,7 @@ pub async fn update(
             if u32::try_from(trimmed.chars().count()).unwrap_or(u32::MAX) > DISPLAY_NAME_MAX {
                 return Err(string_too_long("/display_name", DISPLAY_NAME_MAX));
             }
-            Some(trimmed.to_string())
+            Some(trimmed.to_owned())
         }
         None => None,
     };
@@ -260,8 +265,6 @@ pub async fn update(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/users/me/email-change")]
 pub async fn email_change_request(
     state: web::Data<AppState>,
@@ -318,8 +321,10 @@ pub async fn email_change_request(
             &new_email,
             &hash,
             MagicLinkPurpose::EmailChange,
-            OffsetDateTime::now_utc()
-                + Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds)),
+            state
+                .clock
+                .now()
+                .saturating_add(Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds))),
         )
         .await
         .map_err(internal)?;
@@ -338,7 +343,7 @@ pub async fn email_change_request(
     state
         .outbox
         .enqueue(&my_fam_tree_domain::EmailOutboxInsert {
-            kind: my_fam_tree_domain::EmailOutboxKind::EMAIL_CHANGE.to_string(),
+            kind: my_fam_tree_domain::EmailOutboxKind::EMAIL_CHANGE.to_owned(),
             to_addr: user.email.clone(),
             subject: email_msg.subject,
             text_body: email_msg.text,
@@ -370,8 +375,6 @@ pub async fn email_change_request(
     security(("cookie_access" = [])),
     tag = "users",
 )]
-#[allow(clippy::future_not_send)]
-#[allow(unreachable_pub)]
 #[post("/users/me/email-change/confirm")]
 pub async fn email_change_confirm(
     state: web::Data<AppState>,
@@ -391,12 +394,13 @@ pub async fn email_change_confirm(
     // we atomically `consume` it. Consuming first would let a wrong authed
     // user (or a leaked token) burn the victim's still-valid token — a DoS:
     // the rightful owner's link would already read as consumed.
-    let record = state.magic_links.find_consumable(&hash).await.map_err(|e| match e {
-        MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
-            ApiError::MagicLinkInvalid
-        }
-        MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
-    })?;
+    let record =
+        state.magic_links.find_consumable(&hash, state.clock.now()).await.map_err(|e| match e {
+            MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
+                ApiError::MagicLinkInvalid
+            }
+            MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
+        })?;
     if record.purpose != MagicLinkPurpose::EmailChange || record.user_id != Some(claims.user_id) {
         // Wrong purpose or not the caller's token: reject WITHOUT consuming,
         // so the rightful owner's token stays usable.
@@ -405,7 +409,7 @@ pub async fn email_change_confirm(
 
     // Owner + purpose validated — now atomically mark it consumed. The
     // `WHERE consumed_at IS NULL` guard still enforces single-use.
-    state.magic_links.consume(&hash).await.map_err(|e| match e {
+    state.magic_links.consume(&hash, state.clock.now()).await.map_err(|e| match e {
         MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
             ApiError::MagicLinkInvalid
         }
@@ -432,13 +436,6 @@ pub async fn email_change_confirm(
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::indexing_slicing,
-    clippy::panic,
-    clippy::future_not_send
-)]
 mod tests {
     use super::*;
 

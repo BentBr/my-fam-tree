@@ -14,7 +14,12 @@
 //! without a mail client. Toggle your OS appearance to see the dark variant —
 //! the templates carry an `@media (prefers-color-scheme: dark)` block.
 
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::print_stdout)]
+#![expect(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::print_stdout,
+    reason = "dev-only preview example: prints rendered templates, aborts on errors"
+)]
 
 use std::fmt::Write as _;
 use std::fs;
@@ -36,9 +41,9 @@ fn main() {
     fs::write(out.join("logo.png"), LOGO_PNG).expect("write logo");
 
     let digest_lines = vec![
-        "Anna — 40th birthday (in 7 days)".to_string(),
-        "Klaus & Maria — 10th wedding anniversary".to_string(),
-        "Otto — 75th birthday".to_string(),
+        "Anna — 40th birthday (in 7 days)".to_owned(),
+        "Klaus & Maria — 10th wedding anniversary".to_owned(),
+        "Otto — 75th birthday".to_owned(),
     ];
 
     let mut entries: Vec<(String, String)> = Vec::new();

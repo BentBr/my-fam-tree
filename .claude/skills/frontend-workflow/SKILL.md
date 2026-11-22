@@ -1,6 +1,9 @@
 ---
 name: frontend-workflow
 description: Use when working in fe/ — building or debugging Vue 3 / Vuetify components, views, Pinia stores, the openapi-fetch API client, TanStack Query hooks, i18n, or Vitest component tests; or when pnpm/lint/typecheck/codegen behave oddly. Covers the container-only tooling rule (never run pnpm/node on the host) and the strict-TS regime. Load before editing anything under fe/src.
+paths:
+  - "fe/src/**"
+  - "fe/eslint.config.js"
 ---
 
 # Frontend Workflow (Vue 3 + Vuetify + strict TS)
@@ -65,6 +68,14 @@ eslint `no-restricted-imports` rule forbids importing `@/api/schema*` outside
 committed source is `fe/openapi.json`; the full backend→frontend type contract (utoipa
 → `ApiDoc` → `openapi-dump` → `fe/openapi.json` → `openapi-typescript` → `schema.d.ts`)
 is described in `project-concepts`.
+
+**Lint regime:** `strictTypeChecked` typescript-eslint plus strict Vue rules; `prettier --check`
+(`format:check`); `no-raw-text` (every template string through i18n); folder layers —
+`components` may not import `views`; `stores`, `api`, `composables` may not import `views` or
+`components`; `utils`, `design-system`, `types` may not import `views`, `components`, `stores` or
+`api` (static and dynamic, alias and relative; enforced in `eslint.config.js`, tested in
+`tests/eslint-rules/`). The local rule `fe/eslint-rules/no-raw-color.js` forbids hex/rgb/hsl
+literals outside `src/design-system/` — add a token instead.
 
 ## i18n — translate every user-facing string
 
@@ -140,6 +151,8 @@ with Pinia + i18n + vue-query. Coverage gate: `fe/src/` ≥ 80% lines. Run with
 | eslint error importing `@/api/schema` | Import the re-export from `src/api/types.ts`, not the generated schema. |
 | Types stale after backend change | Run `rdt openapi`; don't edit `schema.d.ts` by hand. |
 | `any` / `!` rejected by lint | Narrow the type or use a guard; both are hard errors here. |
+| `local/no-raw-color` error | Move the colour into `src/design-system/tokens.ts` and import the token. |
+| `no-restricted-imports` layer error | Move the code down a layer (e.g. a helper out of `components/` into `utils/`); never import upward. |
 | Raw `client.GET(...)` in a component | Add/extend a hook in `src/api/hooks/` using `unwrap`/`useApiMutation`. |
 | Hardcoded user-facing string | Wrap in `t('...')` and add the key to `en.json` **and** `de.json`. |
 | Error caught and swallowed (no toast) | Let it propagate to `queryClient` `onError`, or push a translated error toast yourself. |

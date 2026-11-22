@@ -1,6 +1,7 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // Returns an ISO date `daysFromNow` calendar days in the future but with
 // the year set 30 years in the past, so Upcoming reads it as a 30th
@@ -12,11 +13,11 @@ function birthdayInDays(daysFromNow: number): string {
     const yyyy = target.getFullYear()
     const mm = String(target.getMonth() + 1).padStart(2, '0')
     const dd = String(target.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
+    return `${String(yyyy)}-${mm}-${dd}`
 }
 
 test('upcoming row click centers the person and opens the drawer', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `tree-deep-${stamp}@example.com`)
     await createFamily(page, `DeepLink-${stamp}`)
 
@@ -61,7 +62,7 @@ test('second upcoming click reopens the drawer (cached tree.data path)', async (
     // puts the drawer through Vuetify's "mounted already open" no-op
     // trap. The fix gates the watcher on a post-mount isMounted ref
     // so the open always happens after first paint, cached or not.
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `tree-deep-multi-${stamp}@example.com`)
     await createFamily(page, `DeepLinkMulti-${stamp}`)
 
