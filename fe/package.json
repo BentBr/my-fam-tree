@@ -11,6 +11,7 @@
         "preview": "vite preview",
         "lint": "eslint .",
         "format": "prettier --write .",
+        "format:check": "prettier --check .",
         "typecheck": "vue-tsc --noEmit",
         "openapi-codegen": "openapi-typescript ./openapi.json -o ./src/api/schema.d.ts",
         "test": "vue-tsc --noEmit && vitest run",

@@ -622,6 +622,7 @@ jobs:
                   restore-keys: ${{ runner.os }}-pnpm-store-
             - run: cd fe && pnpm install --frozen-lockfile
             - run: cd fe && pnpm openapi-codegen
+            - run: cd fe && pnpm format:check
             - run: cd fe && pnpm lint
             - run: cd fe && pnpm knip
 
