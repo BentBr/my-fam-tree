@@ -167,6 +167,16 @@
                 "f": "{degree}-degree cousin, {removed}× removed",
                 "n": "{degree}-degree cousin, {removed}× removed"
             },
+            "stepCousin": {
+                "m": "{degree}-degree step-cousin",
+                "f": "{degree}-degree step-cousin",
+                "n": "{degree}-degree step-cousin"
+            },
+            "stepCousinRemoved": {
+                "m": "{degree}-degree step-cousin, {removed}× removed",
+                "f": "{degree}-degree step-cousin, {removed}× removed",
+                "n": "{degree}-degree step-cousin, {removed}× removed"
+            },
             "parentInLaw": { "m": "father-in-law", "f": "mother-in-law", "n": "parent-in-law" },
             "childInLaw": { "m": "son-in-law", "f": "daughter-in-law", "n": "child-in-law" },
             "siblingInLaw": { "m": "brother-in-law", "f": "sister-in-law", "n": "sibling-in-law" },

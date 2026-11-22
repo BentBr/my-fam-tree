@@ -26,10 +26,16 @@ function term(t: Translate, name: string, g: GenderKey): string {
 /**
  * A prefix ending in "-" chains as-is ("great-" + "great-aunt"). A bare prefix
  * forms one compound word, so the base loses its capital ("Ur" + "Großtante").
+ * Neutral forms list alternatives with "/": each one gets the prefix
+ * ("Stiefonkel/Stieftante"), except a "-tante" style continuation of the
+ * first word ("Urgroßonkel/-tante").
  */
 function withPrefix(prefix: string, base: string): string {
-    if (prefix.endsWith('-')) return prefix + base
-    return prefix + base.charAt(0).toLowerCase() + base.slice(1)
+    const glue = (part: string): string => {
+        if (part.startsWith('-')) return part
+        return prefix.endsWith('-') ? prefix + part : prefix + part.charAt(0).toLowerCase() + part.slice(1)
+    }
+    return base.split('/').map(glue).join('/')
 }
 
 function repeated(prefix: string, times: number, base: string): string {
@@ -38,20 +44,38 @@ function repeated(prefix: string, times: number, base: string): string {
     return out
 }
 
-function bloodLabel(up: number, down: number, g: GenderKey, t: Translate): string {
+/** Both sides are two or more generations below the common ancestor. */
+function isCousin(up: number, down: number): boolean {
+    return up >= 2 && down >= 2
+}
+
+/** Numeric degree / removal names any distance without per-distance keys. */
+function cousinLabel(up: number, down: number, g: GenderKey, t: Translate, step: boolean): string {
+    const degree = Math.min(up, down) - 1
+    const removed = Math.abs(up - down)
+    const key = step ? 'stepCousin' : 'cousin'
+    if (removed === 0) return t(`${K}.${key}.${g}`, { degree })
+    return t(`${K}.${key}Removed.${g}`, { degree, removed })
+}
+
+/** Direct line, siblings, aunts / uncles and nieces / nephews — everything but cousins. */
+function closeLabel(up: number, down: number, g: GenderKey, t: Translate): string {
     const great = t(`${K}.prefix.great`, {})
     if (down === 0) return up === 1 ? term(t, 'parent', g) : repeated(great, up - 2, term(t, 'grandparent', g))
     if (up === 0) return down === 1 ? term(t, 'child', g) : repeated(great, down - 2, term(t, 'grandchild', g))
     if (up === 1 && down === 1) return term(t, 'sibling', g)
     if (down === 1) return up === 2 ? term(t, 'auntUncle', g) : repeated(great, up - 3, term(t, 'grandAuntUncle', g))
-    if (up === 1)
-        return down === 2 ? term(t, 'nieceNephew', g) : repeated(great, down - 3, term(t, 'grandNieceNephew', g))
-    // Both sides are two or more generations below the common ancestor: cousins.
-    // Numeric degree / removal names any distance without per-distance keys.
-    const degree = Math.min(up, down) - 1
-    const removed = Math.abs(up - down)
-    if (removed === 0) return t(`${K}.cousin.${g}`, { degree })
-    return t(`${K}.cousinRemoved.${g}`, { degree, removed })
+    return down === 2 ? term(t, 'nieceNephew', g) : repeated(great, down - 3, term(t, 'grandNieceNephew', g))
+}
+
+/** The relation by generations, with its step / half qualifier. */
+function relativeLabel(rel: KinshipRelation, g: GenderKey, t: Translate): string {
+    // Cousins carry the step qualifier inside their own phrase ("1-degree step-cousin").
+    if (isCousin(rel.up, rel.down)) return cousinLabel(rel.up, rel.down, g, t, rel.step)
+    const label = closeLabel(rel.up, rel.down, g, t)
+    if (rel.step) return withPrefix(t(`${K}.prefix.step`, {}), label)
+    if (rel.half) return withPrefix(t(`${K}.prefix.half`, {}), label)
+    return label
 }
 
 function partnerLabel(p: Partnership, g: GenderKey, t: Translate): string {
@@ -65,10 +89,14 @@ function partnerLabel(p: Partnership, g: GenderKey, t: Translate): string {
 }
 
 function inLawLabel(rel: KinshipRelation, g: GenderKey, t: Translate): string {
-    if (rel.up === 1 && rel.down === 0) return term(t, 'parentInLaw', g)
-    if (rel.up === 0 && rel.down === 1) return term(t, 'childInLaw', g)
-    if (rel.up === 1 && rel.down === 1) return term(t, 'siblingInLaw', g)
-    const relation = bloodLabel(rel.up, rel.down, g, t)
+    // The dedicated in-law words only fit plain relations; a step relation
+    // across a partnership keeps its step label ("partner's step-father").
+    if (!rel.step) {
+        if (rel.up === 1 && rel.down === 0) return term(t, 'parentInLaw', g)
+        if (rel.up === 0 && rel.down === 1) return term(t, 'childInLaw', g)
+        if (rel.up === 1 && rel.down === 1) return term(t, 'siblingInLaw', g)
+    }
+    const relation = relativeLabel(rel, g, t)
     // A relative OF the partner ("partner's aunt") vs. the partner of a relative ("aunt by marriage").
     if (rel.in_law === 'via_own_partner') return t(`${K}.partnersRelative`, { relation })
     return relation + t(`${K}.suffix.byMarriage`, {})
@@ -79,8 +107,5 @@ export function kinshipLabel(rel: KinshipRelation, gender: string, t: Translate)
     const partnership = rel.partnership ?? null
     if (partnership !== null) return partnerLabel(partnership, g, t)
     if ((rel.in_law ?? null) !== null) return inLawLabel(rel, g, t)
-    const label = bloodLabel(rel.up, rel.down, g, t)
-    if (rel.step) return withPrefix(t(`${K}.prefix.step`, {}), label)
-    if (rel.half) return withPrefix(t(`${K}.prefix.half`, {}), label)
-    return label
+    return relativeLabel(rel, g, t)
 }

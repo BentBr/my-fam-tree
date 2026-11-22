@@ -171,6 +171,16 @@
                 "f": "Cousine {degree}. Grades, {removed}-fach entfernt",
                 "n": "Cousin/Cousine {degree}. Grades, {removed}-fach entfernt"
             },
+            "stepCousin": {
+                "m": "Stiefcousin {degree}. Grades",
+                "f": "Stiefcousine {degree}. Grades",
+                "n": "Stiefcousin/Stiefcousine {degree}. Grades"
+            },
+            "stepCousinRemoved": {
+                "m": "Stiefcousin {degree}. Grades, {removed}-fach entfernt",
+                "f": "Stiefcousine {degree}. Grades, {removed}-fach entfernt",
+                "n": "Stiefcousin/Stiefcousine {degree}. Grades, {removed}-fach entfernt"
+            },
             "parentInLaw": { "m": "Schwiegervater", "f": "Schwiegermutter", "n": "Schwiegerelternteil" },
             "childInLaw": { "m": "Schwiegersohn", "f": "Schwiegertochter", "n": "Schwiegerkind" },
             "siblingInLaw": { "m": "Schwager", "f": "Schwägerin", "n": "Schwager/Schwägerin" },

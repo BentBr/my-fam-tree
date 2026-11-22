@@ -71,7 +71,20 @@ describe('kinshipLabel de', () => {
         [rel({ up: 3, down: 5 }), 'female', 'Cousine 2. Grades, 2-fach entfernt'],
         // A compound prefix lowercases only the first letter of the base.
         [rel({ up: 2, down: 2, step: true }), 'male', 'Stiefcousin 1. Grades'],
+        [rel({ up: 2, down: 2, step: true }), 'female', 'Stiefcousine 1. Grades'],
+        [rel({ up: 3, down: 2, step: true }), 'male', 'Stiefcousin 1. Grades, 1-fach entfernt'],
+        // Neutral forms: the prefix goes on every alternative, not only the first.
+        [rel({ up: 2, down: 1, step: true }), '', 'Stiefonkel/Stieftante'],
+        [rel({ up: 1, down: 2, step: true }), '', 'Stiefneffe/Stiefnichte'],
+        [rel({ up: 4, down: 1 }), '', 'Urgroßonkel/-tante'],
         [rel({ up: 1, down: 0, in_law: 'via_own_partner' }), 'female', 'Schwiegermutter'],
+        // A step relation across a partnership keeps its step prefix.
+        [
+            rel({ up: 1, down: 0, step: true, in_law: 'via_own_partner' }),
+            'male',
+            'Stiefvater des Partners/der Partnerin',
+        ],
+        [rel({ up: 0, down: 1, step: true, in_law: 'via_relatives_partner' }), 'female', 'Stieftochter (angeheiratet)'],
         [rel({ up: 0, down: 1, in_law: 'via_relatives_partner' }), 'male', 'Schwiegersohn'],
         [rel({ up: 1, down: 1, in_law: 'via_own_partner' }), 'male', 'Schwager'],
         [rel({ up: 1, down: 1, in_law: 'via_relatives_partner' }), 'female', 'Schwägerin'],
@@ -105,7 +118,12 @@ describe('kinshipLabel en', () => {
         [rel({ up: 2, down: 2 }), 'male', '1-degree cousin'],
         [rel({ up: 6, down: 6 }), 'male', '5-degree cousin'],
         [rel({ up: 3, down: 5 }), 'female', '2-degree cousin, 2× removed'],
+        [rel({ up: 2, down: 2, step: true }), 'male', '1-degree step-cousin'],
+        [rel({ up: 3, down: 5, step: true }), 'female', '2-degree step-cousin, 2× removed'],
+        [rel({ up: 2, down: 1, step: true }), '', 'step-aunt/step-uncle'],
+        [rel({ up: 4, down: 1 }), '', 'great-great-aunt/-uncle'],
         [rel({ up: 1, down: 0, in_law: 'via_own_partner' }), 'female', 'mother-in-law'],
+        [rel({ up: 1, down: 0, step: true, in_law: 'via_own_partner' }), 'male', "partner's step-father"],
         [rel({ up: 2, down: 1, in_law: 'via_relatives_partner' }), 'male', 'uncle (by marriage)'],
         [rel({ up: 2, down: 1, in_law: 'via_own_partner' }), 'female', "partner's aunt"],
         [rel(marriage('2020-01-01', 'divorce')), 'male', 'ex-husband'],
