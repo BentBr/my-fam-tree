@@ -1,11 +1,12 @@
-//! Every job in `.github/workflows` has a bounded `timeout-minutes`.
+//! Workflow rules: bounded `timeout-minutes` on every job, and path filters
+//! that cover the files each filtered check reads.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use my_fam_tree_arch_tests::repo;
 use my_fam_tree_arch_tests::violation::report;
-use my_fam_tree_arch_tests::workflows::{MAX_TIMEOUT_MINUTES, check_timeouts};
+use my_fam_tree_arch_tests::workflows::{MAX_TIMEOUT_MINUTES, check_timeouts, path_filter};
 
 fn workflow_files(dir: &Path) -> Vec<PathBuf> {
     let mut files: Vec<PathBuf> = fs::read_dir(dir)
@@ -46,4 +47,18 @@ fn all_workflow_jobs_have_timeouts() {
         })
         .collect();
     assert!(violations.is_empty(), "workflow timeout violations:\n{}", report(&violations));
+}
+
+/// The `OpenAPI` drift check (`backend-ts-bindings`) runs only when the backend
+/// filter matches, so the committed schema it diffs must be in that filter —
+/// otherwise a schema-only PR skips the check.
+#[test]
+fn openapi_schema_triggers_drift_check() {
+    let ci = fs::read_to_string(repo::root().join(".github/workflows/ci.yml")).unwrap_or_default();
+    let backend = path_filter(&ci, "backend");
+    assert!(backend.iter().any(|g| g == "crates/**"), "backend filter parsed: {backend:?}");
+    assert!(
+        backend.iter().any(|g| g == "fe/openapi.json"),
+        "fe/openapi.json missing from the backend filter: {backend:?}"
+    );
 }

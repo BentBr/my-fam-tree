@@ -87,6 +87,10 @@ export default defineConfigWithVueTs(
     {
         files: ['src/**/*.{ts,vue}'],
         plugins: { 'import-x': importX },
+        // import-x parses each dependency with the importing file's parserOptions. A .ts file has no
+        // `parser` there, so vue-eslint-parser would read a .vue dependency's <script lang="ts"> as plain
+        // JS, fail, skip the file and miss every cycle through it.
+        languageOptions: { parserOptions: { parser: '@typescript-eslint/parser' } },
         settings: {
             'import-x/resolver-next': [createTypeScriptImportResolver({ project: './tsconfig.json' })],
             // Without explicit parsers import-x cannot read dependency modules and silently finds no cycles.

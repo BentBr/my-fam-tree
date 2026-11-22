@@ -22,6 +22,11 @@ describe('import cycles', () => {
         expect(await ruleHits('src/api/errors.ts', code)).toEqual(['import-x/no-cycle'])
     })
 
+    it('reports a cycle that runs through a .vue file (useRouteMeta -> App.vue -> useRouteMeta)', async () => {
+        const code = "import App from '@/App.vue'\nexport { App }\n"
+        expect(await ruleHits('src/composables/useRouteMeta.ts', code)).toEqual(['import-x/no-cycle'])
+    })
+
     it('allows the stores -> api direction', async () => {
         const code = "import { client } from '@/api/client'\nexport { client }\n"
         expect(await ruleHits('src/stores/auth.ts', code)).toEqual([])
