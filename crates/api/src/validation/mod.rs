@@ -136,6 +136,17 @@ pub fn value_required(path: &str) -> ApiError {
     )])
 }
 
+/// `validation.must_differ` violation on `path`. Use when two fields that
+/// must reference distinct entities point at the same one.
+#[must_use]
+pub fn must_differ(path: &str) -> ApiError {
+    ApiError::Validation(vec![FieldViolation::new(
+        path,
+        "validation.must_differ",
+        "must reference a different person",
+    )])
+}
+
 /// `validation.role_invalid` violation on `path`. Use for "cannot invite as
 /// owner" and similar role-shape errors that aren't an `InsufficientRole`
 /// authorisation failure.
@@ -273,6 +284,18 @@ mod tests {
                 assert_eq!(v.len(), 1);
                 assert_eq!(v[0].path, "/name");
                 assert_eq!(v[0].code, "validation.value_required");
+            }
+            _ => panic!("expected Validation"),
+        }
+    }
+
+    #[test]
+    fn must_differ_uses_stable_path_and_code() {
+        match must_differ("/b") {
+            ApiError::Validation(v) => {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0].path, "/b");
+                assert_eq!(v[0].code, "validation.must_differ");
             }
             _ => panic!("expected Validation"),
         }

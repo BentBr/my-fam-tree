@@ -62,6 +62,7 @@ fn parse_kind(raw: &str) -> Option<ParentKind> {
 #[utoipa::path(
     post,
     path = "/api/v1/parent-links",
+    description = "Link a child to a parent. Rejects cycles and duplicate edges.",
     operation_id = "parent_links_create",
     request_body = ParentLinkReq,
     responses(
@@ -170,6 +171,7 @@ pub async fn create(
 #[utoipa::path(
     delete,
     path = "/api/v1/parent-links/{child}/{parent}",
+    description = "Remove one parent link.",
     operation_id = "parent_links_delete",
     params(
         ("child" = Uuid, Path, description = "Child person id"),
