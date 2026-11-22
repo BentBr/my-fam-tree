@@ -84,6 +84,41 @@ fn is_sqlx(path: &syn::Path) -> bool {
     path.segments.first().is_some_and(|s| s.ident == "sqlx")
 }
 
+/// Span of the first `sqlx` root in a use tree: `use sqlx::X`, `use sqlx`,
+/// `use sqlx as db` and any of those inside a `{…}` group.
+fn use_tree_sqlx(tree: &syn::UseTree) -> Option<proc_macro2::Span> {
+    match tree {
+        syn::UseTree::Path(p) => (p.ident == "sqlx").then(|| p.ident.span()),
+        syn::UseTree::Name(n) => (n.ident == "sqlx").then(|| n.ident.span()),
+        syn::UseTree::Rename(r) => (r.ident == "sqlx").then(|| r.ident.span()),
+        syn::UseTree::Group(g) => g.items.iter().find_map(use_tree_sqlx),
+        syn::UseTree::Glob(_) => None,
+    }
+}
+
+/// Public sqlx re-exports among `items`, descending into inline modules.
+fn collect_reexports(items: &[syn::Item], out: &mut Vec<proc_macro2::Span>) {
+    let public = |v: &syn::Visibility| matches!(v, syn::Visibility::Public(_));
+    for item in items {
+        match item {
+            syn::Item::Use(u) if public(&u.vis) && use_tree_sqlx(&u.tree).is_some() => {
+                out.push(u.span());
+            }
+            syn::Item::Type(t) if public(&t.vis) => {
+                if matches!(&*t.ty, syn::Type::Path(tp) if is_sqlx(&tp.path)) {
+                    out.push(t.span());
+                }
+            }
+            syn::Item::Mod(m) => {
+                if let Some((_, inner)) = &m.content {
+                    collect_reexports(inner, out);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 impl<'ast> Visit<'ast> for Scanner<'_> {
     fn visit_path(&mut self, path: &'ast syn::Path) {
         if is_sqlx(path) {
@@ -93,10 +128,8 @@ impl<'ast> Visit<'ast> for Scanner<'_> {
     }
 
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
-        if let syn::UseTree::Path(p) = &item.tree
-            && p.ident == "sqlx"
-        {
-            self.hit(p.ident.span(), "`use sqlx`");
+        if let Some(span) = use_tree_sqlx(&item.tree) {
+            self.hit(span, "`use sqlx`");
         }
     }
 
@@ -140,32 +173,23 @@ pub fn scan_source(path: &str, src: &str) -> Result<Vec<SqlHit>, syn::Error> {
     Ok(scanner.hits)
 }
 
-/// Public re-exports of sqlx (`pub use sqlx…`, `pub type X = sqlx::…`).
+/// Public re-exports of sqlx (`pub use sqlx…`, `pub use {sqlx::…}`,
+/// `pub type X = sqlx::…`), including those inside inline modules.
 ///
 /// # Errors
 /// When `src` is not valid Rust.
 pub fn check_reexports(path: &str, src: &str) -> Result<Vec<SqlHit>, syn::Error> {
     let file = syn::parse_file(src)?;
-    let mut hits = Vec::new();
-    for item in &file.items {
-        let public = |v: &syn::Visibility| matches!(v, syn::Visibility::Public(_));
-        let found = match item {
-            syn::Item::Use(u) if public(&u.vis) => {
-                matches!(&u.tree, syn::UseTree::Path(p) if p.ident == "sqlx").then(|| u.span())
-            }
-            syn::Item::Type(t) if public(&t.vis) => {
-                matches!(&*t.ty, syn::Type::Path(tp) if is_sqlx(&tp.path)).then(|| t.span())
-            }
-            _ => None,
-        };
-        if let Some(span) = found {
-            hits.push(SqlHit {
-                file: path.to_owned(),
-                line: span.start().line,
-                what: "public sqlx re-export".into(),
-            });
-        }
-    }
+    let mut spans = Vec::new();
+    collect_reexports(&file.items, &mut spans);
+    let hits = spans
+        .into_iter()
+        .map(|span| SqlHit {
+            file: path.to_owned(),
+            line: span.start().line,
+            what: "public sqlx re-export".into(),
+        })
+        .collect();
     Ok(hits)
 }
 
@@ -256,6 +280,28 @@ mod tests {
         assert_eq!(alias.len(), 1, "pub type alias");
         let private = check_reexports("p.rs", "use sqlx::PgPool;").unwrap_or_default();
         assert!(private.is_empty(), "private use is fine");
+    }
+
+    #[test]
+    fn flags_grouped_and_bare_use_sqlx() {
+        assert_eq!(hits("use {sqlx::PgPool};").len(), 1, "grouped");
+        assert_eq!(hits("use {std::fmt, sqlx::PgPool};").len(), 1, "grouped with others");
+        assert_eq!(hits("use sqlx;").len(), 1, "bare crate");
+        assert_eq!(hits("use sqlx as db;").len(), 1, "renamed crate");
+        assert!(hits("use std::{fmt, io};").is_empty(), "unrelated group");
+    }
+
+    #[test]
+    fn flags_grouped_and_nested_reexports() {
+        let count = |src: &str| check_reexports("p.rs", src).map_or(usize::MAX, |h| h.len());
+        assert_eq!(count("pub use {sqlx::PgPool};"), 1, "grouped pub use");
+        assert_eq!(count("pub mod db { pub use sqlx::PgPool; }"), 1, "pub use in inline module");
+        assert_eq!(
+            count("mod db { pub type Pool = sqlx::PgPool; }"),
+            1,
+            "pub type in inline module"
+        );
+        assert_eq!(count("pub mod db { use sqlx::PgPool; }"), 0, "private use in module");
     }
 
     #[test]
