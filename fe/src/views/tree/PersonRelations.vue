@@ -119,7 +119,7 @@ function onChanged(): void {
 <style scoped>
 .relation-row {
     padding: 6px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border);
 }
 .relation-row:last-child {
     border-bottom: none;
