@@ -1,38 +1,39 @@
 //! Every GitHub Actions job declares a bounded `timeout-minutes`.
 
+use yaml_rust2::{Yaml, YamlLoader};
+
 use crate::violation::Violation;
 
 /// Upper bound for any job's `timeout-minutes`.
 pub const MAX_TIMEOUT_MINUTES: u32 = 60;
 
-use serde_yaml_ng::Value;
+fn key<'a>(map: &'a Yaml, name: &str) -> Option<&'a Yaml> {
+    map.as_hash()?.get(&Yaml::String(name.to_owned()))
+}
 
 /// Violations for jobs in one workflow file. Reusable-workflow jobs
 /// (`uses:`) cannot take `timeout-minutes` and are skipped; a file without
 /// jobs, or that does not parse, is itself a violation.
 #[must_use]
 pub fn check_timeouts(path: &str, yaml: &str, max_minutes: u32) -> Vec<Violation> {
-    let doc: Value = match serde_yaml_ng::from_str(yaml) {
-        Ok(doc) => doc,
+    let docs = match YamlLoader::load_from_str(yaml) {
+        Ok(docs) => docs,
         Err(e) => return vec![Violation::new(path, format!("invalid YAML: {e}"))],
     };
-    let Some(jobs) = doc.get("jobs").and_then(Value::as_mapping).filter(|m| !m.is_empty()) else {
+    let Some(jobs) =
+        docs.first().and_then(|d| key(d, "jobs")).and_then(Yaml::as_hash).filter(|m| !m.is_empty())
+    else {
         return vec![Violation::new(path, "no jobs found")];
     };
     jobs.iter()
-        .filter(|(_, job)| job.get("uses").is_none())
+        .filter(|(_, job)| key(job, "uses").is_none())
         .filter_map(|(name, job)| {
             let name = name.as_str().unwrap_or("?");
-            let detail = match job.get("timeout-minutes") {
+            let detail = match key(job, "timeout-minutes") {
                 None => format!("job `{name}` has no timeout-minutes"),
-                Some(Value::Number(n))
-                    if n.as_u64().is_some_and(|m| m >= 1 && m <= u64::from(max_minutes)) =>
-                {
-                    return None;
-                }
+                Some(Yaml::Integer(m)) if (1..=i64::from(max_minutes)).contains(m) => return None,
                 Some(other) => format!(
-                    "job `{name}`: timeout-minutes must be an integer in 1..={max_minutes}, got {}",
-                    serde_yaml_ng::to_string(other).unwrap_or_default().trim()
+                    "job `{name}`: timeout-minutes must be an integer in 1..={max_minutes}, got {other:?}"
                 ),
             };
             Some(Violation::new(path, detail))
