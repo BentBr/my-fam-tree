@@ -279,7 +279,8 @@ jobs:
             - name: Install cargo-machete
               run: |
                   if ! command -v cargo-machete >/dev/null 2>&1; then
-                      cargo install cargo-machete --locked
+                      # Pinned: 0.10.x needs Path::is_empty, unstable on our pinned nightly.
+                      cargo install cargo-machete --version 0.9.2 --locked
                   fi
             - name: Unused dependencies
               run: cargo machete
