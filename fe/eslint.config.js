@@ -4,6 +4,30 @@ import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescri
 import vue from 'eslint-plugin-vue'
 import globals from 'globals'
 
+const schemaImports = {
+    group: ['@/api/schema*'],
+    message: 'Import generated schema types only inside src/api/, not from views.',
+}
+
+/** Matches `@/<layer>/…` and relative `../<layer>/…` specifiers. `\x2F` is `/` (esquery regexes cannot hold one). */
+function layerImportRegex(layers) {
+    const alt = layers.join('|')
+    return `^@\\x2F(${alt})\\x2F|(^|\\x2F)\\.\\.(\\x2F\\.\\.)*\\x2F(${alt})\\x2F`
+}
+
+/** Forbid static and dynamic imports from `files` into the `forbidden` src/ folders. */
+function layer(files, forbidden) {
+    const regex = layerImportRegex(forbidden)
+    const message = `${files.join(', ')} must not import from src/{${forbidden.join(',')}}.`
+    return {
+        files,
+        rules: {
+            'no-restricted-imports': ['error', { patterns: [schemaImports, { regex, message }] }],
+            'no-restricted-syntax': ['error', { selector: `ImportExpression[source.value=/${regex}/]`, message }],
+        },
+    }
+}
+
 export default defineConfigWithVueTs(
     { ignores: ['dist/**', 'src/api/schema.d.ts', 'playwright-report/**', 'test-results/**', 'coverage/**'] },
     vue.configs['flat/recommended'],
@@ -36,19 +60,13 @@ export default defineConfigWithVueTs(
                 'error',
                 { ignorePatterns: ['^v-', '^router-(link|view)$', '^RouterLink$', '^RouterView$', '^i18n-t$'] },
             ],
-            'no-restricted-imports': [
-                'error',
-                {
-                    patterns: [
-                        {
-                            group: ['@/api/schema*'],
-                            message: 'Import generated schema types only inside src/api/, not from views.',
-                        },
-                    ],
-                },
-            ],
+            'no-restricted-imports': ['error', { patterns: [schemaImports] }],
         },
     },
+    // Folder layers (src/router/** and src/views/** are unrestricted).
+    layer(['src/components/**'], ['views']),
+    layer(['src/stores/**', 'src/api/**', 'src/composables/**'], ['views', 'components']),
+    layer(['src/utils/**', 'src/design-system/**', 'src/types/**'], ['views', 'components', 'stores', 'api']),
     {
         files: ['src/views/**/*.vue', 'src/components/**/*.vue'],
         plugins: { '@intlify/vue-i18n': vueI18n },
