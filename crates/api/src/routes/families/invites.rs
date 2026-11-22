@@ -12,7 +12,7 @@
 use actix_web::{HttpRequest, post, web};
 use my_fam_tree_domain::{FamilyId, Role};
 use my_fam_tree_email::{Locale as EmailLocale, render_invite};
-use time::{Duration, OffsetDateTime};
+use time::Duration;
 use uuid::Uuid;
 
 use super::{InviteReq, InviteRes, InviteResponseBody, internal, resolve_membership, seconds_i64};
@@ -64,7 +64,13 @@ pub async fn invite(
     // accept (only one can match the freshly-signed-in JWT email) and
     // pollute the admin pending-list with stale rows.
     let fid = FamilyId::from_uuid(family_id);
-    if state.invites.find_pending_by_email(fid, &email).await.map_err(internal)?.is_some() {
+    if state
+        .invites
+        .find_pending_by_email(fid, &email, state.clock.now())
+        .await
+        .map_err(internal)?
+        .is_some()
+    {
         return Err(ApiError::InviteDuplicate);
     }
 
@@ -95,7 +101,7 @@ pub async fn invite(
             claims.user_id,
             body.person_id,
             &hash,
-            OffsetDateTime::now_utc().saturating_add(Duration::seconds(seconds_i64(
+            state.clock.now().saturating_add(Duration::seconds(seconds_i64(
                 state.cfg.magic_link.invite_ttl_seconds,
             ))),
         )

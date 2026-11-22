@@ -120,7 +120,13 @@ mod tests {
     #[test]
     fn fixed_key_pair_signs_and_verifies_jwt() {
         let keys = JwtKeyset::load(PRIVATE_PEM, "k1", &public_json("k1")).unwrap();
-        let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900);
+        let issuer = JwtIssuer::new(
+            keys,
+            "iss".into(),
+            "aud".into(),
+            900,
+            std::sync::Arc::new(my_fam_tree_domain::clock::SystemClock),
+        );
         let token = issuer.issue(uuid::Uuid::new_v4(), "a@b.c", "en", vec![]).unwrap();
         assert_eq!(issuer.verify(&token).unwrap().email, "a@b.c");
     }

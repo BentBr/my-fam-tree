@@ -19,6 +19,7 @@ use actix_web::test;
 use common::ephemeral_stack;
 use common::invites::seed_admin_family_with_person;
 use my_fam_tree_api::build_app;
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{AuditFilter, FamilyId};
 use uuid::Uuid;
 
@@ -108,8 +109,12 @@ async fn cancel_invite_removes_row_and_audits() {
     assert_eq!(res.status().as_u16(), 200, "cancel should succeed");
 
     // Row is gone.
-    let remaining =
-        stack.state.invites.list_pending_for_family(family_id).await.expect("list pending");
+    let remaining = stack
+        .state
+        .invites
+        .list_pending_for_family(family_id, stack.clock.now())
+        .await
+        .expect("list pending");
     assert!(remaining.is_empty(), "no pending invites after cancel");
 
     // Audit row written with (cancel, invite).

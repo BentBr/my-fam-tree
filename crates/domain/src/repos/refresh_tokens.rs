@@ -69,10 +69,20 @@ pub trait RefreshTokenRepo: Send + Sync {
         device_label: Option<&str>,
         user_agent: Option<&str>,
         ip: Option<IpAddr>,
+        now: OffsetDateTime,
     ) -> Result<(), RefreshRepoError>;
 
-    async fn revoke_by_hash(&self, token_hash: &[u8]) -> Result<(), RefreshRepoError>;
-    async fn revoke_all_for_user(&self, user_id: UserId) -> Result<u64, RefreshRepoError>;
+    /// `revoked_at` is set to `now` (the injected clock).
+    async fn revoke_by_hash(
+        &self,
+        token_hash: &[u8],
+        now: OffsetDateTime,
+    ) -> Result<(), RefreshRepoError>;
+    async fn revoke_all_for_user(
+        &self,
+        user_id: UserId,
+        now: OffsetDateTime,
+    ) -> Result<u64, RefreshRepoError>;
     async fn list_for_user(
         &self,
         user_id: UserId,

@@ -140,7 +140,7 @@ pub async fn accept(
         .map(|jwt| (jwt.email.clone(), UserId::from_uuid(jwt.sub)));
 
     let hash = hash_token(body.token.trim());
-    let now = OffsetDateTime::now_utc();
+    let now = state.clock.now();
 
     // SECURITY: validate the acting user BEFORE the single-use token is
     // burned. We FIRST do a non-mutating `find_pending` lookup, resolve /
@@ -250,6 +250,7 @@ pub async fn accept(
         &state.refresh_tokens,
         &state.cfg.jwt,
         &user,
+        state.clock.now(),
     )
     .await
     .map_err(ApiError::Internal)?;
@@ -303,7 +304,7 @@ pub async fn list_invites(
 
     let invites = state
         .invites
-        .list_pending_for_family(FamilyId::from_uuid(family_id))
+        .list_pending_for_family(FamilyId::from_uuid(family_id), state.clock.now())
         .await
         .map_err(internal)?;
     let data = invites

@@ -321,7 +321,9 @@ pub async fn email_change_request(
             &new_email,
             &hash,
             MagicLinkPurpose::EmailChange,
-            OffsetDateTime::now_utc()
+            state
+                .clock
+                .now()
                 .saturating_add(Duration::seconds(seconds_i64(state.cfg.magic_link.ttl_seconds))),
         )
         .await
@@ -392,12 +394,13 @@ pub async fn email_change_confirm(
     // we atomically `consume` it. Consuming first would let a wrong authed
     // user (or a leaked token) burn the victim's still-valid token — a DoS:
     // the rightful owner's link would already read as consumed.
-    let record = state.magic_links.find_consumable(&hash).await.map_err(|e| match e {
-        MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
-            ApiError::MagicLinkInvalid
-        }
-        MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
-    })?;
+    let record =
+        state.magic_links.find_consumable(&hash, state.clock.now()).await.map_err(|e| match e {
+            MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
+                ApiError::MagicLinkInvalid
+            }
+            MagicLinkRepoError::Db(s) => ApiError::Internal(anyhow::anyhow!(s)),
+        })?;
     if record.purpose != MagicLinkPurpose::EmailChange || record.user_id != Some(claims.user_id) {
         // Wrong purpose or not the caller's token: reject WITHOUT consuming,
         // so the rightful owner's token stays usable.
@@ -406,7 +409,7 @@ pub async fn email_change_confirm(
 
     // Owner + purpose validated — now atomically mark it consumed. The
     // `WHERE consumed_at IS NULL` guard still enforces single-use.
-    state.magic_links.consume(&hash).await.map_err(|e| match e {
+    state.magic_links.consume(&hash, state.clock.now()).await.map_err(|e| match e {
         MagicLinkRepoError::Expired | MagicLinkRepoError::NotFoundOrConsumed => {
             ApiError::MagicLinkInvalid
         }

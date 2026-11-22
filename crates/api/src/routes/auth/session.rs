@@ -59,7 +59,7 @@ pub async fn logout(
     if let Some(c) = req.cookie(REFRESH_COOKIE) {
         let hash = hash_token(c.value());
         // Best-effort: a refresh-row revoke failure must not block logout.
-        if let Err(e) = state.refresh_tokens.revoke_by_hash(&hash).await {
+        if let Err(e) = state.refresh_tokens.revoke_by_hash(&hash, state.clock.now()).await {
             tracing::warn!(error = %e, "logout: refresh token revoke failed");
         }
     }

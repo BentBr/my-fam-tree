@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                      invited_by, person_id, expires_at, accepted_at\n                 FROM family_invites\n                WHERE family_id = $1\n                  AND lower(email::text) = lower($2)\n                  AND accepted_at IS NULL\n                  AND expires_at > now()\n                LIMIT 1",
+  "query": "SELECT id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                      invited_by, person_id, expires_at, accepted_at\n                 FROM family_invites\n                WHERE family_id = $1 AND accepted_at IS NULL AND expires_at > $2\n                ORDER BY created_at DESC",
   "describe": {
     "columns": [
       {
@@ -85,7 +85,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Text"
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -99,5 +99,5 @@
       true
     ]
   },
-  "hash": "655e77d89033ccba498428ad31e94a47f980b6f2fbca16e5a2377ec8da058a2a"
+  "hash": "ac08b587c5953de218829ddc0494374131f3d2c1c1d9c5e79578a90a0fc44128"
 }

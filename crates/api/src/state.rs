@@ -11,6 +11,7 @@
 use std::sync::Arc;
 
 use my_fam_tree_cache::{RateLimiter, RedisPool};
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{
     AuditLogRepo, EmailOutboxRepo, FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, HealthRepo,
     MagicLinkRepo, OwnerTransferRepo, ParentLinkRepo, PartnershipRepo, PersonContactRepo,
@@ -51,6 +52,9 @@ pub struct AppState {
     /// Concrete impl is `S3ObjectStore` (`MinIO` in dev, AWS in prod) or
     /// `LocalObjectStore` (tests that don't want a sidecar).
     pub object_store: Arc<dyn ObjectStore>,
+    /// Source of "now" for every expiry decision and every accepted / consumed /
+    /// revoked timestamp. `SystemClock` in production, `FixedClock` in tests.
+    pub clock: Arc<dyn Clock>,
 }
 
 impl std::fmt::Debug for AppState {

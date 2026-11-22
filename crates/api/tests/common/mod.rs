@@ -38,6 +38,7 @@ use ed25519_dalek::pkcs8::{EncodePrivateKey, EncodePublicKey};
 use my_fam_tree_api::auth::{JwtIssuer, JwtKeyset};
 use my_fam_tree_api::{AppEnv, AppState, Config, LogFormat};
 use my_fam_tree_cache::{RedisPool, RedisRateLimiter};
+use my_fam_tree_domain::clock::{Clock, FixedClock};
 use my_fam_tree_email::FakeEmailSender;
 use my_fam_tree_persistence::{
     Database, PgAuditLogRepo, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo,
@@ -60,6 +61,9 @@ use testcontainers_modules::redis::Redis;
 pub struct TestStack {
     pub state: AppState,
     pub fake_email: Arc<FakeEmailSender>,
+    /// The clock every handler and the JWT issuer read. Starts at real "now";
+    /// tests pin it with `stack.clock.set(..)`.
+    pub clock: FixedClock,
     pub _pg: ContainerAsync<Postgres>,
     pub _redis: ContainerAsync<Redis>,
 }
@@ -99,7 +103,14 @@ pub async fn ephemeral_stack() -> TestStack {
     let public_json =
         serde_json::json!([{"kid": "t", "public_pem": pub_pem.trim_end()}]).to_string();
     let keys = JwtKeyset::load(&priv_pem, "t", &public_json).expect("load keys");
-    let issuer = JwtIssuer::new(keys, "iss".into(), "aud".into(), 900);
+    let clock = FixedClock::new(time::OffsetDateTime::now_utc());
+    let issuer = JwtIssuer::new(
+        keys,
+        "iss".into(),
+        "aud".into(),
+        900,
+        Arc::new(clock.clone()) as Arc<dyn Clock>,
+    );
 
     let cfg = Config {
         app_env: AppEnv::Development,
@@ -200,9 +211,10 @@ pub async fn ephemeral_stack() -> TestStack {
             std::env::temp_dir().join(format!("my-fam-tree-test-{}", uuid::Uuid::new_v4())),
             "http://test.invalid/uploads".into(),
         )),
+        clock: Arc::new(clock.clone()),
     };
 
-    TestStack { state, fake_email, _pg: pg, _redis: redis_container }
+    TestStack { state, fake_email, clock, _pg: pg, _redis: redis_container }
 }
 
 /// Test double for [`my_fam_tree_domain::EmailOutboxRepo`]: bypasses the

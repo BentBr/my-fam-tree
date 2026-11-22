@@ -121,6 +121,7 @@ pub async fn magic_link(
         &state.cfg.web.public_url,
         locale,
         state.cfg.magic_link.ttl_seconds,
+        state.clock.now(),
     )
     .await
     .map_err(|e| ApiError::Internal(anyhow::anyhow!(e.to_string())))?;

@@ -205,7 +205,7 @@ pub async fn begin(
 
     let (from_token, from_hash) = generate_opaque_token();
     let (to_token, to_hash) = generate_opaque_token();
-    let expires_at = OffsetDateTime::now_utc().saturating_add(Duration::hours(1));
+    let expires_at = state.clock.now().saturating_add(Duration::hours(1));
 
     let id = state
         .owner_transfers
@@ -318,7 +318,7 @@ pub async fn confirm(
 
     let claims = user_claims(&req)?;
     let token_hash = hash_token(body.token.trim());
-    let now = OffsetDateTime::now_utc();
+    let now = state.clock.now();
 
     let (transfer, side) = state
         .owner_transfers
@@ -427,7 +427,7 @@ pub async fn cancel(
     if active.id != family_id {
         return Err(ApiError::Unauthenticated);
     }
-    state.owner_transfers.cancel(family_id, OffsetDateTime::now_utc()).await.map_err(internal)?;
+    state.owner_transfers.cancel(family_id, state.clock.now()).await.map_err(internal)?;
     audit::record(
         &state.audit,
         family_id,

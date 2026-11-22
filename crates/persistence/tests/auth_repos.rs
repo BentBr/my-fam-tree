@@ -85,9 +85,9 @@ async fn magic_link_consume_once() {
     )
     .await
     .unwrap();
-    let rec = mls.consume(&hash).await.expect("first consume");
+    let rec = mls.consume(&hash, OffsetDateTime::now_utc()).await.expect("first consume");
     assert_eq!(rec.user_id, Some(u.id));
-    let second = mls.consume(&hash).await;
+    let second = mls.consume(&hash, OffsetDateTime::now_utc()).await;
     assert!(second.is_err());
 }
 
@@ -125,9 +125,17 @@ async fn refresh_token_rotation_preserves_absolute_expiry() {
     )
     .await
     .unwrap();
-    rts.rotate(&h1, &h2, OffsetDateTime::now_utc() + Duration::days(30), None, None, None)
-        .await
-        .unwrap();
+    rts.rotate(
+        &h1,
+        &h2,
+        OffsetDateTime::now_utc() + Duration::days(30),
+        None,
+        None,
+        None,
+        OffsetDateTime::now_utc(),
+    )
+    .await
+    .unwrap();
     let new_rec = rts.find_active_by_hash(&h2).await.unwrap().expect("found");
     assert_eq!(new_rec.absolute_expires_at.unix_timestamp(), abs_exp.unix_timestamp());
     assert!(rts.find_active_by_hash(&h1).await.unwrap().is_none());

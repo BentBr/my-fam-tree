@@ -16,6 +16,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{FamilyId, Role};
 use uuid::Uuid;
 
@@ -74,7 +75,12 @@ async fn invite_accept_wrong_session_does_not_burn_token() {
     assert_eq!(body["code"], "validation_failed");
 
     // The invite is STILL pending after the rejected attempt.
-    let pending = stack.state.invites.list_pending_for_family(family_id).await.expect("pending");
+    let pending = stack
+        .state
+        .invites
+        .list_pending_for_family(family_id, stack.clock.now())
+        .await
+        .expect("pending");
     assert_eq!(pending.len(), 1, "invite must remain pending after wrong-session 422");
 
     // The rightful invitee can now accept it → membership inserted.

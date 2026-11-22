@@ -26,6 +26,7 @@ use std::sync::Arc;
 use anyhow::Context;
 use my_fam_tree_api::Config;
 use my_fam_tree_api::services::auth_service::mint_magic_link_url;
+use my_fam_tree_domain::clock::{Clock, SystemClock};
 use my_fam_tree_domain::{MagicLinkRepo, UserId};
 use my_fam_tree_persistence::seed::SeedDb;
 use uuid::Uuid;
@@ -162,6 +163,7 @@ async fn mint_magic_links(
             &cfg.web.public_url,
             my_fam_tree_email::Locale::En,
             cfg.magic_link.ttl_seconds,
+            SystemClock.now(),
         )
         .await?;
         out.push((email.to_owned(), url));

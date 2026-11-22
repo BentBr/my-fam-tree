@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE family_invites SET accepted_at = now()\n                WHERE token_hash = $1 AND accepted_at IS NULL\n                RETURNING id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                          invited_by, person_id, expires_at, accepted_at",
+  "query": "UPDATE family_invites SET accepted_at = $2\n                WHERE token_hash = $1 AND accepted_at IS NULL\n                RETURNING id, family_id, email::text AS \"email!\", invited_role::text AS \"role!\",\n                          invited_by, person_id, expires_at, accepted_at",
   "describe": {
     "columns": [
       {
@@ -84,7 +84,8 @@
     ],
     "parameters": {
       "Left": [
-        "Bytea"
+        "Bytea",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -98,5 +99,5 @@
       true
     ]
   },
-  "hash": "ecd8aeca4ad6c394caa7dfdfd2c54e09f6c6b9862df876d3523c04bd54024cb2"
+  "hash": "051f2d61fbaa6cde324fe37d884c61ddfc279369b842ba194f3d30a64616ca2f"
 }
