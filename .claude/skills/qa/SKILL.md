@@ -28,8 +28,8 @@ need to keep going. Record every command with its exit code.
 | `rust-local:<crate>` | gate clippy flags on `-p my-fam-tree-<crate>`; `cargo test -p my-fam-tree-<crate>` |
 | `rust-shared` (Cargo.*, clippy.toml, toolchain, deny.toml, migrations, .sqlx) | **workspace-wide** clippy gate + `cargo test --workspace` |
 | any Rust, docs, ci | `cargo test -p my-fam-tree-arch-tests` (always) |
-| `fe-local` | `./scripts/fe-in-container.sh lint`, `typecheck`, related test files |
-| `fe-shared` (package.json, lockfile, eslint config/rules, tsconfig, vite/vitest config) | **full** FE `lint`, `typecheck`, `test` |
+| `fe-local` | `./scripts/fe-in-container.sh lint`, `typecheck`, `format:check`, related test files |
+| `fe-shared` (package.json, lockfile, eslint config/rules, tsconfig, vite/vitest config) | **full** FE `format:check`, `lint`, `typecheck`, `test` |
 | routes / ApiError / response types changed | `./scripts/openapi.sh check` |
 | `migrations/**` | `rdt migrate-check` |
 | `ci` | `cargo machete`; `./scripts/check-file-size.sh` |

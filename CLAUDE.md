@@ -16,6 +16,8 @@ compose services fit together.
   Changed a `query!`? Run `rdt sqlx-prepare` and commit `.sqlx/`.
 - Frontend tooling runs only in the container: `./scripts/fe-in-container.sh <pnpm-script>`.
   Never run node/pnpm on the host.
+- FE lint: type-checked eslint, prettier `format:check`, i18n-only template text, folder-layer
+  imports and `local/no-raw-color` (details in `frontend-workflow`).
 - OpenAPI: `rdt openapi` regenerates `fe/openapi.json` + TS types, `rdt openapi-check` fails on
   drift. Both go through `scripts/openapi.sh`.
 
