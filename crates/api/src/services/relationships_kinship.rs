@@ -53,7 +53,8 @@ pub struct KinshipRelation {
     pub up: u8,
     /// Generations from the common ancestor down to B (0 when B is A's ancestor).
     pub down: u8,
-    /// Siblings sharing exactly one parent. Only ever set for `up = down = 1`.
+    /// Known half-siblings: one shared parent and each has another recorded
+    /// parent. Only ever set for `up = down = 1`.
     pub half: bool,
     /// The relation runs through a step parent-link or a parent's partner.
     pub step: bool,
