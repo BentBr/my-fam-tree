@@ -68,4 +68,16 @@ describe('ToastContainer', () => {
         await snack.trigger('click')
         expect(ui.toasts).toHaveLength(0)
     })
+
+    it('labels the request id through i18n', () => {
+        const ui = useUiStore()
+        ui.pushToast({ kind: 'error', message: 'fail', requestId: 'req-7' })
+        expect(mountWithStubs().text()).toContain('id: req-7')
+        i18n.global.locale.value = 'de'
+        try {
+            expect(mountWithStubs().text()).toContain('ID: req-7')
+        } finally {
+            i18n.global.locale.value = 'en'
+        }
+    })
 })

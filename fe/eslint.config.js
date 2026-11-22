@@ -1,3 +1,4 @@
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import prettier from '@vue/eslint-config-prettier'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import vue from 'eslint-plugin-vue'
@@ -45,6 +46,17 @@ export default defineConfigWithVueTs(
                         },
                     ],
                 },
+            ],
+        },
+    },
+    {
+        files: ['src/views/**/*.vue', 'src/components/**/*.vue'],
+        plugins: { '@intlify/vue-i18n': vueI18n },
+        rules: {
+            // Punctuation-only text and technology names are not translatable copy.
+            '@intlify/vue-i18n/no-raw-text': [
+                'error',
+                { ignorePattern: '^[\\s()·—:.❤-]+$', ignoreText: ['Rust', 'Vue.js'] },
             ],
         },
     },

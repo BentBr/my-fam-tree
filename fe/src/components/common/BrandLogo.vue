@@ -15,6 +15,7 @@
  * a router-link (used by the AppBar so clicking it returns home).
  */
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 
 // Importing the brand raster lets Vite rewrite the resolved URL with a
@@ -35,6 +36,8 @@ const props = withDefaults(
     }>(),
     { size: 'md', to: null },
 )
+
+const { t } = useI18n()
 
 const slothSrcset = `${sloth128} 128w, ${sloth256} 256w, ${sloth512} 512w`
 
@@ -63,8 +66,8 @@ const linked = computed(() => props.to !== null)
             alt=""
         />
         <span v-if="showText" class="brand-lockup__text">
-            <span class="brand-lockup__word display" :style="{ fontSize: `${wordPx}px` }">My Family Tree</span>
-            <span class="brand-lockup__sub" :style="{ fontSize: `${subPx}px` }">by Slothlike</span>
+            <span class="brand-lockup__word display" :style="{ fontSize: `${wordPx}px` }">{{ t('app.title') }}</span>
+            <span class="brand-lockup__sub" :style="{ fontSize: `${subPx}px` }">{{ t('app.byline') }}</span>
         </span>
     </component>
 </template>

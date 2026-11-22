@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
+import { i18n } from '@/i18n'
 
 async function mountLogo(props: Partial<{ size: 'sm' | 'md' | 'lg'; to: string | null }> = {}) {
     const router = createRouter({
@@ -11,7 +12,7 @@ async function mountLogo(props: Partial<{ size: 'sm' | 'md' | 'lg'; to: string |
     })
     await router.push('/')
     await router.isReady()
-    return mount(BrandLogo, { props, global: { plugins: [router] } })
+    return mount(BrandLogo, { props, global: { plugins: [router, i18n] } })
 }
 
 describe('BrandLogo', () => {
@@ -46,5 +47,16 @@ describe('BrandLogo', () => {
         const link = w.find('a')
         expect(link.exists()).toBe(true)
         expect(link.classes()).toContain('brand-lockup--linked')
+    })
+
+    it('translates the byline', async () => {
+        i18n.global.locale.value = 'de'
+        try {
+            const w = await mountLogo()
+            expect(w.text()).toContain('My Family Tree')
+            expect(w.text()).toContain('von Slothlike')
+        } finally {
+            i18n.global.locale.value = 'en'
+        }
     })
 })

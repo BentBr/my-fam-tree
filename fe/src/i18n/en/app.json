@@ -1,7 +1,8 @@
 {
     "app": {
         "title": "My Family Tree",
-        "tagline": "Family tree, contacts, reminders."
+        "tagline": "Family tree, contacts, reminders.",
+        "byline": "by Slothlike"
     },
     "nav": {
         "tree": "Tree",
@@ -272,7 +273,8 @@
         "leadDayOf": "On the day itself"
     },
     "toast": {
-        "dismiss": "Dismiss"
+        "dismiss": "Dismiss",
+        "requestId": "id: {id}"
     },
     "toasts": {
         "reminder_prefs_saved": "Reminder settings saved",

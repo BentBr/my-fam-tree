@@ -1,7 +1,8 @@
 {
     "app": {
         "title": "My Family Tree",
-        "tagline": "Stammbaum, Kontakte, Erinnerungen."
+        "tagline": "Stammbaum, Kontakte, Erinnerungen.",
+        "byline": "von Slothlike"
     },
     "nav": {
         "tree": "Stammbaum",
@@ -272,7 +273,8 @@
         "leadDayOf": "Am Tag selbst"
     },
     "toast": {
-        "dismiss": "Schließen"
+        "dismiss": "Schließen",
+        "requestId": "ID: {id}"
     },
     "toasts": {
         "reminder_prefs_saved": "Erinnerungs-Einstellungen gespeichert",

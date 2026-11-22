@@ -35,7 +35,9 @@ function onSnackbarUpdate(open: boolean, id: string): void {
             <div class="d-flex flex-column">
                 <span class="font-weight-medium">{{ t.message }}</span>
                 <span v-if="t.code" class="text-caption opacity-75">{{ t.code }}</span>
-                <span v-if="t.requestId" class="text-caption opacity-50">id: {{ t.requestId }}</span>
+                <span v-if="t.requestId" class="text-caption opacity-50">{{
+                    $t('toast.requestId', { id: t.requestId })
+                }}</span>
             </div>
             <template #actions>
                 <v-btn variant="text" data-testid="toast-dismiss" @click="ui.dismissToast(t.id)">
