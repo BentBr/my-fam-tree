@@ -629,6 +629,38 @@ mod tests {
     }
 
     #[test]
+    fn shared_parent_plus_step_link_to_the_others_parent_is_a_half_sibling() {
+        // 1 has mother 2 and a STEP link to 3; 5 is the biological child of
+        // 2 and 3. They share one blood parent, and 3 is known not to be
+        // 1's parent: half-siblings — not "sibling" plus "step-sibling".
+        let rows = [link(1, 2), step_link(1, 3), link(5, 2), link(5, 3)];
+        assert_eq!(
+            shape(&only(compute_kinship(&rows, &[], pid(1), pid(5)))),
+            (1, 1, true, false, None)
+        );
+        assert_eq!(
+            shape(&only(compute_kinship(&rows, &[], pid(5), pid(1)))),
+            (1, 1, true, false, None)
+        );
+    }
+
+    #[test]
+    fn step_parent_alone_does_not_make_a_half_sibling() {
+        // 1 has mother 2 and step-father 3; 5 has only mother 2 recorded.
+        // 5's other parent is unknown, so they stay plain siblings.
+        let rows = [link(1, 2), step_link(1, 3), link(5, 2)];
+        assert_eq!(shape(&only(compute_kinship(&rows, &[], pid(1), pid(5)))), plain(1, 1));
+    }
+
+    #[test]
+    fn blood_relation_hides_the_step_duplicate_through_an_ancestor_couple() {
+        // 4 has mother 6 (biological) and step-father 7; 8 is the child of
+        // 6 and 7. For 4's child 1, 8 is an aunt — once, not also a step-aunt.
+        let rows = [link(1, 4), link(4, 6), step_link(4, 7), link(8, 6), link(8, 7)];
+        assert_eq!(shape(&only(compute_kinship(&rows, &[], pid(1), pid(8)))), plain(2, 1));
+    }
+
+    #[test]
     fn symmetry_is_an_exact_mirror() {
         let everyone =
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 30, 31];

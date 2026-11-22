@@ -31,6 +31,13 @@ impl Graph {
     pub(super) fn parents(&self, child: PersonId) -> Vec<PersonId> {
         self.parents_of.get(&child).into_iter().flatten().map(|(p, _)| *p).collect()
     }
+
+    /// Parents of `child` linked through a `step` link (`true`) or through
+    /// any other kind (`false`).
+    fn parents_by_step(&self, child: PersonId, step: bool) -> Vec<PersonId> {
+        let links = self.parents_of.get(&child).into_iter().flatten();
+        links.filter(|(_, is_step)| *is_step == step).map(|(p, _)| *p).collect()
+    }
 }
 
 #[derive(Debug)]
@@ -99,12 +106,19 @@ pub(super) struct BloodRel {
     pub(super) path: Vec<PersonId>,
 }
 
-/// Half-siblings only when that is KNOWN: each has a recorded parent the
-/// other lacks. A sibling whose second parent is simply not entered yet
-/// counts as a full sibling.
+/// Half-siblings only when that is KNOWN: besides the shared parent, each
+/// has a recorded parent the other positively lacks. Step links never count
+/// as a parent of one's own, but they do say who is NOT a parent: when the
+/// other's parent is my step-parent, my other parent is known to differ. A
+/// sibling whose second parent is simply not entered yet stays a full sibling.
 fn known_half_siblings(g: &Graph, x: PersonId, y: PersonId) -> bool {
-    let (px, py) = (g.parents(x), g.parents(y));
-    px.iter().any(|p| !py.contains(p)) && py.iter().any(|p| !px.contains(p))
+    let (px, py) = (g.parents_by_step(x, false), g.parents_by_step(y, false));
+    // `mine` holds a parent the other lacks, or one of `theirs` is ruled out
+    // for me because that person is my step-parent.
+    let differs = |mine: &[PersonId], theirs: &[PersonId], my_step: &[PersonId]| {
+        mine.iter().any(|p| !theirs.contains(p)) || theirs.iter().any(|p| my_step.contains(p))
+    };
+    differs(&px, &py, &g.parents_by_step(x, true)) && differs(&py, &px, &g.parents_by_step(y, true))
 }
 
 /// All blood relations between `x` and `y` via LOWEST common ancestors.
@@ -116,7 +130,8 @@ fn known_half_siblings(g: &Graph, x: PersonId, y: PersonId) -> bool {
 /// only, siblings whose parents are cousins as siblings only. Ancestor
 /// couples collapse by grouping on `(up, down, step)`; a `(1,1)` backed by
 /// exactly one shared parent is flagged `half` when both siblings also have a
-/// parent of their own (see `known_half_siblings`).
+/// parent of their own (see `known_half_siblings`). A step relation is dropped when a
+/// blood relation of the same `(up, down)` exists.
 ///
 /// Deterministic and direction-symmetric: surviving ancestors are visited in
 /// id order, so a couple always yields the path through the same partner.
@@ -151,8 +166,14 @@ pub(super) fn blood_relations(g: &Graph, x: PersonId, y: PersonId) -> Vec<BloodR
         }
         let mut path = ex.path.clone(); // [x … c]
         path.extend(ey.path.iter().rev().skip(1)); // … y]
-        let half = up == 1 && down == 1 && known_half_siblings(g, x, y);
+        let half = up == 1 && down == 1 && !step && known_half_siblings(g, x, y);
         rels.push(BloodRel { up, down, half, step, path });
     }
+    // A relation that only exists through a step link is redundant next to a
+    // blood relation of the same shape (an ancestor couple where one partner
+    // is a step-parent on the way up): keep the blood one.
+    let blood: HashSet<(u8, u8)> =
+        rels.iter().filter(|r| !r.step).map(|r| (r.up, r.down)).collect();
+    rels.retain(|r| !r.step || !blood.contains(&(r.up, r.down)));
     rels
 }
