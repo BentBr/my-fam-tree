@@ -117,6 +117,14 @@ describe('useUpdatePerson', () => {
         expect(out.id).toBe('p1')
     })
 
+    it('invalidates the kinship cache: a changed gender changes the label', async () => {
+        mocked.PATCH.mockResolvedValueOnce({ data: { data: { id: 'p1' } }, error: undefined })
+        const { result, queryClient } = makeHookWrapper(() => useUpdatePerson())
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        await result.mutateAsync({ id: 'p1', input: { gender: 'female' } })
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ['kinship'] })
+    })
+
     it('rejects on empty data', async () => {
         mocked.PATCH.mockResolvedValueOnce({ data: undefined, error: undefined })
         const { result } = makeHookWrapper(() => useUpdatePerson())
@@ -138,6 +146,14 @@ describe('useDeletePerson', () => {
         expect(mocked.DELETE).toHaveBeenCalledWith('/api/v1/persons/{id}', {
             params: { path: { id: 'p1' } },
         })
+    })
+
+    it('invalidates the kinship cache: deleting a person removes their links', async () => {
+        mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: undefined })
+        const { result, queryClient } = makeHookWrapper(() => useDeletePerson())
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        await result.mutateAsync('p1')
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ['kinship'] })
     })
 
     it('rejects on error', async () => {

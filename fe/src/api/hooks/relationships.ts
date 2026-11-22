@@ -1,4 +1,7 @@
 import { useQuery } from '@tanstack/vue-query'
+import { computed, type Ref } from 'vue'
+
+import { useActiveFamilyStore } from '@/stores/activeFamily'
 
 import { client } from '../client'
 import { expectOk, unwrap, useApiMutation } from '../request'
@@ -10,6 +13,23 @@ export function useTree() {
     return useQuery({
         queryKey: ['tree'],
         queryFn: () => unwrap(client.GET('/api/v1/relationships')),
+    })
+}
+
+// Kinship between two persons. Idle until both ids are set — an idle query is
+// also skipped by the family switcher's blanket `invalidateQueries()`. The
+// active family is part of the key so results never cross families.
+export function useKinship(a: Ref<string | null>, b: Ref<string | null>) {
+    const family = useActiveFamilyStore()
+    return useQuery({
+        queryKey: computed(() => ['kinship', family.activeFamilyId, a.value, b.value] as const),
+        queryFn: () =>
+            unwrap(
+                client.GET('/api/v1/relationships/kinship', {
+                    params: { query: { a: a.value ?? '', b: b.value ?? '' } },
+                }),
+            ),
+        enabled: computed(() => a.value !== null && b.value !== null),
     })
 }
 
@@ -26,7 +46,7 @@ export interface ParentLinkInput {
 export function useAddParentLink() {
     return useApiMutation({
         mutationFn: (vars: ParentLinkInput) => expectOk(client.POST('/api/v1/parent-links', { body: vars })),
-        invalidate: () => [['tree']],
+        invalidate: () => [['tree'], ['kinship']],
     })
 }
 
@@ -43,7 +63,7 @@ export interface PartnershipInput {
 export function useCreatePartnership() {
     return useApiMutation({
         mutationFn: (vars: PartnershipInput) => expectOk(client.POST('/api/v1/partnerships', { body: vars })),
-        invalidate: () => [['tree']],
+        invalidate: () => [['tree'], ['kinship']],
     })
 }
 
@@ -69,7 +89,7 @@ export function useUpdatePartnership() {
                 client.PATCH('/api/v1/partnerships/{id}', { params: { path: { id: vars.id } }, body: vars.input }),
             ),
         success: 'toasts.partnership_updated',
-        invalidate: () => [['tree']],
+        invalidate: () => [['tree'], ['kinship']],
     })
 }
 
@@ -77,7 +97,7 @@ export function useDeletePartnership() {
     return useApiMutation({
         mutationFn: (id: string) => expectOk(client.DELETE('/api/v1/partnerships/{id}', { params: { path: { id } } })),
         success: 'toasts.partnership_deleted',
-        invalidate: () => [['tree']],
+        invalidate: () => [['tree'], ['kinship']],
     })
 }
 
@@ -96,6 +116,6 @@ export function useDeleteParentLink() {
                     params: { path: { child: vars.child_id, parent: vars.parent_id } },
                 }),
             ),
-        invalidate: () => [['tree']],
+        invalidate: () => [['tree'], ['kinship']],
     })
 }

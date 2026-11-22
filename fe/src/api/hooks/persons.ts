@@ -101,7 +101,8 @@ export function useUpdatePerson() {
         // Also refresh the per-person GET so the drawer sees the new fields
         // without a manual refetch. The query key includes a ref-wrapping id,
         // so the broad `['person', id]` prefix matches it structurally.
-        invalidate: (vars) => [['persons'], ['tree'], ['person', vars.id]],
+        // A changed gender changes the kinship label, so that cache goes too.
+        invalidate: (vars) => [['persons'], ['tree'], ['kinship'], ['person', vars.id]],
     })
 }
 
@@ -109,7 +110,8 @@ export function useDeletePerson() {
     return useApiMutation({
         mutationFn: (id: string) => expectOk(client.DELETE('/api/v1/persons/{id}', { params: { path: { id } } })),
         success: 'toasts.person_deleted',
-        invalidate: () => [['persons'], ['tree']],
+        // Deleting a person cascades to their links: a kinship path may be gone.
+        invalidate: () => [['persons'], ['tree'], ['kinship']],
     })
 }
 

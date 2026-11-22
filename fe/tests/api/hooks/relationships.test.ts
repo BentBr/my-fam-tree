@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 vi.mock('@/api/client', () => ({
     client: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
@@ -10,6 +11,7 @@ import {
     useCreatePartnership,
     useDeleteParentLink,
     useDeletePartnership,
+    useKinship,
     useTree,
     useUpdatePartnership,
 } from '@/api/hooks/relationships'
@@ -144,5 +146,42 @@ describe('useDeleteParentLink', () => {
         mocked.DELETE.mockResolvedValueOnce({ data: undefined, error: { msg: 'no' } })
         const { result } = makeHookWrapper(() => useDeleteParentLink())
         await expect(result.mutateAsync({ child_id: 'c1', parent_id: 'p1' })).rejects.toBeDefined()
+    })
+})
+
+describe('useKinship', () => {
+    it('GETs /relationships/kinship for a complete pair and unwraps data', async () => {
+        const payload = { person_a: { id: 'a', gender: '' }, person_b: { id: 'b', gender: 'male' }, relations: [] }
+        mocked.GET.mockResolvedValueOnce({ data: { data: payload }, error: undefined })
+        const { result } = makeHookWrapper(() => useKinship(ref<string | null>('a'), ref<string | null>('b')))
+        await new Promise<void>((r) => setTimeout(r, 5))
+        expect(mocked.GET).toHaveBeenCalledWith('/api/v1/relationships/kinship', {
+            params: { query: { a: 'a', b: 'b' } },
+        })
+        expect(result.data.value).toEqual(payload)
+    })
+
+    it('stays idle until both persons are set', async () => {
+        makeHookWrapper(() => useKinship(ref<string | null>('a'), ref<string | null>(null)))
+        await new Promise<void>((r) => setTimeout(r, 5))
+        expect(mocked.GET).not.toHaveBeenCalled()
+    })
+
+    it('is not refetched by a blanket invalidation while idle', async () => {
+        // The family switcher calls `invalidateQueries()` without a filter.
+        const { queryClient } = makeHookWrapper(() => useKinship(ref<string | null>(null), ref<string | null>(null)))
+        await queryClient.invalidateQueries()
+        expect(mocked.GET).not.toHaveBeenCalled()
+    })
+})
+
+describe('edge mutations', () => {
+    it('invalidate the kinship cache together with the tree', async () => {
+        mocked.POST.mockResolvedValueOnce({ data: undefined, error: undefined })
+        const { result, queryClient } = makeHookWrapper(() => useAddParentLink())
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        await result.mutateAsync({ child_id: 'c', parent_id: 'p', kind: 'biological' })
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ['tree'] })
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ['kinship'] })
     })
 })
