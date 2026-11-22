@@ -7,13 +7,12 @@
 use std::sync::Arc;
 
 use my_fam_tree_cache::ReminderJobQueue;
+use my_fam_tree_domain::clock::Clock;
 use my_fam_tree_domain::{
     EmailOutboxRepo, FamilyMembershipRepo, JanitorRepo, PartnershipRepo, PersonFavouriteRepo,
     PersonRepo, ReminderDigestRepo, ReminderPreferencesRepo, UserRepo,
 };
 use my_fam_tree_email::EmailSender;
-
-use crate::clock::Clock;
 
 #[derive(Clone)]
 pub struct WorkerState {

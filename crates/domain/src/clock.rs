@@ -1,6 +1,16 @@
-//! Clock abstraction so the worker's "now" is injectable in tests + E2E.
+//! Clock abstraction so "now" is injectable in tests + E2E (api and worker).
 //!
-//! Two implementations of [`Clock`] live here:
+//! The injected clock governs every expiry decision and every
+//! "consumed / accepted / revoked at" timestamp: persistence methods take
+//! `now` as a parameter instead of reading SQL `now()`, and JWT `iat`/`exp`
+//! are issued and checked against it. Postgres `now()` stays only for pure
+//! bookkeeping that no decision reads: `email_outbox.updated_at`,
+//! `reminder_digests.dispatched_at`, `users.email_verified_at` and the
+//! column defaults (`created_at`, `joined_at`). Real wall-clock reads that
+//! must stay real (rate-limit windows, the worker heartbeat) carry an
+//! `#[expect(clippy::disallowed_methods)]` with the reason.
+//!
+//! Three implementations of [`Clock`] live here (plus [`SystemClock`]):
 //!
 //! - [`FixedClock`] — frozen at a stored instant. Used by deterministic
 //!   unit tests where reads must repeatedly observe the same `now`.

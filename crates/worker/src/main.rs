@@ -7,16 +7,16 @@ use std::time::Duration;
 use anyhow::Context;
 use my_fam_tree_cache::{RedisPool, RedisReminderQueue};
 use my_fam_tree_config::WorkerConfig;
+use my_fam_tree_domain::clock::Clock;
+#[cfg(feature = "test-fixtures")]
+use my_fam_tree_domain::clock::OffsetClock;
+#[cfg(not(feature = "test-fixtures"))]
+use my_fam_tree_domain::clock::SystemClock;
 use my_fam_tree_email::SmtpSender;
 use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::Clock;
-#[cfg(feature = "test-fixtures")]
-use my_fam_tree_worker::clock::OffsetClock;
-#[cfg(not(feature = "test-fixtures"))]
-use my_fam_tree_worker::clock::SystemClock;
 use my_fam_tree_worker::health::Heartbeat;
 use my_fam_tree_worker::state::WorkerState;
 use my_fam_tree_worker::{dispatcher, janitor, leader, ops_http, outbox, ticker};

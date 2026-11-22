@@ -17,6 +17,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
+use my_fam_tree_domain::clock::{Clock, FixedClock};
 use my_fam_tree_domain::{
     DigestStatus, FamilyMembershipRepo, FamilyRepo, Locale, PersonDraft, PersonRepo,
     ReminderPreferences, ReminderPreferencesRepo, Role, UserId, UserRepo,
@@ -27,7 +28,6 @@ use my_fam_tree_persistence::{
     PgPartnershipRepo, PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo,
     PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::{Clock, FixedClock};
 use my_fam_tree_worker::state::WorkerState;
 use my_fam_tree_worker::{dispatcher, ticker};
 use testcontainers::ContainerAsync;

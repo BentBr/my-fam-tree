@@ -12,13 +12,13 @@ use std::time::Duration as StdDuration;
 
 use async_trait::async_trait;
 use my_fam_tree_cache::{CacheError, ReminderJob, ReminderJobQueue};
+use my_fam_tree_domain::clock::{Clock, FixedClock};
 use my_fam_tree_domain::{EmailOutboxInsert, EmailOutboxKind};
 use my_fam_tree_email::{EmailError, EmailSender, FakeEmailSender, OutboundEmail};
 use my_fam_tree_persistence::{
     Database, PgEmailOutboxRepo, PgFamilyMembershipRepo, PgJanitor, PgPartnershipRepo,
     PgPersonFavouriteRepo, PgPersonRepo, PgReminderDigestRepo, PgReminderPrefsRepo, PgUserRepo,
 };
-use my_fam_tree_worker::clock::{Clock, FixedClock};
 use my_fam_tree_worker::outbox;
 use my_fam_tree_worker::state::WorkerState;
 use testcontainers::ContainerAsync;

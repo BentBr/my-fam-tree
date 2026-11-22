@@ -12,7 +12,6 @@
 // api crate handles the same lint per-handler).
 
 pub mod backoff;
-pub mod clock;
 pub mod digest;
 pub mod dispatcher;
 pub mod health;

@@ -13,10 +13,12 @@
 use std::sync::Arc;
 
 use actix_web::{App, HttpServer, web};
+#[cfg(feature = "test-fixtures")]
+use my_fam_tree_domain::clock::OffsetClock;
 
 use crate::health::{HealthState, Heartbeat};
 #[cfg(feature = "test-fixtures")]
-use crate::{clock::OffsetClock, state::WorkerState};
+use crate::state::WorkerState;
 
 /// Bind the configured `HttpServer` to `bind` and run it to completion.
 /// Both `serve()` and `serve_with_test_fixtures()` share this tail, so
@@ -92,12 +94,12 @@ mod test_fixtures {
 
     use actix_web::{HttpResponse, post, web};
     use my_fam_tree_domain::TimeZoneRepo;
+    use my_fam_tree_domain::clock::OffsetClock;
     use my_fam_tree_domain::dates::{DEFAULT_TIMEZONE, DIGEST_LOCAL_HOUR};
     use serde::Deserialize;
     use time::format_description::well_known::Rfc3339;
     use time::{Date, OffsetDateTime, Time};
 
-    use crate::clock::OffsetClock;
     use crate::state::WorkerState;
     use crate::ticker;
 
