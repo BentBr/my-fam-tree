@@ -85,6 +85,8 @@ export interface ParentEdge {
 }
 
 export interface PartnerEdge {
+    /** Partnership id from the BE; null for fixtures that ship a bare `{a, b}` pair. */
+    id: string | null
     aId: string
     bId: string
     ax: number

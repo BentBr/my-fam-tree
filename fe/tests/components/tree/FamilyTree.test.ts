@@ -172,3 +172,111 @@ describe('FamilyTree', () => {
         expect(edge.exists()).toBe(true)
     })
 })
+
+describe('FamilyTree compare mode', () => {
+    // Stubs mirror the props FamilyTree hands down into data-* attributes.
+    const NodeStub = {
+        props: ['node', 'selected', 'isCurrentUser', 'isHovered', 'isRelated', 'isDimmed', 'compareBadge'],
+        emits: ['select', 'hover'],
+        template:
+            '<g :data-id="node.id" :data-related="isRelated" :data-dimmed="isDimmed" ' +
+            ':data-badge="compareBadge ?? \'none\'" ' +
+            '@click="$emit(\'select\', node.id)" @mouseenter="$emit(\'hover\', node.id)" />',
+    }
+    const EdgeStub = {
+        props: ['kind', 'ax', 'ay', 'bx', 'by', 'isHighlighted', 'isDimmed'],
+        template: '<g class="edge" :data-kind="kind" :data-highlighted="isHighlighted" :data-dimmed="isDimmed" />',
+    }
+
+    /** a is the parent of b; c is unrelated. */
+    function family(partnerEdges: TreeInput['partner_edges'] = []): TreeInput {
+        return {
+            nodes: [
+                { id: 'a', given_name: 'A', family_name: '1', parent_ids: [], partner_ids: [] },
+                { id: 'b', given_name: 'B', family_name: '2', parent_ids: ['a'], partner_ids: [] },
+                { id: 'c', given_name: 'C', family_name: '3', parent_ids: [], partner_ids: [] },
+            ],
+            parent_edges: [{ a: 'b', b: 'a' }],
+            partner_edges: partnerEdges,
+        }
+    }
+
+    /** a and b are partners (no parent link) through every given partnership row. */
+    function couple(ids: string[]): TreeInput {
+        return {
+            nodes: [
+                { id: 'a', given_name: 'A', family_name: '1', parent_ids: [], partner_ids: ['b'] },
+                { id: 'b', given_name: 'B', family_name: '2', parent_ids: [], partner_ids: ['a'] },
+            ],
+            parent_edges: [],
+            partner_edges: ids.map((id) => ({ a: 'a', b: 'b', id })),
+        }
+    }
+
+    function mountTree(tree: TreeInput, extra: Record<string, unknown> = {}) {
+        return mount(FamilyTree, {
+            props: { tree, selectedId: null, centerOnId: null, currentUserId: null, ...extra },
+            global: { stubs: { TreeNode: NodeStub, TreeEdge: EdgeStub } },
+        })
+    }
+
+    it('emits compare-select instead of select while compare mode is on', async () => {
+        const w = mountTree(family(), { compareMode: true })
+        await w.find('[data-id="b"]').trigger('click')
+        expect(w.emitted('compare-select')).toEqual([['b']])
+        expect(w.emitted('select')).toBeUndefined()
+    })
+
+    it('keeps emitting select while compare mode is off', async () => {
+        const w = mountTree(family())
+        await w.find('[data-id="b"]').trigger('click')
+        expect(w.emitted('select')).toEqual([['b']])
+        expect(w.emitted('compare-select')).toBeUndefined()
+    })
+
+    it('lights the path and dims everything else', () => {
+        const w = mountTree(family(), { highlight: { path: ['b', 'a'], partnershipId: null } })
+        const edge = w.find('.edge')
+        expect(edge.attributes('data-highlighted')).toBe('true')
+        expect(edge.attributes('data-dimmed')).toBe('false')
+        expect(w.find('[data-id="a"]').attributes('data-related')).toBe('true')
+        expect(w.find('[data-id="a"]').attributes('data-dimmed')).toBe('false')
+        expect(w.find('[data-id="c"]').attributes('data-dimmed')).toBe('true')
+    })
+
+    it('keeps an off-path person dimmed while hovered: the path wins over hover', async () => {
+        const w = mountTree(family(), { highlight: { path: ['b', 'a'], partnershipId: null } })
+        await w.find('[data-id="c"]').trigger('mouseenter')
+        expect(w.find('[data-id="c"]').attributes('data-dimmed')).toBe('true')
+        expect(w.find('[data-id="b"]').attributes('data-dimmed')).toBe('false')
+    })
+
+    it('lights only the partnership row the relation crosses', () => {
+        const w = mountTree(couple(['p1', 'p2']), { highlight: { path: ['a', 'b'], partnershipId: 'p2' } })
+        const edges = w.findAll('[data-kind="partner"]')
+        expect(edges).toHaveLength(2)
+        expect(edges.map((e) => e.attributes('data-highlighted'))).toEqual(['false', 'true'])
+        expect(edges.map((e) => e.attributes('data-dimmed'))).toEqual(['true', 'false'])
+    })
+
+    it('does not light a parent link between the two partners of the crossed partnership', () => {
+        const tree = family([{ a: 'a', b: 'b', id: 'p1' }])
+        const w = mountTree(tree, { highlight: { path: ['a', 'b'], partnershipId: 'p1' } })
+        expect(w.find('[data-kind="partner"]').attributes('data-highlighted')).toBe('true')
+        expect(w.find('[data-kind="parent"]').attributes('data-highlighted')).toBe('false')
+    })
+
+    it('lights no partner edge for a blood relation between two partners', () => {
+        const tree = family([{ a: 'a', b: 'b', id: 'p1' }])
+        const w = mountTree(tree, { highlight: { path: ['b', 'a'], partnershipId: null } })
+        expect(w.find('[data-kind="partner"]').attributes('data-highlighted')).toBe('false')
+        expect(w.find('[data-kind="parent"]').attributes('data-highlighted')).toBe('true')
+    })
+
+    it('hands the compare slots to the matching nodes', () => {
+        const w = mountTree(family(), { compareMode: true, compareAId: 'b', compareBId: 'c' })
+        expect(w.find('[data-id="b"]').attributes('data-badge')).toBe('1')
+        expect(w.find('[data-id="c"]').attributes('data-badge')).toBe('2')
+        expect(w.find('[data-id="a"]').attributes('data-badge')).toBe('none')
+    })
+})
