@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // Read the production favicon as our test PNG. Avoids the trap of
 // hand-rolling tiny PNG hex blobs whose chunk CRCs are easy to get
@@ -22,7 +23,7 @@ import { signIn } from '../page-objects/session'
 const TINY_PNG = readFileSync(fileURLToPath(new URL('../../public/brand/favicon-16.png', import.meta.url)))
 
 test('owner uploads an avatar then clears it; the account card reflects both states', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `avatar-flow-${stamp}@example.com`)
     await page.goto('/account')
     await expect(page.getByTestId('account-card')).toBeVisible()

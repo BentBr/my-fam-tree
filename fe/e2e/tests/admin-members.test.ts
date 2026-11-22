@@ -1,9 +1,10 @@
 import { expect, test } from '../fixtures/console.fixture'
 import { inviteAndAccept } from '../page-objects/invites'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('admin can promote a user → admin from /admin/members', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // Owner sets up the family.
     const ownerEmail = `members-owner-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
@@ -40,7 +41,7 @@ test('admin can promote a user → admin from /admin/members', async ({ browser 
 })
 
 test('admin sees no revoke button on another admin row', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     // Owner sets up the family and creates a second admin via invite.
     const ownerEmail = `members-owner2-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
@@ -95,7 +96,7 @@ test('admin sees no revoke button on another admin row', async ({ browser }) => 
 })
 
 test('owner can demote an admin → user via confirm dialog', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const ownerEmail = `members-owner3-${stamp}@example.com`
     const { context: ownerCtx, page: owner } = await signedInContext(browser, ownerEmail)
     const familyId = await createFamily(owner, `Members3-${stamp}`)

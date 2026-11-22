@@ -18,9 +18,10 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('a failed refresh (both cookies gone) bounces the user to sign-in', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const email = `refresh-fails-${stamp}@example.com`
     const { context: ctx, page } = await signedInContext(browser, email)
     await createFamily(page, `RefreshFails-${stamp}`)

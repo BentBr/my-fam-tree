@@ -5,13 +5,14 @@
 
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test('the health page renders DB + worker + server-latency chips', async ({ page }) => {
     // `/health` lives in MainLayout and is gated by the family-active
     // guard (the route guard bounces anonymous visitors to /auth/sign-in
     // even though `requiresAuth: false` on the meta, since the route
     // isn't marked `public`). Sign in first.
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `health-chips-${stamp}@example.com`)
 
     await page.goto('/health')

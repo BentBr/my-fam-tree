@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreatePartnership, useDeletePartnership, useUpdatePartnership } from '@/api/hooks/relationships'
-import { MIN_DATE } from '@/utils/dates'
+import { MIN_DATE, toLocalIsoDate } from '@/utils/dates'
 
 export interface PartnerRow {
     id: string
@@ -56,16 +56,6 @@ const endReasonOptions = computed(() => [
     { value: 'death', title: t('person.endReason.death') },
 ])
 
-// YYYY-MM-DD in local time — matches `<input type="date">` format and
-// sidesteps the timezone-shifted-by-a-day surprise of `toISOString()`.
-function todayIso(): string {
-    const d = new Date()
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
-
 function startEditing(row: PartnerRow): void {
     openId.value = row.id
     draft.value = {
@@ -83,7 +73,7 @@ function endPartnership(row: PartnerRow): void {
     draft.value = {
         kind: row.kind as PartnerDraft['kind'],
         started_on: row.started_on,
-        ended_on: todayIso(),
+        ended_on: toLocalIsoDate(new Date()),
         end_reason: 'divorce',
     }
 }

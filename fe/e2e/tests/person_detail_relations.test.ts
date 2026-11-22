@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { signIn, signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 const TREE_NODE_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -77,7 +78,7 @@ async function linkMarriageByName(page: Page, personId: string, partnerName: str
 // ---------------------------------------------------------------------------
 
 test('owner sees full data + collapsible relations and ends a partnership inline', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `pd-owner-${stamp}@example.com`)
     await createFamily(page, `PDOwner-${stamp}`)
     await page.goto('/tree')
@@ -183,7 +184,7 @@ test('owner sees full data + collapsible relations and ends a partnership inline
 test('user-role member sees read-only PersonDetail with relations panels but no edit affordances', async ({
     browser,
 }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const ownerEmail = `pd-owner2-${stamp}@example.com`
     const userEmail = `pd-user-${stamp}@example.com`
 

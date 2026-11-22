@@ -51,7 +51,7 @@ export function flushRedis(): Promise<void> {
         const socket = new Socket()
         const timer = setTimeout(() => {
             socket.destroy()
-            reject(new Error(`redis flush timed out (${endpoint.host}:${endpoint.port})`))
+            reject(new Error(`redis flush timed out (${endpoint.host}:${String(endpoint.port)})`))
         }, 5_000)
         socket.connect(endpoint.port, endpoint.host, () => {
             // Minimal RESP-2 frame: FLUSHDB has no args.

@@ -35,7 +35,7 @@ export default async function globalTeardown(): Promise<void> {
         }
         const quoted = targets.map((t) => `"${t}"`).join(', ')
         await client.query(`TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE`)
-        console.log(`[E2E Teardown] truncated ${targets.length} table(s): ${targets.join(', ')}`)
+        console.log(`[E2E Teardown] truncated ${String(targets.length)} table(s): ${targets.join(', ')}`)
     } catch (error) {
         console.error('[E2E Teardown] cleanup failed (non-fatal):', error)
     } finally {

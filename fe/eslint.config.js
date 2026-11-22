@@ -42,8 +42,6 @@ export default defineConfigWithVueTs(
             globals: { ...globals.browser, ...globals.node },
         },
         rules: {
-            // Measured 187 hits, all numbers in template literals; numbers stringify safely.
-            '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
             '@typescript-eslint/no-explicit-any': 'error',
             '@typescript-eslint/no-non-null-assertion': 'error',
             '@typescript-eslint/consistent-type-imports': 'error',

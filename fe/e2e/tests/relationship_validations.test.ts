@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/console.fixture'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 interface PersonOpts {
     given: string
@@ -154,7 +155,7 @@ async function expectToastContaining(
 // ---------------------------------------------------------------------------
 
 test('422 rejects a parent born after the child (parent_not_older_than_child)', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `parent-age-${stamp}@example.com`)
     await createFamily(page, `ParentAge-${stamp}`)
     await page.goto('/tree')
@@ -172,7 +173,7 @@ test('422 rejects a parent born after the child (parent_not_older_than_child)', 
 })
 
 test('422 caps biological parents at two (too_many_biological_parents)', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `too-many-${stamp}@example.com`)
     await createFamily(page, `TooMany-${stamp}`)
     await page.goto('/tree')
@@ -204,7 +205,7 @@ test('422 caps biological parents at two (too_many_biological_parents)', async (
 })
 
 test('422 rejects partnership starting before either partner was born (partnership_before_birth)', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `partnership-pre-birth-${stamp}@example.com`)
     await createFamily(page, `PreBirth-${stamp}`)
     await page.goto('/tree')
@@ -225,7 +226,7 @@ test('422 rejects partnership starting before either partner was born (partnersh
 test('422 rejects biological parent who died before child was conceived (parent_deceased_before_child)', async ({
     page,
 }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `parent-deceased-${stamp}@example.com`)
     await createFamily(page, `Deceased-${stamp}`)
     await page.goto('/tree')
@@ -251,7 +252,7 @@ test('422 rejects biological parent who died before child was conceived (parent_
 // ---------------------------------------------------------------------------
 
 test('409 rejects a duplicate partnership of the same kind (partnership_duplicate)', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `partnership-dup-${stamp}@example.com`)
     await createFamily(page, `Dup-${stamp}`)
     await page.goto('/tree')
@@ -282,7 +283,7 @@ test('409 rejects a duplicate partnership of the same kind (partnership_duplicat
 // ---------------------------------------------------------------------------
 
 test('409 rejects a parent link that would close a cycle (relationship_cycle)', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `cycle-${stamp}@example.com`)
     await createFamily(page, `Cycle-${stamp}`)
     await page.goto('/tree')
@@ -310,7 +311,7 @@ test('409 rejects a parent link that would close a cycle (relationship_cycle)', 
 // ---------------------------------------------------------------------------
 
 test('200 with sibling_partnership warning surfaces an info toast and still writes the row', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     await signIn(page, `sibling-${stamp}@example.com`)
     await createFamily(page, `Sibling-${stamp}`)
     await page.goto('/tree')

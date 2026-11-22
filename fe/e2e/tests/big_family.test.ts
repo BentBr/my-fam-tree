@@ -26,6 +26,7 @@ import { clearMailpit } from '../fixtures/mailpit.fixture'
 import { LoginPage } from '../page-objects/login.page'
 import { PER_GEN, TOTAL, bulkSeedFamily } from '../page-objects/seed'
 import { consumeLinkFromEmail } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 test.describe('big family stress test', () => {
     // Slow test — bump the per-test timeout above the default 30s so
@@ -38,7 +39,7 @@ test.describe('big family stress test', () => {
         // and lands on `/families/pick` after consuming the magic link,
         // not `/families/create`. A unique email guarantees the fresh
         // empty-state.
-        const email = `stress-${Date.now()}@example.com`
+        const email = `stress-${uniqueStamp()}@example.com`
         await clearMailpit()
         const login = new LoginPage(page)
         await login.goto()
@@ -52,7 +53,7 @@ test.describe('big family stress test', () => {
         // scale, and the API path is what the test actually wants to
         // exercise.
         const createRes = await page.request.post('/api/v1/families', {
-            data: { name: `Stress ${Date.now()}` },
+            data: { name: `Stress ${uniqueStamp()}` },
         })
         expect(createRes.ok()).toBeTruthy()
         const created = (await createRes.json()) as { data: { family: { id: string } } }
@@ -70,7 +71,9 @@ test.describe('big family stress test', () => {
         const startSeed = Date.now()
         await bulkSeedFamily(page.request, familyId)
         const seedMs = Date.now() - startSeed
-        console.log(`[big_family] seeded ${TOTAL} persons + ${TOTAL - PER_GEN} edges in ${seedMs}ms`)
+        console.log(
+            `[big_family] seeded ${String(TOTAL)} persons + ${String(TOTAL - PER_GEN)} edges in ${String(seedMs)}ms`,
+        )
 
         // `evaluateAll` runs in the browser context, where module-scope
         // values aren't reachable; the UUID test inlines instead.

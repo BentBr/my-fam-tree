@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/console.fixture'
 import { rewriteEmailLink } from '../fixtures/email-links.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { signedInContext, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 async function createPerson(page: Page, givenName: string, familyName: string): Promise<string> {
     await page.goto('/tree')
@@ -19,7 +20,7 @@ async function createPerson(page: Page, givenName: string, familyName: string): 
 }
 
 test('user role can edit their own linked person row', async ({ browser }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
 
     // Owner sets up the family + creates the person to invite-as.
     const ownerEmail = `self-edit-owner-${stamp}@example.com`

@@ -4,6 +4,7 @@ import { digestSendDates, setUserTimezone } from '../fixtures/db.fixture'
 import { clearMailpit, waitForEmail } from '../fixtures/mailpit.fixture'
 import { seedPerson } from '../page-objects/seed'
 import { signIn, createFamily } from '../page-objects/session'
+import { uniqueStamp } from '../page-objects/unique'
 
 // The worker exposes POST /__test/advance-clock only when built with
 // `--features test-fixtures` (CI + `REMINDER_WORKER_FEATURES=test-fixtures`
@@ -12,7 +13,7 @@ import { signIn, createFamily } from '../page-objects/session'
 const WORKER_URL = process.env['WORKER_TEST_URL'] ?? 'http://localhost:9091'
 
 test('a daily digest email fires 7 days before a birthday when reminders are on', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const userEmail = `reminders-${stamp}@example.com`
     await signIn(page, userEmail)
     await createFamily(page, `Reminders-${stamp}`)
@@ -107,7 +108,7 @@ async function resetClock(request: APIRequestContext): Promise<void> {
 }
 
 test('the digest fires at 06:00 in the user’s own timezone, not Berlin’s', async ({ page }) => {
-    const stamp = Date.now()
+    const stamp = uniqueStamp()
     const userEmail = `reminders-ny-${stamp}@example.com`
     await signIn(page, userEmail)
     await createFamily(page, `RemindersNY-${stamp}`)

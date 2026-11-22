@@ -32,7 +32,7 @@ async function resetWorkerClock(): Promise<void> {
         console.log(
             res.ok
                 ? '[E2E Setup] worker clock reset to real now'
-                : `[E2E Setup] worker clock reset skipped (HTTP ${res.status})`,
+                : `[E2E Setup] worker clock reset skipped (HTTP ${String(res.status)})`,
         )
     } catch {
         console.log('[E2E Setup] worker clock reset skipped (test-fixtures listener unreachable)')

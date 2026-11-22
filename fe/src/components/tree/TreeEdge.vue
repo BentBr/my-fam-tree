@@ -48,12 +48,17 @@ const props = defineProps<{
 // Parent edges draw a vertical cubic Bezier from child top up to parent bottom
 // so multi-generation stacks read as smooth lineages. Partner edges are flat
 // horizontal lines so the relationship glyph sits naturally on the midpoint.
+/** One SVG path coordinate pair. */
+function point(x: number, y: number): string {
+    return `${String(x)} ${String(y)}`
+}
+
 const path = computed(() => {
     if (props.kind === 'parent') {
         const midY = (props.ay + props.by) / 2
-        return `M ${props.ax} ${props.ay} C ${props.ax} ${midY}, ${props.bx} ${midY}, ${props.bx} ${props.by}`
+        return `M ${point(props.ax, props.ay)} C ${point(props.ax, midY)}, ${point(props.bx, midY)}, ${point(props.bx, props.by)}`
     }
-    return `M ${props.ax} ${props.ay} L ${props.bx} ${props.by}`
+    return `M ${point(props.ax, props.ay)} L ${point(props.bx, props.by)}`
 })
 
 const midX = computed(() => (props.ax + props.bx) / 2)
