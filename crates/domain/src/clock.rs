@@ -22,6 +22,11 @@
 //!   `set(...)` calls, so the outbox drains normally while the digest
 //!   ticker can still be fast-forwarded.
 
+#![expect(
+    clippy::disallowed_methods,
+    reason = "the clock module is the one sanctioned reader of the wall clock (SystemClock, OffsetClock); its tests sleep to observe real time passing"
+)]
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 

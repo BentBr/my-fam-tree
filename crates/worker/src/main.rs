@@ -85,6 +85,10 @@ async fn run_leader_loop(
 // to a new boundary without making either side simpler, so we accept
 // the length here.
 #[expect(clippy::too_many_lines, reason = "linear wiring sequence — splitting hides the order")]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
+)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {

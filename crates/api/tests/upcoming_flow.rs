@@ -19,7 +19,7 @@ use actix_web::cookie::Cookie;
 use actix_web::test;
 use common::{create_family, ephemeral_stack, sign_in};
 use my_fam_tree_api::build_app;
-use time::OffsetDateTime;
+use my_fam_tree_domain::clock::Clock;
 
 /// Helper: POST a person with optional birth/death dates and return the new id.
 #[expect(
@@ -144,7 +144,7 @@ async fn upcoming_filter_modes_sort_and_limit() {
     )
     .await;
     // Dora died THIS year ⇒ death_anniversary must be suppressed.
-    let this_year = OffsetDateTime::now_utc().date().year();
+    let this_year = stack.clock.now().date().year();
     let dora_death = format!("{this_year}-12-31");
     let dora = create_person(
         &app,

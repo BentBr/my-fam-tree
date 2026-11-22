@@ -126,6 +126,10 @@ mod test_fixtures {
         }
         let date = match req.date {
             Some(d) => d,
+            #[expect(
+                clippy::disallowed_methods,
+                reason = "an omitted date means today in real time, independent of where the fixture clock was moved"
+            )]
             None => zones.local_date(OffsetDateTime::now_utc(), DEFAULT_TIMEZONE).await?,
         };
         let six = Time::from_hms(DIGEST_LOCAL_HOUR, 0, 0).unwrap_or(Time::MIDNIGHT);

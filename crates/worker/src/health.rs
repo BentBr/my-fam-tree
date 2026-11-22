@@ -71,6 +71,10 @@ impl Heartbeat {
     }
 }
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "liveness is real time: the heartbeat must age even when the fixture clock is frozen or moved"
+)]
 fn now_unix_ms() -> i64 {
     i64::try_from(time::OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000)
         .unwrap_or(i64::MAX)
@@ -141,6 +145,10 @@ mod tests {
         // timing precision".
         let hb = Heartbeat::default();
         hb.beat();
+        #[expect(
+            clippy::disallowed_methods,
+            reason = "sync unit test: the heartbeat ages in real time, so real time has to pass"
+        )]
         std::thread::sleep(std::time::Duration::from_millis(50));
         hb.beat();
         let age = hb.last_tick_age_ms().expect("second beat()");

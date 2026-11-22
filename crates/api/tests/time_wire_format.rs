@@ -11,6 +11,10 @@
     clippy::shadow_reuse,
     reason = "test code: panics are test failures; test steps rebind the same response/body names"
 )]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "asserts DB-stamped created_at is close to wall time"
+)]
 
 mod common;
 

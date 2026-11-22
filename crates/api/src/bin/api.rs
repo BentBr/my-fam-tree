@@ -21,6 +21,10 @@ use my_fam_tree_persistence::{
 };
 use my_fam_tree_storage::{LocalObjectStore, ObjectStore, S3Config, S3ObjectStore};
 
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
+)]
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {

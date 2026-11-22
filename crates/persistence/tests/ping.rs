@@ -2,6 +2,11 @@
 //! test -p my-fam-tree-persistence --test ping` so the test sees the compose
 //! `postgres` service at its network hostname.
 
+#![expect(
+    clippy::disallowed_methods,
+    reason = "integration test opts in via DATABASE_URL from cargo-in-network.sh; there is no app config to read it through"
+)]
+
 use std::time::Duration;
 
 use my_fam_tree_persistence::Database;

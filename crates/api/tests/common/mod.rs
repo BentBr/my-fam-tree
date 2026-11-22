@@ -103,6 +103,10 @@ pub async fn ephemeral_stack() -> TestStack {
     let public_json =
         serde_json::json!([{"kid": "t", "public_pem": pub_pem.trim_end()}]).to_string();
     let keys = JwtKeyset::load(&priv_pem, "t", &public_json).expect("load keys");
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "the harness clock starts at real now so DB-defaulted timestamps line up with it"
+    )]
     let clock = FixedClock::new(time::OffsetDateTime::now_utc());
     let issuer = JwtIssuer::new(
         keys,

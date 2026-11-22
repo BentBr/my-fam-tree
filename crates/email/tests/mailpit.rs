@@ -12,6 +12,11 @@
 //! my-fam-tree-email --test mailpit`, which injects both env vars pointing at the
 //! compose `mailpit` service.
 
+#![expect(
+    clippy::disallowed_methods,
+    reason = "the test opts in via EMAIL_DSN / MAILPIT_API from cargo-in-network.sh; there is no app config to read them through"
+)]
+
 use my_fam_tree_email::{EmailSender, OutboundEmail, SmtpSender};
 
 #[tokio::test]

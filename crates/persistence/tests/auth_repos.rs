@@ -7,6 +7,10 @@
 //! leak running postgres instances on the docker host across runs.
 
 #![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "repo smoke tests stamp rows relative to the wall clock; there is no app clock at this layer"
+)]
 
 use std::time::Duration as StdDuration;
 

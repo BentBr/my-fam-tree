@@ -9,6 +9,10 @@
     clippy::too_many_lines,
     reason = "test code: setup failures abort the test with context; fixture names mirror the domain; long linear set-up reads best in one place"
 )]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "worker repo tests compare against rows Postgres stamps with now(); the reference has to be wall time"
+)]
 
 use std::time::Duration as StdDuration;
 

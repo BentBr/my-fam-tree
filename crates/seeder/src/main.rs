@@ -14,6 +14,10 @@ use my_fam_tree_seeder::run_seed;
     clippy::print_stdout,
     reason = "this binary's job is to surface seeded magic-link URLs on stdout"
 )]
+#[expect(
+    clippy::disallowed_methods,
+    reason = "APP_ENV decides whether to load .env, which must happen before the config crate reads the environment"
+)]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     if std::env::var("APP_ENV").as_deref() == Ok("development") {

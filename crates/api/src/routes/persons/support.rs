@@ -335,8 +335,8 @@ mod tests {
             notes: String::new(),
             linked_user_id: None,
             photo_key: None,
-            created_at: time::OffsetDateTime::now_utc(),
-            updated_at: time::OffsetDateTime::now_utc(),
+            created_at: time::macros::datetime!(2026-01-01 00:00 UTC),
+            updated_at: time::macros::datetime!(2026-01-01 00:00 UTC),
         }
     }
 

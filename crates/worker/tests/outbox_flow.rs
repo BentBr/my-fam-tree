@@ -6,6 +6,10 @@
 //! validated end-to-end (the API tests use a `SyncOutbox` double).
 
 #![expect(clippy::expect_used, reason = "test code: setup failures abort the test with context")]
+#![expect(
+    clippy::disallowed_methods,
+    reason = "worker repo tests compare against rows Postgres stamps with now(); the reference has to be wall time"
+)]
 
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
