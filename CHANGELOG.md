@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.26](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.25...core-v0.1.26) (2026-11-23)
+
+
+### Features
+
+* **fe:** link Slothlike to slothlike.eu in footer and imprint ([3ed09f1](https://github.com/BentBr/my-fam-tree/commit/3ed09f1a86e34843558005e582f8326a0726f151))
+
 ## [0.1.25](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.24...core-v0.1.25) (2026-11-23)
 
 
