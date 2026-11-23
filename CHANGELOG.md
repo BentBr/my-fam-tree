@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.25](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.24...core-v0.1.25) (2026-11-23)
+
+
+### Features
+
+* **fe:** toggle for angular tree connector lines ([7447c15](https://github.com/BentBr/my-fam-tree/commit/7447c15771c0485ad4777b2fb363464b4d18476a))
+* **users:** store the tree connector style on the account ([9198b89](https://github.com/BentBr/my-fam-tree/commit/9198b8949337d280c2d4b771171eaadfd91a827e))
+
 ## [0.1.24](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.23...core-v0.1.24) (2026-11-23)
 
 
