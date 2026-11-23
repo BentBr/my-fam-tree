@@ -8,7 +8,9 @@ import 'd3-transition'
 import { zoom as d3zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom'
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { edgeKey, pathEdgeKeys, type PathHighlight } from './comparePath'
 import { layoutTree, NODE_H, NODE_W, type Positioned, type TreeInput } from './layout'
+import type { PartnerEdge } from './layout/types'
 import TreeEdge from './TreeEdge.vue'
 import TreeNode from './TreeNode.vue'
 import { computeLineageIds, isLineageEdge } from './useLineage'
@@ -35,12 +37,27 @@ const props = withDefaults(
          * mode flips off the pin is cleared.
          */
         highlightMode?: boolean
+        /**
+         * Compare mode: a click emits `compare-select` instead of opening
+         * the drawer. The parent owns the pair; mutually exclusive with
+         * `highlightMode`.
+         */
+        compareMode?: boolean
+        /** Selected person A (badge 1), or null. */
+        compareAId?: string | null
+        /** Selected person B (badge 2), or null. */
+        compareBId?: string | null
+        /**
+         * The active kinship relation. When set it takes precedence over
+         * the lineage focus for lit / dimmed.
+         */
+        highlight?: PathHighlight | null
     }>(),
-    { highlightMode: false },
+    { highlightMode: false, compareMode: false, compareAId: null, compareBId: null, highlight: null },
 )
 
 const emit = defineEmits<{
-    (e: 'select', id: string): void
+    (e: 'select' | 'compare-select', id: string): void
     (e: 'toggle-favourite', id: string, next: boolean): void
 }>()
 
@@ -83,12 +100,32 @@ function onNodeHover(id: string | null): void {
     hoverId.value = id
 }
 
+// Compare mode: the active relation's path wins over the lineage focus.
+const pathNodes = computed<Set<string> | null>(() => (props.highlight === null ? null : new Set(props.highlight.path)))
+const pathPairs = computed<Set<string> | null>(() =>
+    props.highlight === null ? null : pathEdgeKeys(props.highlight.path),
+)
+/** The pair joined by the relation's partnership — their parent link, if any, is not on the path. */
+const partnershipPair = computed<string | null>(() => {
+    const id = props.highlight?.partnershipId ?? null
+    const edge = id === null ? undefined : layout.value.partnerEdges.find((e) => e.id === id)
+    return edge === undefined ? null : edgeKey(edge.aId, edge.bId)
+})
+
+/** Something is lit, so everything else fades. */
+const dimActive = computed<boolean>(() => pathNodes.value !== null || focusId.value !== null)
+
 /**
- * Node-select dispatch. In highlight mode a click PINS the lineage
- * (toggling off if the same node is re-clicked) and does NOT open the
- * detail drawer. Otherwise it forwards `select` as before.
+ * Node-select dispatch. In compare mode a click only reports the person —
+ * the parent owns the pair. In highlight mode a click PINS the lineage
+ * (toggling off if the same node is re-clicked). Neither opens the detail
+ * drawer. Otherwise it forwards `select` as before.
  */
 function onNodeSelect(id: string): void {
+    if (props.compareMode) {
+        emit('compare-select', id)
+        return
+    }
     if (props.highlightMode) {
         pinnedId.value = pinnedId.value === id ? null : id
         return
@@ -96,9 +133,32 @@ function onNodeSelect(id: string): void {
     emit('select', id)
 }
 
-/** Whether an edge lies inside the focus person's lineage. */
-function isEdgeHighlighted(aId: string, bId: string): boolean {
-    return isLineageEdge(focusId.value, relatedIds.value, aId, bId)
+/** A parent edge is lit on the compare path, or inside the focus person's lineage. */
+function isParentEdgeHighlighted(childId: string, parentId: string): boolean {
+    if (pathPairs.value === null) return isLineageEdge(focusId.value, relatedIds.value, childId, parentId)
+    const key = edgeKey(childId, parentId)
+    return pathPairs.value.has(key) && key !== partnershipPair.value
+}
+
+/** A partner edge is lit when it IS the partnership the relation crosses, or inside the lineage. */
+function isPartnerEdgeHighlighted(edge: PartnerEdge): boolean {
+    if (props.highlight === null) return isLineageEdge(focusId.value, relatedIds.value, edge.aId, edge.bId)
+    return edge.id !== null && edge.id === props.highlight.partnershipId
+}
+
+function isNodeLit(id: string): boolean {
+    return pathNodes.value !== null ? pathNodes.value.has(id) : relatedIds.value.has(id)
+}
+
+function isNodeDimmed(id: string): boolean {
+    if (pathNodes.value !== null) return !pathNodes.value.has(id)
+    return focusId.value !== null && id !== focusId.value && !relatedIds.value.has(id)
+}
+
+function compareBadge(id: string): 1 | 2 | null {
+    if (id === props.compareAId) return 1
+    if (id === props.compareBId) return 2
+    return null
 }
 
 function nodeCenter(id: string): { x: number; y: number } | null {
@@ -299,12 +359,12 @@ defineExpose({
                     :ay="e.childY"
                     :bx="e.parentX"
                     :by="e.parentY"
-                    :is-highlighted="isEdgeHighlighted(e.childId, e.parentId)"
-                    :is-dimmed="focusId !== null && !isEdgeHighlighted(e.childId, e.parentId)"
+                    :is-highlighted="isParentEdgeHighlighted(e.childId, e.parentId)"
+                    :is-dimmed="dimActive && !isParentEdgeHighlighted(e.childId, e.parentId)"
                 />
                 <TreeEdge
                     v-for="e in layout.partnerEdges"
-                    :key="`pn-${e.aId}-${e.bId}`"
+                    :key="`pn-${e.id ?? `${e.aId}-${e.bId}`}`"
                     kind="partner"
                     :ax="e.ax"
                     :ay="e.ay"
@@ -313,8 +373,8 @@ defineExpose({
                     :partnership-kind="e.kind"
                     :ended="e.ended"
                     :directly-adjacent="e.directlyAdjacent"
-                    :is-highlighted="isEdgeHighlighted(e.aId, e.bId)"
-                    :is-dimmed="focusId !== null && !isEdgeHighlighted(e.aId, e.bId)"
+                    :is-highlighted="isPartnerEdgeHighlighted(e)"
+                    :is-dimmed="dimActive && !isPartnerEdgeHighlighted(e)"
                 />
                 <TreeNode
                     v-for="n in layout.nodes"
@@ -323,8 +383,9 @@ defineExpose({
                     :selected="n.id === selectedId"
                     :is-current-user="n.linked_user_id !== null && n.linked_user_id === props.currentUserId"
                     :is-hovered="n.id === focusId"
-                    :is-related="relatedIds.has(n.id)"
-                    :is-dimmed="focusId !== null && n.id !== focusId && !relatedIds.has(n.id)"
+                    :is-related="isNodeLit(n.id)"
+                    :is-dimmed="isNodeDimmed(n.id)"
+                    :compare-badge="compareBadge(n.id)"
                     @select="(id: string) => onNodeSelect(id)"
                     @hover="(id: string | null) => onNodeHover(id)"
                     @toggle-favourite="(id: string, next: boolean) => emit('toggle-favourite', id, next)"

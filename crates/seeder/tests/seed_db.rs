@@ -24,7 +24,7 @@ const EXPECTED_PERSONS: usize = SEED_PERSON_COUNT + vellmar::PERSON_COUNT + lang
 fn expected_person_rows() -> i64 {
     i64::try_from(EXPECTED_PERSONS).expect("person count fits in i64")
 }
-const EXPECTED_PARENT_LINKS: i64 = 44 + vellmar::PARENT_LINK_COUNT + lang::PARENT_LINK_COUNT;
+const EXPECTED_PARENT_LINKS: i64 = 46 + vellmar::PARENT_LINK_COUNT + lang::PARENT_LINK_COUNT;
 const EXPECTED_PARTNERSHIPS: i64 = 18 + vellmar::PARTNERSHIP_COUNT;
 const EXPECTED_CONTACTS: i64 = 9;
 

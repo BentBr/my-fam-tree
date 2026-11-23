@@ -9,3 +9,6 @@ export type ClaimsPayload = components['schemas']['ConsumeRes']
 
 /** A person row as returned by the persons endpoints (list + get). */
 export type PersonView = components['schemas']['PersonView']
+
+/** One kinship relation descriptor from `GET /relationships/kinship`. */
+export type KinshipRelation = components['schemas']['KinshipRelation']

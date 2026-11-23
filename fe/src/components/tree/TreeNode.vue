@@ -17,6 +17,8 @@ const props = defineProps<{
      * the target nor a direct relation. Fades to opacity 0.4 so the
      * highlighted subset reads cleanly. */
     isDimmed?: boolean
+    /** Compare-mode slot of this person: 1 = A, 2 = B. */
+    compareBadge?: 1 | 2 | null
 }>()
 
 const emit = defineEmits<{
@@ -151,6 +153,15 @@ function onHoverLeave(): void {
         >
             {{ deathLabel }}
         </text>
+        <!-- Compare-mode selection badge. SVG-native so it scales with the zoom. -->
+        <g
+            v-if="props.compareBadge === 1 || props.compareBadge === 2"
+            class="compare-badge"
+            :data-testid="`tree-node-compare-${String(props.compareBadge)}`"
+        >
+            <circle cx="4" cy="4" r="11" />
+            <text x="4" y="8" text-anchor="middle">{{ props.compareBadge }}</text>
+        </g>
     </g>
 </template>
 
@@ -358,5 +369,13 @@ function onHoverLeave(): void {
 .tree-node.deceased.hovered .initials,
 .tree-node.deceased.related .initials {
     fill: var(--acc-strong);
+}
+.compare-badge circle {
+    fill: var(--acc-strong);
+}
+.compare-badge text {
+    fill: var(--surface);
+    font-size: 13px;
+    font-weight: 700;
 }
 </style>

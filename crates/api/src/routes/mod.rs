@@ -103,6 +103,7 @@ pub fn api_scope() -> actix_web::Scope<
                 .service(contacts::create)
                 .service(contacts::update)
                 .service(contacts::delete)
+                .service(relationships::kinship)
                 .service(relationships::tree)
                 .service(upcoming::list)
                 .service(reminder_prefs::get_prefs)

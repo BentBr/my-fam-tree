@@ -39,11 +39,14 @@ use crate::routes::partnerships::{self, PartnershipViewResponseBody};
 use crate::routes::person_favourites::{self, PersonFavouriteResponseBody};
 use crate::routes::person_photos::{self, PersonPhotoResponseBody};
 use crate::routes::persons::{self, PersonViewResponseBody, PersonsListResponseBody};
-use crate::routes::relationships::{self, TreePayloadResponseBody};
+use crate::routes::relationships::{self, KinshipPayloadResponseBody, TreePayloadResponseBody};
 use crate::routes::reminder_prefs::{self, ReminderPrefsResponseBody};
 use crate::routes::upcoming::{self, UpcomingResponseBody};
 use crate::routes::user_avatars::{self, UserAvatarResponseBody};
 use crate::routes::users::{self, EmailChangeResponseBody, UserProfileResponseBody};
+use crate::services::relationships_kinship::{
+    KinshipInLaw, KinshipPartnership, KinshipPayload, KinshipPerson, KinshipRelation,
+};
 use crate::services::relationships_tree::{EdgePair, PartnerEdge, TreeNode, TreePayload};
 use crate::services::upcoming::UpcomingEvent;
 
@@ -99,6 +102,7 @@ use crate::services::upcoming::UpcomingEvent;
         contacts::update,
         contacts::delete,
         relationships::tree,
+        relationships::kinship,
         upcoming::list,
         reminder_prefs::get_prefs,
         reminder_prefs::put_prefs,
@@ -138,6 +142,7 @@ use crate::services::upcoming::UpcomingEvent;
             ContactListResponseBody,
             ContactViewResponseBody,
             TreePayloadResponseBody,
+            KinshipPayloadResponseBody,
             UpcomingResponseBody,
             ReminderPrefsResponseBody,
             AuditPageResponseBody,
@@ -198,6 +203,12 @@ use crate::services::upcoming::UpcomingEvent;
             TreeNode,
             EdgePair,
             PartnerEdge,
+            relationships::KinshipQuery,
+            KinshipPayload,
+            KinshipRelation,
+            KinshipPerson,
+            KinshipPartnership,
+            KinshipInLaw,
             UpcomingEvent,
             upcoming::UpcomingQuery,
             reminder_prefs::ReminderPrefsView,
@@ -218,7 +229,7 @@ use crate::services::upcoming::UpcomingEvent;
         (name = "invites", description = "Invite acceptance"),
         (name = "users", description = "User profile and email change"),
         (name = "persons", description = "Family members"),
-        (name = "relationships", description = "Parent links, partnerships, tree"),
+        (name = "relationships", description = "Family tree, kinship comparison, parent links and partnerships"),
         (name = "contacts", description = "Per-person contact data"),
         (name = "upcoming", description = "Upcoming birthdays + anniversaries"),
         (name = "reminders", description = "Per-user reminder email preferences"),

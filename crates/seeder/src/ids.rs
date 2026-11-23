@@ -88,6 +88,11 @@ pub const SEED_PERSON_TOM_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_
 // G4 Lina's children.
 pub const SEED_PERSON_EMMA_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0013);
 pub const SEED_PERSON_NOAH_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0014);
+// Two descendants that complete the kinship examples: Paul (Lena's son) is
+// the second cousin of Emma and Noah; Kenji (Yuki's son from an earlier
+// relationship) is the step-sibling of Klaus's children.
+pub const SEED_PERSON_PAUL_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0036);
+pub const SEED_PERSON_KENJI_ID: Uuid = Uuid::from_u128(0x0000_0003_0000_0000_0000_0000_0000_0037);
 // Two more Klaus partners: one historical (Karin), one current/concurrent
 // (Yuki). Round out the ex-spouse + multi-partner edge cases the FE tree
 // layout exercises.
@@ -253,4 +258,4 @@ pub const SEED_PARTNERSHIP_FLK_EDGAR_GISELA_ID: Uuid =
 /// Expected count for the original Müller family seed — surfaced for the
 /// test asserts so they don't drift from the actual data. The Vellmar +
 /// Lang families track their own counts in their modules.
-pub const SEED_PERSON_COUNT: usize = 50;
+pub const SEED_PERSON_COUNT: usize = 52;

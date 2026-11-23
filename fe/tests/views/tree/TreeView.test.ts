@@ -28,7 +28,20 @@ const smAndDown = ref(false)
 vi.mock('vuetify', () => ({ useDisplay: () => ({ smAndDown }) }))
 
 vi.mock('@/api/hooks/relationships', () => ({
-    useTree: () => ({ data: treeData, isLoading: treeIsLoading, error: treeError, refetch }),
+    useTree: () => ({
+        data: treeData,
+        isLoading: treeIsLoading,
+        isFetching: ref(false),
+        dataUpdatedAt: ref(0),
+        error: treeError,
+        refetch,
+    }),
+    useKinship: () => ({
+        data: ref<unknown>(undefined),
+        isFetching: ref(false),
+        isError: ref(false),
+        refetch: vi.fn(),
+    }),
 }))
 vi.mock('@/api/client', () => ({ client: { GET: vi.fn(), POST: vi.fn() } }))
 

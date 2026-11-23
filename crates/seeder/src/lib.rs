@@ -170,3 +170,6 @@ async fn mint_magic_links(
     }
     Ok(out)
 }
+
+#[cfg(test)]
+mod kinship_examples;

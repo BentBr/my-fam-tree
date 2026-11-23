@@ -31,6 +31,13 @@ function mountNode(options: MountOptions): ReturnType<typeof mount<typeof TreeNo
 }
 
 describe('TreeNode', () => {
+    it('renders the compare badge for the given slot and none without the prop', () => {
+        const w = mountNode({ props: { node: node(), selected: false, compareBadge: 2 } })
+        expect(w.find('[data-testid="tree-node-compare-2"]').text()).toBe('2')
+        const plain = mountNode({ props: { node: node(), selected: false } })
+        expect(plain.find('.compare-badge').exists()).toBe(false)
+    })
+
     it('renders given+family name and the birth date row', () => {
         const w = mountNode({ props: { node: node(), selected: false } })
         expect(w.text()).toContain('Alice')

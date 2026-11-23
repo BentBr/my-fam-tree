@@ -4,6 +4,7 @@ pub mod capabilities;
 pub mod clock;
 pub mod dates;
 pub mod ids;
+pub mod kinship;
 pub mod relationships;
 pub mod repos;
 pub mod role;
@@ -11,6 +12,7 @@ pub mod upcoming;
 
 pub use capabilities::{Capability, capabilities_of, has};
 pub use ids::{FamilyId, FamilyMembershipId, PersonId, UserId};
+pub use kinship::{InLawSide, Kinship, PartnerInfo, compute_kinship};
 pub use relationships::{canonicalize_pair, would_create_cycle};
 pub use repos::audit_log::{
     AuditEntry, AuditFilter, AuditLogRepo, AuditPageMeta, AuditRepoError, AuditRow,

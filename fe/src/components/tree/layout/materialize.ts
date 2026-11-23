@@ -108,6 +108,7 @@ export function materializeLayout(
         )
         return [
             {
+                id: e.id ?? null,
                 aId: leftIsA ? e.a : e.b,
                 bId: leftIsA ? e.b : e.a,
                 ax: left.x + NODE_W,
