@@ -21,6 +21,8 @@ const props = withDefaults(
         selectedId: string | null
         /** When set, centers the viewport on this person on mount and on subsequent change. */
         centerOnId: string | null
+        /** Routing of parent → child connectors; the user's choice from the ui store. */
+        edgeShape?: 'curved' | 'angular'
         /**
          * `users.id` of the signed-in user. Compared against each TreeNode's
          * `linked_user_id` to flag the "this is you" card. Decoupled from
@@ -53,7 +55,14 @@ const props = withDefaults(
          */
         highlight?: PathHighlight | null
     }>(),
-    { highlightMode: false, compareMode: false, compareAId: null, compareBId: null, highlight: null },
+    {
+        edgeShape: 'curved',
+        highlightMode: false,
+        compareMode: false,
+        compareAId: null,
+        compareBId: null,
+        highlight: null,
+    },
 )
 
 const emit = defineEmits<{
@@ -359,6 +368,7 @@ defineExpose({
                     :ay="e.childY"
                     :bx="e.parentX"
                     :by="e.parentY"
+                    :shape="edgeShape"
                     :is-highlighted="isParentEdgeHighlighted(e.childId, e.parentId)"
                     :is-dimmed="dimActive && !isParentEdgeHighlighted(e.childId, e.parentId)"
                 />

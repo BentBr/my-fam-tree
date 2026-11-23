@@ -297,6 +297,10 @@
             "switchToLight": "Switch to light mode",
             "switchToDark": "Switch to dark mode"
         },
+        "edgeStyle": {
+            "switchToAngular": "Switch to angular lines",
+            "switchToCurved": "Switch to curved lines"
+        },
         "language": {
             "label": "Language"
         },

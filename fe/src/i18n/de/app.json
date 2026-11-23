@@ -301,6 +301,10 @@
             "switchToLight": "Zum hellen Modus wechseln",
             "switchToDark": "Zum dunklen Modus wechseln"
         },
+        "edgeStyle": {
+            "switchToAngular": "Zu eckigen Linien wechseln",
+            "switchToCurved": "Zu geschwungenen Linien wechseln"
+        },
         "language": {
             "label": "Sprache"
         },

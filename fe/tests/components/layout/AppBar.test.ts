@@ -14,8 +14,9 @@ vi.mock('@/api/hooks/users', () => ({
 // the full Vuetify plugin into the harness — we always test the
 // desktop layout (smAndDown=false) since the inline-tools logic is
 // boolean-simple.
+const smAndDown = ref(false)
 vi.mock('vuetify', () => ({
-    useDisplay: () => ({ smAndDown: ref(false) }),
+    useDisplay: () => ({ smAndDown }),
 }))
 
 import AppBar from '@/components/layout/AppBar.vue'
@@ -23,6 +24,8 @@ import { i18n } from '@/i18n'
 
 interface MountOpts {
     sidebar?: 'main' | 'admin' | 'none'
+    /** Route to mount on; `/tree` is the named `tree` route. */
+    path?: '/' | '/tree'
 }
 
 async function mountAppBar(opts: MountOpts = {}) {
@@ -37,10 +40,11 @@ async function mountAppBar(opts: MountOpts = {}) {
                 // either supply the value or leave the key off entirely.
                 meta: opts.sidebar === undefined ? {} : { sidebar: opts.sidebar },
             },
+            { path: '/tree', name: 'tree', component: { template: '<div />' } },
             { path: '/auth/sign-in', component: { template: '<div />' } },
         ],
     })
-    await router.push('/')
+    await router.push(opts.path ?? '/')
     await router.isReady()
     return mount(AppBar, {
         global: {
@@ -54,6 +58,7 @@ async function mountAppBar(opts: MountOpts = {}) {
                 'v-spacer': { template: '<div class="spacer" />' },
                 BrandLogo: { template: '<div class="brand-stub" data-testid="brand-logo" />' },
                 FamilySwitcher: { template: '<div class="family-stub" />' },
+                EdgeStyleToggle: { template: '<div data-testid="edge-style-toggle" />' },
                 ThemeToggle: { template: '<div class="theme-stub" data-testid="theme-toggle" />' },
                 LanguageMenu: { template: '<div class="lang-stub" data-testid="language-menu" />' },
                 AccountControl: { template: '<div class="account-stub" data-testid="user-menu" />' },
@@ -65,6 +70,23 @@ async function mountAppBar(opts: MountOpts = {}) {
 describe('AppBar', () => {
     beforeEach(() => {
         setActivePinia(createPinia())
+        smAndDown.value = false
+    })
+
+    it('shows the edge-style toggle on the tree route', async () => {
+        const w = await mountAppBar({ path: '/tree' })
+        expect(w.findAll('[data-testid="edge-style-toggle"]')).toHaveLength(1)
+    })
+
+    it('hides the edge-style toggle away from the tree', async () => {
+        const w = await mountAppBar({ sidebar: 'main' })
+        expect(w.find('[data-testid="edge-style-toggle"]').exists()).toBe(false)
+    })
+
+    it('hides the inline edge-style toggle on phones (it folds into the account menu)', async () => {
+        smAndDown.value = true
+        const w = await mountAppBar({ path: '/tree' })
+        expect(w.find('[data-testid="edge-style-toggle"]').exists()).toBe(false)
     })
 
     it('renders the brand logo, theme toggle, language menu, and account control on every route', async () => {
