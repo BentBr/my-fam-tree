@@ -28,6 +28,8 @@ const localeLabel = computed(() => (locale.locale === 'de' ? 'Deutsch' : 'Englis
 // Locale-prefixed legal links — these land in the PRERENDERED HTML, so
 // they must carry the active locale for crawlers / no-JS clients.
 const localized = useLocalizedPath()
+// Build-time year for prerendered pages; client hydration re-evaluates it.
+const year = new Date().getFullYear()
 </script>
 
 <template>
@@ -40,6 +42,17 @@ const localized = useLocalizedPath()
                  boundary (prefix + mid). The brand NAMES ("Rust",
                  "Vue.js") are hardcoded — same in every language. -->
             <span class="public-footer__tagline" data-testid="public-footer-tagline">
+                <!-- One flex item so the gap doesn't split "Slothlike" from its period. -->
+                <span
+                    >{{ t('public.footer.copyrightPrefix', { year }) }}
+                    <a
+                        href="https://slothlike.eu"
+                        target="_blank"
+                        rel="noopener"
+                        class="public-footer__company"
+                        data-testid="footer-company"
+                        >{{ t('public.footer.company') }}</a>.</span
+                >
                 {{ t('public.footer.taglinePrefix') }}
                 <img :src="ferrisIcon" class="public-footer__stack-icon public-footer__stack-icon--ferris" alt="" />
                 <span class="public-footer__stack-name">Rust</span>
@@ -106,6 +119,15 @@ const localized = useLocalizedPath()
     border-bottom: 1px dashed transparent;
 }
 .public-footer__links a:hover {
+    color: var(--acc-strong);
+    border-bottom-color: currentColor;
+}
+.public-footer__company {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+}
+.public-footer__company:hover {
     color: var(--acc-strong);
     border-bottom-color: currentColor;
 }
