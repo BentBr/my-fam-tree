@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.1.24](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.23...core-v0.1.24) (2026-11-23)
+
+
+### Features
+
+* **api:** add GET /relationships/kinship ([5138273](https://github.com/BentBr/my-fam-tree/commit/5138273409102f2d0e5227246825d7a246a88991))
+* **claude:** add /qa skill and quality-assurance agent ([020cdbe](https://github.com/BentBr/my-fam-tree/commit/020cdbe9fd5595c2890ef3f90b30ad89126ccd7f))
+* **domain:** compute kinship relations between two persons ([57b3e7b](https://github.com/BentBr/my-fam-tree/commit/57b3e7be217fb0bcf0c68a4db3f1736e6043c2ae))
+* **fe-lint:** add no-raw-color rule ([03140db](https://github.com/BentBr/my-fam-tree/commit/03140dba06a41fc98c06d95b2fa07829e616ceb5))
+* **fe-lint:** check templates and style blocks for raw colours ([2fcb16d](https://github.com/BentBr/my-fam-tree/commit/2fcb16dc15f95dcf6cc5aeb04bfd3c3f14e3ae9e))
+* **fe:** add kinship label translations ([df61027](https://github.com/BentBr/my-fam-tree/commit/df61027c09a3706542cb5c6f7ea0ab1e3621cdb5))
+* **fe:** add useKinship and invalidate it with tree and person changes ([cc75ad5](https://github.com/BentBr/my-fam-tree/commit/cc75ad5796c90cc8c1f37b11cf133bfc74344b42))
+* **fe:** compare mode with URL sync and kinship banner on the tree view ([70994e7](https://github.com/BentBr/my-fam-tree/commit/70994e7e9adb27ad7bd26d7939431e730d788068))
+* **fe:** compare-mode clicks, badges and path highlight on the tree canvas ([2eb882b](https://github.com/BentBr/my-fam-tree/commit/2eb882b4faccbed3217fd46879c927d529b6a291))
+* **fe:** map kinship descriptors to localized labels ([7d79ecf](https://github.com/BentBr/my-fam-tree/commit/7d79ecf84ab5e9413f19f5628db469d2234081e5))
+* kinship comparison on the tree view ([5e766fa](https://github.com/BentBr/my-fam-tree/commit/5e766faf7a7cd9f2ad70925b96ed420bc9612341))
+* **seeder:** cover every kinship relation in the demo family ([5f4b4ab](https://github.com/BentBr/my-fam-tree/commit/5f4b4ab915d0d21a61c63b2984d0e8dde8be3128))
+* **skills:** add routes listing script ([c7500a3](https://github.com/BentBr/my-fam-tree/commit/c7500a3f50d61eae26c3b7079fdfc1c3e4c3ad6f))
+
+
+### Bug Fixes
+
+* **arch-tests:** catch grouped sqlx imports and nested re-exports ([9cb99af](https://github.com/BentBr/my-fam-tree/commit/9cb99afa2752d822ee77f16149eba0572801dedd))
+* **arch:** skip gitignored artifacts in skill path check; run arch tests unfiltered ([dba1491](https://github.com/BentBr/my-fam-tree/commit/dba149185a8828a42e15802fbc95241821b6628e))
+* **claude:** isolate qa scope tests from the caller's git environment ([bb95dcc](https://github.com/BentBr/my-fam-tree/commit/bb95dcc5de12f4d363e3fbd630c02d838980c48b))
+* close lint and CI enforcement gaps from the [#87](https://github.com/BentBr/my-fam-tree/issues/87) review ([47b615b](https://github.com/BentBr/my-fam-tree/commit/47b615b599abefef096ec5b9ff72889e414fba59))
+* **deps:** bump url to 2.5.9 and drop unsafe-libyaml ([d769ef8](https://github.com/BentBr/my-fam-tree/commit/d769ef86eeeaa13b53f346e3ab0925c6ebe6bb09))
+* **deps:** keep TypeScript on 6.x and apply prettier 3.10 formatting ([8d12404](https://github.com/BentBr/my-fam-tree/commit/8d124043184f6bee2dc4525e27300b680e2989da))
+* **domain:** treat a shared parent plus step link as half-siblings ([30657a9](https://github.com/BentBr/my-fam-tree/commit/30657a9831159cab92abae4af3af4d24e97a2a31))
+* **fe-lint:** parse .vue dependencies as TypeScript for cycle detection ([c5cce8b](https://github.com/BentBr/my-fam-tree/commit/c5cce8b9d08c79c0651e9d2d56341786e9b6e956))
+* **fe:** banner width, click-through, retry and empty states ([f56a9e8](https://github.com/BentBr/my-fam-tree/commit/f56a9e88622e17cad17f6ddc3fe41256f959cdbc))
+* **fe:** step labels for cousins, neutral forms and in-laws ([77b5599](https://github.com/BentBr/my-fam-tree/commit/77b5599245166da2b88f69a4b870632ba09038c4))
+* **fe:** use Geschwister as the neutral German sibling label ([7dadc15](https://github.com/BentBr/my-fam-tree/commit/7dadc154a2ae671084792a742292cc47ca5bb437))
+* **hooks:** run openapi drift check with honest exit status ([d517b4e](https://github.com/BentBr/my-fam-tree/commit/d517b4ed3b452a86e9bde8db52555cc140fd2fc7))
+
 ## [0.1.23](https://github.com/BentBr/my-fam-tree/compare/core-v0.1.22...core-v0.1.23) (2026-11-12)
 
 
