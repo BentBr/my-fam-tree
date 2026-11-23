@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
+import { useUiStore } from '@/stores/ui'
 
 import { client } from '../client'
 import { expectOk, unwrap, useApiMutation } from '../request'
@@ -10,6 +11,7 @@ import { expectOk, unwrap, useApiMutation } from '../request'
 interface UpdateMeBody {
     display_name?: string
     locale?: 'en' | 'de'
+    edge_style?: 'curved' | 'angular'
 }
 
 export function useMe() {
@@ -31,6 +33,7 @@ export function useMe() {
 export function useUpdateMe() {
     const auth = useAuthStore()
     const locale = useLocaleStore()
+    const ui = useUiStore()
     return useApiMutation({
         mutationFn: (body: UpdateMeBody) => unwrap(client.PATCH('/api/v1/users/me', { body })),
         success: 'toasts.profile_saved',
@@ -44,7 +47,12 @@ export function useUpdateMe() {
             } else {
                 auth.patchUser({ displayName: profile.display_name })
             }
-            // The locale is baked into the access JWT at mint time; this PATCH
+            // Same narrowing + two-store sync for the tree connector style.
+            if (profile.edge_style === 'curved' || profile.edge_style === 'angular') {
+                ui.setEdgeStyle(profile.edge_style)
+                auth.patchUser({ edgeStyle: profile.edge_style })
+            }
+            // The locale (and the edge style) is baked into the access JWT at mint time; this PATCH
             // only updates the DB row, so `/auth/me` (which echoes the token)
             // would keep returning the OLD locale on the next hydrate — the
             // choice would silently revert on reload until the user logs out.
@@ -54,7 +62,7 @@ export function useUpdateMe() {
             // must not surface as an unhandled rejection (it would crash the
             // turn under vitest's unhandled-error policy and is pointless noise
             // in prod — the next real refresh/login re-syncs the token).
-            if (vars.locale !== undefined) {
+            if (vars.locale !== undefined || vars.edge_style !== undefined) {
                 void auth.refresh().catch(() => {})
             }
         },

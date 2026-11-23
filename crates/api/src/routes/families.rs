@@ -198,6 +198,7 @@ mod tests {
             user_id: UserId::from_uuid(Uuid::new_v4()),
             email: "a@b.c".into(),
             locale: "en".into(),
+            edge_style: "curved".into(),
             active_family: None,
             all_families: memberships
                 .into_iter()

@@ -92,6 +92,7 @@ pub async fn consume(
         user.id.into_uuid(),
         user.email.clone(),
         user.locale.as_str().to_owned(),
+        user.edge_style.as_str().to_owned(),
         families,
     );
 
@@ -192,6 +193,7 @@ pub async fn refresh(
         user.id.into_uuid(),
         user.email.clone(),
         user.locale.as_str().to_owned(),
+        user.edge_style.as_str().to_owned(),
         families,
     );
 

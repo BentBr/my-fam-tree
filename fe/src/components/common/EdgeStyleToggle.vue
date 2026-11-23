@@ -2,8 +2,9 @@
 /**
  * Tree connector-style switcher — a single toggle button, no menu.
  *
- * Flips the persisted `edgeStyle` in `useUiStore` between the smooth
- * `'curved'` default and right-angled `'angular'` lines. Like
+ * Flips `edgeStyle` between the smooth `'curved'` default and
+ * right-angled `'angular'` lines. The choice is stored like the language:
+ * in `useUiStore` + localStorage, and on the account when signed in. Like
  * `ThemeToggle`, the icon and label describe the state a click leads
  * to, not the current one.
  *
@@ -13,10 +14,14 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useEdgeStyleSwitch } from '@/composables/useEdgeStyleSwitch'
 import { useUiStore } from '@/stores/ui'
 
 const ui = useUiStore()
 const { t } = useI18n()
+// Store flip + account write-through live in the shared composable (the
+// mobile fold-in inside AccountControl uses the exact same behaviour).
+const pick = useEdgeStyleSwitch()
 
 const isAngular = computed(() => ui.edgeStyle === 'angular')
 const icon = computed(() => (isAngular.value ? 'spline' : 'network'))
@@ -25,7 +30,7 @@ const label = computed(() =>
 )
 
 function toggle(): void {
-    ui.setEdgeStyle(isAngular.value ? 'curved' : 'angular')
+    pick(isAngular.value ? 'curved' : 'angular')
 }
 </script>
 

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email::text AS \"email!\", display_name, locale::text AS \"locale!\",\n                      timezone, email_verified_at, avatar_key, created_at\n                 FROM users WHERE id = $1",
+  "query": "INSERT INTO users (email, locale) VALUES ($1, ($2::text)::user_locale)\n               RETURNING id, email::text AS \"email!\", display_name, locale::text AS \"locale!\",\n                         edge_style::text AS \"edge_style!\", timezone, email_verified_at, avatar_key, created_at",
   "describe": {
     "columns": [
       {
@@ -39,6 +39,12 @@
       },
       {
         "ordinal": 4,
+        "name": "edge_style!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
         "name": "timezone",
         "type_info": "Text",
         "origin": {
@@ -49,7 +55,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "email_verified_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -60,7 +66,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "avatar_key",
         "type_info": "Text",
         "origin": {
@@ -71,7 +77,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -84,7 +90,13 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        {
+          "Custom": {
+            "name": "citext",
+            "kind": "Simple"
+          }
+        },
+        "Text"
       ]
     },
     "nullable": [
@@ -92,11 +104,12 @@
       null,
       false,
       null,
+      null,
       false,
       true,
       true,
       false
     ]
   },
-  "hash": "01d1a794c5db45c522c51e6059ea426b5fc03dace3a7cc015ea6250f628adb3d"
+  "hash": "b9263fc858976807bc842e34d1ed1a3ddbcd57577c9d92b555e69758a2777a5a"
 }

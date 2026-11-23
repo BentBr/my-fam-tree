@@ -1,7 +1,7 @@
 //! Postgres-backed [`UserRepo`] implementation.
 
 use async_trait::async_trait;
-use my_fam_tree_domain::{Locale, User, UserId, UserRepo, UserRepoError};
+use my_fam_tree_domain::{EdgeStyle, Locale, User, UserId, UserRepo, UserRepoError};
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -26,6 +26,13 @@ fn locale_from_db(s: &str) -> Locale {
     if s == "de" { Locale::De } else { Locale::En }
 }
 
+/// Anything but `'angular'` reads as the default — the enum column cannot
+/// hold another value, so this only guards against a future variant an older
+/// binary does not know yet.
+fn edge_style_from_db(s: &str) -> EdgeStyle {
+    EdgeStyle::parse(s).unwrap_or(EdgeStyle::Curved)
+}
+
 /// Mirror of the columns selected by every `users` query in this file.
 /// Centralized so the row → `User` conversion lives in exactly one place.
 #[derive(sqlx::FromRow)]
@@ -36,6 +43,8 @@ struct UserRow {
     display_name: String,
     #[sqlx(rename = "locale!")]
     locale: String,
+    #[sqlx(rename = "edge_style!")]
+    edge_style: String,
     timezone: String,
     email_verified_at: Option<OffsetDateTime>,
     avatar_key: Option<String>,
@@ -49,6 +58,7 @@ impl From<UserRow> for User {
             email: r.email,
             display_name: r.display_name,
             locale: locale_from_db(&r.locale),
+            edge_style: edge_style_from_db(&r.edge_style),
             timezone: r.timezone,
             email_verified_at: r.email_verified_at,
             avatar_key: r.avatar_key,
@@ -63,7 +73,7 @@ impl UserRepo for PgUserRepo {
         let row = sqlx::query_as!(
             UserRow,
             r#"SELECT id, email::text AS "email!", display_name, locale::text AS "locale!",
-                      timezone, email_verified_at, avatar_key, created_at
+                      edge_style::text AS "edge_style!", timezone, email_verified_at, avatar_key, created_at
                  FROM users WHERE email = $1"#,
             email
         )
@@ -77,7 +87,7 @@ impl UserRepo for PgUserRepo {
         let row = sqlx::query_as!(
             UserRow,
             r#"SELECT id, email::text AS "email!", display_name, locale::text AS "locale!",
-                      timezone, email_verified_at, avatar_key, created_at
+                      edge_style::text AS "edge_style!", timezone, email_verified_at, avatar_key, created_at
                  FROM users WHERE id = $1"#,
             id.into_uuid()
         )
@@ -92,7 +102,7 @@ impl UserRepo for PgUserRepo {
             UserRow,
             r#"INSERT INTO users (email, locale) VALUES ($1, ($2::text)::user_locale)
                RETURNING id, email::text AS "email!", display_name, locale::text AS "locale!",
-                         timezone, email_verified_at, avatar_key, created_at"#,
+                         edge_style::text AS "edge_style!", timezone, email_verified_at, avatar_key, created_at"#,
             email,
             locale_to_db(locale)
         )
@@ -118,6 +128,22 @@ impl UserRepo for PgUserRepo {
             "UPDATE users SET locale = ($2::text)::user_locale WHERE id = $1",
             id.into_uuid(),
             locale_to_db(locale)
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| UserRepoError::Db(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn update_edge_style(
+        &self,
+        id: UserId,
+        edge_style: EdgeStyle,
+    ) -> Result<(), UserRepoError> {
+        sqlx::query!(
+            "UPDATE users SET edge_style = ($2::text)::user_edge_style WHERE id = $1",
+            id.into_uuid(),
+            edge_style.as_str()
         )
         .execute(&self.pool)
         .await

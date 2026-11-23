@@ -15,8 +15,10 @@ import {
 } from '@/api/hooks/users'
 import { useAuthStore } from '@/stores/auth'
 import { useLocaleStore } from '@/stores/locale'
+import { useUiStore } from '@/stores/ui'
 
 import { makeHookWrapper } from '../../helpers/hook-wrapper'
+import { memoryStorage } from '../../helpers/memory-storage'
 
 interface MockedClient {
     GET: ReturnType<typeof vi.fn>
@@ -27,6 +29,9 @@ interface MockedClient {
 const mocked = client as unknown as MockedClient
 
 beforeEach(() => {
+    // Fresh storage per test: the ui + locale stores seed themselves from
+    // localStorage, so a value persisted by one test must not leak into the next.
+    vi.stubGlobal('localStorage', memoryStorage())
     mocked.GET.mockReset()
     mocked.POST.mockReset()
     mocked.PATCH.mockReset()
@@ -91,6 +96,35 @@ describe('useUpdateMe', () => {
         // microtasks so the POST is observed.
         await Promise.resolve()
         expect(mocked.POST).toHaveBeenCalledWith('/api/v1/auth/refresh')
+    })
+
+    it('an edge-style PATCH syncs the ui store and re-mints the token', async () => {
+        mocked.PATCH.mockResolvedValueOnce({
+            data: { data: { display_name: 'Z', locale: 'en', edge_style: 'angular' } },
+            error: undefined,
+        })
+        mocked.POST.mockResolvedValueOnce({
+            data: { data: { user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'angular', families: [] } },
+            error: undefined,
+        })
+        const { result } = makeHookWrapper(() => useUpdateMe())
+        await result.mutateAsync({ edge_style: 'angular' })
+        expect(mocked.PATCH).toHaveBeenCalledWith('/api/v1/users/me', { body: { edge_style: 'angular' } })
+        expect(useUiStore().edgeStyle).toBe('angular')
+        await Promise.resolve()
+        expect(mocked.POST).toHaveBeenCalledWith('/api/v1/auth/refresh')
+    })
+
+    it('leaves the ui store alone when the server edge style is not curved/angular', async () => {
+        mocked.PATCH.mockResolvedValueOnce({
+            data: { data: { display_name: 'Z', locale: 'en', edge_style: 'zigzag' } },
+            error: undefined,
+        })
+        const { result } = makeHookWrapper(() => useUpdateMe())
+        await result.mutateAsync({ display_name: 'Z' })
+        expect(useUiStore().edgeStyle).toBe('curved')
+        // No locale / edge-style change requested → no token re-mint.
+        expect(mocked.POST).not.toHaveBeenCalled()
     })
 
     it('skips locale.set when server locale is not en/de', async () => {

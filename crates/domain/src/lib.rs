@@ -52,7 +52,7 @@ pub use repos::reminder_prefs::{
     DueDigestUser, ReminderPreferences, ReminderPreferencesRepo, ReminderPrefsRepoError,
 };
 pub use repos::time_zones::{TimeZoneRepo, TimeZoneRepoError};
-pub use repos::users::{Locale, User, UserRepo, UserRepoError};
+pub use repos::users::{EdgeStyle, Locale, User, UserRepo, UserRepoError};
 pub use role::Role;
 pub use upcoming::{
     DEFAULT_LIMIT, MAX_LIMIT, UpcomingEvent, UpcomingFilter, UpcomingKind, build_upcoming,

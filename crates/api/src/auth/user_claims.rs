@@ -13,6 +13,7 @@ pub struct UserClaims {
     pub user_id: UserId,
     pub email: String,
     pub locale: String,
+    pub edge_style: String,
     /// Present iff the request carried a valid `X-Family-Id` header that
     /// matched one of the user's memberships in the JWT.
     pub active_family: Option<ActiveFamily>,

@@ -117,7 +117,7 @@ describe('AccountControl', () => {
 
     it('authenticated + no display name: still shows the orange user icon', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         meRef.value = { avatar_url: null, display_name: null }
         const w = await mountControl()
         expect(w.find('[data-icon="user"]').exists()).toBe(true)
@@ -126,7 +126,7 @@ describe('AccountControl', () => {
 
     it('authenticated + display name set: shows the DefaultAvatar', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         meRef.value = { avatar_url: null, display_name: 'Anna Müller' }
         const w = await mountControl()
         expect(w.find('.avatar-stub').exists()).toBe(true)
@@ -135,7 +135,7 @@ describe('AccountControl', () => {
 
     it('authenticated: dropdown carries Account + Sign-out, not Login/Register', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         const w = await mountControl()
         expect(w.find('[data-testid="user-menu-account"]').exists()).toBe(true)
         expect(w.find('[data-testid="sign-out"]').exists()).toBe(true)

@@ -105,6 +105,7 @@ export function useRenameFamily() {
                 user_id: auth.user?.id ?? '',
                 email: auth.user?.email ?? '',
                 locale: auth.user?.locale ?? 'en',
+                edge_style: auth.user?.edgeStyle ?? 'curved',
                 families,
             })
             void qc.invalidateQueries({ queryKey: ['families', 'me'] })

@@ -26,6 +26,7 @@ import { useDisplay } from 'vuetify'
 
 import { useMe } from '@/api/hooks/users'
 import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import { useEdgeStyleSwitch } from '@/composables/useEdgeStyleSwitch'
 import { currentResolvedTheme } from '@/composables/useThemeMode'
 import { useLocaleSwitch } from '@/composables/useLocaleSwitch'
 import { useAuthStore } from '@/stores/auth'
@@ -77,8 +78,11 @@ const edgeStyleIcon = computed(() => (ui.edgeStyle === 'angular' ? 'spline' : 'n
 const edgeStyleLabel = computed(() =>
     ui.edgeStyle === 'angular' ? t('chrome.edgeStyle.switchToCurved') : t('chrome.edgeStyle.switchToAngular'),
 )
+// Shared with the desktop EdgeStyleToggle: flips the store and writes the
+// preference to /users/me for signed-in users.
+const pickEdgeStyle = useEdgeStyleSwitch()
 function toggleEdgeStyle(): void {
-    ui.setEdgeStyle(ui.edgeStyle === 'angular' ? 'curved' : 'angular')
+    pickEdgeStyle(ui.edgeStyle === 'angular' ? 'curved' : 'angular')
 }
 
 interface LangChoice {

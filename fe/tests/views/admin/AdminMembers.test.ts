@@ -95,6 +95,7 @@ async function mountView(args: SetupArgs = {}) {
             user_id: args.myUserId,
             email: 'me@x.com',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'fam-1', name: 'Müller', role: args.myRole ?? 'owner' }],
         })
         family.setActive('fam-1' as FamilyId)

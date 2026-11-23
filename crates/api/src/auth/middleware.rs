@@ -160,6 +160,7 @@ fn build_user_claims(claims: crate::auth::JwtClaims, header_family: Option<Uuid>
         user_id: UserId::from_uuid(claims.sub),
         email: claims.email,
         locale: claims.locale,
+        edge_style: claims.edge_style,
         active_family: active,
         all_families,
     }
@@ -299,6 +300,7 @@ mod tests {
             sub: Uuid::new_v4(),
             email: "a@b.c".into(),
             locale: "en".into(),
+            edge_style: "curved".into(),
             families,
             iat: 0,
             exp: 0,
