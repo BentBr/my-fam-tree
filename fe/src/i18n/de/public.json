@@ -33,8 +33,10 @@
             }
         },
         "footer": {
-            "tagline": "© 2026 Slothlike. Gebaut mit Rust und Vue.js.",
-            "taglinePrefix": "© 2026 Slothlike. Gebaut mit",
+            "tagline": "© {year} Slothlike. Gebaut mit Rust und Vue.js.",
+            "copyrightPrefix": "© {year}",
+            "company": "Slothlike",
+            "taglinePrefix": "Gebaut mit",
             "taglineMid": "und",
             "links": {
                 "imprint": "Impressum",
@@ -54,7 +56,8 @@
                 },
                 "responsible": {
                     "heading": "Verantwortlich für den Inhalt",
-                    "name": "Bent Brüggemann"
+                    "name": "Bent Brüggemann",
+                    "website": "slothlike.eu"
                 },
                 "disclaimer": {
                     "heading": "Haftungsausschluss",
@@ -65,7 +68,7 @@
                     "body": "Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben."
                 }
             },
-            "footerNote": "© 2026 Slothlike. Alle Rechte vorbehalten. Gebaut mit Rust und Vue.js."
+            "footerNote": "© {year} Slothlike. Alle Rechte vorbehalten. Gebaut mit Rust und Vue.js."
         },
         "dataPolicy": {
             "title": "Datenschutzerklärung",

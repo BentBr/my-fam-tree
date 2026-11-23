@@ -18,6 +18,7 @@ const { t } = useI18n()
 
 const email = 'hello@my-fam-tree.eu'
 const phone = '+49 (0) 172 511 2820'
+const year = new Date().getFullYear()
 </script>
 
 <template>
@@ -38,7 +39,12 @@ const phone = '+49 (0) 172 511 2820'
 
         <section class="legal__section">
             <h2 class="legal__heading">{{ t('public.imprint.sections.responsible.heading') }}</h2>
-            <p>{{ t('public.imprint.sections.responsible.name') }}</p>
+            <p>
+                {{ t('public.imprint.sections.responsible.name') }}<br />
+                <a href="https://slothlike.eu" target="_blank" rel="noopener" data-testid="imprint-company-link">{{
+                    t('public.imprint.sections.responsible.website')
+                }}</a>
+            </p>
         </section>
 
         <section class="legal__section">
@@ -51,7 +57,7 @@ const phone = '+49 (0) 172 511 2820'
             <p>{{ t('public.imprint.sections.linkLiability.body') }}</p>
         </section>
 
-        <p class="legal__footer">{{ t('public.imprint.footerNote') }}</p>
+        <p class="legal__footer">{{ t('public.imprint.footerNote', { year }) }}</p>
     </article>
 </template>
 
@@ -93,10 +99,12 @@ const phone = '+49 (0) 172 511 2820'
     margin: 0;
     color: var(--text);
 }
+.legal__section p a,
 .legal__dl a {
     color: var(--acc-strong);
     text-decoration: none;
 }
+.legal__section p a:hover,
 .legal__dl a:hover {
     text-decoration: underline;
 }
