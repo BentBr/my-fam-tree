@@ -37,8 +37,13 @@ pub async fn issue_access_token_for(
         .map(|m| FamilyClaim { id: m.family_id.into_uuid(), name: m.family_name, role: m.role })
         .collect();
 
-    let token =
-        issuer.issue(user.id.into_uuid(), &user.email, user.locale.as_str(), claims.clone())?;
+    let token = issuer.issue(
+        user.id.into_uuid(),
+        &user.email,
+        user.locale.as_str(),
+        user.edge_style.as_str(),
+        claims.clone(),
+    )?;
     Ok((token, claims))
 }
 

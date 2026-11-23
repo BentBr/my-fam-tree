@@ -213,3 +213,81 @@ async fn user_email_change_rejects_taken_email() {
     let body: serde_json::Value = test::read_body_json(res).await;
     assert_eq!(body["code"], "email_taken");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn user_edge_style_update_and_session_mirror() {
+    let stack = ephemeral_stack().await;
+    let app = test::init_service(build_app(stack.state.clone(), None)).await;
+    let (access, refresh) = sign_in(&stack, &app, "edge-style@example.com").await;
+
+    // A fresh account starts on curved lines.
+    let req = test::TestRequest::get()
+        .uri("/api/v1/users/me")
+        .cookie(Cookie::new("access", access.clone()))
+        .to_request();
+    let body: serde_json::Value = test::read_body_json(test::call_service(&app, req).await).await;
+    assert_eq!(body["data"]["edge_style"], "curved");
+
+    // PATCH with only `edge_style` is a valid, non-empty patch.
+    let req = test::TestRequest::patch()
+        .uri("/api/v1/users/me")
+        .cookie(Cookie::new("access", access.clone()))
+        .set_json(serde_json::json!({ "edge_style": "angular" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["data"]["edge_style"], "angular");
+
+    // Unknown value → 422 on /edge_style, and the stored value is untouched.
+    let req = test::TestRequest::patch()
+        .uri("/api/v1/users/me")
+        .cookie(Cookie::new("access", access.clone()))
+        .set_json(serde_json::json!({ "edge_style": "zigzag" }))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 422);
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["fields"][0]["path"], "/edge_style");
+    assert_eq!(body["fields"][0]["code"], "validation.edge_style_invalid");
+
+    let req = test::TestRequest::get()
+        .uri("/api/v1/users/me")
+        .cookie(Cookie::new("access", access.clone()))
+        .to_request();
+    let body: serde_json::Value = test::read_body_json(test::call_service(&app, req).await).await;
+    assert_eq!(body["data"]["edge_style"], "angular");
+
+    // The access token was minted before the change, so `/auth/me` (which
+    // echoes the token) still says curved — same staleness as the locale.
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/me")
+        .cookie(Cookie::new("access", access))
+        .to_request();
+    let body: serde_json::Value = test::read_body_json(test::call_service(&app, req).await).await;
+    assert_eq!(body["data"]["edge_style"], "curved");
+
+    // A refresh re-mints the token from the DB row and carries the new value.
+    let req = test::TestRequest::post()
+        .uri("/api/v1/auth/refresh")
+        .cookie(Cookie::new("refresh", refresh))
+        .to_request();
+    let res = test::call_service(&app, req).await;
+    assert_eq!(res.status(), 200);
+    let new_access = res
+        .response()
+        .cookies()
+        .find(|c| c.name() == "access")
+        .expect("rotated access cookie")
+        .value()
+        .to_owned();
+    let body: serde_json::Value = test::read_body_json(res).await;
+    assert_eq!(body["data"]["edge_style"], "angular");
+
+    let req = test::TestRequest::get()
+        .uri("/api/v1/auth/me")
+        .cookie(Cookie::new("access", new_access))
+        .to_request();
+    let body: serde_json::Value = test::read_body_json(test::call_service(&app, req).await).await;
+    assert_eq!(body["data"]["edge_style"], "angular");
+}

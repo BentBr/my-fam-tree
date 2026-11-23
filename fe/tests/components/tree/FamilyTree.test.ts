@@ -31,6 +31,19 @@ describe('FamilyTree', () => {
         expect(w.findAll('.tree-edge-stub')).toHaveLength(1)
     })
 
+    it('hands the chosen edge shape to the parent edges', () => {
+        const w = mount(FamilyTree, {
+            props: { tree: tree(), selectedId: null, centerOnId: null, currentUserId: null, edgeShape: 'angular' },
+            global: {
+                stubs: {
+                    TreeNode: { template: '<g />' },
+                    TreeEdge: { template: '<g class="tree-edge-stub" :data-shape="shape" />', props: ['shape'] },
+                },
+            },
+        })
+        expect(w.find('.tree-edge-stub').attributes('data-shape')).toBe('angular')
+    })
+
     it('mounts with centerOnId targeting an existing node', () => {
         const w = mount(FamilyTree, {
             props: { tree: tree(), selectedId: null, centerOnId: 'b', currentUserId: null },

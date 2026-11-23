@@ -60,6 +60,7 @@ impl JwtIssuer {
         sub: Uuid,
         email: &str,
         locale: &str,
+        edge_style: &str,
         families: Vec<FamilyClaim>,
     ) -> anyhow::Result<String> {
         let now = self.clock.now().unix_timestamp();
@@ -69,6 +70,7 @@ impl JwtIssuer {
             sub,
             email: email.to_owned(),
             locale: locale.to_owned(),
+            edge_style: edge_style.to_owned(),
             families,
             iat: now,
             exp: now.saturating_add(self.access_ttl_seconds),
@@ -144,6 +146,7 @@ mod tests {
                 Uuid::new_v4(),
                 "a@b.c",
                 "de",
+                "angular",
                 vec![FamilyClaim {
                     id: Uuid::new_v4(),
                     name: "Müller".into(),
@@ -160,7 +163,7 @@ mod tests {
     #[test]
     fn rejects_wrong_audience() {
         let mut issuer = fixture_issuer("kid-1");
-        let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
+        let token = issuer.issue(Uuid::new_v4(), "a", "en", "curved", vec![]).unwrap();
         issuer.audience = "other-aud".into();
         assert!(issuer.verify(&token).is_err());
     }
@@ -171,7 +174,7 @@ mod tests {
     fn jwt_follows_injected_clock() {
         let clock = FixedClock::new(T);
         let issuer = fixture_issuer_with_clock("kid-1", Arc::new(clock.clone()));
-        let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
+        let token = issuer.issue(Uuid::new_v4(), "a", "en", "curved", vec![]).unwrap();
 
         clock.set(T + Duration::seconds(900 - 1));
         let claims = issuer.verify(&token).expect("valid just before exp by the injected clock");
@@ -186,7 +189,7 @@ mod tests {
     fn verification_ignores_system_time() {
         let clock = FixedClock::new(my_fam_tree_domain::clock::SystemClock.now());
         let issuer = fixture_issuer_with_clock("kid-1", Arc::new(clock.clone()));
-        let token = issuer.issue(Uuid::new_v4(), "a", "en", vec![]).unwrap();
+        let token = issuer.issue(Uuid::new_v4(), "a", "en", "curved", vec![]).unwrap();
 
         clock.set(T);
         assert!(

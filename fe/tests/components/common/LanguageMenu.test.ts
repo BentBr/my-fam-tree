@@ -97,7 +97,7 @@ describe('LanguageMenu', () => {
 
     it('persists the locale to the backend when authenticated', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         const { w } = await mountMenu()
         await w.find('[data-testid="language-menu-de"]').trigger('click')
         expect(mocked.PATCH).toHaveBeenCalledTimes(1)

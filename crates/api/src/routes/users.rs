@@ -3,8 +3,8 @@
 //! - `GET   /users/me`                       — fresh DB read of the caller's
 //!   profile (the JWT mirror in `auth/me` is for fast bootstrap; this route
 //!   is the source of truth).
-//! - `PATCH /users/me`                       — patch `display_name` and/or
-//!   `locale`. Empty body → 422 `validation.value_required`.
+//! - `PATCH /users/me`                       — patch `display_name`, `locale`
+//!   and/or `edge_style`. Empty body → 422 `validation.value_required`.
 //! - `POST  /users/me/email-change`          — start the change. We email a
 //!   single-use link to the user's **current** address; the body of the email
 //!   mentions the proposed new address so the recipient can verify the
@@ -29,7 +29,7 @@
 )]
 
 use actix_web::{HttpRequest, get, patch, post, web};
-use my_fam_tree_domain::{Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
+use my_fam_tree_domain::{EdgeStyle, Locale, MagicLinkPurpose, MagicLinkRepoError, UserRepoError};
 use my_fam_tree_email::{Locale as EmailLocale, render_email_change};
 use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
@@ -38,8 +38,8 @@ use uuid::Uuid;
 
 use crate::auth::{generate_opaque_token, hash_token};
 use crate::validation::{
-    email_invalid, email_same_as_current, locale_invalid, looks_like_email, string_too_long,
-    value_required,
+    edge_style_invalid, email_invalid, email_same_as_current, locale_invalid, looks_like_email,
+    string_too_long, value_required,
 };
 use crate::{ApiError, ApiResponse, AppState, response_body};
 
@@ -60,6 +60,8 @@ pub struct UserProfile {
     pub email: String,
     pub display_name: String,
     pub locale: String,
+    /// Tree connector style: `"curved"` or `"angular"`.
+    pub edge_style: String,
     pub timezone: String,
     #[serde(with = "time::serde::rfc3339::option")]
     pub email_verified_at: Option<OffsetDateTime>,
@@ -77,6 +79,8 @@ pub struct UpdateUserReq {
     pub display_name: Option<String>,
     #[serde(default)]
     pub locale: Option<String>,
+    #[serde(default)]
+    pub edge_style: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -119,6 +123,10 @@ fn parse_locale(raw: &str) -> Result<Locale, ApiError> {
     }
 }
 
+fn parse_edge_style(raw: &str) -> Result<EdgeStyle, ApiError> {
+    EdgeStyle::parse(raw).ok_or_else(|| edge_style_invalid("/edge_style"))
+}
+
 /// Wall-clock TTL for the avatar presigned URL. Mirrors `PHOTO_URL_TTL`
 /// in `routes::persons` — one hour, re-presigned on every read.
 const AVATAR_URL_TTL: std::time::Duration = std::time::Duration::from_hours(1);
@@ -145,6 +153,7 @@ async fn profile_from(
         email: user.email.clone(),
         display_name: user.display_name.clone(),
         locale: user.locale.as_str().to_owned(),
+        edge_style: user.edge_style.as_str().to_owned(),
         timezone: user.timezone.clone(),
         email_verified_at: user.email_verified_at,
         avatar_url,
@@ -228,7 +237,12 @@ pub async fn update(
         None => None,
     };
 
-    if trimmed_name.is_none() && parsed_locale.is_none() {
+    let parsed_edge_style = match payload.edge_style.as_deref() {
+        Some(raw) => Some(parse_edge_style(raw)?),
+        None => None,
+    };
+
+    if trimmed_name.is_none() && parsed_locale.is_none() && parsed_edge_style.is_none() {
         return Err(value_required("/"));
     }
 
@@ -237,6 +251,9 @@ pub async fn update(
     }
     if let Some(loc) = parsed_locale {
         state.users.update_locale(claims.user_id, loc).await.map_err(internal)?;
+    }
+    if let Some(style) = parsed_edge_style {
+        state.users.update_edge_style(claims.user_id, style).await.map_err(internal)?;
     }
 
     let user = state
@@ -443,6 +460,23 @@ mod tests {
     fn parse_locale_accepts_en_and_de() {
         assert_eq!(parse_locale("en").unwrap(), Locale::En);
         assert_eq!(parse_locale("de").unwrap(), Locale::De);
+    }
+
+    #[test]
+    fn parse_edge_style_accepts_curved_and_angular() {
+        assert_eq!(parse_edge_style("curved").unwrap(), EdgeStyle::Curved);
+        assert_eq!(parse_edge_style("angular").unwrap(), EdgeStyle::Angular);
+    }
+
+    #[test]
+    fn parse_edge_style_rejects_unknown() {
+        match parse_edge_style("zigzag") {
+            Err(ApiError::Validation(v)) => {
+                assert_eq!(v[0].code, "validation.edge_style_invalid");
+                assert_eq!(v[0].path, "/edge_style");
+            }
+            other => panic!("expected Validation, got {other:?}"),
+        }
     }
 
     #[test]

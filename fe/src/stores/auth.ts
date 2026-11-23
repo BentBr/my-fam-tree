@@ -7,6 +7,7 @@ import type { ClaimsPayload } from '@/api/types'
 import type { FamilyId, UserId } from '@/types/brand'
 
 import { useLocaleStore } from './locale'
+import { useUiStore, type EdgeStyle } from './ui'
 
 export type Role = 'user' | 'admin' | 'owner'
 
@@ -22,6 +23,7 @@ export interface AuthUser {
     id: UserId
     email: string
     locale: 'en' | 'de'
+    edgeStyle: EdgeStyle
     displayName: string
 }
 
@@ -38,10 +40,12 @@ export const useAuthStore = defineStore('auth', () => {
             return
         }
         const locale: 'en' | 'de' = c.locale === 'de' ? 'de' : 'en'
+        const edgeStyle: EdgeStyle = c.edge_style === 'angular' ? 'angular' : 'curved'
         user.value = {
             id: c.user_id as UserId,
             email: c.email,
             locale,
+            edgeStyle,
             displayName: '',
         }
         families.value = c.families.map((f) => ({
@@ -54,9 +58,12 @@ export const useAuthStore = defineStore('auth', () => {
         // switch follows the authenticated identity (overriding the anonymous
         // navigator/localStorage default that detectInitialLocale picked).
         useLocaleStore().set(locale)
+        // Same for the tree connector style: the account's stored choice
+        // overrides whatever this browser had in localStorage.
+        useUiStore().setEdgeStyle(edgeStyle)
     }
 
-    function patchUser(patch: Partial<Pick<AuthUser, 'displayName' | 'locale' | 'email'>>): void {
+    function patchUser(patch: Partial<Pick<AuthUser, 'displayName' | 'locale' | 'edgeStyle' | 'email'>>): void {
         if (user.value === null) return
         user.value = { ...user.value, ...patch }
     }

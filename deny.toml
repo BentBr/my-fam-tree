@@ -5,11 +5,18 @@ all-features = false
 db-path = "~/.cargo/advisory-db"
 yanked = "deny"
 ignore = [
-    # RUSTSEC-2026-0459 — C SQLite CVE in `libsqlite3-sys` 0.37. Only listed in
-    # Cargo.lock as an optional dep of `sqlx-sqlite` (via sqlx-macros-core);
-    # we enable the `postgres` driver only, so it is never compiled. Drop
-    # once sqlx ships with libsqlite3-sys >= 0.39.
-    "RUSTSEC-2026-0459",
+    # RUSTSEC-2026-0594 — `cookie` 0.16.2: private (encrypted) cookie nonces
+    # can repeat in a process that fork()s, fixed in cookie 0.18.3. Not
+    # reachable here: the affected code (`PrivateJar`) sits behind cookie's
+    # `private` feature, which only actix-web's `secure-cookies` turns on —
+    # we enable `cookies` alone, so cookie builds with default features
+    # (`cargo tree -e features -i cookie`). Nothing in crates/ uses a private
+    # or signed jar or a cookie `Key` (sessions are a signed JWT in a plain
+    # cookie), and no process forks. actix-web 4.20.0 (latest) pins
+    # cookie ^0.16, so there is no upgrade path yet. Drop this entry once
+    # actix-web moves to cookie >= 0.18.3, and re-check it before ever
+    # enabling `secure-cookies`.
+    "RUSTSEC-2026-0594",
     # RUSTSEC-2026-0374 — `basic-toml` unmaintained. Build-time only: askama's
     # derive macro reads `askama.toml` with it; nothing reaches the binary at
     # runtime. askama 0.16.1 is the latest release; revisit on the next one.

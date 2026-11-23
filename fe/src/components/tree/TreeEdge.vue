@@ -35,6 +35,12 @@ const props = defineProps<{
      * renderer just consumes it. Ignored for parent edges.
      */
     directlyAdjacent?: boolean
+    /**
+     * How parent edges are routed: `'curved'` (default) is a cubic Bezier,
+     * `'angular'` a right-angled elbow (down, across, down). Ignored for
+     * partner edges — those are already straight lines.
+     */
+    shape?: 'curved' | 'angular'
     /** Highlight this edge as part of the hover focus set — the canvas has
      * a hovered node and this edge connects it to one of its direct
      * relations. Full opacity + thicker stroke; drops dashes so partner
@@ -46,8 +52,10 @@ const props = defineProps<{
 }>()
 
 // Parent edges draw a vertical cubic Bezier from child top up to parent bottom
-// so multi-generation stacks read as smooth lineages. Partner edges are flat
-// horizontal lines so the relationship glyph sits naturally on the midpoint.
+// so multi-generation stacks read as smooth lineages — or, with
+// `shape="angular"`, an elbow that turns at the same mid-height, so siblings
+// share one horizontal rail. Partner edges are flat horizontal lines so the
+// relationship glyph sits naturally on the midpoint.
 /** One SVG path coordinate pair. */
 function point(x: number, y: number): string {
     return `${String(x)} ${String(y)}`
@@ -56,6 +64,9 @@ function point(x: number, y: number): string {
 const path = computed(() => {
     if (props.kind === 'parent') {
         const midY = (props.ay + props.by) / 2
+        if (props.shape === 'angular') {
+            return `M ${point(props.ax, props.ay)} V ${String(midY)} H ${String(props.bx)} V ${String(props.by)}`
+        }
         return `M ${point(props.ax, props.ay)} C ${point(props.ax, midY)}, ${point(props.bx, midY)}, ${point(props.bx, props.by)}`
     }
     return `M ${point(props.ax, props.ay)} L ${point(props.bx, props.by)}`

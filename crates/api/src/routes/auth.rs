@@ -94,6 +94,7 @@ pub struct ConsumeRes {
     pub user_id: uuid::Uuid,
     pub email: String,
     pub locale: String,
+    pub edge_style: String,
     pub families: Vec<FamilyClaim>,
 }
 
@@ -122,9 +123,10 @@ const fn build_consume_response(
     user_id: uuid::Uuid,
     email: String,
     locale: String,
+    edge_style: String,
     families: Vec<FamilyClaim>,
 ) -> ConsumeRes {
-    ConsumeRes { user_id, email, locale, families }
+    ConsumeRes { user_id, email, locale, edge_style, families }
 }
 
 // ---------------------------------------------------------------------------
@@ -158,11 +160,13 @@ mod tests {
             uid,
             "a@b.c".into(),
             "de".into(),
+            "angular".into(),
             vec![FamilyClaim { id: fid, name: "Müller".into(), role: Role::Owner }],
         );
         assert_eq!(res.user_id, uid);
         assert_eq!(res.email, "a@b.c");
         assert_eq!(res.locale, "de");
+        assert_eq!(res.edge_style, "angular");
         assert_eq!(res.families.len(), 1);
         assert_eq!(res.families[0].id, fid);
         assert_eq!(res.families[0].role, Role::Owner);

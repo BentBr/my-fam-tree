@@ -31,6 +31,27 @@ describe('ui store', () => {
         expect(localStorage.getItem('my-fam-tree:sidebar')).toBe('0')
     })
 
+    it('defaults to curved tree lines when nothing is stored', () => {
+        expect(useUiStore().edgeStyle).toBe('curved')
+    })
+
+    it('reads a persisted angular edge style from localStorage', () => {
+        localStorage.setItem('my-fam-tree:edge-style', 'angular')
+        expect(useUiStore().edgeStyle).toBe('angular')
+    })
+
+    it('falls back to curved for an unknown stored edge style', () => {
+        localStorage.setItem('my-fam-tree:edge-style', 'zigzag')
+        expect(useUiStore().edgeStyle).toBe('curved')
+    })
+
+    it('setEdgeStyle updates state and persists', () => {
+        const ui = useUiStore()
+        ui.setEdgeStyle('angular')
+        expect(ui.edgeStyle).toBe('angular')
+        expect(localStorage.getItem('my-fam-tree:edge-style')).toBe('angular')
+    })
+
     it('pushToast appends with a generated id', () => {
         const ui = useUiStore()
         ui.pushToast({ kind: 'success', message: 'hi' })

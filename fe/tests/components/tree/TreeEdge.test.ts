@@ -13,6 +13,28 @@ describe('TreeEdge', () => {
         expect(d).toContain('100 200')
     })
 
+    it('renders a right-angled elbow for parent edges when shape is angular', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'parent', ax: 0, ay: 0, bx: 100, by: 200, shape: 'angular' },
+        })
+        // Down to mid-height, across to the parent's x, down to the parent.
+        expect(w.find('path').attributes('d')).toBe('M 0 0 V 100 H 100 V 200')
+    })
+
+    it('keeps the Bezier for parent edges when shape is curved', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'parent', ax: 0, ay: 0, bx: 100, by: 200, shape: 'curved' },
+        })
+        expect(w.find('path').attributes('d')).toMatch(/^M 0 0 C/)
+    })
+
+    it('leaves partner edges straight when shape is angular', () => {
+        const w = mount(TreeEdge, {
+            props: { kind: 'partner', ax: 0, ay: 0, bx: 200, by: 0, shape: 'angular' },
+        })
+        expect(w.find('path.edge').attributes('d')).toBe('M 0 0 L 200 0')
+    })
+
     it('renders a straight line for partner edges and a heart glyph', () => {
         const w = mount(TreeEdge, {
             props: { kind: 'partner', ax: 0, ay: 0, bx: 200, by: 0 },

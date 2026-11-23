@@ -3,8 +3,8 @@
  * Unified application bar — used on every route, public and
  * authenticated. The layout is identical in both modes:
  *
- *   [nav toggle] [brand lockup]    [family switcher]    [theme] [lang] [account]
- *                                       ↑ auth only      ↑ always   ↑ always   ↑ flips by auth
+ *   [nav toggle] [brand lockup]    [family switcher]    [lines] [theme] [lang] [account]
+ *                                       ↑ auth only      ↑ tree   ↑ always ↑ always ↑ flips by auth
  *
  * The brand lockup is a single shared atom (`BrandLogo`), the right-
  * side controls are three more atoms, all in `components/common/`.
@@ -24,6 +24,7 @@ import { useDisplay } from 'vuetify'
 
 import AccountControl from '@/components/common/AccountControl.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
+import EdgeStyleToggle from '@/components/common/EdgeStyleToggle.vue'
 import LanguageMenu from '@/components/common/LanguageMenu.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { useLocalizedPath } from '@/composables/useLocalizedPath'
@@ -45,6 +46,9 @@ const localized = useLocalizedPath()
 // AppBar stays uncrowded. Both controls remain always-available,
 // they just live one tap deeper.
 const showInlineTools = computed(() => !smAndDown.value)
+// The connector-style switch only does something on the tree canvas, so
+// it only takes up AppBar room there.
+const showEdgeStyleToggle = computed(() => showInlineTools.value && route.name === 'tree')
 
 // The hamburger only makes sense when a sidebar is mounted; the family
 // switcher only when the caller is signed in and the chrome carries a
@@ -69,6 +73,7 @@ const showFamilySwitcher = computed(() => auth.status === 'authenticated' && has
         <BrandLogo :to="localized('/')" size="md" />
         <v-spacer />
         <FamilySwitcher v-if="showFamilySwitcher" class="mr-2" />
+        <EdgeStyleToggle v-if="showEdgeStyleToggle" class="mr-1" />
         <ThemeToggle v-if="showInlineTools" class="mr-1" />
         <LanguageMenu v-if="showInlineTools" class="mr-1" />
         <AccountControl />

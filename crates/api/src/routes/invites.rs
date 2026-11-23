@@ -262,6 +262,7 @@ pub async fn accept(
             user_id: user.id.into_uuid(),
             email: user.email.clone(),
             locale: user.locale.as_str().to_owned(),
+            edge_style: user.edge_style.as_str().to_owned(),
             families: fams,
         },
     };

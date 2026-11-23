@@ -90,6 +90,7 @@ describe('InviteAccept', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         } as never)
         mutateAsync.mockResolvedValueOnce({ data: { family: { id: 'f-1', name: 'F' } } })
@@ -104,6 +105,7 @@ describe('InviteAccept', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [],
         })
         mutateAsync.mockRejectedValueOnce(new Error('bad'))

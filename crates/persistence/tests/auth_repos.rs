@@ -15,9 +15,9 @@
 use std::time::Duration as StdDuration;
 
 use my_fam_tree_domain::{
-    FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, Locale, MagicLinkPurpose, MagicLinkRepo,
-    OwnerTransferRepo, OwnerTransferRepoError, ParentKind, ParentLinkRepo, ParentLinkRepoError,
-    PersonId, PersonRepo, RefreshTokenRepo, Role, UserRepo,
+    EdgeStyle, FamilyInviteRepo, FamilyMembershipRepo, FamilyRepo, Locale, MagicLinkPurpose,
+    MagicLinkRepo, OwnerTransferRepo, OwnerTransferRepoError, ParentKind, ParentLinkRepo,
+    ParentLinkRepoError, PersonId, PersonRepo, RefreshTokenRepo, Role, UserRepo,
 };
 use my_fam_tree_persistence::{
     Database, PgFamilyInviteRepo, PgFamilyMembershipRepo, PgFamilyRepo, PgMagicLinkRepo,
@@ -71,6 +71,22 @@ async fn user_create_then_find() {
     let found = users.find_by_email("a@b.c").await.expect("find").expect("some");
     assert_eq!(found.id, user.id);
     assert_eq!(found.locale, Locale::En);
+    assert_eq!(found.edge_style, EdgeStyle::Curved, "new accounts start on curved lines");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn user_edge_style_update_persists() {
+    let db = setup().await;
+    let users = PgUserRepo::new(db.pool.clone());
+    let user = users.create("edge@b.c", Locale::En).await.expect("create");
+
+    users.update_edge_style(user.id, EdgeStyle::Angular).await.expect("to angular");
+    let angular = users.find_by_id(user.id).await.expect("find").expect("some");
+    assert_eq!(angular.edge_style, EdgeStyle::Angular);
+
+    users.update_edge_style(user.id, EdgeStyle::Curved).await.expect("back to curved");
+    let curved = users.find_by_id(user.id).await.expect("find").expect("some");
+    assert_eq!(curved.edge_style, EdgeStyle::Curved);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

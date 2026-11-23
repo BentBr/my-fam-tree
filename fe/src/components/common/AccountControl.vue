@@ -21,11 +21,12 @@
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 
 import { useMe } from '@/api/hooks/users'
 import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import { useEdgeStyleSwitch } from '@/composables/useEdgeStyleSwitch'
 import { currentResolvedTheme } from '@/composables/useThemeMode'
 import { useLocaleSwitch } from '@/composables/useLocaleSwitch'
 import { useAuthStore } from '@/stores/auth'
@@ -35,6 +36,7 @@ import { useUiStore } from '@/stores/ui'
 const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const ui = useUiStore()
 const localeStore = useLocaleStore()
 const { smAndDown } = useDisplay()
@@ -67,6 +69,20 @@ const themeLabel = computed(() =>
 )
 function toggleTheme(): void {
     ui.setTheme(resolved.value === 'dark' ? 'light' : 'dark')
+}
+
+// Connector-style switch — same fold-in rule as the theme toggle, but
+// only offered on the tree route (it changes nothing anywhere else).
+const showEdgeStyleItem = computed(() => showInlineToolsInMenu.value && route.name === 'tree')
+const edgeStyleIcon = computed(() => (ui.edgeStyle === 'angular' ? 'spline' : 'network'))
+const edgeStyleLabel = computed(() =>
+    ui.edgeStyle === 'angular' ? t('chrome.edgeStyle.switchToCurved') : t('chrome.edgeStyle.switchToAngular'),
+)
+// Shared with the desktop EdgeStyleToggle: flips the store and writes the
+// preference to /users/me for signed-in users.
+const pickEdgeStyle = useEdgeStyleSwitch()
+function toggleEdgeStyle(): void {
+    pickEdgeStyle(ui.edgeStyle === 'angular' ? 'curved' : 'angular')
 }
 
 interface LangChoice {
@@ -135,6 +151,13 @@ function goToSignIn(): void {
                     :title="themeLabel"
                     data-testid="account-menu-theme"
                     @click="toggleTheme"
+                />
+                <v-list-item
+                    v-if="showEdgeStyleItem"
+                    :prepend-icon="edgeStyleIcon"
+                    :title="edgeStyleLabel"
+                    data-testid="account-menu-edge-style"
+                    @click="toggleEdgeStyle"
                 />
                 <v-list-subheader>{{ t('chrome.language.label') }}</v-list-subheader>
                 <v-list-item

@@ -12,6 +12,7 @@ import FamilyTree from '@/components/tree/FamilyTree.vue'
 import KinshipBanner from '@/components/tree/KinshipBanner.vue'
 import { useActiveFamilyStore } from '@/stores/activeFamily'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 
 import { nextComparePair, useCompareMode, withTreeQuery, type TreeQueryPatch } from './compareMode'
 import PersonDetail from './PersonDetail.vue'
@@ -23,6 +24,7 @@ const route = useRoute()
 const router = useRouter()
 const tree = useTree()
 const auth = useAuthStore()
+const ui = useUiStore()
 const family = useActiveFamilyStore()
 const { smAndDown } = useDisplay()
 
@@ -383,6 +385,7 @@ watch([isMounted, centerFromUrl] as const, ([mounted, target]) => {
                     :tree="tree.data.value"
                     :selected-id="selectedId"
                     :center-on-id="centerOnId"
+                    :edge-shape="ui.edgeStyle"
                     :current-user-id="auth.user?.id ?? null"
                     :highlight-mode="highlightMode"
                     :compare-mode="compare.active.value"

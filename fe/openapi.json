@@ -2668,9 +2668,13 @@
           "user_id",
           "email",
           "locale",
+          "edge_style",
           "families"
         ],
         "properties": {
+          "edge_style": {
+            "type": "string"
+          },
           "email": {
             "type": "string"
           },
@@ -3360,6 +3364,10 @@
         "properties": {
           "aud": {
             "type": "string"
+          },
+          "edge_style": {
+            "type": "string",
+            "description": "Tree connector style (`\"curved\"` / `\"angular\"`). Defaulted so access\ntokens minted before this claim existed still verify."
           },
           "email": {
             "type": "string"
@@ -4869,6 +4877,12 @@
               "null"
             ]
           },
+          "edge_style": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "locale": {
             "type": [
               "string",
@@ -4921,6 +4935,7 @@
           "email",
           "display_name",
           "locale",
+          "edge_style",
           "timezone",
           "created_at"
         ],
@@ -4938,6 +4953,10 @@
           },
           "display_name": {
             "type": "string"
+          },
+          "edge_style": {
+            "type": "string",
+            "description": "Tree connector style: `\"curved\"` or `\"angular\"`."
           },
           "email": {
             "type": "string"

@@ -12,6 +12,7 @@ vi.mock('@/router', () => ({ router: { replace: vi.fn() } }))
 
 import { client } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import { memoryStorage } from '../helpers/memory-storage'
 
 interface MockedClient {
@@ -32,6 +33,7 @@ function claims(over: Partial<ClaimsPayload> = {}): ClaimsPayload {
         user_id: 'u-1',
         email: 'a@b',
         locale: 'en',
+        edge_style: 'curved',
         families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         ...over,
     }
@@ -84,6 +86,27 @@ describe('auth store', () => {
         const auth = useAuthStore()
         auth.applyClaimsPayload(claims({ locale: 'fr' }))
         expect(auth.user?.locale).toBe('en')
+    })
+
+    it('applyClaimsPayload mirrors the account edge style into the ui store + localStorage', () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload(claims({ edge_style: 'angular' }))
+        expect(auth.user?.edgeStyle).toBe('angular')
+        expect(useUiStore().edgeStyle).toBe('angular')
+        expect(localStorage.getItem('my-fam-tree:edge-style')).toBe('angular')
+    })
+
+    it('the account edge style overrides a different local choice on sign-in', () => {
+        useUiStore().setEdgeStyle('angular')
+        useAuthStore().applyClaimsPayload(claims({ edge_style: 'curved' }))
+        expect(useUiStore().edgeStyle).toBe('curved')
+    })
+
+    it('applyClaimsPayload normalises an unknown edge style to "curved"', () => {
+        const auth = useAuthStore()
+        auth.applyClaimsPayload(claims({ edge_style: 'zigzag' }))
+        expect(auth.user?.edgeStyle).toBe('curved')
+        expect(useUiStore().edgeStyle).toBe('curved')
     })
 
     it('patchUser merges into user state', () => {

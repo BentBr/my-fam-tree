@@ -95,6 +95,7 @@ pub async fn me(req: HttpRequest) -> Result<ApiResponse<ConsumeRes>, ApiError> {
         claims.user_id.into_uuid(),
         claims.email,
         claims.locale,
+        claims.edge_style,
         families,
     )))
 }

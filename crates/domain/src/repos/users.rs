@@ -9,6 +9,7 @@ pub struct User {
     pub email: String,
     pub display_name: String,
     pub locale: Locale,
+    pub edge_style: EdgeStyle,
     pub timezone: String,
     pub email_verified_at: Option<OffsetDateTime>,
     /// Opaque object-storage key for this user's avatar, or `None` when
@@ -41,6 +42,36 @@ impl Locale {
     }
 }
 
+/// How the family tree draws parent → child connectors. An account
+/// preference, stored and transported exactly like [`Locale`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EdgeStyle {
+    /// Smooth Bezier curves — the default.
+    Curved,
+    /// Right-angled elbows.
+    Angular,
+}
+
+impl EdgeStyle {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Curved => "curved",
+            Self::Angular => "angular",
+        }
+    }
+
+    /// Parse `"curved"` / `"angular"`; `None` for anything else.
+    #[must_use]
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "curved" => Some(Self::Curved),
+            "angular" => Some(Self::Angular),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum UserRepoError {
     #[error("database: {0}")]
@@ -58,6 +89,11 @@ pub trait UserRepo: Send + Sync {
     async fn create(&self, email: &str, locale: Locale) -> Result<User, UserRepoError>;
     async fn mark_verified(&self, id: UserId) -> Result<(), UserRepoError>;
     async fn update_locale(&self, id: UserId, locale: Locale) -> Result<(), UserRepoError>;
+    async fn update_edge_style(
+        &self,
+        id: UserId,
+        edge_style: EdgeStyle,
+    ) -> Result<(), UserRepoError>;
     /// Update the user's display name. The caller is responsible for trimming
     /// + length validation; the repo simply writes the value through.
     async fn update_display_name(
@@ -80,4 +116,23 @@ pub trait UserRepo: Send + Sync {
         id: UserId,
         avatar_key: Option<String>,
     ) -> Result<Option<String>, UserRepoError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EdgeStyle;
+
+    #[test]
+    fn edge_style_parse_round_trips_both_variants() {
+        for style in [EdgeStyle::Curved, EdgeStyle::Angular] {
+            assert_eq!(EdgeStyle::parse(style.as_str()), Some(style));
+        }
+    }
+
+    #[test]
+    fn edge_style_parse_rejects_unknown_and_wrong_case() {
+        assert_eq!(EdgeStyle::parse("zigzag"), None);
+        assert_eq!(EdgeStyle::parse("Angular"), None);
+        assert_eq!(EdgeStyle::parse(""), None);
+    }
 }

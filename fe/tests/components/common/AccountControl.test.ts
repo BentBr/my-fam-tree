@@ -18,13 +18,15 @@ vi.mock('@/api/hooks/users', () => ({
 // `useDisplay` decides whether the mobile fold-in items render. Default
 // to desktop (smAndDown=false) so the dropdown only carries the
 // auth-state-driven items.
+const smAndDown = ref(false)
 vi.mock('vuetify', () => ({
-    useDisplay: () => ({ smAndDown: ref(false) }),
+    useDisplay: () => ({ smAndDown }),
 }))
 
 import AccountControl from '@/components/common/AccountControl.vue'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import { memoryStorage } from '../../helpers/memory-storage'
 
 function stubStorage(): void {
@@ -52,16 +54,17 @@ const stubs = {
     DefaultAvatar: { template: '<div class="avatar-stub" />' },
 }
 
-async function mountControl() {
+async function mountControl(path: '/' | '/tree' = '/') {
     const router = createRouter({
         history: createMemoryHistory(),
         routes: [
             { path: '/', component: { template: '<div />' } },
+            { path: '/tree', name: 'tree', component: { template: '<div />' } },
             { path: '/auth/sign-in', component: { template: '<div />' } },
             { path: '/account', component: { template: '<div />' } },
         ],
     })
-    await router.push('/')
+    await router.push(path)
     await router.isReady()
     const qc = new QueryClient({ defaultOptions: { queries: { retry: 0 }, mutations: { retry: 0 } } })
     return mount(AccountControl, {
@@ -77,6 +80,31 @@ describe('AccountControl', () => {
         setActivePinia(createPinia())
         stubStorage()
         meRef.value = undefined
+        smAndDown.value = false
+    })
+
+    it('phone + tree route: the menu carries the edge-style switch and toggling persists', async () => {
+        smAndDown.value = true
+        const ui = useUiStore()
+        const w = await mountControl('/tree')
+        const item = w.find('[data-testid="account-menu-edge-style"]')
+        expect(item.exists()).toBe(true)
+        await item.trigger('click')
+        expect(ui.edgeStyle).toBe('angular')
+        await item.trigger('click')
+        expect(ui.edgeStyle).toBe('curved')
+    })
+
+    it('phone, away from the tree: no edge-style switch', async () => {
+        smAndDown.value = true
+        const w = await mountControl('/')
+        expect(w.find('[data-testid="account-menu-theme"]').exists()).toBe(true)
+        expect(w.find('[data-testid="account-menu-edge-style"]').exists()).toBe(false)
+    })
+
+    it('desktop + tree route: the switch stays in the AppBar, not the menu', async () => {
+        const w = await mountControl('/tree')
+        expect(w.find('[data-testid="account-menu-edge-style"]').exists()).toBe(false)
     })
 
     it('anonymous: shows the orange user icon and the Login + Register items', async () => {
@@ -89,7 +117,7 @@ describe('AccountControl', () => {
 
     it('authenticated + no display name: still shows the orange user icon', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         meRef.value = { avatar_url: null, display_name: null }
         const w = await mountControl()
         expect(w.find('[data-icon="user"]').exists()).toBe(true)
@@ -98,7 +126,7 @@ describe('AccountControl', () => {
 
     it('authenticated + display name set: shows the DefaultAvatar', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         meRef.value = { avatar_url: null, display_name: 'Anna Müller' }
         const w = await mountControl()
         expect(w.find('.avatar-stub').exists()).toBe(true)
@@ -107,7 +135,7 @@ describe('AccountControl', () => {
 
     it('authenticated: dropdown carries Account + Sign-out, not Login/Register', async () => {
         const auth = useAuthStore()
-        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', families: [] })
+        auth.applyClaimsPayload({ user_id: 'u', email: 'a@b', locale: 'en', edge_style: 'curved', families: [] })
         const w = await mountControl()
         expect(w.find('[data-testid="user-menu-account"]').exists()).toBe(true)
         expect(w.find('[data-testid="sign-out"]').exists()).toBe(true)

@@ -199,6 +199,17 @@ pub fn locale_invalid(path: &str) -> ApiError {
     )])
 }
 
+/// `validation.edge_style_invalid` violation. Surfaced when `PATCH /users/me`
+/// receives an `edge_style` outside the `EdgeStyle` enum.
+#[must_use]
+pub fn edge_style_invalid(path: &str) -> ApiError {
+    ApiError::Validation(vec![FieldViolation::new(
+        path,
+        "validation.edge_style_invalid",
+        "edge_style must be 'curved' or 'angular'",
+    )])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

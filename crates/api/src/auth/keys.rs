@@ -127,7 +127,7 @@ mod tests {
             900,
             std::sync::Arc::new(my_fam_tree_domain::clock::SystemClock),
         );
-        let token = issuer.issue(uuid::Uuid::new_v4(), "a@b.c", "en", vec![]).unwrap();
+        let token = issuer.issue(uuid::Uuid::new_v4(), "a@b.c", "en", "curved", vec![]).unwrap();
         assert_eq!(issuer.verify(&token).unwrap().email, "a@b.c");
     }
 

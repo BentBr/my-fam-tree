@@ -69,6 +69,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         } as never)
         const family = useActiveFamilyStore()
@@ -87,6 +88,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [],
         })
         await router.push('/tree')
@@ -103,6 +105,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         } as never)
         await router.push('/tree')
@@ -118,6 +121,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [
                 { id: 'f-1', name: 'F1', role: 'owner' },
                 { id: 'f-2', name: 'F2', role: 'user' },
@@ -134,6 +138,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         } as never)
         const family = useActiveFamilyStore()
@@ -149,6 +154,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F', role: 'owner' }],
         } as never)
         await router.push('/families/pick')
@@ -185,6 +191,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
         } as never)
         const family = useActiveFamilyStore()
@@ -203,6 +210,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F1', role: 'owner' }],
         } as never)
         const family = useActiveFamilyStore()
@@ -218,6 +226,7 @@ describe('router guards', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [{ id: 'f-1', name: 'F1', role: 'user' }],
         } as never)
         const family = useActiveFamilyStore()
@@ -284,6 +293,7 @@ describe('locale normalization', () => {
                 user_id: 'u',
                 email: 'a@b',
                 locale: 'de',
+                edge_style: 'curved',
                 families: [{ id: 'f-1', name: 'F', role: 'owner' }],
             } as never)
             await router.push(old)
@@ -336,6 +346,7 @@ describe('locale normalization', () => {
                     user_id: 'u',
                     email: 'a@b',
                     locale: 'de',
+                    edge_style: 'curved',
                     families: [{ id: 'f-1', name: 'F', role: 'owner' }],
                 },
             },

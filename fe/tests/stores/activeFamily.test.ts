@@ -20,6 +20,7 @@ function applyTwoFamilies(): void {
         user_id: 'u-1',
         email: 'a@b',
         locale: 'en',
+        edge_style: 'curved',
         families: [
             { id: 'f-1', name: 'F1', role: 'owner' },
             { id: 'f-2', name: 'F2', role: 'user' },
@@ -85,6 +86,7 @@ describe('activeFamily store', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [],
         })
         localStorage.setItem('my-fam-tree:activeFamily', 'stale')
@@ -103,6 +105,7 @@ describe('activeFamily store', () => {
             user_id: 'u',
             email: 'a@b',
             locale: 'en',
+            edge_style: 'curved',
             families: [],
         })
         family.pickFirstAvailable()

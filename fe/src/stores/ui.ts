@@ -21,6 +21,19 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 
 const THEME_KEY = 'my-fam-tree:theme'
 
+/**
+ * How the tree draws parent → child connectors. `'curved'` is the smooth
+ * Bezier default; `'angular'` routes them as right-angled elbows, which
+ * is easier to trace in wide trees. Per-device, persisted to localStorage.
+ */
+export type EdgeStyle = 'curved' | 'angular'
+
+const EDGE_STYLE_KEY = 'my-fam-tree:edge-style'
+
+function loadInitialEdgeStyle(): EdgeStyle {
+    return safeLocal.get(EDGE_STYLE_KEY) === 'angular' ? 'angular' : 'curved'
+}
+
 function loadInitialTheme(): ThemeMode {
     const v = safeLocal.get(THEME_KEY)
     return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
@@ -36,6 +49,7 @@ export const useUiStore = defineStore('ui', () => {
     const sidebarCollapsed = ref(safeLocal.get('my-fam-tree:sidebar') === '1')
     const toasts = ref<Toast[]>([])
     const theme = ref<ThemeMode>(loadInitialTheme())
+    const edgeStyle = ref<EdgeStyle>(loadInitialEdgeStyle())
 
     function toggleSidebar(): void {
         sidebarCollapsed.value = !sidebarCollapsed.value
@@ -45,6 +59,11 @@ export const useUiStore = defineStore('ui', () => {
     function setTheme(next: ThemeMode): void {
         theme.value = next
         safeLocal.set(THEME_KEY, next)
+    }
+
+    function setEdgeStyle(next: EdgeStyle): void {
+        edgeStyle.value = next
+        safeLocal.set(EDGE_STYLE_KEY, next)
     }
 
     function pushToast(t: Omit<Toast, 'id'>): void {
@@ -68,5 +87,15 @@ export const useUiStore = defineStore('ui', () => {
         toasts.value = toasts.value.filter((t) => t.id !== id)
     }
 
-    return { sidebarCollapsed, toasts, theme, toggleSidebar, setTheme, pushToast, dismissToast }
+    return {
+        sidebarCollapsed,
+        toasts,
+        theme,
+        edgeStyle,
+        toggleSidebar,
+        setTheme,
+        setEdgeStyle,
+        pushToast,
+        dismissToast,
+    }
 })

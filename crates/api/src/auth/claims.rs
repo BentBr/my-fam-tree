@@ -38,6 +38,10 @@ fn de_role<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Role, D::Error> {
     }
 }
 
+fn default_edge_style() -> String {
+    my_fam_tree_domain::EdgeStyle::Curved.as_str().to_owned()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct JwtClaims {
     pub iss: String,
@@ -45,6 +49,10 @@ pub struct JwtClaims {
     pub sub: Uuid,
     pub email: String,
     pub locale: String,
+    /// Tree connector style (`"curved"` / `"angular"`). Defaulted so access
+    /// tokens minted before this claim existed still verify.
+    #[serde(default = "default_edge_style")]
+    pub edge_style: String,
     pub families: Vec<FamilyClaim>,
     pub iat: i64,
     pub exp: i64,
@@ -55,5 +63,30 @@ impl JwtClaims {
     #[must_use]
     pub fn family(&self, family_id: Uuid) -> Option<&FamilyClaim> {
         self.families.iter().find(|f| f.id == family_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn token_minted_before_edge_style_existed_defaults_to_curved() {
+        let legacy = serde_json::json!({
+            "iss": "i", "aud": "a", "sub": Uuid::nil(), "email": "a@b.c", "locale": "de",
+            "families": [], "iat": 0, "exp": 0, "jti": "j",
+        });
+        let claims: JwtClaims = serde_json::from_value(legacy).expect("legacy claims parse");
+        assert_eq!(claims.edge_style, "curved");
+    }
+
+    #[test]
+    fn edge_style_claim_round_trips() {
+        let json = serde_json::json!({
+            "iss": "i", "aud": "a", "sub": Uuid::nil(), "email": "a@b.c", "locale": "en",
+            "edge_style": "angular", "families": [], "iat": 0, "exp": 0, "jti": "j",
+        });
+        let claims: JwtClaims = serde_json::from_value(json).expect("claims parse");
+        assert_eq!(claims.edge_style, "angular");
     }
 }
